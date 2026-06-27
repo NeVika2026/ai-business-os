@@ -19,7 +19,10 @@ function serializeCommandResult(
   return {
     success: result.success,
     command: result.command,
+    args: [...result.args],
     exitCode: result.exitCode,
+    stdout: result.stdout ?? null,
+    stderr: result.stderr ?? null,
     errors: [...result.errors],
     warnings: [...result.warnings],
     output: result.output ?? null,

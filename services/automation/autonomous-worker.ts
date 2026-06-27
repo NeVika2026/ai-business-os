@@ -21,13 +21,12 @@ import type {
   AutonomousWorkerTaskStatus,
   SerializedAutonomousWorkerSnapshot,
 } from '@/services/automation/autonomous-worker-types';
+import { createCommandRunner, type CommandRunner } from '@/services/automation/command-runner';
+import type { CommandRunResult } from '@/services/automation/command-runner-types';
 import type { RoadmapInput } from '@/services/runtime/orchestrator/roadmap/roadmap-types';
 import { validateRoadmapInput } from '@/services/runtime/orchestrator/roadmap/roadmap-validator';
 
 const EXECUTOR_DURATION_MS = 100;
-const LINT_DURATION_MS = 50;
-const BUILD_DURATION_MS = 75;
-const TEST_DURATION_MS = 60;
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
@@ -37,18 +36,51 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
-function createSuccessCommandResult(
-  command: string,
-  durationMs: number,
+function mapCommandRunResult(
+  displayCommand: string,
+  result: CommandRunResult,
 ): AutonomousWorkerCommandResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  if (!result.success) {
+    if (result.timedOut) {
+      errors.push(`${displayCommand} timed out`);
+    } else if (result.stderr.trim().length > 0) {
+      errors.push(result.stderr.trim());
+    } else {
+      errors.push(`${displayCommand} failed with exit code ${result.exitCode}`);
+    }
+  }
+
+  const stdout = result.stdout.trim().length > 0 ? result.stdout : null;
+  const stderr = result.stderr.trim().length > 0 ? result.stderr : null;
+
   return {
-    success: true,
-    command,
-    exitCode: 0,
-    errors: [],
-    warnings: [],
-    output: `${command} passed`,
-    durationMs,
+    success: result.success,
+    command: displayCommand,
+    args: [...result.args],
+    exitCode: result.exitCode,
+    stdout,
+    stderr,
+    errors,
+    warnings,
+    output: stdout ?? stderr,
+    durationMs: result.durationMs,
+  };
+}
+
+function createWorkerCommandRunner(runner: CommandRunner): AutonomousWorkerCommandRunner {
+  return {
+    lint() {
+      return mapCommandRunResult('npm run lint', runner.run('npm', ['run', 'lint']));
+    },
+    build() {
+      return mapCommandRunResult('npm run build', runner.run('npm', ['run', 'build']));
+    },
+    test() {
+      return mapCommandRunResult('npm test', runner.run('npm', ['test']));
+    },
   };
 }
 
@@ -64,14 +96,6 @@ function createDefaultExecutor(): AutonomousWorkerExternalExecutor {
         durationMs: EXECUTOR_DURATION_MS,
       };
     },
-  };
-}
-
-function createDefaultCommandRunner(): AutonomousWorkerCommandRunner {
-  return {
-    lint: () => createSuccessCommandResult('npm run lint', LINT_DURATION_MS),
-    build: () => createSuccessCommandResult('npm run build', BUILD_DURATION_MS),
-    test: () => createSuccessCommandResult('npm test', TEST_DURATION_MS),
   };
 }
 
@@ -511,11 +535,12 @@ export class AutonomousWorker {
 
 export function createAutonomousWorker(options?: AutonomousWorkerOptions): AutonomousWorker {
   const instanceId = options?.instanceId?.trim() || 'default-autonomous-worker';
+  const runner = options?.commandRunner ?? createCommandRunner({ cwd: options?.cwd });
 
   return new AutonomousWorker(
     instanceId,
     options?.executor ?? createDefaultExecutor(),
-    options?.commandRunner ?? createDefaultCommandRunner(),
+    createWorkerCommandRunner(runner),
   );
 }
 

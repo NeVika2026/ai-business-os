@@ -1,4 +1,5 @@
 import type { ISODateTime } from '@/types/runtime/dto';
+import type { CommandRunner } from '@/services/automation/command-runner';
 import type {
   RoadmapInput,
   RoadmapSprintInput,
@@ -46,7 +47,10 @@ export interface AutonomousWorkerExecutorResult {
 export interface AutonomousWorkerCommandResult {
   success: boolean;
   command: string;
+  args: string[];
   exitCode: number;
+  stdout: string | null;
+  stderr: string | null;
   errors: string[];
   warnings: string[];
   output: string | null;
@@ -138,13 +142,17 @@ export interface AutonomousWorkerCommandRunner {
 export interface AutonomousWorkerOptions {
   instanceId?: string;
   executor?: AutonomousWorkerExternalExecutor;
-  commandRunner?: AutonomousWorkerCommandRunner;
+  commandRunner?: CommandRunner;
+  cwd?: string;
 }
 
 export interface SerializedAutonomousWorkerCommandResult {
   success: boolean;
   command: string;
+  args: string[];
   exitCode: number;
+  stdout: string | null;
+  stderr: string | null;
   errors: string[];
   warnings: string[];
   output: string | null;
