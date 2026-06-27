@@ -21,6 +21,14 @@ import type {
   AutonomousWorkerExecutorResult,
   SerializedAutonomousWorkerSnapshot,
 } from '@/services/automation/autonomous-worker-types';
+import {
+  createAutomationPlanner,
+  type AutomationPlanner,
+} from '@/services/automation/automation-planner';
+import type {
+  AutomationPlannerInput,
+  AutomationPlannerTaskState,
+} from '@/services/automation/automation-planner-types';
 import { createCommandRunner, type CommandRunner } from '@/services/automation/command-runner';
 import type { CommandRunResult } from '@/services/automation/command-runner-types';
 import {
@@ -36,6 +44,40 @@ import type {
 } from '@/services/automation/roadmap-task-executor-types';
 import type { RoadmapInput } from '@/services/runtime/orchestrator/roadmap/roadmap-types';
 import { validateRoadmapInput } from '@/services/runtime/orchestrator/roadmap/roadmap-validator';
+
+function toPlannerTaskStatus(status: AutonomousWorkerTaskStatus): AutomationPlannerTaskState {
+  if (status === 'skipped') {
+    return 'skipped';
+  }
+
+  return status;
+}
+
+function toPlannerInput(
+  roadmap: RoadmapInput,
+  tasks: AutonomousWorkerTask[],
+): AutomationPlannerInput {
+  return {
+    roadmapId: roadmap.id,
+    roadmapTitle: roadmap.title,
+    tasks: tasks.map((task, index) => ({
+      id: task.taskId,
+      title: task.title,
+      description: task.description,
+      dependencies: [...task.dependsOn],
+      status: toPlannerTaskStatus(task.status),
+      priority: 0,
+      order: index,
+      metadata: {
+        sprintId: task.sprintId,
+        code: task.code,
+        skipLint: task.skipLint,
+        skipBuild: task.skipBuild,
+        includeTests: task.includeTests,
+      },
+    })),
+  };
+}
 
 function toRoadmapTaskStatus(status: AutonomousWorkerTaskStatus): RoadmapTaskStatus {
   if (status === 'skipped') {
@@ -177,15 +219,9 @@ function findNextPendingTask(tasks: AutonomousWorkerTask[]): AutonomousWorkerTas
   return null;
 }
 
-function countTasksByStatus(
-  tasks: AutonomousWorkerTask[],
-  status: AutonomousWorkerTaskStatus,
-): number {
-  return tasks.filter((task) => task.status === status).length;
-}
-
 function resolveNextRecommendedAction(
   state: AutonomousWorkerState,
+  planner: AutomationPlanner | null,
   tasks: AutonomousWorkerTask[],
   pauseReason: string | null,
   stopReason: string | null,
@@ -210,7 +246,10 @@ function resolveNextRecommendedAction(
     return 'Call start() with a roadmap to begin.';
   }
 
-  const next = findNextPendingTask(tasks);
+  const nextTaskId = planner?.report().nextTaskId ?? null;
+  const next = nextTaskId
+    ? (tasks.find((task) => task.taskId === nextTaskId) ?? null)
+    : findNextPendingTask(tasks);
   if (next) {
     return `Call nextTask() to execute ${next.code}: ${next.title}.`;
   }
@@ -218,10 +257,18 @@ function resolveNextRecommendedAction(
   return 'No runnable tasks remain.';
 }
 
+function countTasksByStatus(
+  tasks: AutonomousWorkerTask[],
+  status: AutonomousWorkerTaskStatus,
+): number {
+  return tasks.filter((task) => task.status === status).length;
+}
+
 function buildWorkerReport(input: {
   roadmap: RoadmapInput;
   state: AutonomousWorkerState;
   tasks: AutonomousWorkerTask[];
+  planner: AutomationPlanner | null;
   currentTaskId: string | null;
   pauseReason: string | null;
   stopReason: string | null;
@@ -240,6 +287,7 @@ function buildWorkerReport(input: {
     taskReports: [...input.taskReports],
     nextRecommendedAction: resolveNextRecommendedAction(
       input.state,
+      input.planner,
       input.tasks,
       input.pauseReason,
       input.stopReason,
@@ -264,6 +312,7 @@ export class AutonomousWorker {
 
   constructor(
     private readonly instanceId: string,
+    private readonly planner: AutomationPlanner,
     private readonly taskHandler: RoadmapTaskExecutionHandler,
     private readonly commandRunner: AutonomousWorkerCommandRunner,
     private readonly injectedTaskExecutor: RoadmapTaskExecutor | null = null,
@@ -278,6 +327,8 @@ export class AutonomousWorker {
     this.roadmap = input.roadmap;
     this.tasks = buildTasksFromRoadmap(input.roadmap);
     this.taskReports = [];
+    this.planner.reset();
+    this.planner.plan(toPlannerInput(input.roadmap, this.tasks));
     this.taskExecutor = this.createTaskExecutorForRoadmap();
     this.state = 'running';
     this.currentTaskId = null;
@@ -353,9 +404,9 @@ export class AutonomousWorker {
     this.requireMutableWorker();
 
     const roadmap = this.requireRoadmap();
-    const nextTask = findNextPendingTask(this.tasks);
+    const nextPlannerTask = this.planner.next();
 
-    if (!nextTask) {
+    if (!nextPlannerTask) {
       const allCompleted = this.tasks.every((task) => task.status === 'completed');
       this.state = allCompleted ? 'completed' : 'failed';
       this.stopReason = allCompleted ? null : 'no_runnable_tasks';
@@ -371,6 +422,11 @@ export class AutonomousWorker {
         reason: this.stopReason,
         report: null,
       };
+    }
+
+    const nextTask = this.tasks.find((task) => task.taskId === nextPlannerTask.id);
+    if (!nextTask) {
+      throw new AutonomousWorkerTaskNotFoundError(nextPlannerTask.id);
     }
 
     const sprint = roadmap.sprints.find((entry) => entry.id === nextTask.sprintId);
@@ -433,6 +489,7 @@ export class AutonomousWorker {
     nextTask.status = success ? 'completed' : 'failed';
     nextTask.finishedAt = finishedAt;
     nextTask.durationMs = durationMs;
+    this.planner.syncTaskStatus(nextTask.taskId, success ? 'completed' : 'failed');
 
     const taskReport: AutonomousWorkerTaskReport = {
       taskId: nextTask.taskId,
@@ -482,6 +539,7 @@ export class AutonomousWorker {
       roadmap,
       state: this.state,
       tasks: this.tasks,
+      planner: this.planner,
       currentTaskId: this.currentTaskId,
       pauseReason: this.pauseReason,
       stopReason: this.stopReason,
@@ -501,6 +559,7 @@ export class AutonomousWorker {
     this.tasks = [];
     this.taskReports = [];
     this.taskExecutor = null;
+    this.planner.reset();
     this.state = 'idle';
     this.currentTaskId = null;
     this.pauseReason = null;
@@ -616,6 +675,7 @@ export function createAutonomousWorker(options?: AutonomousWorkerOptions): Auton
 
   return new AutonomousWorker(
     instanceId,
+    options?.planner ?? createAutomationPlanner({ instanceId: `${instanceId}-planner` }),
     taskHandler,
     createWorkerCommandRunner(runner),
     options?.taskExecutor ?? null,
