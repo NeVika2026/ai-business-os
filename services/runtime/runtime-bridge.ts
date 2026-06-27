@@ -18,6 +18,7 @@ import type {
   SerializedRuntimeBridgeSnapshot,
 } from '@/services/runtime/runtime-bridge-types';
 import { DEFAULT_RUNTIME_BRIDGE_INSTANCE_ID } from '@/services/runtime/runtime-bridge-types';
+import { createRuntimeApiFromBridge, type RuntimeApi } from '@/services/runtime/runtime-api';
 import {
   createRuntimeGatewayAdapter,
   type RuntimeGatewayAdapter,
@@ -145,12 +146,13 @@ const defaultBridgeProvider = new InMemoryRuntimeBridgeProvider();
 
 /**
  * Bridge between legacy agent runtime entry and orchestration facade.
- * Default agent path is orchestration-only (no Gateway, Tool Executor, or Memory writes).
+ * Public operations are routed through RuntimeApi.
  */
 export class RuntimeBridge {
   private mode: RuntimeBridgeMode = 'idle';
   private lastAgentResult: AgentResult | null = null;
   private runtimeValidator: RuntimeValidator | null = null;
+  private runtimeApi: RuntimeApi | null = null;
 
   constructor(
     private readonly facade: OrchestratorRuntime,
@@ -166,11 +168,24 @@ export class RuntimeBridge {
     private readonly pipelineAdapter: RuntimePipelineAdapter,
     private readonly execution: RuntimeExecution,
     validator?: RuntimeValidator,
+    api?: RuntimeApi,
   ) {
     this.runtimeValidator = validator ?? null;
+    this.runtimeApi = api ?? null;
   }
 
   async executeAgent(
+    execution: AgentExecution,
+    options?: RuntimeBridgeExecuteAgentOptions,
+  ): Promise<AgentResult> {
+    return this.getApi().execute({
+      execution,
+      useFullExecution: options?.useFullExecution,
+      useLegacyPipeline: options?.useLegacyPipeline,
+    });
+  }
+
+  async runAgent(
     execution: AgentExecution,
     options?: RuntimeBridgeExecuteAgentOptions,
   ): Promise<AgentResult> {
@@ -215,6 +230,16 @@ export class RuntimeBridge {
   }
 
   status(): RuntimeBridgeStatusView {
+    const apiStatus = this.getApi().status();
+
+    return {
+      mode: apiStatus.bridgeMode as RuntimeBridgeMode,
+      agentStatus: apiStatus.agentStatus,
+      facadeStatus: this.facade.status(),
+    };
+  }
+
+  readStatus(): RuntimeBridgeStatusView {
     return {
       mode: this.mode,
       agentStatus: this.lastAgentResult?.status ?? null,
@@ -223,6 +248,16 @@ export class RuntimeBridge {
   }
 
   report(): RuntimeBridgeReport {
+    const apiReport = this.getApi().report();
+
+    return buildRuntimeBridgeReport({
+      mode: apiReport.bridgeMode as RuntimeBridgeMode,
+      agentResult: this.lastAgentResult,
+      facadeReport: this.facade.report(),
+    });
+  }
+
+  readReport(): RuntimeBridgeReport {
     return buildRuntimeBridgeReport({
       mode: this.mode,
       agentResult: this.lastAgentResult,
@@ -239,12 +274,41 @@ export class RuntimeBridge {
     });
   }
 
+  readSnapshot(): SerializedRuntimeBridgeSnapshot {
+    return this.serialize();
+  }
+
   reset(): void {
+    this.getApi().reset();
+  }
+
+  resetRuntime(): void {
     this.mode = 'idle';
     this.lastAgentResult = null;
     this.facade.reset();
     this.execution.reset();
+    this.runtimeValidator?.reset();
     this.provider.reset?.();
+  }
+
+  supportsFullExecution(): boolean {
+    return true;
+  }
+
+  supportsLegacyPipeline(): boolean {
+    return true;
+  }
+
+  supportsOrchestration(): boolean {
+    return true;
+  }
+
+  getApi(): RuntimeApi {
+    if (!this.runtimeApi) {
+      this.runtimeApi = createRuntimeApiFromBridge(this);
+    }
+
+    return this.runtimeApi;
   }
 
   getFacade(): OrchestratorRuntime {
@@ -344,7 +408,7 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
       },
     });
 
-  return new RuntimeBridge(
+  const bridge = new RuntimeBridge(
     facade,
     provider,
     instanceId,
@@ -358,7 +422,14 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
     pipelineAdapter,
     execution,
     options?.validator,
+    options?.api,
   );
+
+  if (!options?.api) {
+    bridge.getApi();
+  }
+
+  return bridge;
 }
 
 /** Default dev/test singleton. Do not use for concurrent production executions. */
