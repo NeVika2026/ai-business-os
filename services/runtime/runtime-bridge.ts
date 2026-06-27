@@ -47,6 +47,10 @@ import {
   createRuntimeExecution,
   type RuntimeExecution,
 } from '@/services/runtime/runtime-execution';
+import {
+  createRuntimeKnowledgeAdapter,
+  type RuntimeKnowledgeAdapter,
+} from '@/services/runtime/runtime-knowledge-adapter';
 import { createRuntimeObserver, type RuntimeObserver } from '@/services/runtime/runtime-observer';
 import type { RuntimeObserverEmitInput } from '@/services/runtime/runtime-observer-types';
 import {
@@ -377,6 +381,7 @@ export class RuntimeBridge {
     private readonly pipelineAdapter: RuntimePipelineAdapter,
     private readonly execution: RuntimeExecution,
     private readonly observer: RuntimeObserver,
+    private readonly knowledgeAdapter: RuntimeKnowledgeAdapter,
     validator?: RuntimeValidator,
     api?: RuntimeApi,
   ) {
@@ -586,6 +591,7 @@ export class RuntimeBridge {
     this.runtimeValidator?.reset();
     this.provider.reset?.();
     this.observer.reset();
+    this.knowledgeAdapter.reset();
   }
 
   supportsFullExecution(): boolean {
@@ -652,6 +658,10 @@ export class RuntimeBridge {
     return this.observer;
   }
 
+  getKnowledgeAdapter(): RuntimeKnowledgeAdapter {
+    return this.knowledgeAdapter;
+  }
+
   private async executeAgentOrchestration(execution: AgentExecution): Promise<AgentResult> {
     const trace = this.pipelineAdapter.resolveTrace(execution);
     const context = toRuntimeExecutionContext(execution, trace);
@@ -696,6 +706,9 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
   const pipelineAdapter = options?.pipelineAdapter ?? createRuntimePipelineAdapter();
   const observer =
     options?.observer ?? createRuntimeObserver({ instanceId: `${instanceId}-observer` });
+  const knowledgeAdapter =
+    options?.knowledgeAdapter ??
+    createRuntimeKnowledgeAdapter({ instanceId: `${instanceId}-knowledge` });
 
   wireRuntimeObservers({
     observer,
@@ -735,6 +748,7 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
     pipelineAdapter,
     execution,
     observer,
+    knowledgeAdapter,
     options?.validator,
     options?.api,
   );
