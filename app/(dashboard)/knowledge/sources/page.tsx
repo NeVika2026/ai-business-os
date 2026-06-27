@@ -1,16 +1,11 @@
 import { redirect } from 'next/navigation';
 
-import { KnowledgeStats } from '@/components/knowledge/knowledge-stats';
 import { SourceTable } from '@/components/knowledge/source-table';
 import { createClient } from '@/services/supabase/server';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
-import {
-  computeKnowledgeStats,
-  mapKnowledgeSources,
-  SOURCE_SELECT,
-} from '@/utils/knowledge/sources';
+import { mapKnowledgeSources, SOURCE_SELECT } from '@/utils/knowledge/sources';
 
-export default async function KnowledgePage() {
+export default async function KnowledgeSourcesPage() {
   const supabase = await createClient();
   const organizationId = await getCurrentOrganizationId(supabase);
 
@@ -29,12 +24,14 @@ export default async function KnowledgePage() {
   }
 
   const sources = mapKnowledgeSources(data ?? []);
-  const stats = computeKnowledgeStats(sources);
 
   return (
-    <div className="space-y-6">
-      <KnowledgeStats stats={stats} />
-      <SourceTable sources={sources} />
+    <div className="space-y-4">
+      <div>
+        <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Источники</h1>
+        <p className="text-sm text-[var(--text-secondary)]">Все источники знаний организации</p>
+      </div>
+      <SourceTable sources={sources} showHeader={false} />
     </div>
   );
 }
