@@ -1,10 +1,15 @@
 import type { ISODateTime } from '@/types/runtime/dto';
 
+import type {
+  LocalAgentRunnerContract,
+  LocalAgentRunnerOptions,
+} from '@/services/automation/local-agent-runner-types';
+
 export type AITaskExecutorState = 'idle' | 'running' | 'completed' | 'failed' | 'cancelled';
 
 export type AITaskExecutorResultStatus = 'completed' | 'failed' | 'cancelled' | 'prepared';
 
-export type AITaskExecutorBackendKind = 'mock' | 'cursor';
+export type AITaskExecutorBackendKind = 'mock' | 'cursor' | 'local-agent';
 
 export type AITaskExecutorMetadataValue = string | number | boolean | null;
 
@@ -101,6 +106,9 @@ export interface AITaskExecutorAdapterOptions {
   instanceId?: string;
   backend?: AITaskExecutorBackendKind;
   executor?: AITaskExecutorBackend;
+  localAgentRunner?: LocalAgentRunnerContract;
+  localAgentRunnerOptions?: LocalAgentRunnerOptions;
+  workingDirectory?: string;
 }
 
 export interface SerializedAITaskExecutorExecutionReport {

@@ -18,6 +18,7 @@ import type {
   SerializedAITaskExecutorSnapshot,
 } from '@/services/automation/ai-task-executor-adapter-types';
 import { createCursorTaskBackend } from '@/services/automation/cursor-task-adapter';
+import { createLocalAgentBackend } from '@/services/automation/local-agent-runner';
 import type {
   RoadmapTaskExecutionHandler,
   RoadmapTaskHandlerResult,
@@ -393,6 +394,20 @@ function resolveBackend(options?: AITaskExecutorAdapterOptions): AITaskExecutorB
 
   if (options?.backend === 'cursor') {
     return createCursorTaskBackend();
+  }
+
+  if (options?.backend === 'local-agent') {
+    if (options.localAgentRunner) {
+      return createLocalAgentBackend({
+        runner: options.localAgentRunner,
+        workingDirectory: options.workingDirectory,
+      });
+    }
+
+    return createLocalAgentBackend({
+      runnerOptions: options.localAgentRunnerOptions,
+      workingDirectory: options.workingDirectory,
+    });
   }
 
   return createDefaultMockExecutor();
