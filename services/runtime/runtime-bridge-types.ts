@@ -104,6 +104,7 @@ export interface RuntimeBridgeOptions {
   knowledgeAdapter?: import('@/services/runtime/runtime-knowledge-adapter').RuntimeKnowledgeAdapter;
   knowledgeContext?: import('@/services/runtime/runtime-knowledge-context').RuntimeKnowledgeContext;
   knowledgeInjectionEnabled?: boolean;
+  memoryServiceAdapter?: import('@/services/runtime/runtime-memory-service-adapter').RuntimeMemoryServiceAdapter;
 }
 
 export const DEFAULT_RUNTIME_BRIDGE_INSTANCE_ID = 'default-bridge';

@@ -32,6 +32,10 @@ import {
   type RuntimePromptAdapter,
 } from '@/services/runtime/runtime-prompt-adapter';
 import {
+  createRuntimeMemoryServiceAdapter,
+  type RuntimeMemoryServiceAdapter,
+} from '@/services/runtime/runtime-memory-service-adapter';
+import {
   createRuntimeMemoryAdapter,
   type RuntimeMemoryAdapter,
 } from '@/services/runtime/runtime-memory-adapter';
@@ -387,6 +391,7 @@ export class RuntimeBridge {
     private readonly observer: RuntimeObserver,
     private readonly knowledgeAdapter: RuntimeKnowledgeAdapter,
     private readonly knowledgeContext: RuntimeKnowledgeContext,
+    private readonly memoryServiceAdapter: RuntimeMemoryServiceAdapter,
     validator?: RuntimeValidator,
     api?: RuntimeApi,
   ) {
@@ -598,6 +603,7 @@ export class RuntimeBridge {
     this.observer.reset();
     this.knowledgeAdapter.reset();
     this.knowledgeContext.reset();
+    this.memoryServiceAdapter.reset();
   }
 
   supportsFullExecution(): boolean {
@@ -672,6 +678,10 @@ export class RuntimeBridge {
     return this.knowledgeContext;
   }
 
+  getMemoryServiceAdapter(): RuntimeMemoryServiceAdapter {
+    return this.memoryServiceAdapter;
+  }
+
   private async executeAgentOrchestration(execution: AgentExecution): Promise<AgentResult> {
     const trace = this.pipelineAdapter.resolveTrace(execution);
     const context = toRuntimeExecutionContext(execution, trace);
@@ -722,6 +732,9 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
       knowledgeAdapter,
       enabled: options?.knowledgeInjectionEnabled ?? false,
     });
+  const memoryServiceAdapter =
+    options?.memoryServiceAdapter ??
+    createRuntimeMemoryServiceAdapter({ instanceId: `${instanceId}-memory-service` });
   const contextAdapter =
     options?.contextAdapter ??
     createRuntimeContextAdapter({
@@ -772,6 +785,7 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
     observer,
     knowledgeAdapter,
     knowledgeContext,
+    memoryServiceAdapter,
     options?.validator,
     options?.api,
   );
