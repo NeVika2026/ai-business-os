@@ -142,6 +142,7 @@ export interface AutonomousWorkerOptions {
   taskExecutor?: RoadmapTaskExecutor;
   commandRunner?: CommandRunner;
   cwd?: string;
+  organizationId?: string;
 }
 
 export interface SerializedAutonomousWorkerCommandResult {

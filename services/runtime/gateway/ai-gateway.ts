@@ -1,4 +1,5 @@
 import { isGatewayMockMode } from '@/services/runtime/gateway/adapter-factory';
+import { cancelStream } from '@/services/runtime/gateway/stream-cancellation';
 import { checkGatewayRateLimit } from '@/services/runtime/gateway/gateway-rate-limiter';
 import { resolveProviderCredentials } from '@/services/runtime/gateway/credential-resolver';
 import { executeWithGatewayRetry } from '@/services/runtime/gateway/gateway-retry';
@@ -59,6 +60,7 @@ function toNormalizedRequest(request: GatewayRequestDto): NormalizedProviderRequ
       topP: request.parameters.topP,
       timeoutMs: request.timeoutMs,
       credentials: {},
+      runId: request.trace.runId,
     };
   }
 
@@ -82,6 +84,7 @@ function toNormalizedRequest(request: GatewayRequestDto): NormalizedProviderRequ
     topP: request.parameters.topP,
     timeoutMs: request.timeoutMs,
     credentials,
+    runId: request.trace.runId,
   };
 }
 
@@ -201,4 +204,5 @@ export async function* stream(request: GatewayRequestDto): AsyncGenerator<Stream
 export const aiGateway = {
   complete,
   stream,
+  cancelStream: (runId: string) => cancelStream(runId),
 };

@@ -9,6 +9,9 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "GATEWAY_USE_MOCK=true npx tsx --test tests/**/*.test.ts",
+    "test:coverage": "GATEWAY_USE_MOCK=true c8 --reporter=text --reporter=html --reporter=lcov npx tsx --test tests/**/*.test.ts",
+    "benchmark": "GATEWAY_USE_MOCK=true npx tsx --test tests/benchmarks/**/*.test.ts",
+    "security:audit": "node scripts/security-audit.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
@@ -24,6 +27,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "c8": "^11.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "eslint-config-prettier": "^10.1.8",

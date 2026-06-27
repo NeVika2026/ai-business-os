@@ -31,6 +31,8 @@ export interface NormalizedProviderRequest {
   topP?: number;
   timeoutMs: number;
   credentials: ProviderCredentials;
+  signal?: AbortSignal;
+  runId?: string;
 }
 
 export interface NormalizedProviderResponse {

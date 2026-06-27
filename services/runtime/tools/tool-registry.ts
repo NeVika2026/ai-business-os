@@ -1,5 +1,4 @@
-import { knowledgeSearchHandler } from '@/services/runtime/tools/handlers/knowledge-handler';
-import { runtimeInfoHandler } from '@/services/runtime/tools/handlers/system-handler';
+import { attachProductionHandlers } from '@/services/runtime/tools/production-handlers';
 import { communicationTools } from '@/services/runtime/tools/categories/communication';
 import { crmTools } from '@/services/runtime/tools/categories/crm';
 import { knowledgeTools } from '@/services/runtime/tools/categories/knowledge';
@@ -29,20 +28,6 @@ function registerTools(registry: ToolRegistry, tools: RegisteredToolInput[]): vo
   for (const tool of tools) {
     registry.register(tool);
   }
-}
-
-function attachProductionHandlers(tools: RegisteredToolInput[]): RegisteredToolInput[] {
-  return tools.map((tool) => {
-    if (tool.id === 'runtime.info') {
-      return { ...tool, handler: runtimeInfoHandler };
-    }
-
-    if (tool.id === 'knowledge.search') {
-      return { ...tool, handler: knowledgeSearchHandler };
-    }
-
-    return tool;
-  });
 }
 
 export function createProductionToolRegistry(): ToolRegistry {

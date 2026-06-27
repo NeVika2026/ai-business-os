@@ -47,6 +47,17 @@ import type {
 } from '@/services/automation/roadmap-task-executor-types';
 import type { RoadmapInput } from '@/services/runtime/orchestrator/roadmap/roadmap-types';
 import { validateRoadmapInput } from '@/services/runtime/orchestrator/roadmap/roadmap-validator';
+import {
+  getRuntimeCheckpoint,
+  recordExecutionStart,
+  recordExecutionStatus,
+  saveRuntimeCheckpoint,
+} from '@/services/runtime/execution/checkpoint-store';
+import {
+  buildWorkerRunId,
+  WORKER_CHECKPOINT_STAGE,
+  type WorkerCheckpointPayload,
+} from '@/services/runtime/execution/worker-checkpoint';
 
 function toPlannerTaskStatus(status: AutonomousWorkerTaskStatus): AutomationPlannerTaskState {
   if (status === 'skipped') {
@@ -315,11 +326,13 @@ export class AutonomousWorker {
   private pauseReason: string | null = null;
   private stopReason: string | null = null;
   private startedAt: string | null = null;
+  private runId: string | null = null;
   private taskExecutor: RoadmapTaskExecutor | null = null;
   private updatedAt = nowIso();
 
   constructor(
     private readonly instanceId: string,
+    private readonly organizationId: string,
     private readonly planner: AutomationPlanner,
     private readonly aiTaskExecutorAdapter: AITaskExecutorAdapter,
     private readonly taskHandler: RoadmapTaskExecutionHandler,
@@ -344,9 +357,68 @@ export class AutonomousWorker {
     this.pauseReason = null;
     this.stopReason = null;
     this.startedAt = timestamp;
+    this.runId = buildWorkerRunId(this.instanceId, input.roadmap.id);
+    recordExecutionStart(this.runId, this.organizationId);
+    this.persistCheckpoint();
     this.updatedAt = timestamp;
 
     return this.status();
+  }
+
+  interrupt(reason?: string): AutonomousWorkerStatusView {
+    this.requireStarted();
+
+    if (this.state === 'running') {
+      this.state = 'paused';
+      this.pauseReason = isNonEmptyString(reason) ? reason.trim() : 'interrupted';
+      this.persistCheckpoint();
+      this.updatedAt = nowIso();
+    }
+
+    return this.status();
+  }
+
+  resumeFromCheckpoint(runId: string): AutonomousWorkerStatusView {
+    const checkpoint = getRuntimeCheckpoint(runId, WORKER_CHECKPOINT_STAGE);
+    if (!checkpoint) {
+      throw new AutonomousWorkerValidationError(`checkpoint not found: ${runId}`);
+    }
+
+    const payload = checkpoint.payload as unknown as WorkerCheckpointPayload;
+    validateRoadmapInput(payload.roadmap);
+
+    this.runId = runId;
+    this.roadmap = payload.roadmap;
+    this.tasks = payload.tasks.map((task) => ({ ...task, dependsOn: [...task.dependsOn] }));
+    this.taskReports = payload.taskReports.map((report) => ({
+      ...report,
+      files: [...report.files],
+      errors: [...report.errors],
+      warnings: [...report.warnings],
+    }));
+    this.state = payload.state === 'failed' ? 'paused' : payload.state;
+    this.currentTaskId = payload.currentTaskId;
+    this.pauseReason = payload.pauseReason;
+    this.stopReason = payload.stopReason;
+    this.startedAt = payload.startedAt;
+    this.planner.reset();
+    this.planner.plan(toPlannerInput(payload.roadmap, this.tasks));
+    this.taskExecutor = this.createTaskExecutorForRoadmap();
+    this.updatedAt = nowIso();
+
+    if (this.state === 'paused') {
+      this.state = 'running';
+      this.pauseReason = null;
+    }
+
+    recordExecutionStart(runId, payload.organizationId);
+    this.persistCheckpoint();
+
+    return this.status();
+  }
+
+  getRunId(): string | null {
+    return this.runId;
   }
 
   stop(reason?: string): AutonomousWorkerStatusView {
@@ -356,6 +428,10 @@ export class AutonomousWorker {
     this.stopReason = isNonEmptyString(reason) ? reason.trim() : 'stopped_by_user';
     this.pauseReason = null;
     this.currentTaskId = null;
+    if (this.runId) {
+      this.persistCheckpoint();
+      recordExecutionStatus(this.runId, 'cancelled');
+    }
     this.updatedAt = nowIso();
 
     return this.status();
@@ -366,6 +442,7 @@ export class AutonomousWorker {
 
     this.state = 'paused';
     this.pauseReason = isNonEmptyString(reason) ? reason.trim() : 'paused_by_user';
+    this.persistCheckpoint();
     this.updatedAt = nowIso();
 
     return this.status();
@@ -380,6 +457,7 @@ export class AutonomousWorker {
 
     this.state = 'running';
     this.pauseReason = null;
+    this.persistCheckpoint();
     this.updatedAt = nowIso();
 
     return this.status();
@@ -538,6 +616,13 @@ export class AutonomousWorker {
       this.state = 'running';
     }
 
+    this.persistCheckpoint();
+    if (this.runId && this.state === 'completed') {
+      recordExecutionStatus(this.runId, 'completed');
+    } else if (this.runId && this.state === 'failed') {
+      recordExecutionStatus(this.runId, 'failed');
+    }
+
     return {
       executed: true,
       taskId: nextTask.taskId,
@@ -582,7 +667,40 @@ export class AutonomousWorker {
     this.pauseReason = null;
     this.stopReason = null;
     this.startedAt = null;
+    this.runId = null;
     this.updatedAt = nowIso();
+  }
+
+  private persistCheckpoint(): void {
+    if (!this.runId || !this.roadmap) {
+      return;
+    }
+
+    const payload: WorkerCheckpointPayload = {
+      instanceId: this.instanceId,
+      organizationId: this.organizationId,
+      roadmap: this.roadmap,
+      tasks: this.tasks.map((task) => ({ ...task, dependsOn: [...task.dependsOn] })),
+      taskReports: this.taskReports.map((report) => ({
+        ...report,
+        files: [...report.files],
+        errors: [...report.errors],
+        warnings: [...report.warnings],
+      })),
+      state: this.state,
+      currentTaskId: this.currentTaskId,
+      pauseReason: this.pauseReason,
+      stopReason: this.stopReason,
+      startedAt: this.startedAt,
+      plannerSnapshot: this.planner.serialize(),
+    };
+
+    saveRuntimeCheckpoint({
+      runId: this.runId,
+      organizationId: this.organizationId,
+      stage: WORKER_CHECKPOINT_STAGE,
+      payload: payload as unknown as Record<string, unknown>,
+    });
   }
 
   getInstanceId(): string {
@@ -685,6 +803,7 @@ export class AutonomousWorker {
 
 export function createAutonomousWorker(options?: AutonomousWorkerOptions): AutonomousWorker {
   const instanceId = options?.instanceId?.trim() || 'default-autonomous-worker';
+  const organizationId = options?.organizationId?.trim() || 'default-org';
   const rootDir = options?.cwd?.trim() || null;
   const runner = options?.commandRunner ?? createCommandRunner({ cwd: rootDir ?? undefined });
   const aiTaskExecutorAdapter =
@@ -694,6 +813,7 @@ export function createAutonomousWorker(options?: AutonomousWorkerOptions): Auton
 
   return new AutonomousWorker(
     instanceId,
+    organizationId,
     options?.planner ?? createAutomationPlanner({ instanceId: `${instanceId}-planner` }),
     aiTaskExecutorAdapter,
     taskHandler,

@@ -1,5 +1,15 @@
 import { getModelCapabilities } from '@/services/runtime/gateway/capabilities';
 import { assertHttpSuccess, fetchWithTimeout } from '@/services/runtime/gateway/http-client';
+import {
+  fetchStreamingResponse,
+  parseNdjsonLine,
+  parseOpenAiSseLine,
+  readSseStream,
+} from '@/services/runtime/gateway/sse-stream';
+import {
+  clearStreamCancellation,
+  registerStreamCancellation,
+} from '@/services/runtime/gateway/stream-cancellation';
 import { ProviderAuthError } from '@/services/runtime/gateway/provider-errors';
 import type {
   ModelCapabilities,
@@ -123,20 +133,51 @@ export class HttpOpenAiCompatibleAdapter implements ProviderAdapter {
   }
 
   async *stream(request: NormalizedProviderRequest): AsyncGenerator<StreamChunk> {
-    const result = await this.complete(request);
-    const content = result.content ?? '';
-    if (content.length === 0) {
-      yield { contentDelta: '', finishReason: result.finishReason, done: true };
-      return;
+    const baseUrl = request.credentials.baseUrl?.replace(/\/$/, '');
+    if (!baseUrl) {
+      throw new ProviderAuthError(this.code, 'baseUrl is required');
     }
 
-    const midpoint = Math.ceil(content.length / 2);
-    yield { contentDelta: content.slice(0, midpoint), done: false };
-    yield {
-      contentDelta: content.slice(midpoint),
-      finishReason: result.finishReason,
-      done: true,
-    };
+    const signal = request.runId ? registerStreamCancellation(request.runId) : request.signal;
+
+    try {
+      const response = await fetchStreamingResponse(
+        `${baseUrl}${this.chatPath}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'text/event-stream',
+            ...(request.credentials.apiKey
+              ? { Authorization: `Bearer ${request.credentials.apiKey}` }
+              : {}),
+            ...(request.credentials.extraHeaders ?? {}),
+          },
+          body: JSON.stringify({
+            model: request.model,
+            messages: buildOpenAiMessages(request),
+            temperature: request.temperature,
+            max_tokens: request.maxTokens,
+            top_p: request.topP,
+            stream: true,
+          }),
+        },
+        request.timeoutMs,
+        this.code,
+        signal,
+      );
+
+      yield* readSseStream(response, {
+        timeoutMs: request.timeoutMs,
+        providerCode: this.code,
+        signal,
+        onLine: parseOpenAiSseLine,
+      });
+    } finally {
+      if (request.runId) {
+        clearStreamCancellation(request.runId);
+      }
+    }
   }
 
   async health(): Promise<ProviderHealthResult> {
@@ -205,8 +246,70 @@ export class HttpOllamaAdapter implements ProviderAdapter {
   }
 
   async *stream(request: NormalizedProviderRequest): AsyncGenerator<StreamChunk> {
-    const result = await this.complete(request);
-    yield { contentDelta: result.content ?? '', finishReason: 'stop', done: true };
+    const baseUrl = request.credentials.baseUrl?.replace(/\/$/, '');
+    if (!baseUrl) {
+      throw new ProviderAuthError(this.code, 'OLLAMA_BASE_URL is required');
+    }
+
+    const signal = request.runId ? registerStreamCancellation(request.runId) : request.signal;
+
+    try {
+      const response = await fetchStreamingResponse(
+        `${baseUrl}/api/chat`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: request.model,
+            messages: buildOpenAiMessages(request),
+            stream: true,
+            options: {
+              temperature: request.temperature,
+              num_predict: request.maxTokens,
+            },
+          }),
+        },
+        request.timeoutMs,
+        this.code,
+        signal,
+      );
+
+      if (!response.body) {
+        yield { contentDelta: '', finishReason: 'stop', done: true };
+        return;
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+
+        for (const line of lines) {
+          const chunk = parseNdjsonLine(line.trim());
+          if (chunk) {
+            yield chunk;
+            if (chunk.done) {
+              return;
+            }
+          }
+        }
+      }
+
+      yield { contentDelta: '', finishReason: 'stop', done: true };
+    } finally {
+      if (request.runId) {
+        clearStreamCancellation(request.runId);
+      }
+    }
   }
 
   async health(): Promise<ProviderHealthResult> {
