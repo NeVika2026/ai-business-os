@@ -93,6 +93,7 @@ export interface RuntimeBridgeOptions {
   gatewayAdapter?: import('@/services/runtime/runtime-gateway-adapter').RuntimeGatewayAdapter;
   toolAdapter?: import('@/services/runtime/runtime-tool-adapter').RuntimeToolAdapter;
   promptAdapter?: import('@/services/runtime/runtime-prompt-adapter').RuntimePromptAdapter;
+  memoryAdapter?: import('@/services/runtime/runtime-memory-adapter').RuntimeMemoryAdapter;
 }
 
 export const DEFAULT_RUNTIME_BRIDGE_INSTANCE_ID = 'default-bridge';
