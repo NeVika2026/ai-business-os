@@ -8,7 +8,6 @@ import { serializeAutonomousWorkerSnapshot } from '@/services/automation/autonom
 import type {
   AutonomousWorkerCommandResult,
   AutonomousWorkerCommandRunner,
-  AutonomousWorkerExternalExecutor,
   AutonomousWorkerNextTaskResult,
   AutonomousWorkerOptions,
   AutonomousWorkerReport,
@@ -19,14 +18,59 @@ import type {
   AutonomousWorkerTask,
   AutonomousWorkerTaskReport,
   AutonomousWorkerTaskStatus,
+  AutonomousWorkerExecutorResult,
   SerializedAutonomousWorkerSnapshot,
 } from '@/services/automation/autonomous-worker-types';
 import { createCommandRunner, type CommandRunner } from '@/services/automation/command-runner';
 import type { CommandRunResult } from '@/services/automation/command-runner-types';
+import {
+  createRoadmapTaskExecutor,
+  type RoadmapTaskExecutor,
+} from '@/services/automation/roadmap-task-executor';
+import type {
+  RoadmapTaskExecutionHandler,
+  RoadmapTaskExecutorResult,
+  RoadmapTaskInput,
+  RoadmapTaskStatus,
+} from '@/services/automation/roadmap-task-executor-types';
 import type { RoadmapInput } from '@/services/runtime/orchestrator/roadmap/roadmap-types';
 import { validateRoadmapInput } from '@/services/runtime/orchestrator/roadmap/roadmap-validator';
 
-const EXECUTOR_DURATION_MS = 100;
+function toRoadmapTaskStatus(status: AutonomousWorkerTaskStatus): RoadmapTaskStatus {
+  if (status === 'skipped') {
+    return 'failed';
+  }
+
+  return status;
+}
+
+function toRoadmapTaskInput(task: AutonomousWorkerTask): RoadmapTaskInput {
+  return {
+    id: task.taskId,
+    title: task.title,
+    description: task.description,
+    dependencies: [...task.dependsOn],
+    status: toRoadmapTaskStatus(task.status),
+    metadata: {
+      sprintId: task.sprintId,
+      code: task.code,
+      skipLint: task.skipLint,
+      skipBuild: task.skipBuild,
+      includeTests: task.includeTests,
+    },
+  };
+}
+
+function mapTaskExecutorResult(result: RoadmapTaskExecutorResult): AutonomousWorkerExecutorResult {
+  return {
+    success: result.success,
+    files: [...result.filesChanged],
+    errors: [...result.errors],
+    warnings: [...result.warnings],
+    output: result.report.title,
+    durationMs: result.durationMs,
+  };
+}
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
@@ -84,16 +128,14 @@ function createWorkerCommandRunner(runner: CommandRunner): AutonomousWorkerComma
   };
 }
 
-function createDefaultExecutor(): AutonomousWorkerExternalExecutor {
+function createDefaultTaskHandler(): RoadmapTaskExecutionHandler {
   return {
-    execute({ task, sprint }) {
+    execute(task) {
       return {
         success: true,
-        files: [`services/automation/${task.taskId}.ts`],
-        errors: [],
+        filesChanged: [`services/automation/${task.id}.ts`],
         warnings: [],
-        output: `Executed sprint ${sprint.code}: ${sprint.title}`,
-        durationMs: EXECUTOR_DURATION_MS,
+        errors: [],
       };
     },
   };
@@ -225,12 +267,14 @@ export class AutonomousWorker {
   private pauseReason: string | null = null;
   private stopReason: string | null = null;
   private startedAt: string | null = null;
+  private taskExecutor: RoadmapTaskExecutor | null = null;
   private updatedAt = nowIso();
 
   constructor(
     private readonly instanceId: string,
-    private readonly executor: AutonomousWorkerExternalExecutor,
+    private readonly taskHandler: RoadmapTaskExecutionHandler,
     private readonly commandRunner: AutonomousWorkerCommandRunner,
+    private readonly injectedTaskExecutor: RoadmapTaskExecutor | null = null,
   ) {}
 
   start(input: AutonomousWorkerStartInput): AutonomousWorkerStatusView {
@@ -241,6 +285,7 @@ export class AutonomousWorker {
     this.roadmap = input.roadmap;
     this.tasks = buildTasksFromRoadmap(input.roadmap);
     this.taskReports = [];
+    this.taskExecutor = this.createTaskExecutorForRoadmap();
     this.state = 'running';
     this.currentTaskId = null;
     this.pauseReason = null;
@@ -346,7 +391,10 @@ export class AutonomousWorker {
     this.currentTaskId = nextTask.taskId;
     this.updatedAt = startedAt;
 
-    const executorResult = this.executor.execute({ task: nextTask, sprint });
+    const taskExecutor = this.requireTaskExecutor();
+    const executorResult = mapTaskExecutorResult(
+      taskExecutor.execute(toRoadmapTaskInput(nextTask)),
+    );
     const errors = [...executorResult.errors];
     const warnings = [...executorResult.warnings];
     let lintResult: AutonomousWorkerCommandResult | null = null;
@@ -459,6 +507,7 @@ export class AutonomousWorker {
     this.roadmap = null;
     this.tasks = [];
     this.taskReports = [];
+    this.taskExecutor = null;
     this.state = 'idle';
     this.currentTaskId = null;
     this.pauseReason = null;
@@ -469,6 +518,33 @@ export class AutonomousWorker {
 
   getInstanceId(): string {
     return this.instanceId;
+  }
+
+  private createTaskExecutorForRoadmap(): RoadmapTaskExecutor {
+    const tasks = this.tasks.map(toRoadmapTaskInput);
+
+    if (this.injectedTaskExecutor) {
+      this.injectedTaskExecutor.reset();
+      return createRoadmapTaskExecutor({
+        instanceId: this.injectedTaskExecutor.getInstanceId(),
+        tasks,
+        handler: this.taskHandler,
+      });
+    }
+
+    return createRoadmapTaskExecutor({
+      instanceId: `${this.instanceId}-task-executor`,
+      tasks,
+      handler: this.taskHandler,
+    });
+  }
+
+  private requireTaskExecutor(): RoadmapTaskExecutor {
+    if (!this.taskExecutor) {
+      throw new AutonomousWorkerNotStartedError();
+    }
+
+    return this.taskExecutor;
   }
 
   private validateStartInput(input: AutonomousWorkerStartInput): void {
@@ -539,8 +615,9 @@ export function createAutonomousWorker(options?: AutonomousWorkerOptions): Auton
 
   return new AutonomousWorker(
     instanceId,
-    options?.executor ?? createDefaultExecutor(),
+    options?.taskHandler ?? createDefaultTaskHandler(),
     createWorkerCommandRunner(runner),
+    options?.taskExecutor ?? null,
   );
 }
 

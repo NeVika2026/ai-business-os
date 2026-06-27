@@ -1,9 +1,8 @@
 import type { ISODateTime } from '@/types/runtime/dto';
 import type { CommandRunner } from '@/services/automation/command-runner';
-import type {
-  RoadmapInput,
-  RoadmapSprintInput,
-} from '@/services/runtime/orchestrator/roadmap/roadmap-types';
+import type { RoadmapTaskExecutor } from '@/services/automation/roadmap-task-executor';
+import type { RoadmapTaskExecutionHandler } from '@/services/automation/roadmap-task-executor-types';
+import type { RoadmapInput } from '@/services/runtime/orchestrator/roadmap/roadmap-types';
 
 export type AutonomousWorkerState =
   | 'idle'
@@ -126,13 +125,6 @@ export interface AutonomousWorkerSnapshot {
   updatedAt: ISODateTime;
 }
 
-export interface AutonomousWorkerExternalExecutor {
-  execute(input: {
-    task: AutonomousWorkerTask;
-    sprint: RoadmapSprintInput;
-  }): AutonomousWorkerExecutorResult;
-}
-
 export interface AutonomousWorkerCommandRunner {
   lint(): AutonomousWorkerCommandResult;
   build(): AutonomousWorkerCommandResult;
@@ -141,7 +133,8 @@ export interface AutonomousWorkerCommandRunner {
 
 export interface AutonomousWorkerOptions {
   instanceId?: string;
-  executor?: AutonomousWorkerExternalExecutor;
+  taskHandler?: RoadmapTaskExecutionHandler;
+  taskExecutor?: RoadmapTaskExecutor;
   commandRunner?: CommandRunner;
   cwd?: string;
 }
