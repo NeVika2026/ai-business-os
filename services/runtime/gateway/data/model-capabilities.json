@@ -1,0 +1,110 @@
+{
+  "openai": {
+    "gpt-4o": {
+      "contextWindow": 128000,
+      "supportsTools": true,
+      "supportsVision": true,
+      "supportsJson": true,
+      "supportsStreaming": true,
+      "supportsReasoning": false
+    },
+    "gpt-4o-mini": {
+      "contextWindow": 128000,
+      "supportsTools": true,
+      "supportsVision": true,
+      "supportsJson": true,
+      "supportsStreaming": true,
+      "supportsReasoning": false
+    }
+  },
+  "anthropic": {
+    "claude-sonnet-4": {
+      "contextWindow": 200000,
+      "supportsTools": true,
+      "supportsVision": true,
+      "supportsJson": true,
+      "supportsStreaming": true,
+      "supportsReasoning": false
+    },
+    "claude-haiku-4": {
+      "contextWindow": 200000,
+      "supportsTools": true,
+      "supportsVision": false,
+      "supportsJson": true,
+      "supportsStreaming": true,
+      "supportsReasoning": false
+    }
+  },
+  "gemini": {
+    "gemini-2.0-pro": {
+      "contextWindow": 1000000,
+      "supportsTools": true,
+      "supportsVision": true,
+      "supportsJson": true,
+      "supportsStreaming": true,
+      "supportsReasoning": false
+    },
+    "gemini-2.0-flash": {
+      "contextWindow": 1000000,
+      "supportsTools": true,
+      "supportsVision": true,
+      "supportsJson": true,
+      "supportsStreaming": true,
+      "supportsReasoning": false
+    }
+  },
+  "groq": {
+    "llama-3.3-70b-versatile": {
+      "contextWindow": 128000,
+      "supportsTools": true,
+      "supportsVision": false,
+      "supportsJson": true,
+      "supportsStreaming": true,
+      "supportsReasoning": false
+    },
+    "mixtral-8x7b-32768": {
+      "contextWindow": 32768,
+      "supportsTools": false,
+      "supportsVision": false,
+      "supportsJson": true,
+      "supportsStreaming": true,
+      "supportsReasoning": false
+    }
+  },
+  "openrouter": {
+    "openai/gpt-4o": {
+      "contextWindow": 128000,
+      "supportsTools": true,
+      "supportsVision": true,
+      "supportsJson": true,
+      "supportsStreaming": true,
+      "supportsReasoning": false
+    },
+    "anthropic/claude-sonnet-4": {
+      "contextWindow": 200000,
+      "supportsTools": true,
+      "supportsVision": true,
+      "supportsJson": true,
+      "supportsStreaming": true,
+      "supportsReasoning": false
+    }
+  },
+  "ollama": {
+    "llama3.2": {
+      "contextWindow": 128000,
+      "supportsTools": false,
+      "supportsVision": false,
+      "supportsJson": false,
+      "supportsStreaming": true,
+      "supportsReasoning": false
+    },
+    "mistral": {
+      "contextWindow": 32768,
+      "supportsTools": false,
+      "supportsVision": false,
+      "supportsJson": false,
+      "supportsStreaming": true,
+      "supportsReasoning": false
+    }
+  }
+}

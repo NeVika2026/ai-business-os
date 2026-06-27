@@ -1,0 +1,74 @@
+{
+  "openai": {
+    "gpt-4o": {
+      "inputPer1k": 0.005,
+      "outputPer1k": 0.015,
+      "currency": "USD"
+    },
+    "gpt-4o-mini": {
+      "inputPer1k": 0.00015,
+      "outputPer1k": 0.0006,
+      "currency": "USD"
+    }
+  },
+  "anthropic": {
+    "claude-sonnet-4": {
+      "inputPer1k": 0.003,
+      "outputPer1k": 0.015,
+      "currency": "USD"
+    },
+    "claude-haiku-4": {
+      "inputPer1k": 0.00025,
+      "outputPer1k": 0.00125,
+      "currency": "USD"
+    }
+  },
+  "gemini": {
+    "gemini-2.0-pro": {
+      "inputPer1k": 0.00125,
+      "outputPer1k": 0.005,
+      "currency": "USD"
+    },
+    "gemini-2.0-flash": {
+      "inputPer1k": 0.0001,
+      "outputPer1k": 0.0004,
+      "currency": "USD"
+    }
+  },
+  "groq": {
+    "llama-3.3-70b-versatile": {
+      "inputPer1k": 0.00059,
+      "outputPer1k": 0.00079,
+      "currency": "USD"
+    },
+    "mixtral-8x7b-32768": {
+      "inputPer1k": 0.00024,
+      "outputPer1k": 0.00024,
+      "currency": "USD"
+    }
+  },
+  "openrouter": {
+    "openai/gpt-4o": {
+      "inputPer1k": 0.005,
+      "outputPer1k": 0.015,
+      "currency": "USD"
+    },
+    "anthropic/claude-sonnet-4": {
+      "inputPer1k": 0.003,
+      "outputPer1k": 0.015,
+      "currency": "USD"
+    }
+  },
+  "ollama": {
+    "llama3.2": {
+      "inputPer1k": 0,
+      "outputPer1k": 0,
+      "currency": "USD"
+    },
+    "mistral": {
+      "inputPer1k": 0,
+      "outputPer1k": 0,
+      "currency": "USD"
+    }
+  }
+}
