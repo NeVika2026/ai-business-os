@@ -16,6 +16,15 @@ export interface RuntimePromptPreviewMessage {
   contentLength: number;
 }
 
+export interface RuntimePromptInjectedSectionPreview {
+  key: string;
+  title: string;
+  itemCount: number;
+  contentPreview: string;
+  contentLength: number;
+  truncated: boolean;
+}
+
 export interface RuntimePromptPreviewResponse {
   model: string;
   compilerVersion: string;
@@ -24,6 +33,7 @@ export interface RuntimePromptPreviewResponse {
   toolCount: number;
   roles: string[];
   messages: RuntimePromptPreviewMessage[];
+  injectedSections: RuntimePromptInjectedSectionPreview[];
 }
 
 export type RuntimePromptOperation = 'compile' | 'validate' | 'preview' | null;

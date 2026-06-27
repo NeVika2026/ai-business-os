@@ -1,4 +1,10 @@
 import { compilePrompt } from '@/services/runtime/prompt/prompt-compiler';
+import {
+  buildInjectedContextSections,
+  selectInjectedContext,
+} from '@/services/runtime/prompt/injected-context';
+import { getPromptLimits } from '@/services/runtime/prompt/limits';
+import { INJECTED_SECTION_TITLES } from '@/services/runtime/prompt/types';
 import { estimateMessagesTokens } from '@/services/runtime/prompt/tokens';
 import type { CompilePromptInput } from '@/services/runtime/prompt/types';
 import {
@@ -86,7 +92,45 @@ function truncatePreview(content: string, maxChars: number): string {
   return `${content.slice(0, maxChars)}…`;
 }
 
+function buildInjectedSectionPreviews(
+  request: RuntimePromptCompileRequest,
+): RuntimePromptPreviewResponse['injectedSections'] {
+  const limits = getPromptLimits();
+  const selection = selectInjectedContext(request, limits);
+  const sections = buildInjectedContextSections(selection);
+
+  return sections.map((section) => {
+    const itemCount =
+      section.key === 'relevant-knowledge'
+        ? selection.knowledge.length
+        : section.key === 'relevant-memory-facts'
+          ? selection.facts.length
+          : section.key === 'relevant-memory-entities'
+            ? selection.entities.length
+            : selection.relations.length;
+
+    const title =
+      section.key === 'relevant-knowledge'
+        ? INJECTED_SECTION_TITLES.knowledge
+        : section.key === 'relevant-memory-facts'
+          ? INJECTED_SECTION_TITLES.facts
+          : section.key === 'relevant-memory-entities'
+            ? INJECTED_SECTION_TITLES.entities
+            : INJECTED_SECTION_TITLES.relations;
+
+    return {
+      key: section.key,
+      title,
+      itemCount,
+      contentPreview: truncatePreview(section.content, RUNTIME_PROMPT_PREVIEW_MAX_CHARS),
+      contentLength: section.content.length,
+      truncated: selection.truncated,
+    };
+  });
+}
+
 function buildPreview(
+  request: RuntimePromptCompileRequest,
   compiled: RuntimePromptCompileResponse,
   estimatedTokens: number,
 ): RuntimePromptPreviewResponse {
@@ -104,6 +148,7 @@ function buildPreview(
       contentPreview: truncatePreview(message.content, RUNTIME_PROMPT_PREVIEW_MAX_CHARS),
       contentLength: message.content.length,
     })),
+    injectedSections: buildInjectedSectionPreviews(request),
   };
 }
 
@@ -153,7 +198,7 @@ export class RuntimePromptAdapter {
   preview(request: RuntimePromptCompileRequest): RuntimePromptPreviewResponse {
     const compiled = this.compile(request);
     const estimatedTokens = this.dependencies.estimateTokens(compiled.messages);
-    const preview = buildPreview(compiled, estimatedTokens);
+    const preview = buildPreview(request, compiled, estimatedTokens);
     this.touch('preview', request.context.trace.runId, compiled.model);
     return serializeRuntimePromptPreview(preview);
   }

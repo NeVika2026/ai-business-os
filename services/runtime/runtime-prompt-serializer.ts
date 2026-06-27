@@ -1,5 +1,6 @@
 import type { PromptRequest } from '@/types/runtime/dto';
 import type {
+  RuntimePromptInjectedSectionPreview,
   RuntimePromptPreviewResponse,
   RuntimePromptSnapshot,
   SerializedRuntimePromptRequest,
@@ -30,6 +31,19 @@ export function serializeRuntimePromptRequest(
   };
 }
 
+function serializeInjectedSectionPreview(
+  section: RuntimePromptInjectedSectionPreview,
+): RuntimePromptInjectedSectionPreview {
+  return {
+    key: section.key,
+    title: section.title,
+    itemCount: section.itemCount,
+    contentPreview: section.contentPreview,
+    contentLength: section.contentLength,
+    truncated: section.truncated,
+  };
+}
+
 export function serializeRuntimePromptPreview(
   preview: RuntimePromptPreviewResponse,
 ): RuntimePromptPreviewResponse {
@@ -45,5 +59,6 @@ export function serializeRuntimePromptPreview(
       contentPreview: message.contentPreview,
       contentLength: message.contentLength,
     })),
+    injectedSections: preview.injectedSections.map(serializeInjectedSectionPreview),
   };
 }

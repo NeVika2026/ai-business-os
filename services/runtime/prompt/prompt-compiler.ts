@@ -2,7 +2,10 @@ import { formatPromptMessages } from '@/services/runtime/prompt/formatter';
 import { getPromptLimits, type PromptLimits } from '@/services/runtime/prompt/limits';
 import { buildCrmSection } from '@/services/runtime/prompt/sections/crm';
 import { buildEmployeeSection } from '@/services/runtime/prompt/sections/employee';
-import { buildKnowledgeSection } from '@/services/runtime/prompt/sections/knowledge';
+import {
+  buildInjectedContextSections,
+  selectInjectedContext,
+} from '@/services/runtime/prompt/injected-context';
 import { buildMemorySection } from '@/services/runtime/prompt/sections/memory';
 import { buildSafetySection } from '@/services/runtime/prompt/sections/safety';
 import { buildSystemSection } from '@/services/runtime/prompt/sections/system';
@@ -63,10 +66,13 @@ function buildOrderedSections(
   limits: PromptLimits,
   templateId: PromptTemplateId,
 ) {
+  const injectedSelection = selectInjectedContext(input, limits);
+  const injectedSections = buildInjectedContextSections(injectedSelection);
+
   return [
     buildSystemSection(templateId),
     buildEmployeeSection(input.context),
-    buildKnowledgeSection(input.knowledge, limits),
+    ...injectedSections,
     buildMemorySection(input.memory, limits),
     buildCrmSection(input.crmItems, limits),
     buildUserSection(input.context),
