@@ -1,5 +1,3 @@
-import { executeRuntime } from '@/services/runtime/executor';
-import { resolveTrace, validateAgentExecution } from '@/services/runtime/pipeline';
 import {
   buildRuntimeBridgeReport,
   serializeRuntimeBridgeSnapshot,
@@ -40,6 +38,10 @@ import {
   createRuntimeContextAdapter,
   type RuntimeContextAdapter,
 } from '@/services/runtime/runtime-context-adapter';
+import {
+  createRuntimePipelineAdapter,
+  type RuntimePipelineAdapter,
+} from '@/services/runtime/runtime-pipeline-adapter';
 import {
   createRuntime as createOrchestratorRuntime,
   Runtime as OrchestratorRuntime,
@@ -152,13 +154,17 @@ export class RuntimeBridge {
     private readonly promptAdapter: RuntimePromptAdapter,
     private readonly memoryAdapter: RuntimeMemoryAdapter,
     private readonly contextAdapter: RuntimeContextAdapter,
+    private readonly pipelineAdapter: RuntimePipelineAdapter,
   ) {}
 
   async executeAgent(
     execution: AgentExecution,
     options?: RuntimeBridgeExecuteAgentOptions,
   ): Promise<AgentResult> {
-    validateAgentExecution(execution);
+    const validation = this.pipelineAdapter.validate(execution);
+    if (!validation.valid) {
+      throw new RuntimeBridgeValidationError(validation.errors.join('; '));
+    }
 
     this.mode = 'agent';
     const useLegacy = options?.useLegacyPipeline ?? !this.orchestrationOnly;
@@ -221,6 +227,7 @@ export class RuntimeBridge {
     this.promptAdapter.reset();
     this.memoryAdapter.reset();
     this.contextAdapter.reset();
+    this.pipelineAdapter.reset();
     this.provider.reset?.();
   }
 
@@ -248,8 +255,12 @@ export class RuntimeBridge {
     return this.contextAdapter;
   }
 
+  getPipelineAdapter(): RuntimePipelineAdapter {
+    return this.pipelineAdapter;
+  }
+
   private async executeAgentOrchestration(execution: AgentExecution): Promise<AgentResult> {
-    const trace = resolveTrace(execution);
+    const trace = this.pipelineAdapter.resolveTrace(execution);
     const context = toRuntimeExecutionContext(execution, trace);
     const runner = this.facade.getRunner();
 
@@ -283,13 +294,15 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
 
   const facade = options?.facade ?? createOrchestratorRuntime(options?.facadeOptions);
   const provider = options?.provider ?? defaultBridgeProvider;
-  const legacyExecute = options?.legacyExecute ?? executeRuntime;
   const orchestrationOnly = options?.orchestrationOnly ?? true;
   const gatewayAdapter = options?.gatewayAdapter ?? createRuntimeGatewayAdapter();
   const toolAdapter = options?.toolAdapter ?? createRuntimeToolAdapter();
   const promptAdapter = options?.promptAdapter ?? createRuntimePromptAdapter();
   const memoryAdapter = options?.memoryAdapter ?? createRuntimeMemoryAdapter();
   const contextAdapter = options?.contextAdapter ?? createRuntimeContextAdapter();
+  const pipelineAdapter = options?.pipelineAdapter ?? createRuntimePipelineAdapter();
+  const legacyExecute =
+    options?.legacyExecute ?? ((execution: AgentExecution) => pipelineAdapter.execute(execution));
 
   return new RuntimeBridge(
     facade,
@@ -302,6 +315,7 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
     promptAdapter,
     memoryAdapter,
     contextAdapter,
+    pipelineAdapter,
   );
 }
 

@@ -95,6 +95,7 @@ export interface RuntimeBridgeOptions {
   promptAdapter?: import('@/services/runtime/runtime-prompt-adapter').RuntimePromptAdapter;
   memoryAdapter?: import('@/services/runtime/runtime-memory-adapter').RuntimeMemoryAdapter;
   contextAdapter?: import('@/services/runtime/runtime-context-adapter').RuntimeContextAdapter;
+  pipelineAdapter?: import('@/services/runtime/runtime-pipeline-adapter').RuntimePipelineAdapter;
 }
 
 export const DEFAULT_RUNTIME_BRIDGE_INSTANCE_ID = 'default-bridge';
