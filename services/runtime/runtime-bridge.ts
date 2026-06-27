@@ -47,6 +47,10 @@ import {
   type RuntimeExecution,
 } from '@/services/runtime/runtime-execution';
 import {
+  createRuntimeValidator,
+  type RuntimeValidator,
+} from '@/services/runtime/runtime-validator';
+import {
   createRuntime as createOrchestratorRuntime,
   Runtime as OrchestratorRuntime,
 } from '@/services/runtime/runtime/runtime';
@@ -146,6 +150,7 @@ const defaultBridgeProvider = new InMemoryRuntimeBridgeProvider();
 export class RuntimeBridge {
   private mode: RuntimeBridgeMode = 'idle';
   private lastAgentResult: AgentResult | null = null;
+  private runtimeValidator: RuntimeValidator | null = null;
 
   constructor(
     private readonly facade: OrchestratorRuntime,
@@ -160,7 +165,10 @@ export class RuntimeBridge {
     private readonly contextAdapter: RuntimeContextAdapter,
     private readonly pipelineAdapter: RuntimePipelineAdapter,
     private readonly execution: RuntimeExecution,
-  ) {}
+    validator?: RuntimeValidator,
+  ) {
+    this.runtimeValidator = validator ?? null;
+  }
 
   async executeAgent(
     execution: AgentExecution,
@@ -271,6 +279,14 @@ export class RuntimeBridge {
     return this.execution;
   }
 
+  getValidator(): RuntimeValidator {
+    if (!this.runtimeValidator) {
+      this.runtimeValidator = createRuntimeValidator({ bridge: this });
+    }
+
+    return this.runtimeValidator;
+  }
+
   private async executeAgentOrchestration(execution: AgentExecution): Promise<AgentResult> {
     const trace = this.pipelineAdapter.resolveTrace(execution);
     const context = toRuntimeExecutionContext(execution, trace);
@@ -341,6 +357,7 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
     contextAdapter,
     pipelineAdapter,
     execution,
+    options?.validator,
   );
 }
 

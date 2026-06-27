@@ -98,6 +98,7 @@ export interface RuntimeBridgeOptions {
   contextAdapter?: import('@/services/runtime/runtime-context-adapter').RuntimeContextAdapter;
   pipelineAdapter?: import('@/services/runtime/runtime-pipeline-adapter').RuntimePipelineAdapter;
   execution?: import('@/services/runtime/runtime-execution').RuntimeExecution;
+  validator?: import('@/services/runtime/runtime-validator').RuntimeValidator;
 }
 
 export const DEFAULT_RUNTIME_BRIDGE_INSTANCE_ID = 'default-bridge';
