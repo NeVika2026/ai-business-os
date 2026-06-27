@@ -39,6 +39,11 @@ export function serializeMemoryFact(fact: MemoryFact): SerializedMemoryFact {
     createdAt: fact.createdAt,
     updatedAt: fact.updatedAt,
     metadata: nullifyRecord(fact.metadata),
+    importance: fact.importance,
+    accessCount: fact.accessCount,
+    lastAccessedAt: fact.lastAccessedAt ?? null,
+    pin: fact.pin,
+    archived: fact.archived,
   };
 }
 

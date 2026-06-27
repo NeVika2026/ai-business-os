@@ -6,6 +6,17 @@ import {
   MemoryValidationError,
 } from '@/services/memory/memory-engine-errors';
 import { serializeMemoryEngineSnapshot } from '@/services/memory/memory-engine-serializer';
+import {
+  MemoryImportanceNotFoundError,
+  MemoryImportanceValidationError,
+} from '@/services/memory/memory-importance-errors';
+import {
+  calculateImportanceScore,
+  createDefaultImportanceFields,
+  createMemoryImportance,
+  type MemoryImportance,
+} from '@/services/memory/memory-importance';
+import type { MemoryImportanceFactPatch } from '@/services/memory/memory-importance-types';
 import type {
   MemoryEngineOptions,
   MemoryEngineSnapshot,
@@ -159,12 +170,20 @@ export class MemoryEngine {
   private readonly entityStore = new Map<string, MemoryEntity>();
   private readonly relationStore = new Map<string, MemoryRelation>();
   private readonly aliasIndex = new Map<string, string>();
+  private readonly importance: MemoryImportance;
   private updatedAt = nowIso();
 
   constructor(
     private readonly instanceId: string,
     private readonly defaultConfidence: number,
-  ) {}
+  ) {
+    this.importance = createMemoryImportance({ instanceId: `${instanceId}-importance` });
+    this.importance.bindStore({
+      getFact: (id) => this.factStore.get(id) ?? null,
+      getFacts: () => [...this.factStore.values()],
+      updateFact: (id, patch) => this.patchImportanceFields(id, patch),
+    });
+  }
 
   remember(input: RememberInput): MemoryFact {
     this.validateRememberInput(input);
@@ -195,8 +214,9 @@ export class MemoryEngine {
       existingFact.metadata = mergeMetadata(existingFact.metadata, input.metadata ?? {});
       existingFact.entityIds = uniqueStrings([...existingFact.entityIds, ...uniqueEntityIds]);
       existingFact.updatedAt = timestamp;
+      this.applyCalculatedImportance(existingFact);
       this.linkFactToEntities(existingFact);
-      this.touch();
+      this.markUpdated();
       return existingFact;
     }
 
@@ -210,11 +230,13 @@ export class MemoryEngine {
       createdAt: timestamp,
       updatedAt: timestamp,
       metadata: { ...(input.metadata ?? {}) },
+      ...createDefaultImportanceFields(),
     };
 
+    this.applyCalculatedImportance(fact);
     this.factStore.set(fact.id, fact);
     this.linkFactToEntities(fact);
-    this.touch();
+    this.markUpdated();
     return fact;
   }
 
@@ -225,19 +247,19 @@ export class MemoryEngine {
 
     if (this.factStore.has(id)) {
       this.forgetFact(id);
-      this.touch();
+      this.markUpdated();
       return;
     }
 
     if (this.entityStore.has(id)) {
       this.forgetEntity(id);
-      this.touch();
+      this.markUpdated();
       return;
     }
 
     if (this.relationStore.has(id)) {
       this.forgetRelation(id);
-      this.touch();
+      this.markUpdated();
       return;
     }
 
@@ -301,6 +323,65 @@ export class MemoryEngine {
       .sort((left, right) => left.createdAt.localeCompare(right.createdAt));
   }
 
+  activeFacts(filter?: MemoryFactFilter): MemoryFact[] {
+    return this.facts(filter)
+      .filter((fact) => !fact.archived)
+      .sort((left, right) => left.createdAt.localeCompare(right.createdAt));
+  }
+
+  touch(id: string): MemoryFact {
+    return this.importance.updateAccess(id);
+  }
+
+  pin(id: string): MemoryFact {
+    const fact = this.requireFact(id);
+    if (fact.archived) {
+      throw new MemoryImportanceValidationError('archived facts cannot be pinned');
+    }
+
+    return this.patchImportanceFields(id, {
+      pin: true,
+      importance: 100,
+    });
+  }
+
+  unpin(id: string): MemoryFact {
+    const fact = this.patchImportanceFields(id, { pin: false });
+    this.applyCalculatedImportance(fact);
+    return fact;
+  }
+
+  archive(id: string): MemoryFact {
+    const fact = this.requireFact(id);
+    if (fact.pin) {
+      throw new MemoryImportanceValidationError('pinned facts cannot be archived');
+    }
+
+    return this.patchImportanceFields(id, { archived: true });
+  }
+
+  restore(id: string): MemoryFact {
+    const fact = this.patchImportanceFields(id, { archived: false });
+    this.applyCalculatedImportance(fact);
+    return fact;
+  }
+
+  rebuildImportance() {
+    return this.importance.rebuild();
+  }
+
+  decayImportance() {
+    return this.importance.decay();
+  }
+
+  getImportance(): MemoryImportance {
+    return this.importance;
+  }
+
+  importanceStatistics() {
+    return this.importance.statistics();
+  }
+
   entities(filter?: MemoryEntityFilter): MemoryEntity[] {
     return [...this.entityStore.values()]
       .filter((entity) => this.matchesEntityFilter(entity, filter))
@@ -331,7 +412,8 @@ export class MemoryEngine {
     this.entityStore.clear();
     this.relationStore.clear();
     this.aliasIndex.clear();
-    this.touch();
+    this.importance.reset();
+    this.markUpdated();
   }
 
   getInstanceId(): string {
@@ -643,8 +725,9 @@ export class MemoryEngine {
       this.relinkFactId(id, nextId);
     }
 
+    this.applyCalculatedImportance(updated);
     this.factStore.set(updated.id, updated);
-    this.touch();
+    this.markUpdated();
     return updated;
   }
 
@@ -682,7 +765,7 @@ export class MemoryEngine {
     entity.createdAt = entity.createdAt;
     entity.updatedAt = nowIso();
     this.registerEntityAliases(entity);
-    this.touch();
+    this.markUpdated();
     return entity;
   }
 
@@ -732,7 +815,7 @@ export class MemoryEngine {
 
     this.relationStore.set(updated.id, updated);
     this.linkRelationToEntities(updated);
-    this.touch();
+    this.markUpdated();
     return updated;
   }
 
@@ -911,7 +994,76 @@ export class MemoryEngine {
     };
   }
 
-  private touch(): void {
+  private applyCalculatedImportance(fact: MemoryFact): void {
+    if (fact.pin) {
+      fact.importance = 100;
+      return;
+    }
+
+    const calculated = calculateImportanceScore(fact, [...this.factStore.values()]);
+    fact.importance = calculated.importance;
+  }
+
+  private patchImportanceFields(id: string, patch: Partial<MemoryImportanceFactPatch>): MemoryFact {
+    const fact = this.requireFact(id);
+
+    if (patch.importance !== undefined) {
+      if (patch.importance < 0 || patch.importance > 100) {
+        throw new MemoryImportanceValidationError('importance must be between 0 and 100');
+      }
+      fact.importance = patch.importance;
+    }
+
+    if (patch.accessCount !== undefined) {
+      fact.accessCount = patch.accessCount;
+    }
+
+    if (patch.lastAccessedAt !== undefined) {
+      fact.lastAccessedAt = patch.lastAccessedAt;
+    }
+
+    if (patch.pin !== undefined) {
+      fact.pin = patch.pin;
+    }
+
+    if (patch.archived !== undefined) {
+      fact.archived = patch.archived;
+    }
+
+    fact.updatedAt = nowIso();
+    this.factStore.set(fact.id, fact);
+    this.markUpdated();
+    return fact;
+  }
+
+  private requireFact(id: string): MemoryFact {
+    if (!isNonEmptyString(id)) {
+      throw new MemoryValidationError('id is required');
+    }
+
+    const fact = this.factStore.get(id);
+    if (!fact) {
+      throw new MemoryImportanceNotFoundError(`memory fact not found: ${id}`);
+    }
+
+    return this.normalizeFact(fact);
+  }
+
+  private normalizeFact(fact: MemoryFact): MemoryFact {
+    const defaults = createDefaultImportanceFields();
+
+    return {
+      ...fact,
+      importance: typeof fact.importance === 'number' ? fact.importance : defaults.importance,
+      accessCount: typeof fact.accessCount === 'number' ? fact.accessCount : defaults.accessCount,
+      lastAccessedAt:
+        fact.lastAccessedAt === undefined ? defaults.lastAccessedAt : fact.lastAccessedAt,
+      pin: typeof fact.pin === 'boolean' ? fact.pin : defaults.pin,
+      archived: typeof fact.archived === 'boolean' ? fact.archived : defaults.archived,
+    };
+  }
+
+  private markUpdated(): void {
     this.updatedAt = nowIso();
   }
 }

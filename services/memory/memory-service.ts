@@ -130,7 +130,7 @@ export class MemoryService {
         errors,
       );
 
-      this.touch('process', normalized.text, result);
+      this.recordOperation('process', normalized.text, result);
       return result;
     }
 
@@ -223,7 +223,7 @@ export class MemoryService {
       errors,
     );
 
-    this.touch('process', normalized.text, result);
+    this.recordOperation('process', normalized.text, result);
     return result;
   }
 
@@ -231,7 +231,7 @@ export class MemoryService {
     const normalized = this.validateServiceInput(input);
     const extraction = this.extractor.preview(toExtractorInput(normalized));
 
-    this.touch('preview', normalized.text, null);
+    this.recordOperation('preview', normalized.text, null);
 
     return {
       input: extraction.input,
@@ -250,14 +250,14 @@ export class MemoryService {
 
   remember(input: RememberInput): MemoryFact {
     const remembered = this.engine.remember(input);
-    this.touch('remember', input.text, null);
+    this.recordOperation('remember', input.text, null);
     return remembered;
   }
 
   search(query: string): MemorySearchResult {
     const retrieved = this.retriever.retrieve({
       query,
-      facts: this.engine.facts(),
+      facts: this.engine.activeFacts(),
       entities: this.engine.entities(),
       relations: this.engine.relations(),
     });
@@ -284,7 +284,7 @@ export class MemoryService {
   retrieve(query: string) {
     return this.retriever.retrieve({
       query,
-      facts: this.engine.facts(),
+      facts: this.engine.activeFacts(),
       entities: this.engine.entities(),
       relations: this.engine.relations(),
     });
@@ -292,6 +292,50 @@ export class MemoryService {
 
   getRetriever(): MemoryRetriever {
     return this.retriever;
+  }
+
+  touch(id: string): MemoryFact {
+    const fact = this.engine.touch(id);
+    this.updatedAt = nowIso();
+    return fact;
+  }
+
+  pin(id: string): MemoryFact {
+    const fact = this.engine.pin(id);
+    this.updatedAt = nowIso();
+    return fact;
+  }
+
+  unpin(id: string): MemoryFact {
+    const fact = this.engine.unpin(id);
+    this.updatedAt = nowIso();
+    return fact;
+  }
+
+  archive(id: string): MemoryFact {
+    const fact = this.engine.archive(id);
+    this.updatedAt = nowIso();
+    return fact;
+  }
+
+  restore(id: string): MemoryFact {
+    const fact = this.engine.restore(id);
+    this.updatedAt = nowIso();
+    return fact;
+  }
+
+  rebuildImportance() {
+    const result = this.engine.rebuildImportance();
+    this.updatedAt = nowIso();
+    return result;
+  }
+
+  importanceStatistics() {
+    return this.engine.importanceStatistics();
+  }
+
+  getImportance() {
+    return this.engine.getImportance();
   }
 
   facts(filter?: MemoryFactFilter): MemoryFact[] {
@@ -450,7 +494,7 @@ export class MemoryService {
     };
   }
 
-  private touch(
+  private recordOperation(
     operation: MemoryServiceSnapshot['lastOperation'],
     input: string,
     result: MemoryProcessResult | null,

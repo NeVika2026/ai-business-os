@@ -28,8 +28,14 @@ import {
   MEMORY_RETRIEVER_MAX_ENTITIES,
   MEMORY_RETRIEVER_MAX_FACTS,
   MEMORY_RETRIEVER_MAX_RELATIONS,
-  MEMORY_RETRIEVER_SCORE_MAX,
 } from '@/services/memory/memory-retriever-types';
+
+const MEMORY_RETRIEVER_SCORE_MAX_WITH_IMPORTANCE = 120;
+const MEMORY_RETRIEVER_IMPORTANCE_WEIGHT_MAX = 20;
+
+interface MemoryRetrieverScoreComponentsWithImportance extends MemoryRetrieverScoreComponents {
+  importance: number;
+}
 
 interface RankedItem {
   kind: 'fact' | 'entity' | 'relation';
@@ -134,23 +140,78 @@ function frequencyScore(count: number): number {
   return Math.min(10, Math.max(0, count));
 }
 
-function totalScore(components: MemoryRetrieverScoreComponents): number {
+function readFactImportance(fact: MemoryFact): number {
+  return fact.importance;
+}
+
+function importanceRankingScore(importance: number): number {
+  return Math.min(MEMORY_RETRIEVER_IMPORTANCE_WEIGHT_MAX, Math.round(importance * 0.2));
+}
+
+function isArchivedFact(fact: MemoryFact): boolean {
+  return fact.archived;
+}
+
+function entityImportanceScore(entity: MemoryEntity, factById: Map<string, MemoryFact>): number {
+  const values = entity.factIds
+    .map((factId) => factById.get(factId))
+    .filter((fact): fact is MemoryFact => fact !== undefined)
+    .map((fact) => readFactImportance(fact));
+
+  if (values.length === 0) {
+    return 0;
+  }
+
+  return importanceRankingScore(Math.max(...values));
+}
+
+function relationImportanceScore(
+  relation: MemoryRelation,
+  factById: Map<string, MemoryFact>,
+): number {
+  const values = relation.factIds
+    .map((factId) => factById.get(factId))
+    .filter((fact): fact is MemoryFact => fact !== undefined)
+    .map((fact) => readFactImportance(fact));
+
+  if (values.length === 0) {
+    return importanceRankingScore(Math.round(relation.confidence * 100));
+  }
+
+  return importanceRankingScore(Math.max(...values));
+}
+
+function totalScore(components: MemoryRetrieverScoreComponentsWithImportance): number {
   return Math.min(
-    MEMORY_RETRIEVER_SCORE_MAX,
+    MEMORY_RETRIEVER_SCORE_MAX_WITH_IMPORTANCE,
     components.lexical +
       components.entityOverlap +
       components.relationOverlap +
       components.recency +
       components.confidence +
-      components.frequency,
+      components.frequency +
+      components.importance,
   );
+}
+
+function toStoredComponents(
+  components: MemoryRetrieverScoreComponentsWithImportance,
+): MemoryRetrieverScoreComponents {
+  return {
+    lexical: components.lexical,
+    entityOverlap: components.entityOverlap,
+    relationOverlap: components.relationOverlap,
+    recency: components.recency,
+    confidence: components.confidence,
+    frequency: components.frequency,
+  };
 }
 
 function buildReasons(
   matchedTokens: string[],
   entityReasons: string[],
   relationReasons: string[],
-  components: MemoryRetrieverScoreComponents,
+  components: MemoryRetrieverScoreComponentsWithImportance,
 ): string[] {
   const reasons = [
     ...entityReasons,
@@ -164,6 +225,10 @@ function buildReasons(
 
   if (components.confidence >= 8) {
     reasons.push('High confidence');
+  }
+
+  if (components.importance >= 16) {
+    reasons.push('High importance');
   }
 
   return [...new Set(reasons)];
@@ -234,7 +299,7 @@ function validateInput(input: MemoryRetrieverInput): MemoryRetrieverInput {
 
   return {
     query: input.query.trim(),
-    facts: Array.isArray(input.facts) ? input.facts : [],
+    facts: Array.isArray(input.facts) ? input.facts.filter((fact) => !isArchivedFact(fact)) : [],
     entities: Array.isArray(input.entities) ? input.entities : [],
     relations: Array.isArray(input.relations) ? input.relations : [],
   };
@@ -295,7 +360,9 @@ export class MemoryRetriever {
       .sort(compareRanked);
 
     const relations = normalized.relations
-      .map((relation) => this.rankRelation(relation, queryTokens, entityById, allUpdatedAt))
+      .map((relation) =>
+        this.rankRelation(relation, queryTokens, entityById, factById, allUpdatedAt),
+      )
       .filter((entry): entry is MemoryRetrieverRankedRelation => entry !== null)
       .sort(compareRanked);
 
@@ -461,13 +528,14 @@ export class MemoryRetriever {
       }
     }
 
-    const components: MemoryRetrieverScoreComponents = {
+    const components: MemoryRetrieverScoreComponentsWithImportance = {
       lexical: lexicalScore(matchedTokens, queryTokens),
       entityOverlap,
       relationOverlap,
       recency: relativeRecencyScore(fact.updatedAt, allUpdatedAt),
       confidence: confidenceScore(fact.confidence),
       frequency: frequencyScore(fact.entityIds.length + linkedRelations.length),
+      importance: importanceRankingScore(readFactImportance(fact)),
     };
 
     const score = totalScore(components);
@@ -480,7 +548,7 @@ export class MemoryRetriever {
       score,
       matchedTokens,
       reason: buildReasons(matchedTokens, entityReasons, relationReasons, components),
-      components,
+      components: toStoredComponents(components),
     };
   }
 
@@ -535,13 +603,14 @@ export class MemoryRetriever {
         ? linkedConfidences.reduce((sum, value) => sum + value, 0) / linkedConfidences.length
         : 0.5;
 
-    const components: MemoryRetrieverScoreComponents = {
+    const components: MemoryRetrieverScoreComponentsWithImportance = {
       lexical: lexicalScore(matchedTokens, queryTokens),
       entityOverlap: entityReasons.length > 0 ? Math.min(20, entityReasons.length * 10) : 0,
       relationOverlap,
       recency: relativeRecencyScore(entity.updatedAt, allUpdatedAt),
       confidence: confidenceScore(avgConfidence),
       frequency: frequencyScore(entity.factIds.length + entity.relationIds.length),
+      importance: entityImportanceScore(entity, factById),
     };
 
     const score = totalScore(components);
@@ -554,7 +623,7 @@ export class MemoryRetriever {
       score,
       matchedTokens,
       reason: buildReasons(matchedTokens, entityReasons, relationReasons, components),
-      components,
+      components: toStoredComponents(components),
     };
   }
 
@@ -562,6 +631,7 @@ export class MemoryRetriever {
     relation: MemoryRelation,
     queryTokens: string[],
     entityById: Map<string, MemoryEntity>,
+    factById: Map<string, MemoryFact>,
     allUpdatedAt: string[],
   ): MemoryRetrieverRankedRelation | null {
     const subject = entityById.get(relation.subjectEntityId);
@@ -601,13 +671,14 @@ export class MemoryRetriever {
       }
     }
 
-    const components: MemoryRetrieverScoreComponents = {
+    const components: MemoryRetrieverScoreComponentsWithImportance = {
       lexical: lexicalScore(matchedTokens, queryTokens),
       entityOverlap: Math.min(20, entityReasons.length * 10),
       relationOverlap,
       recency: relativeRecencyScore(relation.updatedAt, allUpdatedAt),
       confidence: confidenceScore(relation.confidence),
       frequency: frequencyScore(relation.factIds.length),
+      importance: relationImportanceScore(relation, factById),
     };
 
     const score = totalScore(components);
@@ -620,7 +691,7 @@ export class MemoryRetriever {
       score,
       matchedTokens,
       reason: buildReasons(matchedTokens, entityReasons, relationReasons, components),
-      components,
+      components: toStoredComponents(components),
       subjectName,
       objectName,
     };

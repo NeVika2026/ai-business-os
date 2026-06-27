@@ -40,6 +40,11 @@ export interface MemoryFact {
   createdAt: string;
   updatedAt: string;
   metadata: Record<string, unknown>;
+  importance: number;
+  accessCount: number;
+  lastAccessedAt: string | null;
+  pin: boolean;
+  archived: boolean;
 }
 
 export interface MemoryEntity {
@@ -97,6 +102,11 @@ export interface MemoryFactPatch {
   confidence?: number;
   source?: string;
   metadata?: Record<string, unknown>;
+  importance?: number;
+  accessCount?: number;
+  lastAccessedAt?: string | null;
+  pin?: boolean;
+  archived?: boolean;
 }
 
 export interface MemoryEntityPatch {
@@ -180,6 +190,11 @@ export interface SerializedMemoryFact {
   createdAt: string;
   updatedAt: string;
   metadata: Record<string, unknown>;
+  importance: number;
+  accessCount: number;
+  lastAccessedAt: string | null;
+  pin: boolean;
+  archived: boolean;
 }
 
 export interface SerializedMemoryEntity {
