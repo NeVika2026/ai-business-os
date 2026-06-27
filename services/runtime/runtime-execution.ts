@@ -1,4 +1,3 @@
-import { buildContext } from '@/services/runtime/context/context-builder';
 import type { BuildContextInput } from '@/services/runtime/context/types';
 import { toCompilePromptInput, toGatewayRequest } from '@/services/runtime/pipeline';
 import { createRuntimeContextAdapter } from '@/services/runtime/runtime-context-adapter';
@@ -230,8 +229,7 @@ export class RuntimeExecution {
     const contextStartedAt = Date.now();
 
     try {
-      this.adapters.context.build(contextInput);
-      contextPackage = buildContext(contextInput);
+      contextPackage = this.adapters.context.buildContextPackage(contextInput);
       const durationMs = Date.now() - contextStartedAt;
       timeline.push({
         stage: 'context.built',
@@ -528,7 +526,7 @@ export class RuntimeExecution {
       }
 
       const promptValidation = this.adapters.prompt.validate(
-        toCompilePromptInput(buildContext(contextInput)),
+        toCompilePromptInput(this.adapters.context.buildContextPackage(contextInput)),
       );
       if (!promptValidation.valid) {
         errors.push(...promptValidation.errors);

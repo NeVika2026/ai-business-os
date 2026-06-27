@@ -51,6 +51,10 @@ import {
   createRuntimeKnowledgeAdapter,
   type RuntimeKnowledgeAdapter,
 } from '@/services/runtime/runtime-knowledge-adapter';
+import {
+  createRuntimeKnowledgeContext,
+  type RuntimeKnowledgeContext,
+} from '@/services/runtime/runtime-knowledge-context';
 import { createRuntimeObserver, type RuntimeObserver } from '@/services/runtime/runtime-observer';
 import type { RuntimeObserverEmitInput } from '@/services/runtime/runtime-observer-types';
 import {
@@ -382,6 +386,7 @@ export class RuntimeBridge {
     private readonly execution: RuntimeExecution,
     private readonly observer: RuntimeObserver,
     private readonly knowledgeAdapter: RuntimeKnowledgeAdapter,
+    private readonly knowledgeContext: RuntimeKnowledgeContext,
     validator?: RuntimeValidator,
     api?: RuntimeApi,
   ) {
@@ -592,6 +597,7 @@ export class RuntimeBridge {
     this.provider.reset?.();
     this.observer.reset();
     this.knowledgeAdapter.reset();
+    this.knowledgeContext.reset();
   }
 
   supportsFullExecution(): boolean {
@@ -662,6 +668,10 @@ export class RuntimeBridge {
     return this.knowledgeAdapter;
   }
 
+  getKnowledgeContext(): RuntimeKnowledgeContext {
+    return this.knowledgeContext;
+  }
+
   private async executeAgentOrchestration(execution: AgentExecution): Promise<AgentResult> {
     const trace = this.pipelineAdapter.resolveTrace(execution);
     const context = toRuntimeExecutionContext(execution, trace);
@@ -702,13 +712,25 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
   const toolAdapter = options?.toolAdapter ?? createRuntimeToolAdapter();
   const promptAdapter = options?.promptAdapter ?? createRuntimePromptAdapter();
   const memoryAdapter = options?.memoryAdapter ?? createRuntimeMemoryAdapter();
-  const contextAdapter = options?.contextAdapter ?? createRuntimeContextAdapter();
-  const pipelineAdapter = options?.pipelineAdapter ?? createRuntimePipelineAdapter();
-  const observer =
-    options?.observer ?? createRuntimeObserver({ instanceId: `${instanceId}-observer` });
   const knowledgeAdapter =
     options?.knowledgeAdapter ??
     createRuntimeKnowledgeAdapter({ instanceId: `${instanceId}-knowledge` });
+  const knowledgeContext =
+    options?.knowledgeContext ??
+    createRuntimeKnowledgeContext({
+      instanceId: `${instanceId}-knowledge-context`,
+      knowledgeAdapter,
+      enabled: options?.knowledgeInjectionEnabled ?? false,
+    });
+  const contextAdapter =
+    options?.contextAdapter ??
+    createRuntimeContextAdapter({
+      knowledgeContext,
+      knowledgeInjectionEnabled: options?.knowledgeInjectionEnabled ?? false,
+    });
+  const pipelineAdapter = options?.pipelineAdapter ?? createRuntimePipelineAdapter();
+  const observer =
+    options?.observer ?? createRuntimeObserver({ instanceId: `${instanceId}-observer` });
 
   wireRuntimeObservers({
     observer,
@@ -749,6 +771,7 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
     execution,
     observer,
     knowledgeAdapter,
+    knowledgeContext,
     options?.validator,
     options?.api,
   );

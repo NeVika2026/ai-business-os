@@ -180,7 +180,6 @@ export class RuntimeKnowledgeAdapter {
   }
 
   reset(): void {
-    this.pipeline.reset();
     this.snapshot = {
       lastOperation: null,
       lastQuery: null,
@@ -188,6 +187,11 @@ export class RuntimeKnowledgeAdapter {
       lastChunkCount: null,
       updatedAt: new Date().toISOString(),
     };
+  }
+
+  clearKnowledge(): void {
+    this.pipeline.reset();
+    this.reset();
   }
 
   getInstanceId(): string {
