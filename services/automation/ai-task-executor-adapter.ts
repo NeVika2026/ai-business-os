@@ -10,12 +10,14 @@ import type {
   AITaskExecutorMetadataValue,
   AITaskExecutorReport,
   AITaskExecutorResult,
+  AITaskExecutorResultStatus,
   AITaskExecutorSnapshot,
   AITaskExecutorState,
   AITaskExecutorStatusView,
   AITaskExecutorTask,
   SerializedAITaskExecutorSnapshot,
 } from '@/services/automation/ai-task-executor-adapter-types';
+import { createCursorTaskBackend } from '@/services/automation/cursor-task-adapter';
 import type {
   RoadmapTaskExecutionHandler,
   RoadmapTaskHandlerResult,
@@ -150,13 +152,15 @@ export class AITaskExecutorAdapter {
     }
 
     const success = backendResult.success;
+    const resultStatus: AITaskExecutorResultStatus =
+      backendResult.status ?? (success ? 'completed' : 'failed');
     this.state = success ? 'completed' : 'failed';
     this.currentTaskId = null;
 
     const report: AITaskExecutorExecutionReport = {
       taskId: task.id,
       title: task.title,
-      status: success ? 'completed' : 'failed',
+      status: resultStatus,
       startedAt,
       finishedAt,
       durationMs,
@@ -168,6 +172,7 @@ export class AITaskExecutorAdapter {
 
     const result: AITaskExecutorResult = {
       success,
+      status: resultStatus,
       durationMs,
       filesChanged: [...backendResult.filesChanged],
       warnings: [...backendResult.warnings],
@@ -175,6 +180,8 @@ export class AITaskExecutorAdapter {
       report,
       executorName: this.backend.name,
       executorVersion: this.backend.version,
+      prompt: backendResult.prompt,
+      packageSummary: backendResult.packageSummary,
     };
 
     this.storeResult(result);
@@ -374,9 +381,21 @@ export function createAITaskExecutorAdapter(
   options?: AITaskExecutorAdapterOptions,
 ): AITaskExecutorAdapter {
   const instanceId = options?.instanceId?.trim() || 'default-ai-task-executor-adapter';
-  const backend = options?.executor ?? createDefaultMockExecutor();
+  const backend = resolveBackend(options);
 
   return new AITaskExecutorAdapter(instanceId, backend);
+}
+
+function resolveBackend(options?: AITaskExecutorAdapterOptions): AITaskExecutorBackend {
+  if (options?.executor) {
+    return options.executor;
+  }
+
+  if (options?.backend === 'cursor') {
+    return createCursorTaskBackend();
+  }
+
+  return createDefaultMockExecutor();
 }
 
 /** Default dev/test singleton. Generic AI task executor adapter. */

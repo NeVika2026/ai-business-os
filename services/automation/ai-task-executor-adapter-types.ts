@@ -2,6 +2,10 @@ import type { ISODateTime } from '@/types/runtime/dto';
 
 export type AITaskExecutorState = 'idle' | 'running' | 'completed' | 'failed' | 'cancelled';
 
+export type AITaskExecutorResultStatus = 'completed' | 'failed' | 'cancelled' | 'prepared';
+
+export type AITaskExecutorBackendKind = 'mock' | 'cursor';
+
 export type AITaskExecutorMetadataValue = string | number | boolean | null;
 
 export interface AITaskExecutorTask {
@@ -18,7 +22,7 @@ export interface AITaskExecutorTask {
 export interface AITaskExecutorExecutionReport {
   taskId: string;
   title: string;
-  status: 'completed' | 'failed' | 'cancelled';
+  status: AITaskExecutorResultStatus;
   startedAt: ISODateTime;
   finishedAt: ISODateTime;
   durationMs: number;
@@ -30,6 +34,7 @@ export interface AITaskExecutorExecutionReport {
 
 export interface AITaskExecutorResult {
   success: boolean;
+  status?: AITaskExecutorResultStatus;
   durationMs: number;
   filesChanged: string[];
   warnings: string[];
@@ -37,14 +42,19 @@ export interface AITaskExecutorResult {
   report: AITaskExecutorExecutionReport;
   executorName: string;
   executorVersion: string;
+  prompt?: string;
+  packageSummary?: string;
 }
 
 export interface AITaskExecutorBackendResult {
   success: boolean;
+  status?: AITaskExecutorResultStatus;
   filesChanged: string[];
   warnings: string[];
   errors: string[];
   report: string | null;
+  prompt?: string;
+  packageSummary?: string;
 }
 
 export interface AITaskExecutorBackend {
@@ -89,13 +99,14 @@ export interface AITaskExecutorSnapshot {
 
 export interface AITaskExecutorAdapterOptions {
   instanceId?: string;
+  backend?: AITaskExecutorBackendKind;
   executor?: AITaskExecutorBackend;
 }
 
 export interface SerializedAITaskExecutorExecutionReport {
   taskId: string;
   title: string;
-  status: 'completed' | 'failed' | 'cancelled';
+  status: AITaskExecutorResultStatus;
   startedAt: ISODateTime;
   finishedAt: ISODateTime;
   durationMs: number;
@@ -107,6 +118,7 @@ export interface SerializedAITaskExecutorExecutionReport {
 
 export interface SerializedAITaskExecutorResult {
   success: boolean;
+  status?: AITaskExecutorResultStatus;
   durationMs: number;
   filesChanged: string[];
   warnings: string[];
@@ -114,6 +126,8 @@ export interface SerializedAITaskExecutorResult {
   report: SerializedAITaskExecutorExecutionReport;
   executorName: string;
   executorVersion: string;
+  prompt?: string;
+  packageSummary?: string;
 }
 
 export interface SerializedAITaskExecutorStatusView {
