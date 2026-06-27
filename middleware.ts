@@ -1,8 +1,9 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
+import { NAVIGATION_HREF_SET } from '@/config/navigation';
 import { createClient } from '@/services/supabase/middleware';
 
-const PROTECTED_PREFIXES = ['/dashboard', '/projects', '/crm', '/settings', '/knowledge'];
+const PROTECTED_PREFIXES = Array.from(NAVIGATION_HREF_SET);
 
 function isProtectedPath(pathname: string) {
   return PROTECTED_PREFIXES.some(
@@ -18,6 +19,8 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
+
+  supabaseResponse.headers.set('x-pathname', pathname);
 
   if (isProtectedPath(pathname) && !user) {
     const loginUrl = request.nextUrl.clone();
