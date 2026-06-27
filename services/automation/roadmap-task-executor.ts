@@ -1,5 +1,9 @@
 import path from 'node:path';
 
+import {
+  createAITaskExecutorAdapter,
+  type AITaskExecutorAdapter,
+} from '@/services/automation/ai-task-executor-adapter';
 import { createRealTaskHandler } from '@/services/automation/real-task-handler';
 import { RoadmapTaskExecutorValidationError } from '@/services/automation/roadmap-task-executor-errors';
 import { serializeRoadmapTaskExecutorSnapshot } from '@/services/automation/roadmap-task-executor-serializer';
@@ -89,8 +93,22 @@ export function createSafeRealTaskRoadmapHandler(rootDir?: string): RoadmapTaskE
   return createRealTaskHandler({ rootDir }).toRoadmapHandler();
 }
 
-function createDefaultHandler(rootDir?: string): RoadmapTaskExecutionHandler {
-  return createSafeRealTaskRoadmapHandler(rootDir);
+function createDefaultHandler(options?: {
+  adapter?: AITaskExecutorAdapter;
+  rootDir?: string;
+}): RoadmapTaskExecutionHandler {
+  if (isTestRuntime() && !isNonEmptyString(options?.rootDir) && !options?.adapter) {
+    return {
+      execute() {
+        throw new RoadmapTaskExecutorValidationError(
+          'rootDir is required when using the default file handler in tests',
+        );
+      },
+    };
+  }
+
+  const adapter = options?.adapter ?? createAITaskExecutorAdapter();
+  return adapter.toRoadmapHandler();
 }
 
 function createFailureResult(
@@ -452,7 +470,11 @@ export function createRoadmapTaskExecutor(
 
   return new RoadmapTaskExecutor(
     instanceId,
-    options?.handler ?? createDefaultHandler(options?.rootDir),
+    options?.handler ??
+      createDefaultHandler({
+        adapter: options?.adapter,
+        rootDir: options?.rootDir,
+      }),
     options?.tasks,
   );
 }

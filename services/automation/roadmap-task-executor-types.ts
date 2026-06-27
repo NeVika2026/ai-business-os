@@ -1,4 +1,5 @@
 import type { ISODateTime } from '@/types/runtime/dto';
+import type { AITaskExecutorAdapter } from '@/services/automation/ai-task-executor-adapter';
 
 export type RoadmapTaskStatus = 'pending' | 'running' | 'completed' | 'failed';
 
@@ -73,6 +74,7 @@ export interface RoadmapTaskExecutorOptions {
   instanceId?: string;
   tasks?: RoadmapTaskInput[];
   handler?: RoadmapTaskExecutionHandler;
+  adapter?: AITaskExecutorAdapter;
   rootDir?: string;
 }
 

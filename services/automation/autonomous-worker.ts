@@ -22,6 +22,10 @@ import type {
   SerializedAutonomousWorkerSnapshot,
 } from '@/services/automation/autonomous-worker-types';
 import {
+  createAITaskExecutorAdapter,
+  type AITaskExecutorAdapter,
+} from '@/services/automation/ai-task-executor-adapter';
+import {
   createAutomationPlanner,
   type AutomationPlanner,
 } from '@/services/automation/automation-planner';
@@ -33,7 +37,6 @@ import { createCommandRunner, type CommandRunner } from '@/services/automation/c
 import type { CommandRunResult } from '@/services/automation/command-runner-types';
 import {
   createRoadmapTaskExecutor,
-  createSafeRealTaskRoadmapHandler,
   type RoadmapTaskExecutor,
 } from '@/services/automation/roadmap-task-executor';
 import type {
@@ -88,10 +91,14 @@ function toRoadmapTaskStatus(status: AutonomousWorkerTaskStatus): RoadmapTaskSta
 }
 
 function toRoadmapTaskInput(task: AutonomousWorkerTask): RoadmapTaskInput {
+  const description = isNonEmptyString(task.description)
+    ? task.description.trim()
+    : task.title.trim();
+
   return {
     id: task.taskId,
     title: task.title,
-    description: task.description,
+    description,
     dependencies: [...task.dependsOn],
     status: toRoadmapTaskStatus(task.status),
     metadata: {
@@ -171,8 +178,8 @@ function createWorkerCommandRunner(runner: CommandRunner): AutonomousWorkerComma
   };
 }
 
-function createDefaultTaskHandler(rootDir?: string): RoadmapTaskExecutionHandler {
-  return createSafeRealTaskRoadmapHandler(rootDir);
+function createDefaultTaskHandler(adapter: AITaskExecutorAdapter): RoadmapTaskExecutionHandler {
+  return adapter.toRoadmapHandler();
 }
 
 function buildTasksFromRoadmap(roadmap: RoadmapInput): AutonomousWorkerTask[] {
@@ -313,6 +320,7 @@ export class AutonomousWorker {
   constructor(
     private readonly instanceId: string,
     private readonly planner: AutomationPlanner,
+    private readonly aiTaskExecutorAdapter: AITaskExecutorAdapter,
     private readonly taskHandler: RoadmapTaskExecutionHandler,
     private readonly commandRunner: AutonomousWorkerCommandRunner,
     private readonly injectedTaskExecutor: RoadmapTaskExecutor | null = null,
@@ -582,6 +590,7 @@ export class AutonomousWorker {
         instanceId: this.injectedTaskExecutor.getInstanceId(),
         tasks,
         handler: this.taskHandler,
+        adapter: this.aiTaskExecutorAdapter,
         rootDir,
       });
     }
@@ -590,6 +599,7 @@ export class AutonomousWorker {
       instanceId: `${this.instanceId}-task-executor`,
       tasks,
       handler: this.taskHandler,
+      adapter: this.aiTaskExecutorAdapter,
       rootDir,
     });
   }
@@ -668,14 +678,15 @@ export function createAutonomousWorker(options?: AutonomousWorkerOptions): Auton
   const instanceId = options?.instanceId?.trim() || 'default-autonomous-worker';
   const rootDir = options?.cwd?.trim() || null;
   const runner = options?.commandRunner ?? createCommandRunner({ cwd: rootDir ?? undefined });
-  const taskHandler =
-    options?.taskHandler ??
-    options?.realTaskHandler?.toRoadmapHandler() ??
-    createDefaultTaskHandler(rootDir ?? undefined);
+  const aiTaskExecutorAdapter =
+    options?.aiTaskExecutorAdapter ??
+    createAITaskExecutorAdapter({ instanceId: `${instanceId}-ai-adapter` });
+  const taskHandler = options?.taskHandler ?? createDefaultTaskHandler(aiTaskExecutorAdapter);
 
   return new AutonomousWorker(
     instanceId,
     options?.planner ?? createAutomationPlanner({ instanceId: `${instanceId}-planner` }),
+    aiTaskExecutorAdapter,
     taskHandler,
     createWorkerCommandRunner(runner),
     options?.taskExecutor ?? null,
