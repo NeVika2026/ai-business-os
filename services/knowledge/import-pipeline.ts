@@ -18,6 +18,7 @@ export interface ImportPipeline {
 
 // TODO: wire ImportPipeline to queue and importer modules
 
+/** @deprecated Stub — not implemented. Use KnowledgePipeline instead. */
 export const importPipeline: ImportPipeline = {
   async run(_sourceId, _organizationId) {
     void _sourceId;
@@ -31,7 +32,7 @@ export const importPipeline: ImportPipeline = {
   },
 };
 
-export interface KnowledgeImporter<TOptions = Record<string, unknown>> {
+export interface KnowledgeSourceImporter<TOptions = Record<string, unknown>> {
   type: string;
   import(options: TOptions): Promise<void>;
 }

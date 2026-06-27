@@ -7,6 +7,11 @@ import {
   KnowledgeImporterValidationError,
 } from '@/services/knowledge/knowledge-importer-errors';
 import { serializeKnowledgeImporterSnapshot } from '@/services/knowledge/knowledge-importer-serializer';
+import {
+  extractFrontmatterTags,
+  extractInlineTags,
+  extractTitle,
+} from '@/services/knowledge/knowledge-markdown-utils';
 import type {
   ImportDirectoryInput,
   ImportMarkdownInput,
@@ -26,67 +31,6 @@ function isNonEmptyString(value: unknown): value is string {
 
 function createDocumentId(source: string, content: string): string {
   return createHash('sha256').update(`${source}:${content}`).digest('hex').slice(0, 32);
-}
-
-function extractFrontmatterTags(content: string): string[] {
-  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (!match) {
-    return [];
-  }
-
-  const tags: string[] = [];
-  const tagsLine = match[1].match(/^tags:\s*(.+)$/m);
-  if (!tagsLine) {
-    return tags;
-  }
-
-  const raw = tagsLine[1].trim();
-  if (raw.startsWith('[') && raw.endsWith(']')) {
-    const inner = raw.slice(1, -1);
-    for (const part of inner.split(',')) {
-      const cleaned = part.trim().replace(/^['"]|['"]$/g, '');
-      if (cleaned) {
-        tags.push(cleaned);
-      }
-    }
-    return tags;
-  }
-
-  for (const part of raw.split(/\s+/)) {
-    const cleaned = part.trim();
-    if (cleaned) {
-      tags.push(cleaned);
-    }
-  }
-
-  return tags;
-}
-
-function extractInlineTags(content: string): string[] {
-  const tags = new Set<string>();
-  const regex = /(?:^|\s)#([a-zA-Z0-9_/-]+)/g;
-  let match: RegExpExecArray | null = regex.exec(content);
-
-  while (match) {
-    tags.add(match[1]);
-    match = regex.exec(content);
-  }
-
-  return [...tags];
-}
-
-function extractTitle(content: string, fallback: string): string {
-  const frontmatterTitle = content.match(/^---\r?\n[\s\S]*?^title:\s*(.+)$/m);
-  if (frontmatterTitle) {
-    return frontmatterTitle[1].trim().replace(/^['"]|['"]$/g, '');
-  }
-
-  const heading = content.match(/^#\s+(.+)$/m);
-  if (heading) {
-    return heading[1].trim();
-  }
-
-  return fallback;
 }
 
 function isMarkdownFile(filePath: string): boolean {

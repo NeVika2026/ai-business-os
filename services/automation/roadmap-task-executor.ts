@@ -6,6 +6,10 @@ import {
 } from '@/services/automation/ai-task-executor-adapter';
 import { createRealTaskHandler } from '@/services/automation/real-task-handler';
 import { RoadmapTaskExecutorValidationError } from '@/services/automation/roadmap-task-executor-errors';
+import {
+  TaskGraphValidationError,
+  validateTaskGraph,
+} from '@/services/automation/task-graph-validator';
 import { serializeRoadmapTaskExecutorSnapshot } from '@/services/automation/roadmap-task-executor-serializer';
 import type {
   RoadmapTaskExecutionHandler,
@@ -141,51 +145,6 @@ function createFailureResult(
   };
 }
 
-function detectCycle(tasks: RoadmapTaskInput[]): string | null {
-  const taskIds = new Set(tasks.map((task) => task.id));
-  const visiting = new Set<string>();
-  const visited = new Set<string>();
-  const dependencyMap = new Map(
-    tasks.map((task) => [task.id, normalizeDependencies(task.dependencies)]),
-  );
-
-  const visit = (taskId: string): string | null => {
-    if (visited.has(taskId)) {
-      return null;
-    }
-
-    if (visiting.has(taskId)) {
-      return taskId;
-    }
-
-    visiting.add(taskId);
-
-    for (const dependencyId of dependencyMap.get(taskId) ?? []) {
-      if (!taskIds.has(dependencyId)) {
-        continue;
-      }
-
-      const cycleTaskId = visit(dependencyId);
-      if (cycleTaskId) {
-        return cycleTaskId;
-      }
-    }
-
-    visiting.delete(taskId);
-    visited.add(taskId);
-    return null;
-  };
-
-  for (const task of tasks) {
-    const cycleTaskId = visit(task.id);
-    if (cycleTaskId) {
-      return cycleTaskId;
-    }
-  }
-
-  return null;
-}
-
 /**
  * Executes one roadmap task at a time through an injected handler.
  */
@@ -266,20 +225,26 @@ export class RoadmapTaskExecutor {
     const handlerResult = this.handler.execute(task);
     const finishedAt = nowIso();
     const durationMs = Date.now() - startMs;
+    const isPrepared = handlerResult.status === 'prepared';
     const success = handlerResult.success;
+    const reportStatus: RoadmapTaskExecutionReport['status'] = isPrepared
+      ? 'prepared'
+      : success
+        ? 'completed'
+        : 'failed';
     const report: RoadmapTaskExecutionReport = {
       taskId: task.id,
       title: task.title,
-      status: success ? 'completed' : 'failed',
+      status: reportStatus,
       startedAt,
       finishedAt,
       durationMs,
-      filesChanged: [...handlerResult.filesChanged],
+      filesChanged: isPrepared ? [] : [...handlerResult.filesChanged],
       warnings: [...handlerResult.warnings],
       errors: [...handlerResult.errors],
     };
 
-    if (success) {
+    if (success && !isPrepared) {
       this.completedTaskIds.add(task.id);
     }
 
@@ -288,7 +253,7 @@ export class RoadmapTaskExecutor {
     const result: RoadmapTaskExecutorResult = {
       success,
       durationMs,
-      filesChanged: [...handlerResult.filesChanged],
+      filesChanged: isPrepared ? [] : [...handlerResult.filesChanged],
       warnings: [...handlerResult.warnings],
       errors: [...handlerResult.errors],
       report,
@@ -381,30 +346,14 @@ export class RoadmapTaskExecutor {
       return;
     }
 
-    const ids = this.registeredTasks.map((task) => task.id);
-    const seen = new Set<string>();
-
-    for (const id of ids) {
-      if (seen.has(id)) {
-        throw new RoadmapTaskExecutorValidationError(`duplicate task id: ${id}`);
+    try {
+      validateTaskGraph(this.registeredTasks);
+    } catch (error) {
+      if (error instanceof TaskGraphValidationError) {
+        throw new RoadmapTaskExecutorValidationError(error.message);
       }
 
-      seen.add(id);
-    }
-
-    for (const task of this.registeredTasks) {
-      for (const dependencyId of task.dependencies) {
-        if (!seen.has(dependencyId)) {
-          throw new RoadmapTaskExecutorValidationError(
-            `missing dependency: ${dependencyId} for task ${task.id}`,
-          );
-        }
-      }
-    }
-
-    const cycleTaskId = detectCycle(this.registeredTasks);
-    if (cycleTaskId) {
-      throw new RoadmapTaskExecutorValidationError(`circular dependency detected: ${cycleTaskId}`);
+      throw error;
     }
 
     this.graphValidated = true;
@@ -430,9 +379,19 @@ export class RoadmapTaskExecutor {
   }
 
   private areDependenciesComplete(task: RoadmapTaskInput): boolean {
-    return normalizeDependencies(task.dependencies).every((dependencyId) =>
-      this.completedTaskIds.has(dependencyId),
-    );
+    try {
+      validateTaskGraph(this.registeredTasks, {
+        targetTaskId: task.id,
+        completedTaskIds: this.completedTaskIds,
+      });
+      return true;
+    } catch (error) {
+      if (error instanceof TaskGraphValidationError) {
+        return false;
+      }
+
+      throw error;
+    }
   }
 
   private storeResult(result: RoadmapTaskExecutorResult): void {

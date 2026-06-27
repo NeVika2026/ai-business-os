@@ -1,8 +1,7 @@
-import {
-  hasRegisteredTool,
-  listRegisteredToolSummaries,
-} from '@/services/runtime/tools/executor/handlers/registry-handler';
-import { toolExecutor } from '@/services/runtime/tools/executor/tool-executor';
+import { createRegistryHandlerScope } from '@/services/runtime/tools/executor/handlers/registry-handler';
+import { createToolExecutor } from '@/services/runtime/tools/executor/tool-executor-factory';
+import { createProductionToolRegistry } from '@/services/runtime/tools/tool-registry';
+import type { ToolRegistry } from '@/services/runtime/tools/registry';
 import type { ToolExecution } from '@/services/runtime/tools/executor/executor-types';
 import { RuntimeToolRequestError } from '@/services/runtime/runtime-tool-errors';
 import { serializeRuntimeToolSnapshot } from '@/services/runtime/runtime-tool-serializer';
@@ -32,12 +31,15 @@ function assertToolRequest(request: RuntimeToolRequest): void {
   }
 }
 
-function createDefaultDependencies(): RuntimeToolDependencies {
+function createDefaultDependencies(registry?: ToolRegistry): RuntimeToolDependencies {
+  const executor = createToolExecutor(registry ?? createProductionToolRegistry());
+  const registryScope = createRegistryHandlerScope(executor.registry);
+
   return {
-    execute: (request: ToolExecution) => toolExecutor.execute(request),
-    validate: (request: ToolExecution) => toolExecutor.validate(request),
-    hasTool: (toolId: string) => hasRegisteredTool(toolId),
-    listTools: () => listRegisteredToolSummaries(),
+    execute: (request: ToolExecution) => executor.execute(request),
+    validate: (request: ToolExecution) => executor.validate(request),
+    hasTool: (toolId: string) => registryScope.hasRegisteredTool(toolId),
+    listTools: () => registryScope.listRegisteredToolSummaries(),
   };
 }
 
@@ -125,7 +127,7 @@ export class RuntimeToolAdapter {
 }
 
 export function createRuntimeToolAdapter(options?: RuntimeToolAdapterOptions): RuntimeToolAdapter {
-  const defaults = createDefaultDependencies();
+  const defaults = createDefaultDependencies(options?.registry);
   const dependencies: RuntimeToolDependencies = {
     execute: options?.dependencies?.execute ?? defaults.execute,
     validate: options?.dependencies?.validate ?? defaults.validate,

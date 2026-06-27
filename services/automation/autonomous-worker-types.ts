@@ -43,6 +43,7 @@ export interface AutonomousWorkerExecutorResult {
   warnings: string[];
   output: string | null;
   durationMs: number;
+  status?: 'completed' | 'failed' | 'prepared';
 }
 
 export interface AutonomousWorkerCommandResult {
@@ -63,7 +64,7 @@ export interface AutonomousWorkerTaskReport {
   sprintId: string;
   code: string;
   title: string;
-  status: 'completed' | 'failed';
+  status: 'completed' | 'failed' | 'prepared';
   durationMs: number;
   files: string[];
   errors: string[];
@@ -163,6 +164,7 @@ export interface SerializedAutonomousWorkerExecutorResult {
   warnings: string[];
   output: string | null;
   durationMs: number;
+  status?: 'completed' | 'failed' | 'prepared';
 }
 
 export interface SerializedAutonomousWorkerTaskReport {
@@ -170,7 +172,7 @@ export interface SerializedAutonomousWorkerTaskReport {
   sprintId: string;
   code: string;
   title: string;
-  status: 'completed' | 'failed';
+  status: 'completed' | 'failed' | 'prepared';
   durationMs: number;
   files: string[];
   errors: string[];

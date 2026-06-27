@@ -1,3 +1,8 @@
+import {
+  createInjectionBudgetItem,
+  dedupeInjectionItems,
+  selectInjectionBudgetItems,
+} from '@/services/runtime/context/injection-budget-selector';
 import type { RuntimeKnowledgeAdapter } from '@/services/runtime/runtime-knowledge-adapter';
 import { createRuntimeKnowledgeAdapter } from '@/services/runtime/runtime-knowledge-adapter';
 import { RuntimeKnowledgeContextValidationError } from '@/services/runtime/runtime-knowledge-context-errors';
@@ -29,19 +34,18 @@ function isNonEmptyString(value: unknown): value is string {
 function dedupeInjectedChunks(
   chunks: RuntimeKnowledgeInjectedChunk[],
 ): RuntimeKnowledgeInjectedChunk[] {
-  const seen = new Set<string>();
-  const result: RuntimeKnowledgeInjectedChunk[] = [];
+  const items = chunks.map((chunk) =>
+    createInjectionBudgetItem({
+      kind: 'knowledge',
+      id: chunk.chunkId,
+      fallbackKey: chunk.content,
+      score: chunk.score,
+      characters: chunk.content.length,
+      value: chunk,
+    }),
+  );
 
-  for (const chunk of chunks) {
-    if (seen.has(chunk.chunkId)) {
-      continue;
-    }
-
-    seen.add(chunk.chunkId);
-    result.push(chunk);
-  }
-
-  return result;
+  return dedupeInjectionItems(items).map((item) => item.value);
 }
 
 function applyInjectionLimits(
@@ -49,41 +53,29 @@ function applyInjectionLimits(
   maxChunks: number,
   maxCharacters: number,
 ): { chunks: RuntimeKnowledgeInjectedChunk[]; truncated: boolean; totalCharacters: number } {
-  const sorted = [...chunks].sort((left, right) => right.score - left.score);
-  const selected: RuntimeKnowledgeInjectedChunk[] = [];
-  let totalCharacters = 0;
-  let truncated = sorted.length > maxChunks;
+  const budgetItems = chunks.map((chunk) =>
+    createInjectionBudgetItem({
+      kind: 'knowledge',
+      id: chunk.chunkId,
+      fallbackKey: chunk.content,
+      score: chunk.score,
+      characters: chunk.content.length,
+      value: chunk,
+    }),
+  );
 
-  for (const chunk of sorted) {
-    if (selected.length >= maxChunks) {
-      truncated = true;
-      break;
-    }
-
-    const nextTotal = totalCharacters + chunk.content.length;
-    if (selected.length > 0 && nextTotal > maxCharacters) {
-      truncated = true;
-      break;
-    }
-
-    if (chunk.content.length > maxCharacters) {
-      selected.push({
-        ...chunk,
-        content: chunk.content.slice(0, maxCharacters),
-      });
-      totalCharacters = maxCharacters;
-      truncated = true;
-      break;
-    }
-
-    selected.push(chunk);
-    totalCharacters = nextTotal;
-  }
+  const selected = selectInjectionBudgetItems(budgetItems, {
+    maxKnowledgeChunks: maxChunks,
+    maxMemoryFacts: 0,
+    maxMemoryEntities: 0,
+    maxMemoryRelations: 0,
+    maxCharacters,
+  });
 
   return {
-    chunks: selected,
-    truncated,
-    totalCharacters,
+    chunks: selected.knowledge as RuntimeKnowledgeInjectedChunk[],
+    truncated: selected.truncated,
+    totalCharacters: selected.totalCharacters,
   };
 }
 

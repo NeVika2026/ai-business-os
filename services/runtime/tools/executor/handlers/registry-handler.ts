@@ -5,6 +5,7 @@ import {
 } from '@/services/runtime/tools/executor/executor-errors';
 import type { ToolExecution } from '@/services/runtime/tools/executor/executor-types';
 import { toolRegistry } from '@/services/runtime/tools/tool-registry';
+import type { ToolRegistry } from '@/services/runtime/tools/registry';
 import type { RegisteredTool, ToolHandlerContext } from '@/services/runtime/tools/tool-types';
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -142,14 +143,68 @@ export async function executeRegisteredToolHandler(
   }
 }
 
-export function resolveRegisteredTool(toolId: string): RegisteredTool {
-  const tool = toolRegistry.get(toolId);
+export interface RegistryHandlerScope {
+  resolveRegisteredTool(toolId: string): RegisteredTool;
+  hasRegisteredTool(toolId: string): boolean;
+  listRegisteredToolSummaries(): Array<{
+    id: string;
+    category: string;
+    enabled: boolean;
+    description: string;
+  }>;
+  prepareRegistryTool(execution: ToolExecution): RegisteredTool;
+  executeViaRegistry(execution: ToolExecution): Promise<Record<string, unknown>>;
+}
 
-  if (!tool) {
-    throw new ToolNotFoundError(toolId);
+export function createRegistryHandlerScope(registry: ToolRegistry): RegistryHandlerScope {
+  function resolveRegisteredTool(toolId: string): RegisteredTool {
+    const tool = registry.get(toolId);
+
+    if (!tool) {
+      throw new ToolNotFoundError(toolId);
+    }
+
+    return tool;
   }
 
-  return tool;
+  return {
+    resolveRegisteredTool,
+    hasRegisteredTool(toolId: string): boolean {
+      return registry.exists(toolId);
+    },
+    listRegisteredToolSummaries() {
+      return registry.list().map((tool) => ({
+        id: tool.id,
+        category: tool.category,
+        enabled: tool.enabled,
+        description: tool.description,
+      }));
+    },
+    prepareRegistryTool(execution: ToolExecution): RegisteredTool {
+      const tool = resolveRegisteredTool(execution.call.name);
+      const metadataErrors = validateRegisteredToolMetadata(tool, execution);
+
+      if (metadataErrors.length > 0) {
+        throw new ToolValidationError(metadataErrors.join('; '));
+      }
+
+      return tool;
+    },
+    async executeViaRegistry(execution: ToolExecution): Promise<Record<string, unknown>> {
+      const tool = resolveRegisteredTool(execution.call.name);
+      const metadataErrors = validateRegisteredToolMetadata(tool, execution);
+
+      if (metadataErrors.length > 0) {
+        throw new ToolValidationError(metadataErrors.join('; '));
+      }
+
+      return executeRegisteredToolHandler(execution, tool);
+    },
+  };
+}
+
+export function resolveRegisteredTool(toolId: string): RegisteredTool {
+  return createRegistryHandlerScope(toolRegistry).resolveRegisteredTool(toolId);
 }
 
 export function hasRegisteredTool(toolId: string): boolean {
@@ -162,28 +217,15 @@ export function listRegisteredToolSummaries(): Array<{
   enabled: boolean;
   description: string;
 }> {
-  return toolRegistry.list().map((tool) => ({
-    id: tool.id,
-    category: tool.category,
-    enabled: tool.enabled,
-    description: tool.description,
-  }));
+  return createRegistryHandlerScope(toolRegistry).listRegisteredToolSummaries();
 }
 
 export function prepareRegistryTool(execution: ToolExecution): RegisteredTool {
-  const tool = resolveRegisteredTool(execution.call.name);
-  const metadataErrors = validateRegisteredToolMetadata(tool, execution);
-
-  if (metadataErrors.length > 0) {
-    throw new ToolValidationError(metadataErrors.join('; '));
-  }
-
-  return tool;
+  return createRegistryHandlerScope(toolRegistry).prepareRegistryTool(execution);
 }
 
 export async function executeViaRegistry(
   execution: ToolExecution,
 ): Promise<Record<string, unknown>> {
-  const tool = prepareRegistryTool(execution);
-  return executeRegisteredToolHandler(execution, tool);
+  return createRegistryHandlerScope(toolRegistry).executeViaRegistry(execution);
 }

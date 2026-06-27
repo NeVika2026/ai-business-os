@@ -1,4 +1,7 @@
-import type { GatewayRequest as GatewayRequestDto } from '@/types/runtime/dto';
+import { isGatewayMockMode } from '@/services/runtime/gateway/adapter-factory';
+import { checkGatewayRateLimit } from '@/services/runtime/gateway/gateway-rate-limiter';
+import { resolveProviderCredentials } from '@/services/runtime/gateway/credential-resolver';
+import { executeWithGatewayRetry } from '@/services/runtime/gateway/gateway-retry';
 import { hasModel } from '@/services/runtime/gateway/capabilities';
 import {
   InvalidGatewayRequestError,
@@ -6,12 +9,16 @@ import {
   ProviderUnavailableError,
 } from '@/services/runtime/gateway/errors';
 import { getAdapter } from '@/services/runtime/gateway/registry';
+import { ProviderAuthError } from '@/services/runtime/gateway/provider-errors';
+import { costTracker } from '@/services/runtime/observability/cost/cost-tracker';
+import { metrics } from '@/services/runtime/observability/metrics/metrics-manager';
 import type {
   GatewayResponse,
   NormalizedProviderRequest,
-  ProviderCredentials,
   ProviderCode,
+  StreamChunk,
 } from '@/services/runtime/gateway/types';
+import type { GatewayRequest as GatewayRequestDto } from '@/types/runtime/dto';
 
 function validateRequest(request: GatewayRequestDto): void {
   if (!request.scope?.organizationId) {
@@ -39,12 +46,33 @@ function validateRequest(request: GatewayRequestDto): void {
   }
 }
 
-function resolveCredentials(providerCode: ProviderCode): ProviderCredentials {
-  void providerCode;
-  return {};
-}
-
 function toNormalizedRequest(request: GatewayRequestDto): NormalizedProviderRequest {
+  const providerCode = request.providerCode as ProviderCode;
+
+  if (isGatewayMockMode()) {
+    return {
+      model: request.modelCode,
+      messages: request.messages,
+      tools: request.tools,
+      temperature: request.parameters.temperature,
+      maxTokens: request.parameters.maxTokens,
+      topP: request.parameters.topP,
+      timeoutMs: request.timeoutMs,
+      credentials: {},
+    };
+  }
+
+  let credentials;
+
+  try {
+    credentials = resolveProviderCredentials(providerCode, request.scope.organizationId);
+  } catch (error) {
+    if (error instanceof ProviderAuthError) {
+      throw new ProviderUnavailableError(providerCode, error.message);
+    }
+    throw error;
+  }
+
   return {
     model: request.modelCode,
     messages: request.messages,
@@ -53,7 +81,7 @@ function toNormalizedRequest(request: GatewayRequestDto): NormalizedProviderRequ
     maxTokens: request.parameters.maxTokens,
     topP: request.parameters.topP,
     timeoutMs: request.timeoutMs,
-    credentials: resolveCredentials(request.providerCode as ProviderCode),
+    credentials,
   };
 }
 
@@ -88,8 +116,9 @@ function toGatewayResponse(
   };
 }
 
-export async function complete(request: GatewayRequestDto): Promise<GatewayResponse> {
+async function executeComplete(request: GatewayRequestDto): Promise<GatewayResponse> {
   validateRequest(request);
+  checkGatewayRateLimit(request.providerCode as ProviderCode, request.scope.organizationId);
 
   if (!hasModel(request.providerCode, request.modelCode)) {
     throw new ModelNotSupportedError(request.providerCode, request.modelCode);
@@ -103,11 +132,73 @@ export async function complete(request: GatewayRequestDto): Promise<GatewayRespo
   }
 
   const normalizedRequest = toNormalizedRequest(request);
-  const adapterResponse = await adapter.complete(normalizedRequest);
+  const retryPolicy = request.retryPolicy ?? {
+    maxAttempts: 3,
+    backoffMs: [500, 1000, 2000],
+  };
 
-  return toGatewayResponse(request, adapterResponse);
+  const startedAt = Date.now();
+  const adapterResponse = await executeWithGatewayRetry(
+    () => adapter.complete(normalizedRequest),
+    retryPolicy,
+  );
+
+  const response = toGatewayResponse(request, adapterResponse);
+  const latencyMs = Date.now() - startedAt;
+
+  try {
+    metrics.recordLLM({
+      organizationId: request.scope.organizationId,
+      employeeId: request.scope.userId ?? request.trace.runId,
+      traceId: request.trace.traceId,
+      runId: request.trace.runId,
+      provider: request.providerCode,
+      model: request.modelCode,
+      latency: latencyMs,
+      llmCalls: 1,
+    });
+
+    costTracker.record({
+      organizationId: request.scope.organizationId,
+      employeeId: request.scope.userId ?? request.trace.runId,
+      traceId: request.trace.traceId,
+      runId: request.trace.runId,
+      providerCode: request.providerCode,
+      modelCode: request.modelCode,
+      inputTokens: response.usage.inputTokens,
+      outputTokens: response.usage.outputTokens,
+    });
+  } catch {
+    // Observability must not block gateway responses.
+  }
+
+  return response;
+}
+
+export async function complete(request: GatewayRequestDto): Promise<GatewayResponse> {
+  return executeComplete(request);
+}
+
+export async function* stream(request: GatewayRequestDto): AsyncGenerator<StreamChunk> {
+  validateRequest(request);
+  checkGatewayRateLimit(request.providerCode as ProviderCode, request.scope.organizationId);
+
+  if (!hasModel(request.providerCode, request.modelCode)) {
+    throw new ModelNotSupportedError(request.providerCode, request.modelCode);
+  }
+
+  const adapter = getAdapter(request.providerCode);
+  const health = await adapter.health();
+
+  if (!health.ok) {
+    throw new ProviderUnavailableError(request.providerCode, health.message);
+  }
+
+  const normalizedRequest = toNormalizedRequest(request);
+  yield* adapter.stream(normalizedRequest);
 }
 
 export const aiGateway = {
   complete,
+  stream,
 };

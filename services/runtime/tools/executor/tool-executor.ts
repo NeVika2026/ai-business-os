@@ -9,6 +9,7 @@ import type {
 } from '@/services/runtime/tools/executor/executor-types';
 import type { ToolResult } from '@/types/runtime/dto';
 
+export { createToolExecutor } from '@/services/runtime/tools/executor/tool-executor-factory';
 export type {
   ToolExecution,
   ToolValidationResult,

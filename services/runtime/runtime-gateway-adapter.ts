@@ -8,9 +8,11 @@ import {
 } from '@/services/runtime/gateway/errors';
 import { checkAllProvidersHealth } from '@/services/runtime/gateway/health';
 import { getAdapter } from '@/services/runtime/gateway/registry';
+import { isGatewayMockMode } from '@/services/runtime/gateway/adapter-factory';
+import { resolveProviderCredentials } from '@/services/runtime/gateway/credential-resolver';
 import type {
   NormalizedProviderRequest,
-  ProviderCredentials,
+  ProviderCode,
   StreamChunk,
 } from '@/services/runtime/gateway/types';
 import {
@@ -69,12 +71,14 @@ function validateGatewayRequest(request: GatewayRequest): void {
   }
 }
 
-function resolveCredentials(providerCode: string): ProviderCredentials {
-  void providerCode;
-  return {};
-}
-
 function normalizeGatewayRequest(request: GatewayRequest): NormalizedProviderRequest {
+  const credentials = isGatewayMockMode()
+    ? {}
+    : resolveProviderCredentials(
+        request.providerCode as ProviderCode,
+        request.scope.organizationId,
+      );
+
   return {
     model: request.modelCode,
     messages: request.messages,
@@ -83,7 +87,7 @@ function normalizeGatewayRequest(request: GatewayRequest): NormalizedProviderReq
     maxTokens: request.parameters.maxTokens,
     topP: request.parameters.topP,
     timeoutMs: request.timeoutMs,
-    credentials: resolveCredentials(request.providerCode),
+    credentials,
   };
 }
 

@@ -1,4 +1,5 @@
 import type { ToolResult } from '@/types/runtime/dto';
+import type { ToolRegistry } from '@/services/runtime/tools/registry';
 import type {
   ToolExecution,
   ToolValidationResult,
@@ -65,6 +66,7 @@ export interface RuntimeToolDependencies {
 }
 
 export interface RuntimeToolAdapterOptions {
+  registry?: ToolRegistry;
   dependencies?: Partial<RuntimeToolDependencies>;
 }
 

@@ -17,7 +17,7 @@ export interface RoadmapTaskInput {
 export interface RoadmapTaskExecutionReport {
   taskId: string;
   title: string;
-  status: 'completed' | 'failed';
+  status: 'completed' | 'failed' | 'prepared';
   startedAt: ISODateTime;
   finishedAt: ISODateTime;
   durationMs: number;
@@ -28,6 +28,7 @@ export interface RoadmapTaskExecutionReport {
 
 export interface RoadmapTaskHandlerResult {
   success: boolean;
+  status?: 'completed' | 'failed' | 'prepared';
   filesChanged: string[];
   filesCreated?: string[];
   filesModified?: string[];
@@ -81,7 +82,7 @@ export interface RoadmapTaskExecutorOptions {
 export interface SerializedRoadmapTaskExecutionReport {
   taskId: string;
   title: string;
-  status: 'completed' | 'failed';
+  status: 'completed' | 'failed' | 'prepared';
   startedAt: ISODateTime;
   finishedAt: ISODateTime;
   durationMs: number;

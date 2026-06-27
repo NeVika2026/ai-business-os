@@ -1,4 +1,4 @@
-import type { KnowledgeImporter } from '@/services/knowledge/import-pipeline';
+import type { KnowledgeSourceImporter } from '@/services/knowledge/import-pipeline';
 
 export interface WebsiteImportOptions {
   sourceId: string;
@@ -6,7 +6,8 @@ export interface WebsiteImportOptions {
   url: string;
 }
 
-export class WebsiteImporter implements KnowledgeImporter<WebsiteImportOptions> {
+/** @deprecated Stub — not implemented. Use KnowledgePipeline instead. */
+export class WebsiteImporter implements KnowledgeSourceImporter<WebsiteImportOptions> {
   type = 'website';
 
   async import(_options: WebsiteImportOptions): Promise<void> {
@@ -16,4 +17,5 @@ export class WebsiteImporter implements KnowledgeImporter<WebsiteImportOptions> 
   }
 }
 
+/** @deprecated Stub — not implemented. Use KnowledgePipeline instead. */
 export const websiteImporter = new WebsiteImporter();

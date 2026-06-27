@@ -44,6 +44,8 @@ function matchesKindFilter(kind: MemoryKind, filter?: MemoryKind | MemoryKind[])
 /**
  * Per-execution memory manager. Each runtime run should create its own instance
  * via createMemoryManager() so activeContext is not shared across concurrent requests.
+ *
+ * @deprecated Use {@link MemoryService} from `@/services/memory/memory-service` instead.
  */
 export class MemoryManager {
   private activeContext: MemoryLoadContext | null = null;
@@ -195,6 +197,7 @@ export class MemoryManager {
   }
 }
 
+/** @deprecated Use {@link createMemoryService} from `@/services/memory/memory-service` instead. */
 export function createMemoryManager(
   provider: MemoryProvider = mockMemoryProvider,
   options?: MemoryManagerOptions,
@@ -202,25 +205,31 @@ export function createMemoryManager(
   return new MemoryManager(provider, options);
 }
 
-/** Default dev/test singleton. Do not use for concurrent production runtime executions. */
+/** Default dev/test singleton. Do not use for concurrent production runtime executions.
+ * @deprecated Use {@link memoryService} from `@/services/memory/memory-service` instead. */
 export const memoryManager = createMemoryManager();
 
+/** @deprecated Use {@link MemoryService} from `@/services/memory/memory-service` instead. */
 export function loadMemoryContext(context: MemoryLoadContext): void {
   memoryManager.load(context);
 }
 
+/** @deprecated Use {@link MemoryService} from `@/services/memory/memory-service` instead. */
 export function retrieveMemory(query: MemoryRetrieveQuery): RankedMemoryEntry[] {
   return memoryManager.retrieve(query);
 }
 
+/** @deprecated Use {@link MemoryService} from `@/services/memory/memory-service` instead. */
 export function storeMemory(entry: MemoryStoreInput): StoredMemoryEntry {
   return memoryManager.store(entry);
 }
 
+/** @deprecated Use {@link MemoryService} from `@/services/memory/memory-service` instead. */
 export function pruneMemory(budgetOverride?: Partial<MemoryBudget>): MemoryPruneResult {
   return memoryManager.prune(budgetOverride);
 }
 
+/** @deprecated Use {@link MemoryService} from `@/services/memory/memory-service` instead. */
 export function serializeMemory(): SerializedMemoryPackage {
   return memoryManager.serialize();
 }

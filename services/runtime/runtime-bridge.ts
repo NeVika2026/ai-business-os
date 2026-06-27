@@ -19,6 +19,8 @@ import type {
 } from '@/services/runtime/runtime-bridge-types';
 import { DEFAULT_RUNTIME_BRIDGE_INSTANCE_ID } from '@/services/runtime/runtime-bridge-types';
 import { createRuntimeApiFromBridge, type RuntimeApi } from '@/services/runtime/runtime-api';
+import { auditRecorder } from '@/services/runtime/tools/audit/audit-recorder';
+import { idempotencyStore } from '@/services/runtime/tools/idempotency/idempotency-store';
 import {
   createRuntimeGatewayAdapter,
   type RuntimeGatewayAdapter,
@@ -64,6 +66,7 @@ import {
   type RuntimeMemoryContext,
 } from '@/services/runtime/runtime-memory-context';
 import { createRuntimeObserver, type RuntimeObserver } from '@/services/runtime/runtime-observer';
+import { createProductionToolRegistry } from '@/services/runtime/tools/tool-registry';
 import type { RuntimeObserverEmitInput } from '@/services/runtime/runtime-observer-types';
 import {
   createRuntimeValidator,
@@ -595,21 +598,30 @@ export class RuntimeBridge {
   }
 
   reset(): void {
-    this.getApi().reset();
+    this.resetRuntime();
   }
 
   resetRuntime(): void {
     this.mode = 'idle';
     this.lastAgentResult = null;
+    this.runtimeApi?.resetLocalState();
     this.facade.reset();
     this.execution.reset();
     this.runtimeValidator?.reset();
     this.provider.reset?.();
     this.observer.reset();
+    this.gatewayAdapter.reset();
+    this.toolAdapter.reset();
+    this.promptAdapter.reset();
+    this.contextAdapter.reset();
+    this.pipelineAdapter.reset();
+    this.memoryAdapter.reset();
     this.knowledgeAdapter.reset();
     this.knowledgeContext.reset();
     this.memoryServiceAdapter.reset();
     this.memoryContext.reset();
+    idempotencyStore.clear();
+    auditRecorder.clear();
   }
 
   supportsFullExecution(): boolean {
@@ -729,7 +741,9 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
   const provider = options?.provider ?? defaultBridgeProvider;
   const orchestrationOnly = options?.orchestrationOnly ?? true;
   const gatewayAdapter = options?.gatewayAdapter ?? createRuntimeGatewayAdapter();
-  const toolAdapter = options?.toolAdapter ?? createRuntimeToolAdapter();
+  const scopedToolRegistry = options?.toolRegistry ?? createProductionToolRegistry();
+  const toolAdapter =
+    options?.toolAdapter ?? createRuntimeToolAdapter({ registry: scopedToolRegistry });
   const promptAdapter = options?.promptAdapter ?? createRuntimePromptAdapter();
   const memoryAdapter = options?.memoryAdapter ?? createRuntimeMemoryAdapter();
   const knowledgeAdapter =
@@ -740,7 +754,7 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
     createRuntimeKnowledgeContext({
       instanceId: `${instanceId}-knowledge-context`,
       knowledgeAdapter,
-      enabled: options?.knowledgeInjectionEnabled ?? false,
+      enabled: options?.knowledgeInjectionEnabled ?? true,
     });
   const memoryServiceAdapter =
     options?.memoryServiceAdapter ??
@@ -750,15 +764,15 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
     createRuntimeMemoryContext({
       instanceId: `${instanceId}-memory-context`,
       memoryServiceAdapter,
-      enabled: options?.memoryInjectionEnabled ?? false,
+      enabled: options?.memoryInjectionEnabled ?? true,
     });
   const contextAdapter =
     options?.contextAdapter ??
     createRuntimeContextAdapter({
       knowledgeContext,
-      knowledgeInjectionEnabled: options?.knowledgeInjectionEnabled ?? false,
+      knowledgeInjectionEnabled: options?.knowledgeInjectionEnabled ?? true,
       memoryContext,
-      memoryInjectionEnabled: options?.memoryInjectionEnabled ?? false,
+      memoryInjectionEnabled: options?.memoryInjectionEnabled ?? true,
     });
   const pipelineAdapter = options?.pipelineAdapter ?? createRuntimePipelineAdapter();
   const observer =

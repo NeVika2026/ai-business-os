@@ -1,4 +1,4 @@
-import type { KnowledgeImporter } from '@/services/knowledge/import-pipeline';
+import type { KnowledgeSourceImporter } from '@/services/knowledge/import-pipeline';
 
 export interface TelegramImportOptions {
   sourceId: string;
@@ -6,7 +6,8 @@ export interface TelegramImportOptions {
   exportPath?: string;
 }
 
-export class TelegramImporter implements KnowledgeImporter<TelegramImportOptions> {
+/** @deprecated Stub — not implemented. Use KnowledgePipeline instead. */
+export class TelegramImporter implements KnowledgeSourceImporter<TelegramImportOptions> {
   type = 'telegram';
 
   async import(_options: TelegramImportOptions): Promise<void> {
@@ -16,4 +17,5 @@ export class TelegramImporter implements KnowledgeImporter<TelegramImportOptions
   }
 }
 
+/** @deprecated Stub — not implemented. Use KnowledgePipeline instead. */
 export const telegramImporter = new TelegramImporter();

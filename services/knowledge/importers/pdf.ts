@@ -1,4 +1,4 @@
-import type { KnowledgeImporter } from '@/services/knowledge/import-pipeline';
+import type { KnowledgeSourceImporter } from '@/services/knowledge/import-pipeline';
 
 export interface PdfImportOptions {
   sourceId: string;
@@ -6,7 +6,8 @@ export interface PdfImportOptions {
   filePath?: string;
 }
 
-export class PdfImporter implements KnowledgeImporter<PdfImportOptions> {
+/** @deprecated Stub — not implemented. Use KnowledgePipeline instead. */
+export class PdfImporter implements KnowledgeSourceImporter<PdfImportOptions> {
   type = 'pdf';
 
   async import(_options: PdfImportOptions): Promise<void> {
@@ -16,4 +17,5 @@ export class PdfImporter implements KnowledgeImporter<PdfImportOptions> {
   }
 }
 
+/** @deprecated Stub — not implemented. Use KnowledgePipeline instead. */
 export const pdfImporter = new PdfImporter();

@@ -1,3 +1,5 @@
+import { DEFAULT_INJECTION_BUDGET_LIMITS } from '@/services/runtime/context/injection-budget-selector-types';
+
 export interface PromptLimits {
   maxPromptTokens: number;
   maxKnowledgeChunks: number;
@@ -11,11 +13,11 @@ export interface PromptLimits {
 
 export const DEFAULT_PROMPT_LIMITS: PromptLimits = {
   maxPromptTokens: 8000,
-  maxKnowledgeChunks: 10,
-  maxMemoryFacts: 20,
-  maxMemoryEntities: 20,
-  maxMemoryRelations: 20,
-  maxInjectedCharacters: 12000,
+  maxKnowledgeChunks: DEFAULT_INJECTION_BUDGET_LIMITS.maxKnowledgeChunks,
+  maxMemoryFacts: DEFAULT_INJECTION_BUDGET_LIMITS.maxMemoryFacts,
+  maxMemoryEntities: DEFAULT_INJECTION_BUDGET_LIMITS.maxMemoryEntities,
+  maxMemoryRelations: DEFAULT_INJECTION_BUDGET_LIMITS.maxMemoryRelations,
+  maxInjectedCharacters: DEFAULT_INJECTION_BUDGET_LIMITS.maxCharacters,
   maxMemoryItems: 10,
   maxCRMItems: 10,
 };

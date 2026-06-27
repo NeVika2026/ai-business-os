@@ -130,6 +130,9 @@ function createDefaultDependencies(
 
 /**
  * Runtime-facing memory adapter. Delegates to existing Memory Manager only.
+ *
+ * @deprecated Legacy DTO memory path. Use {@link MemoryService} via
+ * `RuntimeMemoryServiceAdapter` / `RuntimeMemoryContext` instead.
  */
 export class RuntimeMemoryAdapter {
   private snapshot: RuntimeMemorySnapshot = {
@@ -271,6 +274,9 @@ function toOperationError(
   return new RuntimeMemoryOperationError(message);
 }
 
+/**
+ * @deprecated Legacy DTO memory path. Use {@link createRuntimeMemoryServiceAdapter} instead.
+ */
 export function createRuntimeMemoryAdapter(
   options?: RuntimeMemoryAdapterOptions,
 ): RuntimeMemoryAdapter {

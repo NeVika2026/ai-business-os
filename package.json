@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "test": "GATEWAY_USE_MOCK=true npx tsx --test tests/**/*.test.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

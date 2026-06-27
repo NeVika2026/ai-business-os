@@ -15,6 +15,7 @@ export interface KnowledgeProcessingQueue {
 
 // TODO: implement queue-backed knowledge processing worker
 
+/** @deprecated Stub — not implemented. Use KnowledgePipeline instead. */
 export const knowledgeProcessingQueue: KnowledgeProcessingQueue = {
   async enqueue(_job) {
     void _job;

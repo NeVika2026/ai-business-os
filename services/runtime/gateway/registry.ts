@@ -1,27 +1,27 @@
-import { anthropicAdapter } from '@/services/runtime/gateway/adapters/anthropic';
-import { geminiAdapter } from '@/services/runtime/gateway/adapters/gemini';
-import { groqAdapter } from '@/services/runtime/gateway/adapters/groq';
-import { ollamaAdapter } from '@/services/runtime/gateway/adapters/ollama';
-import { openAiAdapter } from '@/services/runtime/gateway/adapters/openai';
-import { openRouterAdapter } from '@/services/runtime/gateway/adapters/openrouter';
+import {
+  createGatewayAdapters,
+  isGatewayMockMode,
+} from '@/services/runtime/gateway/adapter-factory';
 import { ProviderNotFoundError } from '@/services/runtime/gateway/errors';
 import type { ProviderAdapter, ProviderCode } from '@/services/runtime/gateway/types';
 
-const adapters: Record<ProviderCode, ProviderAdapter> = {
-  openai: openAiAdapter,
-  anthropic: anthropicAdapter,
-  gemini: geminiAdapter,
-  groq: groqAdapter,
-  openrouter: openRouterAdapter,
-  ollama: ollamaAdapter,
-};
+let activeAdapters = createGatewayAdapters(isGatewayMockMode());
 
-export function registerAdapter(code: ProviderCode, adapter: ProviderAdapter) {
-  adapters[code] = adapter;
+export function setGatewayMockMode(enabled: boolean): void {
+  process.env.GATEWAY_USE_MOCK = enabled ? 'true' : 'false';
+  activeAdapters = createGatewayAdapters(enabled);
+}
+
+export function refreshGatewayAdapters(): void {
+  activeAdapters = createGatewayAdapters(isGatewayMockMode());
+}
+
+export function registerAdapter(code: ProviderCode, adapter: ProviderAdapter): void {
+  activeAdapters[code] = adapter;
 }
 
 export function getAdapter(code: string): ProviderAdapter {
-  const adapter = adapters[code as ProviderCode];
+  const adapter = activeAdapters[code as ProviderCode];
 
   if (!adapter) {
     throw new ProviderNotFoundError(code);
@@ -31,9 +31,9 @@ export function getAdapter(code: string): ProviderAdapter {
 }
 
 export function listAdapters(): ProviderAdapter[] {
-  return Object.values(adapters);
+  return Object.values(activeAdapters);
 }
 
 export function listProviderCodes(): ProviderCode[] {
-  return Object.keys(adapters) as ProviderCode[];
+  return Object.keys(activeAdapters) as ProviderCode[];
 }

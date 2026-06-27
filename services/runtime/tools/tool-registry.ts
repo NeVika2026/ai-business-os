@@ -1,3 +1,5 @@
+import { knowledgeSearchHandler } from '@/services/runtime/tools/handlers/knowledge-handler';
+import { runtimeInfoHandler } from '@/services/runtime/tools/handlers/system-handler';
 import { communicationTools } from '@/services/runtime/tools/categories/communication';
 import { crmTools } from '@/services/runtime/tools/categories/crm';
 import { knowledgeTools } from '@/services/runtime/tools/categories/knowledge';
@@ -29,8 +31,26 @@ function registerTools(registry: ToolRegistry, tools: RegisteredToolInput[]): vo
   }
 }
 
+function attachProductionHandlers(tools: RegisteredToolInput[]): RegisteredToolInput[] {
+  return tools.map((tool) => {
+    if (tool.id === 'runtime.info') {
+      return { ...tool, handler: runtimeInfoHandler };
+    }
+
+    if (tool.id === 'knowledge.search') {
+      return { ...tool, handler: knowledgeSearchHandler };
+    }
+
+    return tool;
+  });
+}
+
+export function createProductionToolRegistry(): ToolRegistry {
+  return createToolRegistry(attachProductionHandlers(DEFAULT_MOCK_TOOLS));
+}
+
 export function createToolRegistry(
-  tools: RegisteredToolInput[] = DEFAULT_MOCK_TOOLS,
+  tools: RegisteredToolInput[] = attachProductionHandlers(DEFAULT_MOCK_TOOLS),
 ): ToolRegistry {
   const registry = new ToolRegistry();
   registerTools(registry, tools);

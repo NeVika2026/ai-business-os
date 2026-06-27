@@ -8,6 +8,11 @@ import {
   KnowledgeVaultLoaderWatchError,
 } from '@/services/knowledge/knowledge-vault-loader-errors';
 import { serializeKnowledgeVaultLoaderSnapshot } from '@/services/knowledge/knowledge-vault-loader-serializer';
+import {
+  extractFrontmatterTags,
+  extractInlineTags,
+  extractTitle,
+} from '@/services/knowledge/knowledge-markdown-utils';
 import type {
   KnowledgeVaultLoaderOptions,
   KnowledgeVaultLoaderSnapshot,
@@ -59,69 +64,8 @@ function createDocumentId(vaultPath: string, relativePath: string, content: stri
     .slice(0, 32);
 }
 
-function extractFrontmatterTags(content: string): string[] {
-  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (!match) {
-    return [];
-  }
-
-  const tags: string[] = [];
-  const tagsLine = match[1].match(/^tags:\s*(.+)$/m);
-  if (!tagsLine) {
-    return tags;
-  }
-
-  const raw = tagsLine[1].trim();
-  if (raw.startsWith('[') && raw.endsWith(']')) {
-    const inner = raw.slice(1, -1);
-    for (const part of inner.split(',')) {
-      const cleaned = part.trim().replace(/^['"]|['"]$/g, '');
-      if (cleaned) {
-        tags.push(cleaned);
-      }
-    }
-    return tags;
-  }
-
-  for (const part of raw.split(/\s+/)) {
-    const cleaned = part.trim();
-    if (cleaned) {
-      tags.push(cleaned);
-    }
-  }
-
-  return tags;
-}
-
-function extractInlineTags(content: string): string[] {
-  const tags = new Set<string>();
-  const regex = /(?:^|\s)#([a-zA-Z0-9_/-]+)/g;
-  let match: RegExpExecArray | null = regex.exec(content);
-
-  while (match) {
-    tags.add(match[1]);
-    match = regex.exec(content);
-  }
-
-  return [...tags];
-}
-
 function extractWikilinks(content: string): string[] {
   return [...content.matchAll(/\[\[([^\]]+)\]\]/g)].map((match) => match[1]);
-}
-
-function extractTitle(content: string, fallback: string): string {
-  const frontmatterTitle = content.match(/^---\r?\n[\s\S]*?^title:\s*(.+)$/m);
-  if (frontmatterTitle) {
-    return frontmatterTitle[1].trim().replace(/^['"]|['"]$/g, '');
-  }
-
-  const heading = content.match(/^#\s+(.+)$/m);
-  if (heading) {
-    return heading[1].trim();
-  }
-
-  return fallback;
 }
 
 function getDocumentExtension(filePath: string): VaultDocumentExtension | null {

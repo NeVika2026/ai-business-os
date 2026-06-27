@@ -2,6 +2,10 @@ import {
   AutomationPlannerNotPlannedError,
   AutomationPlannerValidationError,
 } from '@/services/automation/automation-planner-errors';
+import {
+  TaskGraphValidationError,
+  validateTaskGraph,
+} from '@/services/automation/task-graph-validator';
 import { serializeAutomationPlannerSnapshot } from '@/services/automation/automation-planner-serializer';
 import type {
   AutomationPlannerInput,
@@ -54,49 +58,6 @@ function normalizeDependencies(dependencies: string[] | undefined): string[] {
   }
 
   return dependencies.map((dependency) => String(dependency).trim()).filter(Boolean);
-}
-
-function detectCycle(tasks: AutomationPlannerTask[]): string | null {
-  const taskIds = new Set(tasks.map((task) => task.id));
-  const visiting = new Set<string>();
-  const visited = new Set<string>();
-  const dependencyMap = new Map(tasks.map((task) => [task.id, task.dependencies]));
-
-  const visit = (taskId: string): string | null => {
-    if (visited.has(taskId)) {
-      return null;
-    }
-
-    if (visiting.has(taskId)) {
-      return taskId;
-    }
-
-    visiting.add(taskId);
-
-    for (const dependencyId of dependencyMap.get(taskId) ?? []) {
-      if (!taskIds.has(dependencyId)) {
-        continue;
-      }
-
-      const cycleTaskId = visit(dependencyId);
-      if (cycleTaskId) {
-        return cycleTaskId;
-      }
-    }
-
-    visiting.delete(taskId);
-    visited.add(taskId);
-    return null;
-  };
-
-  for (const task of tasks) {
-    const cycleTaskId = visit(task.id);
-    if (cycleTaskId) {
-      return cycleTaskId;
-    }
-  }
-
-  return null;
 }
 
 function computeDepths(tasks: AutomationPlannerTask[]): Map<string, number> {
@@ -399,30 +360,14 @@ export class AutomationPlanner {
   }
 
   private validateTaskGraph(tasks: AutomationPlannerTask[]): void {
-    const ids = tasks.map((task) => task.id);
-    const seen = new Set<string>();
-
-    for (const id of ids) {
-      if (seen.has(id)) {
-        throw new AutomationPlannerValidationError(`duplicate task id: ${id}`);
+    try {
+      validateTaskGraph(tasks);
+    } catch (error) {
+      if (error instanceof TaskGraphValidationError) {
+        throw new AutomationPlannerValidationError(error.message);
       }
 
-      seen.add(id);
-    }
-
-    for (const task of tasks) {
-      for (const dependencyId of task.dependencies) {
-        if (!seen.has(dependencyId)) {
-          throw new AutomationPlannerValidationError(
-            `missing dependency: ${dependencyId} for task ${task.id}`,
-          );
-        }
-      }
-    }
-
-    const cycleTaskId = detectCycle(tasks);
-    if (cycleTaskId) {
-      throw new AutomationPlannerValidationError(`circular dependency detected: ${cycleTaskId}`);
+      throw error;
     }
   }
 

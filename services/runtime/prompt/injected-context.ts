@@ -1,4 +1,8 @@
 import type { PromptLimits } from '@/services/runtime/prompt/limits';
+import {
+  createInjectionBudgetItem,
+  selectInjectionBudgetItems,
+} from '@/services/runtime/context/injection-budget-selector';
 import type {
   CompilePromptInput,
   InjectedContextSelection,
@@ -11,16 +15,6 @@ import type {
 import { INJECTED_SECTION_KEYS, INJECTED_SECTION_TITLES } from '@/services/runtime/prompt/types';
 import { sanitizeText } from '@/services/runtime/prompt/sanitizer';
 import type { KnowledgeChunkRef } from '@/types/runtime/dto';
-
-interface ScoredInjectedItem {
-  kind: 'knowledge' | 'fact' | 'entity' | 'relation';
-  score: number;
-  characters: number;
-  knowledge?: InjectedKnowledgeChunk;
-  fact?: InjectedMemoryFact;
-  entity?: InjectedMemoryEntity;
-  relation?: InjectedMemoryRelation;
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object';
@@ -205,124 +199,65 @@ function applyInjectedLimits(
   relations: InjectedMemoryRelation[],
   limits: PromptLimits,
 ): InjectedContextSelection {
-  const sortedKnowledge = [...knowledge].sort((left, right) => right.score - left.score);
-  const sortedFacts = [...facts].sort((left, right) => right.score - left.score);
-  const sortedEntities = [...entities].sort((left, right) => right.score - left.score);
-  const sortedRelations = [...relations].sort((left, right) => right.score - left.score);
+  const budgetItems = [
+    ...knowledge.map((chunk) =>
+      createInjectionBudgetItem({
+        kind: 'knowledge',
+        id: chunk.chunkId,
+        fallbackKey: chunk.content,
+        score: chunk.score,
+        characters: knowledgeCharacterCount(chunk),
+        value: chunk,
+      }),
+    ),
+    ...facts.map((fact) =>
+      createInjectionBudgetItem({
+        kind: 'fact',
+        id: fact.factId,
+        fallbackKey: fact.text,
+        score: fact.score,
+        characters: fact.text.length,
+        value: fact,
+        pinned: fact.type === 'pinned',
+      }),
+    ),
+    ...entities.map((entity) =>
+      createInjectionBudgetItem({
+        kind: 'entity',
+        id: entity.entityId,
+        fallbackKey: entity.name,
+        score: entity.score,
+        characters: entityCharacterCount(entity),
+        value: entity,
+      }),
+    ),
+    ...relations.map((relation) =>
+      createInjectionBudgetItem({
+        kind: 'relation',
+        id: relation.relationId,
+        fallbackKey: `${relation.subjectName}:${relation.predicate}:${relation.objectName}`,
+        score: relation.score,
+        characters: relationCharacterCount(relation),
+        value: relation,
+      }),
+    ),
+  ];
 
-  const items: ScoredInjectedItem[] = [
-    ...sortedKnowledge.map((chunk) => ({
-      kind: 'knowledge' as const,
-      score: chunk.score,
-      characters: knowledgeCharacterCount(chunk),
-      knowledge: chunk,
-    })),
-    ...sortedFacts.map((fact) => ({
-      kind: 'fact' as const,
-      score: fact.score,
-      characters: fact.text.length,
-      fact,
-    })),
-    ...sortedEntities.map((entity) => ({
-      kind: 'entity' as const,
-      score: entity.score,
-      characters: entityCharacterCount(entity),
-      entity,
-    })),
-    ...sortedRelations.map((relation) => ({
-      kind: 'relation' as const,
-      score: relation.score,
-      characters: relationCharacterCount(relation),
-      relation,
-    })),
-  ].sort((left, right) => right.score - left.score);
-
-  const selectedKnowledge: InjectedKnowledgeChunk[] = [];
-  const selectedFacts: InjectedMemoryFact[] = [];
-  const selectedEntities: InjectedMemoryEntity[] = [];
-  const selectedRelations: InjectedMemoryRelation[] = [];
-  let totalCharacters = 0;
-  let truncated =
-    knowledge.length > limits.maxKnowledgeChunks ||
-    facts.length > limits.maxMemoryFacts ||
-    entities.length > limits.maxMemoryEntities ||
-    relations.length > limits.maxMemoryRelations;
-
-  for (const item of items) {
-    if (item.kind === 'knowledge' && selectedKnowledge.length >= limits.maxKnowledgeChunks) {
-      truncated = true;
-      continue;
-    }
-
-    if (item.kind === 'fact' && selectedFacts.length >= limits.maxMemoryFacts) {
-      truncated = true;
-      continue;
-    }
-
-    if (item.kind === 'entity' && selectedEntities.length >= limits.maxMemoryEntities) {
-      truncated = true;
-      continue;
-    }
-
-    if (item.kind === 'relation' && selectedRelations.length >= limits.maxMemoryRelations) {
-      truncated = true;
-      continue;
-    }
-
-    if (totalCharacters + item.characters > limits.maxInjectedCharacters && totalCharacters > 0) {
-      truncated = true;
-      break;
-    }
-
-    if (item.characters > limits.maxInjectedCharacters && item.kind === 'fact' && item.fact) {
-      selectedFacts.push({
-        ...item.fact,
-        text: item.fact.text.slice(0, limits.maxInjectedCharacters),
-      });
-      totalCharacters = limits.maxInjectedCharacters;
-      truncated = true;
-      break;
-    }
-
-    if (
-      item.characters > limits.maxInjectedCharacters &&
-      item.kind === 'knowledge' &&
-      item.knowledge
-    ) {
-      selectedKnowledge.push({
-        ...item.knowledge,
-        content: item.knowledge.content.slice(0, limits.maxInjectedCharacters),
-      });
-      totalCharacters = limits.maxInjectedCharacters;
-      truncated = true;
-      break;
-    }
-
-    if (item.characters > limits.maxInjectedCharacters) {
-      truncated = true;
-      break;
-    }
-
-    totalCharacters += item.characters;
-
-    if (item.kind === 'knowledge' && item.knowledge) {
-      selectedKnowledge.push(item.knowledge);
-    } else if (item.kind === 'fact' && item.fact) {
-      selectedFacts.push(item.fact);
-    } else if (item.kind === 'entity' && item.entity) {
-      selectedEntities.push(item.entity);
-    } else if (item.kind === 'relation' && item.relation) {
-      selectedRelations.push(item.relation);
-    }
-  }
+  const selected = selectInjectionBudgetItems(budgetItems, {
+    maxKnowledgeChunks: limits.maxKnowledgeChunks,
+    maxMemoryFacts: limits.maxMemoryFacts,
+    maxMemoryEntities: limits.maxMemoryEntities,
+    maxMemoryRelations: limits.maxMemoryRelations,
+    maxCharacters: limits.maxInjectedCharacters,
+  });
 
   return {
-    knowledge: selectedKnowledge,
-    facts: selectedFacts,
-    entities: selectedEntities,
-    relations: selectedRelations,
-    truncated,
-    totalCharacters,
+    knowledge: selected.knowledge as InjectedKnowledgeChunk[],
+    facts: selected.facts as InjectedMemoryFact[],
+    entities: selected.entities as InjectedMemoryEntity[],
+    relations: selected.relations as InjectedMemoryRelation[],
+    truncated: selected.truncated,
+    totalCharacters: selected.totalCharacters,
   };
 }
 

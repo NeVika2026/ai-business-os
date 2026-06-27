@@ -155,8 +155,11 @@ export class AITaskExecutorAdapter {
     const success = backendResult.success;
     const resultStatus: AITaskExecutorResultStatus =
       backendResult.status ?? (success ? 'completed' : 'failed');
-    this.state = success ? 'completed' : 'failed';
+    const isPrepared = resultStatus === 'prepared';
+    this.state = isPrepared ? 'idle' : success ? 'completed' : 'failed';
     this.currentTaskId = null;
+
+    const filesChanged = isPrepared ? [] : [...backendResult.filesChanged];
 
     const report: AITaskExecutorExecutionReport = {
       taskId: task.id,
@@ -165,7 +168,7 @@ export class AITaskExecutorAdapter {
       startedAt,
       finishedAt,
       durationMs,
-      filesChanged: [...backendResult.filesChanged],
+      filesChanged,
       warnings: [...backendResult.warnings],
       errors: [...backendResult.errors],
       summary: backendResult.report ?? null,
@@ -175,7 +178,7 @@ export class AITaskExecutorAdapter {
       success,
       status: resultStatus,
       durationMs,
-      filesChanged: [...backendResult.filesChanged],
+      filesChanged,
       warnings: [...backendResult.warnings],
       errors: [...backendResult.errors],
       report,
@@ -261,9 +264,17 @@ export class AITaskExecutorAdapter {
   private executeRoadmapTask(task: RoadmapTaskInput): RoadmapTaskHandlerResult {
     try {
       const result = this.execute(fromRoadmapTaskInput(task));
+      const isPrepared = result.status === 'prepared';
+      const handlerStatus =
+        result.status === 'cancelled' || result.status === undefined
+          ? result.success
+            ? 'completed'
+            : 'failed'
+          : result.status;
       return {
         success: result.success,
-        filesChanged: [...result.filesChanged],
+        status: handlerStatus,
+        filesChanged: isPrepared ? [] : [...result.filesChanged],
         warnings: [...result.warnings],
         errors: [...result.errors],
       };

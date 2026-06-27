@@ -5,8 +5,9 @@ import {
   ToolValidationError,
 } from '@/services/runtime/tools/executor/executor-errors';
 import {
+  createRegistryHandlerScope,
   executeRegisteredToolHandler,
-  prepareRegistryTool,
+  type RegistryHandlerScope,
 } from '@/services/runtime/tools/executor/handlers/registry-handler';
 import type { ToolExecution } from '@/services/runtime/tools/executor/executor-types';
 import { MOCK_TOOL_EXECUTED_AT } from '@/services/runtime/tools/executor/executor-types';
@@ -24,6 +25,7 @@ import {
   extractErrorCode,
   toRetryConfig,
 } from '@/services/runtime/tools/retry/retry-policy';
+import { toolRegistry } from '@/services/runtime/tools/tool-registry';
 import type { ToolResult } from '@/types/runtime/dto';
 
 function buildAudit(
@@ -101,7 +103,10 @@ function recordAuditEvent(
   });
 }
 
-export async function runToolExecutionPipeline(execution: ToolExecution): Promise<ToolResult> {
+export async function runToolExecutionPipeline(
+  execution: ToolExecution,
+  registryScope: RegistryHandlerScope = createRegistryHandlerScope(toolRegistry),
+): Promise<ToolResult> {
   const startedAt = Date.now();
   const provisionalKey = computeIdempotencyKey(
     execution.trace.runId,
@@ -156,7 +161,7 @@ export async function runToolExecutionPipeline(execution: ToolExecution): Promis
   let tool;
 
   try {
-    tool = prepareRegistryTool(execution);
+    tool = registryScope.prepareRegistryTool(execution);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Registry validation failed';
     const code =
@@ -230,11 +235,12 @@ export function validateExecution(execution: ToolExecution) {
 
 export async function executeManyToolCalls(
   executions: ToolExecution[],
+  registryScope: RegistryHandlerScope = createRegistryHandlerScope(toolRegistry),
 ): Promise<{ results: ToolResult[]; stoppedAt?: number }> {
   const results: ToolResult[] = [];
 
   for (let index = 0; index < executions.length; index += 1) {
-    const result = await runToolExecutionPipeline(executions[index]);
+    const result = await runToolExecutionPipeline(executions[index], registryScope);
     results.push(result);
 
     if (!result.success) {

@@ -1,3 +1,7 @@
+import {
+  createInjectionBudgetItem,
+  selectInjectionBudgetItems,
+} from '@/services/runtime/context/injection-budget-selector';
 import type { RuntimeMemoryServiceAdapter } from '@/services/runtime/runtime-memory-service-adapter';
 import { createRuntimeMemoryServiceAdapter } from '@/services/runtime/runtime-memory-service-adapter';
 import { RuntimeMemoryContextValidationError } from '@/services/runtime/runtime-memory-context-errors';
@@ -26,15 +30,6 @@ import {
   RUNTIME_MEMORY_CONTEXT_MAX_FACTS,
   RUNTIME_MEMORY_CONTEXT_MAX_RELATIONS,
 } from '@/services/runtime/runtime-memory-context-types';
-
-interface ScoredMemoryItem {
-  kind: 'fact' | 'entity' | 'relation';
-  score: number;
-  characters: number;
-  fact?: RuntimeMemoryInjectedFact;
-  entity?: RuntimeMemoryInjectedEntity;
-  relation?: RuntimeMemoryInjectedRelation;
-}
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
@@ -113,91 +108,53 @@ function applyInjectionLimits(
   truncated: boolean;
   totalCharacters: number;
 } {
-  const sortedFacts = [...facts].sort((left, right) => right.score - left.score);
-  const sortedEntities = [...entities].sort((left, right) => right.score - left.score);
-  const sortedRelations = [...relations].sort((left, right) => right.score - left.score);
+  const budgetItems = [
+    ...facts.map((fact) =>
+      createInjectionBudgetItem({
+        kind: 'fact',
+        id: fact.factId,
+        fallbackKey: fact.text,
+        score: fact.score,
+        characters: fact.text.length,
+        value: fact,
+      }),
+    ),
+    ...entities.map((entity) =>
+      createInjectionBudgetItem({
+        kind: 'entity',
+        id: entity.entityId,
+        fallbackKey: entity.name,
+        score: entity.score,
+        characters: entityCharacterCount(entity),
+        value: entity,
+      }),
+    ),
+    ...relations.map((relation) =>
+      createInjectionBudgetItem({
+        kind: 'relation',
+        id: relation.relationId,
+        fallbackKey: `${relation.subjectName}:${relation.predicate}:${relation.objectName}`,
+        score: relation.score,
+        characters: relationCharacterCount(relation),
+        value: relation,
+      }),
+    ),
+  ];
 
-  const items: ScoredMemoryItem[] = [
-    ...sortedFacts.map((fact) => ({
-      kind: 'fact' as const,
-      score: fact.score,
-      characters: fact.text.length,
-      fact,
-    })),
-    ...sortedEntities.map((entity) => ({
-      kind: 'entity' as const,
-      score: entity.score,
-      characters: entityCharacterCount(entity),
-      entity,
-    })),
-    ...sortedRelations.map((relation) => ({
-      kind: 'relation' as const,
-      score: relation.score,
-      characters: relationCharacterCount(relation),
-      relation,
-    })),
-  ].sort((left, right) => right.score - left.score);
-
-  const selectedFacts: RuntimeMemoryInjectedFact[] = [];
-  const selectedEntities: RuntimeMemoryInjectedEntity[] = [];
-  const selectedRelations: RuntimeMemoryInjectedRelation[] = [];
-  let totalCharacters = 0;
-  let truncated =
-    facts.length > maxFacts || entities.length > maxEntities || relations.length > maxRelations;
-
-  for (const item of items) {
-    if (item.kind === 'fact' && selectedFacts.length >= maxFacts) {
-      truncated = true;
-      continue;
-    }
-
-    if (item.kind === 'entity' && selectedEntities.length >= maxEntities) {
-      truncated = true;
-      continue;
-    }
-
-    if (item.kind === 'relation' && selectedRelations.length >= maxRelations) {
-      truncated = true;
-      continue;
-    }
-
-    if (totalCharacters + item.characters > maxCharacters && totalCharacters > 0) {
-      truncated = true;
-      break;
-    }
-
-    if (item.characters > maxCharacters && item.kind === 'fact' && item.fact) {
-      selectedFacts.push({
-        ...item.fact,
-        text: item.fact.text.slice(0, maxCharacters),
-      });
-      totalCharacters = maxCharacters;
-      truncated = true;
-      break;
-    }
-
-    if (item.characters > maxCharacters) {
-      truncated = true;
-      break;
-    }
-
-    totalCharacters += item.characters;
-
-    if (item.kind === 'fact' && item.fact) {
-      selectedFacts.push(item.fact);
-    } else if (item.kind === 'entity' && item.entity) {
-      selectedEntities.push(item.entity);
-    } else if (item.kind === 'relation' && item.relation) {
-      selectedRelations.push(item.relation);
-    }
-  }
+  const selected = selectInjectionBudgetItems(budgetItems, {
+    maxKnowledgeChunks: 0,
+    maxMemoryFacts: maxFacts,
+    maxMemoryEntities: maxEntities,
+    maxMemoryRelations: maxRelations,
+    maxCharacters,
+  });
 
   return {
-    facts: selectedFacts,
-    entities: selectedEntities,
-    relations: selectedRelations,
-    truncated,
-    totalCharacters,
+    facts: selected.facts as RuntimeMemoryInjectedFact[],
+    entities: selected.entities as RuntimeMemoryInjectedEntity[],
+    relations: selected.relations as RuntimeMemoryInjectedRelation[],
+    truncated: selected.truncated,
+    totalCharacters: selected.totalCharacters,
   };
 }
 

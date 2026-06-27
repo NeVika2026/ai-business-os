@@ -20,7 +20,6 @@ import type {
   SerializedRuntimeApiStatus,
 } from '@/services/runtime/runtime-api-types';
 import { RUNTIME_API_VERSION } from '@/services/runtime/runtime-api-types';
-import type { RuntimeBridge } from '@/services/runtime/runtime-bridge';
 
 function buildEmptyReport(): RuntimeApiReport {
   return {
@@ -108,8 +107,11 @@ export class RuntimeApi {
   }
 
   reset(): void {
-    this.dependencies.bridge.resetRuntime();
-    this.dependencies.validator.reset();
+    this.resetWithBridge();
+  }
+
+  /** Resets API-local state without triggering bridge cascade. */
+  resetLocalState(): void {
     this.lastReport = buildEmptyReport();
     this.lastValidation = { valid: false, errors: [] };
     this.lastValidationReadyCount = null;
@@ -119,6 +121,13 @@ export class RuntimeApi {
       lastStatus: null,
       updatedAt: new Date().toISOString(),
     };
+  }
+
+  /** Resets bridge runtime and API-local state. */
+  resetWithBridge(): void {
+    this.dependencies.bridge.resetRuntime();
+    this.dependencies.validator.reset();
+    this.resetLocalState();
   }
 
   version(): string {
@@ -210,7 +219,7 @@ export class RuntimeApi {
   }
 }
 
-export function createRuntimeApiFromBridge(bridge: RuntimeBridge): RuntimeApi {
+export function createRuntimeApiFromBridge(bridge: RuntimeApiBridgeLike): RuntimeApi {
   const bridgeLike: RuntimeApiBridgeLike = {
     runAgent: (execution, options) => bridge.runAgent(execution, options),
     readStatus: () => bridge.readStatus(),

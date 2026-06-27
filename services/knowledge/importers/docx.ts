@@ -1,4 +1,4 @@
-import type { KnowledgeImporter } from '@/services/knowledge/import-pipeline';
+import type { KnowledgeSourceImporter } from '@/services/knowledge/import-pipeline';
 
 export interface DocxImportOptions {
   sourceId: string;
@@ -6,7 +6,8 @@ export interface DocxImportOptions {
   filePath?: string;
 }
 
-export class DocxImporter implements KnowledgeImporter<DocxImportOptions> {
+/** @deprecated Stub — not implemented. Use KnowledgePipeline instead. */
+export class DocxImporter implements KnowledgeSourceImporter<DocxImportOptions> {
   type = 'docx';
 
   async import(_options: DocxImportOptions): Promise<void> {
@@ -16,4 +17,5 @@ export class DocxImporter implements KnowledgeImporter<DocxImportOptions> {
   }
 }
 
+/** @deprecated Stub — not implemented. Use KnowledgePipeline instead. */
 export const docxImporter = new DocxImporter();

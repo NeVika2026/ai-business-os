@@ -9,6 +9,7 @@ import type {
   RuntimeStatusView,
   SerializedRuntimeSnapshot,
 } from '@/services/runtime/runtime/runtime-types';
+import type { ToolRegistry } from '@/services/runtime/tools/registry';
 
 export type RuntimeBridgeMode = 'idle' | 'agent' | 'roadmap' | 'sprint';
 
@@ -107,6 +108,7 @@ export interface RuntimeBridgeOptions {
   memoryServiceAdapter?: import('@/services/runtime/runtime-memory-service-adapter').RuntimeMemoryServiceAdapter;
   memoryContext?: import('@/services/runtime/runtime-memory-context').RuntimeMemoryContext;
   memoryInjectionEnabled?: boolean;
+  toolRegistry?: ToolRegistry;
 }
 
 export const DEFAULT_RUNTIME_BRIDGE_INSTANCE_ID = 'default-bridge';

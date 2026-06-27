@@ -119,6 +119,7 @@ function mapTaskExecutorResult(result: RoadmapTaskExecutorResult): AutonomousWor
     warnings: [...result.warnings],
     output: result.report.title,
     durationMs: result.durationMs,
+    status: result.report.status,
   };
 }
 
@@ -452,13 +453,14 @@ export class AutonomousWorker {
     const executorResult = mapTaskExecutorResult(
       taskExecutor.execute(toRoadmapTaskInput(nextTask)),
     );
+    const isPrepared = executorResult.status === 'prepared';
     const errors = [...executorResult.errors];
     const warnings = [...executorResult.warnings];
     let lintResult: AutonomousWorkerCommandResult | null = null;
     let buildResult: AutonomousWorkerCommandResult | null = null;
     let testsResult: AutonomousWorkerCommandResult | null = null;
 
-    if (executorResult.success) {
+    if (executorResult.success && !isPrepared) {
       if (!nextTask.skipLint) {
         lintResult = this.commandRunner.lint();
         errors.push(...lintResult.errors);
@@ -486,7 +488,7 @@ export class AutonomousWorker {
       (lintResult === null || lintResult.success) &&
       (buildResult === null || buildResult.success) &&
       (testsResult === null || testsResult.success);
-    const success = executorResult.success && commandSuccess;
+    const success = isPrepared ? false : executorResult.success && commandSuccess;
     const finishedAt = nowIso();
     const durationMs =
       executorResult.durationMs +
@@ -494,17 +496,21 @@ export class AutonomousWorker {
       (buildResult?.durationMs ?? 0) +
       (testsResult?.durationMs ?? 0);
 
-    nextTask.status = success ? 'completed' : 'failed';
-    nextTask.finishedAt = finishedAt;
-    nextTask.durationMs = durationMs;
-    this.planner.syncTaskStatus(nextTask.taskId, success ? 'completed' : 'failed');
+    if (isPrepared) {
+      nextTask.status = 'running';
+    } else {
+      nextTask.status = success ? 'completed' : 'failed';
+      nextTask.finishedAt = finishedAt;
+      nextTask.durationMs = durationMs;
+      this.planner.syncTaskStatus(nextTask.taskId, success ? 'completed' : 'failed');
+    }
 
     const taskReport: AutonomousWorkerTaskReport = {
       taskId: nextTask.taskId,
       sprintId: nextTask.sprintId,
       code: nextTask.code,
       title: nextTask.title,
-      status: success ? 'completed' : 'failed',
+      status: isPrepared ? 'prepared' : success ? 'completed' : 'failed',
       durationMs,
       files: [...executorResult.files],
       errors: [...new Set(errors)],
@@ -516,10 +522,13 @@ export class AutonomousWorker {
     };
 
     this.taskReports.push(taskReport);
-    this.currentTaskId = null;
+    this.currentTaskId = isPrepared ? nextTask.taskId : null;
     this.updatedAt = finishedAt;
 
-    if (!success) {
+    if (isPrepared) {
+      this.state = 'paused';
+      this.pauseReason = 'waiting_for_external_executor';
+    } else if (!success) {
       this.state = 'failed';
       this.stopReason = errors[0] ?? 'task_execution_failed';
     } else if (this.tasks.every((task) => task.status === 'completed')) {
@@ -535,7 +544,7 @@ export class AutonomousWorker {
       taskStatus: nextTask.status,
       workerState: this.state,
       stopped: this.state !== 'running',
-      reason: success ? null : this.stopReason,
+      reason: isPrepared ? this.pauseReason : success ? null : this.stopReason,
       report: taskReport,
     };
   }

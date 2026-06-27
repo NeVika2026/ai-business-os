@@ -1,4 +1,4 @@
-import type { KnowledgeImporter } from '@/services/knowledge/import-pipeline';
+import type { KnowledgeSourceImporter } from '@/services/knowledge/import-pipeline';
 
 export interface ZipImportOptions {
   sourceId: string;
@@ -6,7 +6,8 @@ export interface ZipImportOptions {
   filePath?: string;
 }
 
-export class ZipImporter implements KnowledgeImporter<ZipImportOptions> {
+/** @deprecated Stub — not implemented. Use KnowledgePipeline instead. */
+export class ZipImporter implements KnowledgeSourceImporter<ZipImportOptions> {
   type = 'zip';
 
   async import(_options: ZipImportOptions): Promise<void> {
@@ -16,4 +17,5 @@ export class ZipImporter implements KnowledgeImporter<ZipImportOptions> {
   }
 }
 
+/** @deprecated Stub — not implemented. Use KnowledgePipeline instead. */
 export const zipImporter = new ZipImporter();
