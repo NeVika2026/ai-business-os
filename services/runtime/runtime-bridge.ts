@@ -43,6 +43,10 @@ import {
   type RuntimePipelineAdapter,
 } from '@/services/runtime/runtime-pipeline-adapter';
 import {
+  createRuntimeExecution,
+  type RuntimeExecution,
+} from '@/services/runtime/runtime-execution';
+import {
   createRuntime as createOrchestratorRuntime,
   Runtime as OrchestratorRuntime,
 } from '@/services/runtime/runtime/runtime';
@@ -155,6 +159,7 @@ export class RuntimeBridge {
     private readonly memoryAdapter: RuntimeMemoryAdapter,
     private readonly contextAdapter: RuntimeContextAdapter,
     private readonly pipelineAdapter: RuntimePipelineAdapter,
+    private readonly execution: RuntimeExecution,
   ) {}
 
   async executeAgent(
@@ -167,6 +172,14 @@ export class RuntimeBridge {
     }
 
     this.mode = 'agent';
+
+    if (options?.useFullExecution) {
+      const result = await this.execution.run({ execution });
+      this.lastAgentResult = result;
+      this.persist();
+      return result;
+    }
+
     const useLegacy = options?.useLegacyPipeline ?? !this.orchestrationOnly;
 
     const result = useLegacy
@@ -222,12 +235,7 @@ export class RuntimeBridge {
     this.mode = 'idle';
     this.lastAgentResult = null;
     this.facade.reset();
-    this.gatewayAdapter.reset();
-    this.toolAdapter.reset();
-    this.promptAdapter.reset();
-    this.memoryAdapter.reset();
-    this.contextAdapter.reset();
-    this.pipelineAdapter.reset();
+    this.execution.reset();
     this.provider.reset?.();
   }
 
@@ -257,6 +265,10 @@ export class RuntimeBridge {
 
   getPipelineAdapter(): RuntimePipelineAdapter {
     return this.pipelineAdapter;
+  }
+
+  getExecution(): RuntimeExecution {
+    return this.execution;
   }
 
   private async executeAgentOrchestration(execution: AgentExecution): Promise<AgentResult> {
@@ -303,6 +315,18 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
   const pipelineAdapter = options?.pipelineAdapter ?? createRuntimePipelineAdapter();
   const legacyExecute =
     options?.legacyExecute ?? ((execution: AgentExecution) => pipelineAdapter.execute(execution));
+  const execution =
+    options?.execution ??
+    createRuntimeExecution({
+      adapters: {
+        context: contextAdapter,
+        memory: memoryAdapter,
+        prompt: promptAdapter,
+        pipeline: pipelineAdapter,
+        tool: toolAdapter,
+        gateway: gatewayAdapter,
+      },
+    });
 
   return new RuntimeBridge(
     facade,
@@ -316,6 +340,7 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
     memoryAdapter,
     contextAdapter,
     pipelineAdapter,
+    execution,
   );
 }
 

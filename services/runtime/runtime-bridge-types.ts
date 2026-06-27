@@ -14,6 +14,7 @@ export type RuntimeBridgeMode = 'idle' | 'agent' | 'roadmap' | 'sprint';
 
 export interface RuntimeBridgeExecuteAgentOptions {
   useLegacyPipeline?: boolean;
+  useFullExecution?: boolean;
 }
 
 export interface RuntimeBridgeStatusView {
@@ -96,6 +97,7 @@ export interface RuntimeBridgeOptions {
   memoryAdapter?: import('@/services/runtime/runtime-memory-adapter').RuntimeMemoryAdapter;
   contextAdapter?: import('@/services/runtime/runtime-context-adapter').RuntimeContextAdapter;
   pipelineAdapter?: import('@/services/runtime/runtime-pipeline-adapter').RuntimePipelineAdapter;
+  execution?: import('@/services/runtime/runtime-execution').RuntimeExecution;
 }
 
 export const DEFAULT_RUNTIME_BRIDGE_INSTANCE_ID = 'default-bridge';
