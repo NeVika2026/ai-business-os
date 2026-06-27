@@ -4,6 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import { EmployeeMemory } from '@/components/ai/employee-memory';
 import { EmployeeRuns } from '@/components/ai/employee-runs';
 import { EmployeeStatusBadge } from '@/components/ai/employee-status';
+import { ExecuteButton } from '@/components/orchestrator/execute-button';
 import { createClient } from '@/services/supabase/server';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
 import {
@@ -103,6 +104,7 @@ export default async function EmployeeDetailPage({ params }: EmployeeDetailPageP
   const runs = mapAgentRuns(runsData ?? []);
   const memories = mapAgentMemories(memoriesData ?? []);
   const memoryScope = employee.memory.scope as MemoryScope | undefined;
+  const canExecute = employee.status === 'active' && employee.is_active;
 
   return (
     <div className="space-y-8">
@@ -118,7 +120,10 @@ export default async function EmployeeDetailPage({ params }: EmployeeDetailPageP
             <h1 className="text-2xl font-semibold text-[var(--text-primary)]">{employee.name}</h1>
             <p className="text-sm text-[var(--text-secondary)]">{employee.role_title}</p>
           </div>
-          <EmployeeStatusBadge status={employee.status} isActive={employee.is_active} />
+          <div className="flex flex-wrap items-center gap-3">
+            <EmployeeStatusBadge status={employee.status} isActive={employee.is_active} />
+            <ExecuteButton aiEmployeeId={employee.id} disabled={!canExecute} />
+          </div>
         </div>
       </div>
 

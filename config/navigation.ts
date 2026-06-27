@@ -10,6 +10,7 @@ export const MAIN_NAVIGATION: NavItem[] = [
   { label: 'Projects', href: '/projects', icon: '📁' },
   { label: 'Knowledge', href: '/knowledge', icon: '📚' },
   { label: 'AI Employees', href: '/ai-employees', icon: '🤖' },
+  { label: 'Orchestrator', href: '/orchestrator', icon: '⚡' },
   { label: 'Marketplace', href: '/marketplace', icon: '🛒' },
   { label: 'Academy', href: '/academy', icon: '🎓' },
   { label: 'Settings', href: '/settings', icon: '⚙️' },
