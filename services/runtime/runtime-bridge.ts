@@ -37,6 +37,10 @@ import {
   type RuntimeMemoryAdapter,
 } from '@/services/runtime/runtime-memory-adapter';
 import {
+  createRuntimeContextAdapter,
+  type RuntimeContextAdapter,
+} from '@/services/runtime/runtime-context-adapter';
+import {
   createRuntime as createOrchestratorRuntime,
   Runtime as OrchestratorRuntime,
 } from '@/services/runtime/runtime/runtime';
@@ -147,6 +151,7 @@ export class RuntimeBridge {
     private readonly toolAdapter: RuntimeToolAdapter,
     private readonly promptAdapter: RuntimePromptAdapter,
     private readonly memoryAdapter: RuntimeMemoryAdapter,
+    private readonly contextAdapter: RuntimeContextAdapter,
   ) {}
 
   async executeAgent(
@@ -215,6 +220,7 @@ export class RuntimeBridge {
     this.toolAdapter.reset();
     this.promptAdapter.reset();
     this.memoryAdapter.reset();
+    this.contextAdapter.reset();
     this.provider.reset?.();
   }
 
@@ -236,6 +242,10 @@ export class RuntimeBridge {
 
   getMemoryAdapter(): RuntimeMemoryAdapter {
     return this.memoryAdapter;
+  }
+
+  getContextAdapter(): RuntimeContextAdapter {
+    return this.contextAdapter;
   }
 
   private async executeAgentOrchestration(execution: AgentExecution): Promise<AgentResult> {
@@ -279,6 +289,7 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
   const toolAdapter = options?.toolAdapter ?? createRuntimeToolAdapter();
   const promptAdapter = options?.promptAdapter ?? createRuntimePromptAdapter();
   const memoryAdapter = options?.memoryAdapter ?? createRuntimeMemoryAdapter();
+  const contextAdapter = options?.contextAdapter ?? createRuntimeContextAdapter();
 
   return new RuntimeBridge(
     facade,
@@ -290,6 +301,7 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
     toolAdapter,
     promptAdapter,
     memoryAdapter,
+    contextAdapter,
   );
 }
 
