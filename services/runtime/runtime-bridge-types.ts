@@ -92,6 +92,7 @@ export interface RuntimeBridgeOptions {
   provider?: RuntimeBridgeProvider;
   gatewayAdapter?: import('@/services/runtime/runtime-gateway-adapter').RuntimeGatewayAdapter;
   toolAdapter?: import('@/services/runtime/runtime-tool-adapter').RuntimeToolAdapter;
+  promptAdapter?: import('@/services/runtime/runtime-prompt-adapter').RuntimePromptAdapter;
 }
 
 export const DEFAULT_RUNTIME_BRIDGE_INSTANCE_ID = 'default-bridge';

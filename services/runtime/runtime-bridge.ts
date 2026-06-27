@@ -29,6 +29,10 @@ import {
   type RuntimeToolAdapter,
 } from '@/services/runtime/runtime-tool-adapter';
 import {
+  createRuntimePromptAdapter,
+  type RuntimePromptAdapter,
+} from '@/services/runtime/runtime-prompt-adapter';
+import {
   createRuntime as createOrchestratorRuntime,
   Runtime as OrchestratorRuntime,
 } from '@/services/runtime/runtime/runtime';
@@ -137,6 +141,7 @@ export class RuntimeBridge {
     private readonly orchestrationOnly: boolean,
     private readonly gatewayAdapter: RuntimeGatewayAdapter,
     private readonly toolAdapter: RuntimeToolAdapter,
+    private readonly promptAdapter: RuntimePromptAdapter,
   ) {}
 
   async executeAgent(
@@ -203,6 +208,7 @@ export class RuntimeBridge {
     this.facade.reset();
     this.gatewayAdapter.reset();
     this.toolAdapter.reset();
+    this.promptAdapter.reset();
     this.provider.reset?.();
   }
 
@@ -216,6 +222,10 @@ export class RuntimeBridge {
 
   getToolAdapter(): RuntimeToolAdapter {
     return this.toolAdapter;
+  }
+
+  getPromptAdapter(): RuntimePromptAdapter {
+    return this.promptAdapter;
   }
 
   private async executeAgentOrchestration(execution: AgentExecution): Promise<AgentResult> {
@@ -257,6 +267,7 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
   const orchestrationOnly = options?.orchestrationOnly ?? true;
   const gatewayAdapter = options?.gatewayAdapter ?? createRuntimeGatewayAdapter();
   const toolAdapter = options?.toolAdapter ?? createRuntimeToolAdapter();
+  const promptAdapter = options?.promptAdapter ?? createRuntimePromptAdapter();
 
   return new RuntimeBridge(
     facade,
@@ -266,6 +277,7 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
     orchestrationOnly,
     gatewayAdapter,
     toolAdapter,
+    promptAdapter,
   );
 }
 
