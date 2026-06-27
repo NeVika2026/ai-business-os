@@ -101,3 +101,19 @@ export function createMemoryReadRequest() {
     employeeId: TEST_EMPLOYEE_ID,
   };
 }
+
+export function createExecutionWithToolCall(toolId: string, runId = TEST_RUN_ID): AgentExecution {
+  return createAgentExecution({
+    input: {
+      action: 'summarize_leads',
+      payload: {
+        trace: {
+          runId,
+          correlationId: TEST_CORRELATION_ID,
+          traceId: TEST_TRACE_ID,
+        },
+        toolCalls: [{ id: 'tool-call-failure-001', name: toolId, arguments: {} }],
+      },
+    },
+  });
+}

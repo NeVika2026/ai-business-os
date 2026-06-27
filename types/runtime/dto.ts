@@ -223,7 +223,7 @@ export interface AgentResult {
   error?: {
     code: string;
     message: string;
-    stage: 'context' | 'prompt' | 'gateway' | 'tool' | 'memory';
+    stage: 'context' | 'prompt' | 'pipeline' | 'gateway' | 'tool' | 'memory';
   };
   usage: {
     inputTokens: number;

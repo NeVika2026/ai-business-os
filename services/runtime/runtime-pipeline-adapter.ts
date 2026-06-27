@@ -20,7 +20,10 @@ import type {
   TraceContext,
 } from '@/services/runtime/runtime-pipeline-types';
 
-function validateExecution(execution: RuntimePipelineExecution): RuntimePipelineValidationView {
+function validateExecution(
+  execution: RuntimePipelineExecution,
+  dependencies: RuntimePipelineDependencies,
+): RuntimePipelineValidationView {
   const errors: string[] = [];
 
   if (!execution || typeof execution !== 'object') {
@@ -28,7 +31,7 @@ function validateExecution(execution: RuntimePipelineExecution): RuntimePipeline
   }
 
   try {
-    validateAgentExecution(execution);
+    dependencies.validateAgentExecution(execution);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'execution validation failed';
     errors.push(message);
@@ -36,7 +39,7 @@ function validateExecution(execution: RuntimePipelineExecution): RuntimePipeline
 
   if (errors.length === 0) {
     try {
-      resolveTrace(execution);
+      dependencies.resolveTrace(execution);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'trace resolution failed';
       errors.push(message);
@@ -49,8 +52,11 @@ function validateExecution(execution: RuntimePipelineExecution): RuntimePipeline
   };
 }
 
-function assertValidExecution(execution: RuntimePipelineExecution): void {
-  const validation = validateExecution(execution);
+function assertValidExecution(
+  execution: RuntimePipelineExecution,
+  dependencies: RuntimePipelineDependencies,
+): void {
+  const validation = validateExecution(execution, dependencies);
 
   if (!validation.valid) {
     throw new RuntimePipelineValidationError(validation.errors.join('; '));
@@ -80,7 +86,7 @@ export class RuntimePipelineAdapter {
   constructor(private readonly dependencies: RuntimePipelineDependencies) {}
 
   async execute(execution: RuntimePipelineExecution): Promise<AgentResult> {
-    assertValidExecution(execution);
+    assertValidExecution(execution, this.dependencies);
 
     try {
       const result = await this.dependencies.runPipeline(execution);
@@ -97,13 +103,13 @@ export class RuntimePipelineAdapter {
   }
 
   validate(execution: RuntimePipelineExecution): RuntimePipelineValidationView {
-    const result = validateExecution(execution);
+    const result = validateExecution(execution, this.dependencies);
     this.touch('validate', null, null, execution.employeeId ?? null);
     return result;
   }
 
   resolveTrace(execution: RuntimePipelineExecution): TraceContext {
-    assertValidExecution(execution);
+    assertValidExecution(execution, this.dependencies);
 
     try {
       return this.dependencies.resolveTrace(execution);

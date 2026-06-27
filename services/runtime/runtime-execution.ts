@@ -357,7 +357,7 @@ export class RuntimeExecution {
       stageReports.push({ stage: 'pipeline', status: 'error', durationMs });
       const result = buildFailedResult(
         trace,
-        'prompt',
+        'pipeline',
         error,
         timeline,
         toIsoTimestamp(Date.now()),
