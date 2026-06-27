@@ -25,6 +25,7 @@ import { createCommandRunner, type CommandRunner } from '@/services/automation/c
 import type { CommandRunResult } from '@/services/automation/command-runner-types';
 import {
   createRoadmapTaskExecutor,
+  createSafeRealTaskRoadmapHandler,
   type RoadmapTaskExecutor,
 } from '@/services/automation/roadmap-task-executor';
 import type {
@@ -128,17 +129,8 @@ function createWorkerCommandRunner(runner: CommandRunner): AutonomousWorkerComma
   };
 }
 
-function createDefaultTaskHandler(): RoadmapTaskExecutionHandler {
-  return {
-    execute(task) {
-      return {
-        success: true,
-        filesChanged: [`services/automation/${task.id}.ts`],
-        warnings: [],
-        errors: [],
-      };
-    },
-  };
+function createDefaultTaskHandler(rootDir?: string): RoadmapTaskExecutionHandler {
+  return createSafeRealTaskRoadmapHandler(rootDir);
 }
 
 function buildTasksFromRoadmap(roadmap: RoadmapInput): AutonomousWorkerTask[] {
@@ -275,6 +267,7 @@ export class AutonomousWorker {
     private readonly taskHandler: RoadmapTaskExecutionHandler,
     private readonly commandRunner: AutonomousWorkerCommandRunner,
     private readonly injectedTaskExecutor: RoadmapTaskExecutor | null = null,
+    private readonly rootDir: string | null = null,
   ) {}
 
   start(input: AutonomousWorkerStartInput): AutonomousWorkerStatusView {
@@ -522,6 +515,7 @@ export class AutonomousWorker {
 
   private createTaskExecutorForRoadmap(): RoadmapTaskExecutor {
     const tasks = this.tasks.map(toRoadmapTaskInput);
+    const rootDir = this.rootDir ?? undefined;
 
     if (this.injectedTaskExecutor) {
       this.injectedTaskExecutor.reset();
@@ -529,6 +523,7 @@ export class AutonomousWorker {
         instanceId: this.injectedTaskExecutor.getInstanceId(),
         tasks,
         handler: this.taskHandler,
+        rootDir,
       });
     }
 
@@ -536,6 +531,7 @@ export class AutonomousWorker {
       instanceId: `${this.instanceId}-task-executor`,
       tasks,
       handler: this.taskHandler,
+      rootDir,
     });
   }
 
@@ -611,13 +607,19 @@ export class AutonomousWorker {
 
 export function createAutonomousWorker(options?: AutonomousWorkerOptions): AutonomousWorker {
   const instanceId = options?.instanceId?.trim() || 'default-autonomous-worker';
-  const runner = options?.commandRunner ?? createCommandRunner({ cwd: options?.cwd });
+  const rootDir = options?.cwd?.trim() || null;
+  const runner = options?.commandRunner ?? createCommandRunner({ cwd: rootDir ?? undefined });
+  const taskHandler =
+    options?.taskHandler ??
+    options?.realTaskHandler?.toRoadmapHandler() ??
+    createDefaultTaskHandler(rootDir ?? undefined);
 
   return new AutonomousWorker(
     instanceId,
-    options?.taskHandler ?? createDefaultTaskHandler(),
+    taskHandler,
     createWorkerCommandRunner(runner),
     options?.taskExecutor ?? null,
+    rootDir,
   );
 }
 

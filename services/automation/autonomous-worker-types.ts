@@ -1,5 +1,6 @@
 import type { ISODateTime } from '@/types/runtime/dto';
 import type { CommandRunner } from '@/services/automation/command-runner';
+import type { RealTaskHandler } from '@/services/automation/real-task-handler';
 import type { RoadmapTaskExecutor } from '@/services/automation/roadmap-task-executor';
 import type { RoadmapTaskExecutionHandler } from '@/services/automation/roadmap-task-executor-types';
 import type { RoadmapInput } from '@/services/runtime/orchestrator/roadmap/roadmap-types';
@@ -135,6 +136,7 @@ export interface AutonomousWorkerOptions {
   instanceId?: string;
   taskHandler?: RoadmapTaskExecutionHandler;
   taskExecutor?: RoadmapTaskExecutor;
+  realTaskHandler?: RealTaskHandler;
   commandRunner?: CommandRunner;
   cwd?: string;
 }

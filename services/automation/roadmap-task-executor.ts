@@ -1,3 +1,6 @@
+import path from 'node:path';
+
+import { createRealTaskHandler } from '@/services/automation/real-task-handler';
 import { RoadmapTaskExecutorValidationError } from '@/services/automation/roadmap-task-executor-errors';
 import { serializeRoadmapTaskExecutorSnapshot } from '@/services/automation/roadmap-task-executor-serializer';
 import type {
@@ -37,17 +40,57 @@ function normalizeMetadata(
   return { ...metadata };
 }
 
-function createDefaultHandler(): RoadmapTaskExecutionHandler {
-  return {
-    execute(task) {
+function isTestRuntime(): boolean {
+  return (
+    process.env.NODE_ENV === 'test' ||
+    process.env.AUTOMATION_TEST_ROOT_REQUIRED === '1' ||
+    process.argv.includes('--test') ||
+    process.argv.some((arg) => arg.includes('.test.ts'))
+  );
+}
+
+export function assertSafeHandlerRootDir(rootDir?: string): void {
+  if (!isTestRuntime() || !isNonEmptyString(rootDir)) {
+    return;
+  }
+
+  const resolved = path.resolve(rootDir);
+  const projectRoot = path.resolve(process.cwd());
+  const automationDir = path.resolve(projectRoot, 'services/automation');
+
+  if (resolved === automationDir) {
+    throw new RoadmapTaskExecutorValidationError(
+      'rootDir must not be services/automation during tests',
+    );
+  }
+
+  if (resolved === projectRoot) {
+    throw new RoadmapTaskExecutorValidationError(
+      'rootDir must not be the project root during tests',
+    );
+  }
+}
+
+export function createSafeRealTaskRoadmapHandler(rootDir?: string): RoadmapTaskExecutionHandler {
+  if (isTestRuntime()) {
+    if (!isNonEmptyString(rootDir)) {
       return {
-        success: true,
-        filesChanged: [`services/automation/${task.id}.ts`],
-        warnings: [],
-        errors: [],
+        execute() {
+          throw new RoadmapTaskExecutorValidationError(
+            'rootDir is required when using the default file handler in tests',
+          );
+        },
       };
-    },
-  };
+    }
+
+    assertSafeHandlerRootDir(rootDir);
+  }
+
+  return createRealTaskHandler({ rootDir }).toRoadmapHandler();
+}
+
+function createDefaultHandler(rootDir?: string): RoadmapTaskExecutionHandler {
+  return createSafeRealTaskRoadmapHandler(rootDir);
 }
 
 function createFailureResult(
@@ -409,7 +452,7 @@ export function createRoadmapTaskExecutor(
 
   return new RoadmapTaskExecutor(
     instanceId,
-    options?.handler ?? createDefaultHandler(),
+    options?.handler ?? createDefaultHandler(options?.rootDir),
     options?.tasks,
   );
 }

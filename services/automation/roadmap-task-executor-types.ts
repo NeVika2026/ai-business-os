@@ -28,8 +28,12 @@ export interface RoadmapTaskExecutionReport {
 export interface RoadmapTaskHandlerResult {
   success: boolean;
   filesChanged: string[];
+  filesCreated?: string[];
+  filesModified?: string[];
+  filesDeleted?: string[];
   warnings: string[];
   errors: string[];
+  rollbackAvailable?: boolean;
 }
 
 export interface RoadmapTaskExecutionHandler {
@@ -69,6 +73,7 @@ export interface RoadmapTaskExecutorOptions {
   instanceId?: string;
   tasks?: RoadmapTaskInput[];
   handler?: RoadmapTaskExecutionHandler;
+  rootDir?: string;
 }
 
 export interface SerializedRoadmapTaskExecutionReport {
