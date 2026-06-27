@@ -68,8 +68,8 @@ export class OrchestratorHub {
     private readonly policy: AutomationPolicy = DEFAULT_AUTOMATION_POLICY,
     options?: OrchestratorHubOptions,
   ) {
-    this.automation = createAutomationController({ policy: this.policy });
-    this.runner = createRuntimeRunner();
+    this.automation = options?.automation ?? createAutomationController({ policy: this.policy });
+    this.runner = options?.runner ?? createRuntimeRunner();
     this.defaultSkipRuntime = options?.skipRuntime ?? false;
   }
 

@@ -27,8 +27,8 @@ import type {
   RoadmapSessionStartInput,
   RoadmapSessionStatusView,
   RoadmapSprintExecutionRecord,
-  DEFAULT_MAX_SPRINTS_PER_RUN,
 } from '@/services/runtime/orchestrator/session/roadmap-session-types';
+import { DEFAULT_MAX_SPRINTS_PER_RUN } from '@/services/runtime/orchestrator/session/roadmap-session-types';
 import { validateRoadmapSessionStartInput } from '@/services/runtime/orchestrator/session/roadmap-session-validator';
 
 function createInitialSprintRecords(roadmap: RoadmapInput): RoadmapSprintExecutionRecord[] {
@@ -405,8 +405,8 @@ export class RoadmapSession {
 
 export function createRoadmapSession(options?: RoadmapSessionOptions): RoadmapSession {
   const provider = options?.provider ?? mockRoadmapSessionProvider;
-  const hub = createOrchestratorHub({ skipRuntime: options?.skipRuntime });
-  const maxSprintsPerRun = options?.maxSprintsPerRun ?? DEFAULT_MAX;
+  const hub = options?.hub ?? createOrchestratorHub({ skipRuntime: options?.skipRuntime });
+  const maxSprintsPerRun = options?.maxSprintsPerRun ?? DEFAULT_MAX_SPRINTS_PER_RUN;
 
   return new RoadmapSession(provider, hub, maxSprintsPerRun);
 }

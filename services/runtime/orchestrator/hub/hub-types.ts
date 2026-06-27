@@ -1,5 +1,7 @@
 import type { ISODateTime, UUID } from '@/types/runtime/dto';
+import type { AutomationController } from '@/services/runtime/orchestrator/automation/automation-controller';
 import type { AutomationPolicy } from '@/services/runtime/orchestrator/automation/automation-policy';
+import type { RuntimeRunner } from '@/services/runtime/orchestrator/runner/runtime-runner';
 import type {
   AutomationReport,
   AutomationRunUntilStopResult,
@@ -91,6 +93,8 @@ export interface OrchestratorHubOptions {
   provider?: HubProvider;
   policy?: AutomationPolicy;
   skipRuntime?: boolean;
+  runner?: RuntimeRunner;
+  automation?: AutomationController;
 }
 
 export type { RoadmapSprintPlan };

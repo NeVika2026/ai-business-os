@@ -1,4 +1,5 @@
 import type { ISODateTime } from '@/types/runtime/dto';
+import type { OrchestratorHub } from '@/services/runtime/orchestrator/hub/orchestrator-hub';
 import type {
   HubExecutionResult,
   HubRuntimeContext,
@@ -105,6 +106,7 @@ export interface RoadmapSessionOptions {
   provider?: RoadmapSessionProvider;
   maxSprintsPerRun?: number;
   skipRuntime?: boolean;
+  hub?: OrchestratorHub;
 }
 
 export const DEFAULT_MAX_SPRINTS_PER_RUN = 10;
