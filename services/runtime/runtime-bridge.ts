@@ -25,6 +25,10 @@ import {
   type RuntimeGatewayAdapter,
 } from '@/services/runtime/runtime-gateway-adapter';
 import {
+  createRuntimeToolAdapter,
+  type RuntimeToolAdapter,
+} from '@/services/runtime/runtime-tool-adapter';
+import {
   createRuntime as createOrchestratorRuntime,
   Runtime as OrchestratorRuntime,
 } from '@/services/runtime/runtime/runtime';
@@ -132,6 +136,7 @@ export class RuntimeBridge {
     private readonly legacyExecute: (execution: AgentExecution) => Promise<AgentResult>,
     private readonly orchestrationOnly: boolean,
     private readonly gatewayAdapter: RuntimeGatewayAdapter,
+    private readonly toolAdapter: RuntimeToolAdapter,
   ) {}
 
   async executeAgent(
@@ -197,6 +202,7 @@ export class RuntimeBridge {
     this.lastAgentResult = null;
     this.facade.reset();
     this.gatewayAdapter.reset();
+    this.toolAdapter.reset();
     this.provider.reset?.();
   }
 
@@ -206,6 +212,10 @@ export class RuntimeBridge {
 
   getGatewayAdapter(): RuntimeGatewayAdapter {
     return this.gatewayAdapter;
+  }
+
+  getToolAdapter(): RuntimeToolAdapter {
+    return this.toolAdapter;
   }
 
   private async executeAgentOrchestration(execution: AgentExecution): Promise<AgentResult> {
@@ -246,6 +256,7 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
   const legacyExecute = options?.legacyExecute ?? executeRuntime;
   const orchestrationOnly = options?.orchestrationOnly ?? true;
   const gatewayAdapter = options?.gatewayAdapter ?? createRuntimeGatewayAdapter();
+  const toolAdapter = options?.toolAdapter ?? createRuntimeToolAdapter();
 
   return new RuntimeBridge(
     facade,
@@ -254,6 +265,7 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
     legacyExecute,
     orchestrationOnly,
     gatewayAdapter,
+    toolAdapter,
   );
 }
 

@@ -152,6 +152,24 @@ export function resolveRegisteredTool(toolId: string): RegisteredTool {
   return tool;
 }
 
+export function hasRegisteredTool(toolId: string): boolean {
+  return toolRegistry.exists(toolId);
+}
+
+export function listRegisteredToolSummaries(): Array<{
+  id: string;
+  category: string;
+  enabled: boolean;
+  description: string;
+}> {
+  return toolRegistry.list().map((tool) => ({
+    id: tool.id,
+    category: tool.category,
+    enabled: tool.enabled,
+    description: tool.description,
+  }));
+}
+
 export function prepareRegistryTool(execution: ToolExecution): RegisteredTool {
   const tool = resolveRegisteredTool(execution.call.name);
   const metadataErrors = validateRegisteredToolMetadata(tool, execution);
