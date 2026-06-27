@@ -21,6 +21,10 @@ import type {
 } from '@/services/runtime/runtime-bridge-types';
 import { DEFAULT_RUNTIME_BRIDGE_INSTANCE_ID } from '@/services/runtime/runtime-bridge-types';
 import {
+  createRuntimeGatewayAdapter,
+  type RuntimeGatewayAdapter,
+} from '@/services/runtime/runtime-gateway-adapter';
+import {
   createRuntime as createOrchestratorRuntime,
   Runtime as OrchestratorRuntime,
 } from '@/services/runtime/runtime/runtime';
@@ -127,6 +131,7 @@ export class RuntimeBridge {
     private readonly instanceId: string,
     private readonly legacyExecute: (execution: AgentExecution) => Promise<AgentResult>,
     private readonly orchestrationOnly: boolean,
+    private readonly gatewayAdapter: RuntimeGatewayAdapter,
   ) {}
 
   async executeAgent(
@@ -191,11 +196,16 @@ export class RuntimeBridge {
     this.mode = 'idle';
     this.lastAgentResult = null;
     this.facade.reset();
+    this.gatewayAdapter.reset();
     this.provider.reset?.();
   }
 
   getFacade(): OrchestratorRuntime {
     return this.facade;
+  }
+
+  getGatewayAdapter(): RuntimeGatewayAdapter {
+    return this.gatewayAdapter;
   }
 
   private async executeAgentOrchestration(execution: AgentExecution): Promise<AgentResult> {
@@ -235,8 +245,16 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
   const provider = options?.provider ?? defaultBridgeProvider;
   const legacyExecute = options?.legacyExecute ?? executeRuntime;
   const orchestrationOnly = options?.orchestrationOnly ?? true;
+  const gatewayAdapter = options?.gatewayAdapter ?? createRuntimeGatewayAdapter();
 
-  return new RuntimeBridge(facade, provider, instanceId, legacyExecute, orchestrationOnly);
+  return new RuntimeBridge(
+    facade,
+    provider,
+    instanceId,
+    legacyExecute,
+    orchestrationOnly,
+    gatewayAdapter,
+  );
 }
 
 /** Default dev/test singleton. Do not use for concurrent production executions. */

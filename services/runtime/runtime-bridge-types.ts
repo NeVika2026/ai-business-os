@@ -90,6 +90,7 @@ export interface RuntimeBridgeOptions {
   legacyExecute?: (execution: import('@/types/runtime/dto').AgentExecution) => Promise<AgentResult>;
   orchestrationOnly?: boolean;
   provider?: RuntimeBridgeProvider;
+  gatewayAdapter?: import('@/services/runtime/runtime-gateway-adapter').RuntimeGatewayAdapter;
 }
 
 export const DEFAULT_RUNTIME_BRIDGE_INSTANCE_ID = 'default-bridge';
