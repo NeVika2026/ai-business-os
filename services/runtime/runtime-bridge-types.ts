@@ -100,6 +100,7 @@ export interface RuntimeBridgeOptions {
   execution?: import('@/services/runtime/runtime-execution').RuntimeExecution;
   validator?: import('@/services/runtime/runtime-validator').RuntimeValidator;
   api?: import('@/services/runtime/runtime-api').RuntimeApi;
+  observer?: import('@/services/runtime/runtime-observer').RuntimeObserver;
 }
 
 export const DEFAULT_RUNTIME_BRIDGE_INSTANCE_ID = 'default-bridge';

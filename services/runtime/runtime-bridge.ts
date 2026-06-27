@@ -47,6 +47,8 @@ import {
   createRuntimeExecution,
   type RuntimeExecution,
 } from '@/services/runtime/runtime-execution';
+import { createRuntimeObserver, type RuntimeObserver } from '@/services/runtime/runtime-observer';
+import type { RuntimeObserverEmitInput } from '@/services/runtime/runtime-observer-types';
 import {
   createRuntimeValidator,
   type RuntimeValidator,
@@ -144,6 +146,213 @@ class InMemoryRuntimeBridgeProvider implements RuntimeBridgeProvider {
 
 const defaultBridgeProvider = new InMemoryRuntimeBridgeProvider();
 
+function resolveRunId(execution: AgentExecution): string | null {
+  try {
+    return execution.input.payload.trace &&
+      typeof execution.input.payload.trace === 'object' &&
+      typeof (execution.input.payload.trace as { runId?: unknown }).runId === 'string'
+      ? ((execution.input.payload.trace as { runId: string }).runId ?? null)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function wireGatewayObserver(adapter: RuntimeGatewayAdapter, observer: RuntimeObserver): void {
+  const originalComplete = adapter.complete.bind(adapter);
+
+  adapter.complete = async (request) => {
+    const startedAt = Date.now();
+
+    try {
+      const response = await originalComplete(request);
+      observer.emit({
+        event: 'gateway.called',
+        runId: request.trace.runId,
+        duration: Date.now() - startedAt,
+        payload: {
+          providerCode: request.providerCode,
+          modelCode: request.modelCode,
+          hasError: response.error !== undefined,
+        },
+      });
+      return response;
+    } catch (error) {
+      observer.emit({
+        event: 'gateway.called',
+        runId: request.trace.runId,
+        duration: Date.now() - startedAt,
+        payload: {
+          providerCode: request.providerCode,
+          modelCode: request.modelCode,
+          failed: true,
+          message: error instanceof Error ? error.message : 'gateway call failed',
+        },
+      });
+      throw error;
+    }
+  };
+}
+
+function wireToolObserver(adapter: RuntimeToolAdapter, observer: RuntimeObserver): void {
+  const originalExecute = adapter.execute.bind(adapter);
+
+  adapter.execute = async (toolRequest) => {
+    const startedAt = Date.now();
+
+    try {
+      const result = await originalExecute(toolRequest);
+      observer.emit({
+        event: 'tool.called',
+        runId: toolRequest.trace.runId,
+        duration: Date.now() - startedAt,
+        payload: {
+          toolId: toolRequest.call.name,
+          success: result.success,
+        },
+      });
+      return result;
+    } catch (error) {
+      observer.emit({
+        event: 'tool.called',
+        runId: toolRequest.trace.runId,
+        duration: Date.now() - startedAt,
+        payload: {
+          toolId: toolRequest.call.name,
+          success: false,
+          message: error instanceof Error ? error.message : 'tool execution failed',
+        },
+      });
+      throw error;
+    }
+  };
+}
+
+function wireMemoryObserver(adapter: RuntimeMemoryAdapter, observer: RuntimeObserver): void {
+  const originalRead = adapter.read.bind(adapter);
+  const originalWrite = adapter.write.bind(adapter);
+
+  adapter.read = (request) => {
+    const startedAt = Date.now();
+    const result = originalRead(request);
+    observer.emit({
+      event: 'memory.read',
+      runId: request.trace.runId,
+      duration: Date.now() - startedAt,
+      payload: {
+        organizationId: request.scope.organizationId,
+        employeeId: request.employeeId,
+        entryCount: result.entryCount,
+      },
+    });
+    return result;
+  };
+
+  adapter.write = (memory) => {
+    const startedAt = Date.now();
+    const result = originalWrite(memory);
+    observer.emit({
+      event: 'memory.write',
+      duration: Date.now() - startedAt,
+      payload: {
+        organizationId: result.organizationId,
+        employeeId: result.employeeId,
+        memoryId: result.id,
+        kind: result.kind,
+      },
+    });
+    return result;
+  };
+}
+
+function wirePromptObserver(adapter: RuntimePromptAdapter, observer: RuntimeObserver): void {
+  const originalCompile = adapter.compile.bind(adapter);
+
+  adapter.compile = (input) => {
+    const startedAt = Date.now();
+    const result = originalCompile(input);
+    observer.emit({
+      event: 'prompt.compiled',
+      duration: Date.now() - startedAt,
+      payload: {
+        messageCount: result.messages.length,
+        model: result.model ?? null,
+      },
+    });
+    return result;
+  };
+}
+
+function wirePipelineObserver(adapter: RuntimePipelineAdapter, observer: RuntimeObserver): void {
+  const originalExecute = adapter.execute.bind(adapter);
+
+  adapter.execute = async (execution) => {
+    const runId = resolveRunId(execution);
+    const startedAt = Date.now();
+
+    observer.emit({
+      event: 'pipeline.started',
+      runId: runId ?? undefined,
+      payload: {
+        employeeId: execution.employeeId,
+        action: execution.input.action,
+      },
+    });
+
+    try {
+      const result = await originalExecute(execution);
+      observer.emit({
+        event: 'pipeline.finished',
+        runId: result.trace.runId,
+        duration: Date.now() - startedAt,
+        payload: {
+          status: result.status,
+          employeeId: execution.employeeId,
+        },
+      });
+      return result;
+    } catch (error) {
+      observer.emit({
+        event: 'pipeline.finished',
+        runId: runId ?? undefined,
+        duration: Date.now() - startedAt,
+        payload: {
+          status: 'failed',
+          employeeId: execution.employeeId,
+          message: error instanceof Error ? error.message : 'pipeline execution failed',
+        },
+      });
+      throw error;
+    }
+  };
+}
+
+function wireRuntimeObservers(input: {
+  observer: RuntimeObserver;
+  gatewayAdapter: RuntimeGatewayAdapter;
+  toolAdapter: RuntimeToolAdapter;
+  memoryAdapter: RuntimeMemoryAdapter;
+  promptAdapter: RuntimePromptAdapter;
+  pipelineAdapter: RuntimePipelineAdapter;
+}): void {
+  wireGatewayObserver(input.gatewayAdapter, input.observer);
+  wireToolObserver(input.toolAdapter, input.observer);
+  wireMemoryObserver(input.memoryAdapter, input.observer);
+  wirePromptObserver(input.promptAdapter, input.observer);
+  wirePipelineObserver(input.pipelineAdapter, input.observer);
+}
+
+function emitRuntimeObserverEvent(
+  observer: RuntimeObserver,
+  input: RuntimeObserverEmitInput,
+): void {
+  try {
+    observer.emit(input);
+  } catch {
+    // Observer failures must not affect runtime execution.
+  }
+}
+
 /**
  * Bridge between legacy agent runtime entry and orchestration facade.
  * Public operations are routed through RuntimeApi.
@@ -167,6 +376,7 @@ export class RuntimeBridge {
     private readonly contextAdapter: RuntimeContextAdapter,
     private readonly pipelineAdapter: RuntimePipelineAdapter,
     private readonly execution: RuntimeExecution,
+    private readonly observer: RuntimeObserver,
     validator?: RuntimeValidator,
     api?: RuntimeApi,
   ) {
@@ -195,37 +405,123 @@ export class RuntimeBridge {
     }
 
     this.mode = 'agent';
+    const runId = resolveRunId(execution);
+    const startedAt = Date.now();
+    emitRuntimeObserverEvent(this.observer, {
+      event: 'runtime.started',
+      runId: runId ?? undefined,
+      payload: {
+        employeeId: execution.employeeId,
+        action: execution.input.action,
+        useFullExecution: options?.useFullExecution ?? false,
+        useLegacyPipeline: options?.useLegacyPipeline ?? !this.orchestrationOnly,
+      },
+    });
 
-    if (options?.useFullExecution) {
-      const result = await this.execution.run({ execution });
+    try {
+      if (options?.useFullExecution) {
+        const result = await this.execution.run({ execution });
+        this.lastAgentResult = result;
+        this.persist();
+        emitRuntimeObserverEvent(this.observer, {
+          event: result.status === 'failed' ? 'runtime.failed' : 'runtime.finished',
+          runId: result.trace.runId,
+          duration: Date.now() - startedAt,
+          payload: {
+            status: result.status,
+            errorStage: result.error?.stage ?? null,
+          },
+        });
+        return result;
+      }
+
+      const useLegacy = options?.useLegacyPipeline ?? !this.orchestrationOnly;
+
+      const result = useLegacy
+        ? await this.legacyExecute(execution)
+        : await this.executeAgentOrchestration(execution);
+
       this.lastAgentResult = result;
       this.persist();
+      emitRuntimeObserverEvent(this.observer, {
+        event: result.status === 'failed' ? 'runtime.failed' : 'runtime.finished',
+        runId: result.trace.runId,
+        duration: Date.now() - startedAt,
+        payload: {
+          status: result.status,
+          errorStage: result.error?.stage ?? null,
+        },
+      });
+
       return result;
+    } catch (error) {
+      emitRuntimeObserverEvent(this.observer, {
+        event: 'runtime.failed',
+        runId: runId ?? undefined,
+        duration: Date.now() - startedAt,
+        payload: {
+          message: error instanceof Error ? error.message : 'runtime execution failed',
+        },
+      });
+      throw error;
     }
-
-    const useLegacy = options?.useLegacyPipeline ?? !this.orchestrationOnly;
-
-    const result = useLegacy
-      ? await this.legacyExecute(execution)
-      : await this.executeAgentOrchestration(execution);
-
-    this.lastAgentResult = result;
-    this.persist();
-
-    return result;
   }
 
   executeRoadmap(input: RuntimeBridgeExecuteRoadmapInput): RuntimeBridgeExecuteRoadmapResult {
     this.mode = 'roadmap';
+    const startedAt = Date.now();
+    emitRuntimeObserverEvent(this.observer, {
+      event: 'roadmap.started',
+      runId: input.runtimeContext.runId,
+      payload: {
+        roadmapId: input.roadmap.id,
+        sprintCount: input.roadmap.sprints.length,
+      },
+    });
+
     const result = this.facade.executeRoadmap(input);
     this.persist();
+
+    emitRuntimeObserverEvent(this.observer, {
+      event: 'roadmap.finished',
+      runId: input.runtimeContext.runId,
+      duration: Date.now() - startedAt,
+      payload: {
+        roadmapId: result.roadmapId,
+        sessionStatus: result.sessionStatus,
+        sprintsExecuted: result.sprintsExecuted,
+        stopped: result.stopped,
+      },
+    });
+
     return result;
   }
 
   executeSprint(input: RuntimeBridgeExecuteSprintInput): RuntimeBridgeExecuteSprintResult {
     this.mode = 'sprint';
+    const startedAt = Date.now();
+    emitRuntimeObserverEvent(this.observer, {
+      event: 'sprint.started',
+      runId: input.runtimeContext.runId,
+      payload: {
+        sprintId: input.sprint.id,
+        sprintCode: input.sprint.code,
+      },
+    });
+
     const result = this.facade.executeSprint(input);
     this.persist();
+
+    emitRuntimeObserverEvent(this.observer, {
+      event: 'sprint.finished',
+      runId: input.runtimeContext.runId,
+      duration: Date.now() - startedAt,
+      payload: {
+        sprintId: result.sprintId,
+        phase: result.phase,
+      },
+    });
+
     return result;
   }
 
@@ -289,6 +585,7 @@ export class RuntimeBridge {
     this.execution.reset();
     this.runtimeValidator?.reset();
     this.provider.reset?.();
+    this.observer.reset();
   }
 
   supportsFullExecution(): boolean {
@@ -351,6 +648,10 @@ export class RuntimeBridge {
     return this.runtimeValidator;
   }
 
+  getObserver(): RuntimeObserver {
+    return this.observer;
+  }
+
   private async executeAgentOrchestration(execution: AgentExecution): Promise<AgentResult> {
     const trace = this.pipelineAdapter.resolveTrace(execution);
     const context = toRuntimeExecutionContext(execution, trace);
@@ -393,6 +694,18 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
   const memoryAdapter = options?.memoryAdapter ?? createRuntimeMemoryAdapter();
   const contextAdapter = options?.contextAdapter ?? createRuntimeContextAdapter();
   const pipelineAdapter = options?.pipelineAdapter ?? createRuntimePipelineAdapter();
+  const observer =
+    options?.observer ?? createRuntimeObserver({ instanceId: `${instanceId}-observer` });
+
+  wireRuntimeObservers({
+    observer,
+    gatewayAdapter,
+    toolAdapter,
+    memoryAdapter,
+    promptAdapter,
+    pipelineAdapter,
+  });
+
   const legacyExecute =
     options?.legacyExecute ?? ((execution: AgentExecution) => pipelineAdapter.execute(execution));
   const execution =
@@ -421,6 +734,7 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
     contextAdapter,
     pipelineAdapter,
     execution,
+    observer,
     options?.validator,
     options?.api,
   );
