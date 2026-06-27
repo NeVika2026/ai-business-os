@@ -41,3 +41,23 @@ export const toolExecutor = {
   validate,
   executeMany,
 };
+
+export { auditRecorder } from '@/services/runtime/tools/audit/audit-recorder';
+export type { ToolAuditEvent, ToolAuditMetadata } from '@/services/runtime/tools/audit/audit-types';
+export {
+  computeIdempotencyKey,
+  stableStringify,
+} from '@/services/runtime/tools/idempotency/idempotency-key';
+export { shouldCacheToolResult } from '@/services/runtime/tools/idempotency/idempotency-cache-policy';
+export { idempotencyStore } from '@/services/runtime/tools/idempotency/idempotency-store';
+export {
+  executeWithRetry,
+  isRetryableError,
+  toRetryConfig,
+} from '@/services/runtime/tools/retry/retry-policy';
+export type { BackoffStrategy, RetryConfig } from '@/services/runtime/tools/retry/retry-types';
+export {
+  NonRetryableError,
+  RetryError,
+  RetryExhaustedError,
+} from '@/services/runtime/tools/retry/retry-errors';

@@ -152,9 +152,7 @@ export function resolveRegisteredTool(toolId: string): RegisteredTool {
   return tool;
 }
 
-export async function executeViaRegistry(
-  execution: ToolExecution,
-): Promise<Record<string, unknown>> {
+export function prepareRegistryTool(execution: ToolExecution): RegisteredTool {
   const tool = resolveRegisteredTool(execution.call.name);
   const metadataErrors = validateRegisteredToolMetadata(tool, execution);
 
@@ -162,5 +160,12 @@ export async function executeViaRegistry(
     throw new ToolValidationError(metadataErrors.join('; '));
   }
 
+  return tool;
+}
+
+export async function executeViaRegistry(
+  execution: ToolExecution,
+): Promise<Record<string, unknown>> {
+  const tool = prepareRegistryTool(execution);
   return executeRegisteredToolHandler(execution, tool);
 }
