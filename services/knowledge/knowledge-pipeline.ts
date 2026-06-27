@@ -22,6 +22,22 @@ import type {
 } from '@/services/knowledge/knowledge-pipeline-types';
 import { createKnowledgeSearchEngine } from '@/services/knowledge/knowledge-search-engine';
 
+export interface KnowledgePipelineBatchIngestError {
+  source: string;
+  message: string;
+}
+
+export interface KnowledgePipelineBatchIngestResult {
+  results: KnowledgePipelineIngestResult[];
+  errors: KnowledgePipelineBatchIngestError[];
+}
+
+export interface KnowledgePipelineIngestMetrics {
+  headings: number;
+  links: number;
+  tags: number;
+}
+
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
@@ -95,6 +111,13 @@ function buildSectionsFromParsed(parsed: ParsedKnowledgeMarkdown): Array<{
 export class KnowledgePipeline {
   private lastIngestAt: string | null = null;
   private updatedAt: string = new Date().toISOString();
+  private ingestMetrics: KnowledgePipelineIngestMetrics = {
+    headings: 0,
+    links: 0,
+    tags: 0,
+  };
+  private ingestTagSet = new Set<string>();
+  private documentMetrics = new Map<string, { headings: number; links: number }>();
 
   constructor(
     private readonly instanceId: string,
@@ -150,6 +173,63 @@ export class KnowledgePipeline {
 
     const document = this.importer.importMarkdown(input);
     return this.processDocument(document);
+  }
+
+  ingestDocuments(
+    inputs: KnowledgePipelineIngestMarkdownInput[],
+  ): KnowledgePipelineBatchIngestResult {
+    if (!Array.isArray(inputs)) {
+      throw new KnowledgePipelineValidationError('inputs must be an array');
+    }
+
+    const results: KnowledgePipelineIngestResult[] = [];
+    const errors: KnowledgePipelineBatchIngestError[] = [];
+
+    for (const input of inputs) {
+      try {
+        results.push(this.ingestMarkdown(input));
+      } catch (error) {
+        errors.push({
+          source: input.source?.trim() || input.path?.trim() || 'inline-markdown',
+          message: error instanceof Error ? error.message : 'document ingest failed',
+        });
+      }
+    }
+
+    this.refreshSearchEngine();
+    return { results, errors };
+  }
+
+  reindex(): KnowledgePipelineBatchIngestResult {
+    this.documentMetrics.clear();
+    this.ingestTagSet.clear();
+    this.recomputeIngestMetrics();
+
+    const documents = this.importer.getDocuments();
+    const results: KnowledgePipelineIngestResult[] = [];
+    const errors: KnowledgePipelineBatchIngestError[] = [];
+
+    for (const document of documents) {
+      try {
+        results.push(this.processDocument(document));
+      } catch (error) {
+        errors.push({
+          source: document.source,
+          message: error instanceof Error ? error.message : 'document reindex failed',
+        });
+      }
+    }
+
+    this.refreshSearchEngine();
+    return { results, errors };
+  }
+
+  getIngestMetrics(): KnowledgePipelineIngestMetrics {
+    return {
+      headings: this.ingestMetrics.headings,
+      links: this.ingestMetrics.links,
+      tags: this.ingestMetrics.tags,
+    };
   }
 
   search(query: string, limit?: number): KnowledgePipelineSearchResult[] {
@@ -211,7 +291,54 @@ export class KnowledgePipeline {
     this.importer.reset();
     this.searchEngine.reset();
     this.lastIngestAt = null;
+    this.ingestMetrics = {
+      headings: 0,
+      links: 0,
+      tags: 0,
+    };
+    this.ingestTagSet.clear();
+    this.documentMetrics.clear();
     this.updatedAt = new Date().toISOString();
+  }
+
+  private refreshSearchEngine(): void {
+    this.updatedAt = new Date().toISOString();
+  }
+
+  private trackIngestMetrics(
+    documentId: string,
+    parsed: ParsedKnowledgeMarkdown,
+    tags: string[],
+  ): void {
+    this.documentMetrics.set(documentId, {
+      headings: parsed.headings.length,
+      links: parsed.links.length,
+    });
+
+    for (const tag of tags) {
+      const normalized = tag.trim().toLowerCase();
+      if (normalized) {
+        this.ingestTagSet.add(normalized);
+      }
+    }
+
+    this.recomputeIngestMetrics();
+  }
+
+  private recomputeIngestMetrics(): void {
+    let headings = 0;
+    let links = 0;
+
+    for (const metrics of this.documentMetrics.values()) {
+      headings += metrics.headings;
+      links += metrics.links;
+    }
+
+    this.ingestMetrics = {
+      headings,
+      links,
+      tags: this.ingestTagSet.size,
+    };
   }
 
   private processDocument(document: KnowledgeImportedDocument): KnowledgePipelineIngestResult {
@@ -222,6 +349,7 @@ export class KnowledgePipeline {
       });
       const tags = [...new Set([...document.tags, ...parsed.tags])];
       const sections = buildSectionsFromParsed(parsed);
+      this.trackIngestMetrics(document.id, parsed, tags);
 
       if (sections.length === 0) {
         throw new KnowledgePipelineIngestError(
