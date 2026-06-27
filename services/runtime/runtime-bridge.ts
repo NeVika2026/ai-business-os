@@ -59,6 +59,10 @@ import {
   createRuntimeKnowledgeContext,
   type RuntimeKnowledgeContext,
 } from '@/services/runtime/runtime-knowledge-context';
+import {
+  createRuntimeMemoryContext,
+  type RuntimeMemoryContext,
+} from '@/services/runtime/runtime-memory-context';
 import { createRuntimeObserver, type RuntimeObserver } from '@/services/runtime/runtime-observer';
 import type { RuntimeObserverEmitInput } from '@/services/runtime/runtime-observer-types';
 import {
@@ -392,6 +396,7 @@ export class RuntimeBridge {
     private readonly knowledgeAdapter: RuntimeKnowledgeAdapter,
     private readonly knowledgeContext: RuntimeKnowledgeContext,
     private readonly memoryServiceAdapter: RuntimeMemoryServiceAdapter,
+    private readonly memoryContext: RuntimeMemoryContext,
     validator?: RuntimeValidator,
     api?: RuntimeApi,
   ) {
@@ -604,6 +609,7 @@ export class RuntimeBridge {
     this.knowledgeAdapter.reset();
     this.knowledgeContext.reset();
     this.memoryServiceAdapter.reset();
+    this.memoryContext.reset();
   }
 
   supportsFullExecution(): boolean {
@@ -682,6 +688,10 @@ export class RuntimeBridge {
     return this.memoryServiceAdapter;
   }
 
+  getMemoryContext(): RuntimeMemoryContext {
+    return this.memoryContext;
+  }
+
   private async executeAgentOrchestration(execution: AgentExecution): Promise<AgentResult> {
     const trace = this.pipelineAdapter.resolveTrace(execution);
     const context = toRuntimeExecutionContext(execution, trace);
@@ -735,11 +745,20 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
   const memoryServiceAdapter =
     options?.memoryServiceAdapter ??
     createRuntimeMemoryServiceAdapter({ instanceId: `${instanceId}-memory-service` });
+  const memoryContext =
+    options?.memoryContext ??
+    createRuntimeMemoryContext({
+      instanceId: `${instanceId}-memory-context`,
+      memoryServiceAdapter,
+      enabled: options?.memoryInjectionEnabled ?? false,
+    });
   const contextAdapter =
     options?.contextAdapter ??
     createRuntimeContextAdapter({
       knowledgeContext,
       knowledgeInjectionEnabled: options?.knowledgeInjectionEnabled ?? false,
+      memoryContext,
+      memoryInjectionEnabled: options?.memoryInjectionEnabled ?? false,
     });
   const pipelineAdapter = options?.pipelineAdapter ?? createRuntimePipelineAdapter();
   const observer =
@@ -786,6 +805,7 @@ export function createRuntimeBridge(options?: RuntimeBridgeOptions): RuntimeBrid
     knowledgeAdapter,
     knowledgeContext,
     memoryServiceAdapter,
+    memoryContext,
     options?.validator,
     options?.api,
   );

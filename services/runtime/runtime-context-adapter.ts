@@ -5,6 +5,7 @@ import {
   RuntimeContextValidationError,
 } from '@/services/runtime/runtime-context-errors';
 import type { RuntimeKnowledgeContext } from '@/services/runtime/runtime-knowledge-context';
+import type { RuntimeMemoryContext } from '@/services/runtime/runtime-memory-context';
 import {
   serializeRuntimeContextPackage,
   serializeRuntimeContextPreview,
@@ -92,6 +93,8 @@ function createDefaultDependencies(): RuntimeContextDependencies {
 export interface RuntimeContextAdapterFactoryOptions extends RuntimeContextAdapterOptions {
   knowledgeContext?: RuntimeKnowledgeContext;
   knowledgeInjectionEnabled?: boolean;
+  memoryContext?: RuntimeMemoryContext;
+  memoryInjectionEnabled?: boolean;
 }
 
 function resolveKnowledgeQuery(request: RuntimeContextBuildRequest): string {
@@ -123,6 +126,35 @@ function resolveKnowledgeInjectionEnabled(
   return adapterEnabled || (knowledgeContext?.isEnabled() ?? false);
 }
 
+function resolveMemoryQuery(request: RuntimeContextBuildRequest): string {
+  const payload = request.request.payload;
+  const explicitQuery = payload.memoryQuery;
+
+  if (typeof explicitQuery === 'string' && explicitQuery.trim().length > 0) {
+    return explicitQuery.trim();
+  }
+
+  return request.request.action;
+}
+
+function resolveMemoryInjectionEnabled(
+  request: RuntimeContextBuildRequest,
+  adapterEnabled: boolean,
+  memoryContext: RuntimeMemoryContext | null,
+): boolean {
+  const payloadFlag = request.request.payload.memoryInjectionEnabled;
+
+  if (payloadFlag === true) {
+    return true;
+  }
+
+  if (payloadFlag === false) {
+    return false;
+  }
+
+  return adapterEnabled || (memoryContext?.isEnabled() ?? false);
+}
+
 /**
  * Runtime-facing context adapter. Delegates to existing Context Builder only.
  */
@@ -139,13 +171,15 @@ export class RuntimeContextAdapter {
     private readonly dependencies: RuntimeContextDependencies,
     private readonly knowledgeContext: RuntimeKnowledgeContext | null,
     private readonly knowledgeInjectionEnabled: boolean,
+    private readonly memoryContext: RuntimeMemoryContext | null,
+    private readonly memoryInjectionEnabled: boolean,
   ) {}
 
   build(request: RuntimeContextBuildRequest): SerializedRuntimeContextPackage {
     assertValidRequest(request);
 
     try {
-      const context = this.enrichWithKnowledge(this.dependencies.build(request), request);
+      const context = this.enrichContext(this.dependencies.build(request), request);
       const serialized = serializeRuntimeContextPackage(context);
       this.touch('build', request.trace.runId, context.model.code, request.employeeId);
       return serialized;
@@ -159,7 +193,7 @@ export class RuntimeContextAdapter {
     assertValidRequest(request);
 
     try {
-      const context = this.enrichWithKnowledge(this.dependencies.build(request), request);
+      const context = this.enrichContext(this.dependencies.build(request), request);
       const preview = serializeRuntimeContextPreview(context);
       this.touch('preview', request.trace.runId, context.model.code, request.employeeId);
       return preview;
@@ -188,11 +222,19 @@ export class RuntimeContextAdapter {
       updatedAt: new Date().toISOString(),
     };
     this.knowledgeContext?.reset();
+    this.memoryContext?.reset();
   }
 
   buildContextPackage(request: RuntimeContextBuildRequest): ContextPackage {
     assertValidRequest(request);
-    return this.enrichWithKnowledge(this.dependencies.build(request), request);
+    return this.enrichContext(this.dependencies.build(request), request);
+  }
+
+  private enrichContext(
+    context: ContextPackage,
+    request: RuntimeContextBuildRequest,
+  ): ContextPackage {
+    return this.enrichWithMemory(this.enrichWithKnowledge(context, request), request);
   }
 
   private enrichWithKnowledge(
@@ -229,6 +271,31 @@ export class RuntimeContextAdapter {
     }
   }
 
+  private enrichWithMemory(
+    context: ContextPackage,
+    request: RuntimeContextBuildRequest,
+  ): ContextPackage {
+    if (!this.memoryContext) {
+      return context;
+    }
+
+    const enabled = resolveMemoryInjectionEnabled(
+      request,
+      this.memoryInjectionEnabled,
+      this.memoryContext,
+    );
+
+    if (!enabled) {
+      return context;
+    }
+
+    try {
+      return this.memoryContext.mergeMemory(context, resolveMemoryQuery(request));
+    } catch {
+      return context;
+    }
+  }
+
   private touch(
     operation: RuntimeContextSnapshot['lastOperation'],
     runId: string | null,
@@ -257,6 +324,8 @@ export function createRuntimeContextAdapter(
     dependencies,
     options?.knowledgeContext ?? null,
     options?.knowledgeInjectionEnabled ?? false,
+    options?.memoryContext ?? null,
+    options?.memoryInjectionEnabled ?? false,
   );
 }
 
