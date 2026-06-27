@@ -20,6 +20,7 @@ import type {
   MemoryExtractionResult,
   MemoryExtractorInput,
 } from '@/services/memory/memory-extractor-types';
+import { createMemoryRetriever, type MemoryRetriever } from '@/services/memory/memory-retriever';
 import type {
   MemoryPreviewResult,
   MemoryProcessResult,
@@ -97,6 +98,7 @@ export class MemoryService {
     private readonly instanceId: string,
     private readonly engine: MemoryEngine,
     private readonly extractor: MemoryExtractor,
+    private readonly retriever: MemoryRetriever,
   ) {}
 
   process(input: MemoryServiceInput): MemoryProcessResult {
@@ -253,7 +255,43 @@ export class MemoryService {
   }
 
   search(query: string): MemorySearchResult {
-    return this.engine.search(query);
+    const retrieved = this.retriever.retrieve({
+      query,
+      facts: this.engine.facts(),
+      entities: this.engine.entities(),
+      relations: this.engine.relations(),
+    });
+
+    return {
+      facts: retrieved.selectedFacts.map((entry) => ({
+        fact: entry.fact,
+        score: entry.score,
+        reason: entry.reason.map((value) => ({ field: 'match', value })),
+      })),
+      entities: retrieved.selectedEntities.map((entry) => ({
+        entity: entry.entity,
+        score: entry.score,
+        reason: entry.reason.map((value) => ({ field: 'match', value })),
+      })),
+      relations: retrieved.selectedRelations.map((entry) => ({
+        relation: entry.relation,
+        score: entry.score,
+        reason: entry.reason.map((value) => ({ field: 'match', value })),
+      })),
+    };
+  }
+
+  retrieve(query: string) {
+    return this.retriever.retrieve({
+      query,
+      facts: this.engine.facts(),
+      entities: this.engine.entities(),
+      relations: this.engine.relations(),
+    });
+  }
+
+  getRetriever(): MemoryRetriever {
+    return this.retriever;
   }
 
   facts(filter?: MemoryFactFilter): MemoryFact[] {
@@ -284,6 +322,7 @@ export class MemoryService {
   reset(): void {
     this.engine.reset();
     this.extractor.reset();
+    this.retriever.reset();
     this.lastOperation = null;
     this.lastInput = null;
     this.lastProcessedAt = null;
@@ -424,13 +463,17 @@ export class MemoryService {
   }
 }
 
-export function createMemoryService(options?: MemoryServiceOptions): MemoryService {
+export function createMemoryService(
+  options?: MemoryServiceOptions & { retriever?: MemoryRetriever },
+): MemoryService {
   const instanceId = options?.instanceId?.trim() || 'default-memory-service';
   const engine = options?.engine ?? createMemoryEngine({ instanceId: `${instanceId}-engine` });
   const extractor =
     options?.extractor ?? createMemoryExtractor({ instanceId: `${instanceId}-extractor` });
+  const retriever =
+    options?.retriever ?? createMemoryRetriever({ instanceId: `${instanceId}-retriever` });
 
-  return new MemoryService(instanceId, engine, extractor);
+  return new MemoryService(instanceId, engine, extractor, retriever);
 }
 
 /** Default dev/test singleton. Extractor + engine orchestrator. */

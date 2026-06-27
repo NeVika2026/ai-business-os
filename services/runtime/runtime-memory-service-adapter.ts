@@ -1,4 +1,5 @@
 import { createMemoryService, type MemoryService } from '@/services/memory/memory-service';
+import { createMemoryRetriever } from '@/services/memory/memory-retriever';
 import type {
   MemoryEntityFilter,
   MemoryFactFilter,
@@ -35,15 +36,6 @@ import {
   RUNTIME_MEMORY_SERVICE_CONTEXT_MAX_FACTS,
   RUNTIME_MEMORY_SERVICE_CONTEXT_MAX_RELATIONS,
 } from '@/services/runtime/runtime-memory-service-types';
-
-interface ScoredContextItem {
-  kind: 'fact' | 'entity' | 'relation';
-  score: number;
-  characters: number;
-  fact?: RuntimeMemoryServiceContextFact;
-  entity?: RuntimeMemoryServiceContextEntity;
-  relation?: RuntimeMemoryServiceContextRelation;
-}
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
@@ -89,121 +81,6 @@ function validateRememberInput(input: RuntimeMemoryServiceRememberInput): Rememb
   };
 }
 
-function entityCharacterCount(entity: RuntimeMemoryServiceContextEntity): number {
-  return [entity.name, ...entity.aliases].join(' ').length;
-}
-
-function relationCharacterCount(relation: RuntimeMemoryServiceContextRelation): number {
-  return `${relation.subjectName} ${relation.predicate} ${relation.objectName}`.length;
-}
-
-function applyContextLimits(
-  facts: RuntimeMemoryServiceContextFact[],
-  entities: RuntimeMemoryServiceContextEntity[],
-  relations: RuntimeMemoryServiceContextRelation[],
-  maxFacts: number,
-  maxEntities: number,
-  maxRelations: number,
-  maxCharacters: number,
-): RuntimeMemoryServiceContextResult {
-  const sortedFacts = [...facts].sort((left, right) => right.score - left.score).slice(0, maxFacts);
-  const sortedEntities = [...entities]
-    .sort((left, right) => right.score - left.score)
-    .slice(0, maxEntities);
-  const sortedRelations = [...relations]
-    .sort((left, right) => right.score - left.score)
-    .slice(0, maxRelations);
-
-  const items: ScoredContextItem[] = [
-    ...sortedFacts.map((fact) => ({
-      kind: 'fact' as const,
-      score: fact.score,
-      characters: fact.text.length,
-      fact,
-    })),
-    ...sortedEntities.map((entity) => ({
-      kind: 'entity' as const,
-      score: entity.score,
-      characters: entityCharacterCount(entity),
-      entity,
-    })),
-    ...sortedRelations.map((relation) => ({
-      kind: 'relation' as const,
-      score: relation.score,
-      characters: relationCharacterCount(relation),
-      relation,
-    })),
-  ].sort((left, right) => right.score - left.score);
-
-  const selectedFacts: RuntimeMemoryServiceContextFact[] = [];
-  const selectedEntities: RuntimeMemoryServiceContextEntity[] = [];
-  const selectedRelations: RuntimeMemoryServiceContextRelation[] = [];
-  let totalCharacters = 0;
-  let truncated =
-    facts.length > maxFacts || entities.length > maxEntities || relations.length > maxRelations;
-
-  for (const item of items) {
-    if (item.kind === 'fact' && selectedFacts.length >= maxFacts) {
-      truncated = true;
-      continue;
-    }
-
-    if (item.kind === 'entity' && selectedEntities.length >= maxEntities) {
-      truncated = true;
-      continue;
-    }
-
-    if (item.kind === 'relation' && selectedRelations.length >= maxRelations) {
-      truncated = true;
-      continue;
-    }
-
-    if (totalCharacters + item.characters > maxCharacters && totalCharacters > 0) {
-      truncated = true;
-      break;
-    }
-
-    if (item.characters > maxCharacters && item.kind === 'fact' && item.fact) {
-      selectedFacts.push({
-        ...item.fact,
-        text: item.fact.text.slice(0, maxCharacters),
-      });
-      totalCharacters = maxCharacters;
-      truncated = true;
-      break;
-    }
-
-    if (item.characters > maxCharacters) {
-      truncated = true;
-      break;
-    }
-
-    totalCharacters += item.characters;
-
-    if (item.kind === 'fact' && item.fact) {
-      selectedFacts.push(item.fact);
-    } else if (item.kind === 'entity' && item.entity) {
-      selectedEntities.push(item.entity);
-    } else if (item.kind === 'relation' && item.relation) {
-      selectedRelations.push(item.relation);
-    }
-  }
-
-  return {
-    query: '',
-    factCount: selectedFacts.length,
-    entityCount: selectedEntities.length,
-    relationCount: selectedRelations.length,
-    totalCharacters,
-    truncated,
-    memoryFailed: false,
-    failureMessage: null,
-    facts: selectedFacts,
-    entities: selectedEntities,
-    relations: selectedRelations,
-  };
-}
-
 /**
  * Runtime-facing adapter over MemoryService for factual long-term memory.
  */
@@ -213,10 +90,6 @@ export class RuntimeMemoryServiceAdapter {
   constructor(
     private readonly instanceId: string,
     private readonly memoryService: MemoryService,
-    private readonly maxFacts: number,
-    private readonly maxEntities: number,
-    private readonly maxRelations: number,
-    private readonly maxCharacters: number,
   ) {
     this.adapterSnapshot = this.createEmptySnapshot();
   }
@@ -392,12 +265,14 @@ export class RuntimeMemoryServiceAdapter {
     }
 
     try {
-      const search = this.memoryService.search(query);
-      const entityNameById = new Map(
-        this.memoryService.entities().map((entity) => [entity.id, entity.name]),
-      );
+      const retrieved = this.memoryService.getRetriever().retrieve({
+        query,
+        facts: this.memoryService.facts(),
+        entities: this.memoryService.entities(),
+        relations: this.memoryService.relations(),
+      });
 
-      const facts: RuntimeMemoryServiceContextFact[] = search.facts.map((entry) => ({
+      const facts: RuntimeMemoryServiceContextFact[] = retrieved.selectedFacts.map((entry) => ({
         factId: entry.fact.id,
         type: entry.fact.type,
         text: entry.fact.text,
@@ -406,39 +281,40 @@ export class RuntimeMemoryServiceAdapter {
         source: entry.fact.source,
       }));
 
-      const entities: RuntimeMemoryServiceContextEntity[] = search.entities.map((entry) => ({
-        entityId: entry.entity.id,
-        name: entry.entity.name,
-        type: entry.entity.type,
-        aliases: [...entry.entity.aliases],
-        score: entry.score,
-      }));
+      const entities: RuntimeMemoryServiceContextEntity[] = retrieved.selectedEntities.map(
+        (entry) => ({
+          entityId: entry.entity.id,
+          name: entry.entity.name,
+          type: entry.entity.type,
+          aliases: [...entry.entity.aliases],
+          score: entry.score,
+        }),
+      );
 
-      const relations: RuntimeMemoryServiceContextRelation[] = search.relations.map((entry) => ({
-        relationId: entry.relation.id,
-        subjectEntityId: entry.relation.subjectEntityId,
-        subjectName:
-          entityNameById.get(entry.relation.subjectEntityId) ?? entry.relation.subjectEntityId,
-        predicate: entry.relation.predicate,
-        objectEntityId: entry.relation.objectEntityId,
-        objectName:
-          entityNameById.get(entry.relation.objectEntityId) ?? entry.relation.objectEntityId,
-        score: entry.score,
-      }));
-
-      const limited = applyContextLimits(
-        facts,
-        entities,
-        relations,
-        this.maxFacts,
-        this.maxEntities,
-        this.maxRelations,
-        this.maxCharacters,
+      const relations: RuntimeMemoryServiceContextRelation[] = retrieved.selectedRelations.map(
+        (entry) => ({
+          relationId: entry.relation.id,
+          subjectEntityId: entry.relation.subjectEntityId,
+          subjectName: entry.subjectName,
+          predicate: entry.relation.predicate,
+          objectEntityId: entry.relation.objectEntityId,
+          objectName: entry.objectName,
+          score: entry.score,
+        }),
       );
 
       const result: RuntimeMemoryServiceContextResult = {
-        ...limited,
         query,
+        factCount: facts.length,
+        entityCount: entities.length,
+        relationCount: relations.length,
+        totalCharacters: retrieved.totalCharacters,
+        truncated: retrieved.truncated,
+        memoryFailed: false,
+        failureMessage: null,
+        facts,
+        entities,
+        relations,
       };
 
       this.touch('context', query, null);
@@ -546,17 +422,24 @@ export function createRuntimeMemoryServiceAdapter(
   options?: RuntimeMemoryServiceAdapterOptions,
 ): RuntimeMemoryServiceAdapter {
   const instanceId = options?.instanceId?.trim() || 'default-runtime-memory-service-adapter';
+  const maxFacts = options?.maxFacts ?? RUNTIME_MEMORY_SERVICE_CONTEXT_MAX_FACTS;
+  const maxEntities = options?.maxEntities ?? RUNTIME_MEMORY_SERVICE_CONTEXT_MAX_ENTITIES;
+  const maxRelations = options?.maxRelations ?? RUNTIME_MEMORY_SERVICE_CONTEXT_MAX_RELATIONS;
+  const maxCharacters = options?.maxCharacters ?? RUNTIME_MEMORY_SERVICE_CONTEXT_MAX_CHARACTERS;
   const memoryService =
-    options?.memoryService ?? createMemoryService({ instanceId: `${instanceId}-memory-service` });
+    options?.memoryService ??
+    createMemoryService({
+      instanceId: `${instanceId}-memory-service`,
+      retriever: createMemoryRetriever({
+        instanceId: `${instanceId}-retriever`,
+        maxFacts,
+        maxEntities,
+        maxRelations,
+        maxCharacters,
+      }),
+    });
 
-  return new RuntimeMemoryServiceAdapter(
-    instanceId,
-    memoryService,
-    options?.maxFacts ?? RUNTIME_MEMORY_SERVICE_CONTEXT_MAX_FACTS,
-    options?.maxEntities ?? RUNTIME_MEMORY_SERVICE_CONTEXT_MAX_ENTITIES,
-    options?.maxRelations ?? RUNTIME_MEMORY_SERVICE_CONTEXT_MAX_RELATIONS,
-    options?.maxCharacters ?? RUNTIME_MEMORY_SERVICE_CONTEXT_MAX_CHARACTERS,
-  );
+  return new RuntimeMemoryServiceAdapter(instanceId, memoryService);
 }
 
 /** Default dev/test singleton. Runtime factual memory adapter. */
