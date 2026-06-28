@@ -163,6 +163,14 @@ function refreshTaskStatuses(tasks: ExecutionTask[]): ExecutionTask[] {
   });
 }
 
+export function reconcileExecutionTaskStatuses(tasks: ExecutionTask[]): ExecutionTask[] {
+  return refreshTaskStatuses(tasks);
+}
+
+export function getDownstreamTaskIds(taskId: string, tasks: ExecutionTask[]): string[] {
+  return [...collectDownstreamTaskIds(taskId, tasks)];
+}
+
 function collectDownstreamTaskIds(taskId: string, tasks: ExecutionTask[]): Set<string> {
   const downstream = new Set<string>();
   const queue = [taskId];

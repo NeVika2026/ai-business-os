@@ -1,4 +1,5 @@
 import { formatExecutionPlanEta } from '@/utils/osa/execution-planner';
+import { getExecutionControlState, type ExecutionControlState } from '@/utils/osa/execution-controls';
 import { estimateProgress } from '@/utils/osa/team-execution';
 import type { ExecutionSession } from '@/utils/osa/team-runtime';
 
@@ -13,6 +14,7 @@ export type ExecutionProgress = {
   progress: number;
   eta: number;
   lastUpdate: string;
+  controlState: ExecutionControlState;
 };
 
 export type ExecutionProgressSnapshot = ExecutionProgress & {
@@ -76,6 +78,7 @@ export function buildExecutionProgress(
     progress: session.progress,
     eta: estimateLiveEta(session),
     lastUpdate,
+    controlState: getExecutionControlState({ session }),
   };
 }
 
@@ -99,6 +102,7 @@ export function serializeExecutionProgress(progress: ExecutionProgress): Record<
     currentAgent: progress.currentAgent,
     currentStage: progress.currentStage,
     lastUpdate: progress.lastUpdate,
+    controlState: progress.controlState,
   };
 }
 
@@ -125,6 +129,15 @@ export function parseExecutionProgress(value: unknown): ExecutionProgress | null
     eta: typeof record.eta === 'number' ? record.eta : 0,
     lastUpdate:
       typeof record.lastUpdate === 'string' ? record.lastUpdate : new Date().toISOString(),
+    controlState:
+      record.controlState === 'active' ||
+      record.controlState === 'paused' ||
+      record.controlState === 'retrying' ||
+      record.controlState === 'cancelled' ||
+      record.controlState === 'completed' ||
+      record.controlState === 'failed'
+        ? record.controlState
+        : 'active',
   };
 }
 

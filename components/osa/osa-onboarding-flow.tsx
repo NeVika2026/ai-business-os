@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { executeOsaTaskRun, getOsaRunProgress, startOsaTask } from '@/app/(dashboard)/osa/actions';
+import { OsaControlCenter } from '@/components/osa/osa-control-center';
 import { OsaLiveProgress } from '@/components/osa/osa-live-progress';
 import type { OsaAgentDefinition } from '@/utils/osa/agent-registry';
 import {
@@ -376,6 +377,16 @@ export function OsaOnboardingFlow() {
           </article>
         ))}
       </div>
+
+      <OsaControlCenter
+        runId={activeRunId}
+        progress={liveProgress}
+        loading={taskLoading}
+        onProgressChange={setLiveProgress}
+        onExecutionComplete={() => {
+          router.refresh();
+        }}
+      />
 
       <OsaLiveProgress progress={liveProgress} loading={taskLoading} />
 

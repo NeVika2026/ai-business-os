@@ -10,6 +10,11 @@ export const OSA_EVENT_TYPES = [
   'osa_execution_plan_created',
   'osa_runtime_started',
   'osa_progress_updated',
+  'osa_execution_paused',
+  'osa_execution_resumed',
+  'osa_execution_cancelled',
+  'osa_execution_restarted',
+  'osa_execution_retry',
   'osa_runtime_completed',
   'osa_runtime_failed',
 ] as const;
@@ -87,6 +92,11 @@ export const OSA_EVENT_LABELS: Record<OsaEventType, string> = {
   osa_execution_plan_created: 'Execution Plan создан',
   osa_runtime_started: 'Runtime запущен',
   osa_progress_updated: 'Progress обновлён',
+  osa_execution_paused: 'Выполнение приостановлено',
+  osa_execution_resumed: 'Выполнение возобновлено',
+  osa_execution_cancelled: 'Выполнение отменено',
+  osa_execution_restarted: 'Выполнение перезапущено',
+  osa_execution_retry: 'Повтор задачи / stage',
   osa_runtime_completed: 'Runtime завершён',
   osa_runtime_failed: 'Runtime ошибка',
 };

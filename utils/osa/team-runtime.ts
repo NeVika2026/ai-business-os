@@ -14,7 +14,14 @@ import {
   type ExecutionTask,
 } from '@/utils/osa/team-execution';
 
-export type ExecutionState = 'idle' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled';
+export type ExecutionState =
+  | 'idle'
+  | 'running'
+  | 'paused'
+  | 'retrying'
+  | 'completed'
+  | 'failed'
+  | 'cancelled';
 
 export type ExecutionSnapshot = {
   id: string;
@@ -140,7 +147,7 @@ function resolveCurrentStage(graph: ExecutionGraph): string | null {
 }
 
 function resolveSessionState(graph: ExecutionGraph, currentState: ExecutionState): ExecutionState {
-  if (currentState === 'paused' || currentState === 'cancelled') {
+  if (currentState === 'paused' || currentState === 'cancelled' || currentState === 'retrying') {
     return currentState;
   }
 
@@ -259,7 +266,7 @@ export function startExecution(coordinator: ExecutionCoordinator): ExecutionCoor
 }
 
 export function getNextReadyTasks(coordinator: ExecutionCoordinator): ExecutionTask[] {
-  if (coordinator.session.state !== 'running') {
+  if (coordinator.session.state !== 'running' && coordinator.session.state !== 'retrying') {
     return [];
   }
 
@@ -520,7 +527,7 @@ export function pauseExecution(coordinator: ExecutionCoordinator): ExecutionCoor
 }
 
 export function resumeExecution(coordinator: ExecutionCoordinator): ExecutionCoordinator {
-  if (coordinator.session.state !== 'paused') {
+  if (coordinator.session.state !== 'paused' && coordinator.session.state !== 'retrying') {
     return coordinator;
   }
 
@@ -674,11 +681,16 @@ export type TeamRuntimeProgressHook = (
   meta: { phase: 'started' | 'tasks_prepared' | 'task_completed' | 'task_failed' },
 ) => void | Promise<void>;
 
+export type TeamRuntimeControlHook = (
+  coordinator: ExecutionCoordinator,
+) => Promise<ExecutionCoordinator>;
+
 export async function runTeamRuntimeExecution(
   coordinator: ExecutionCoordinator,
   options: PrepareRuntimeCallOptions,
   executeTask: (call: PreparedRuntimeCall) => Promise<TeamRuntimeTaskOutcome>,
   onProgress?: TeamRuntimeProgressHook,
+  onControlCheck?: TeamRuntimeControlHook,
 ): Promise<ExecutionCoordinator> {
   let current = startExecution(coordinator);
 
@@ -687,6 +699,31 @@ export async function runTeamRuntimeExecution(
   }
 
   while (!isTeamExecutionComplete(current) && !hasTeamExecutionFailure(current)) {
+    if (onControlCheck) {
+      current = await onControlCheck(current);
+
+      if (current.session.state === 'cancelled') {
+        break;
+      }
+
+      while (current.session.state === 'paused') {
+        await delay(400);
+        current = await onControlCheck(current);
+
+        if (current.session.state === 'cancelled') {
+          break;
+        }
+      }
+
+      if (current.session.state === 'cancelled') {
+        break;
+      }
+
+      if (current.session.state === 'retrying') {
+        current = resumeExecution(current);
+      }
+    }
+
     const { coordinator: prepared, calls } = prepareRuntimeCallsForReadyTasks(current, options);
     current = prepared;
 
@@ -699,6 +736,28 @@ export async function runTeamRuntimeExecution(
     }
 
     for (const call of calls) {
+      if (onControlCheck) {
+        current = await onControlCheck(current);
+
+        if (current.session.state === 'cancelled') {
+          return current;
+        }
+
+        while (current.session.state === 'paused') {
+          await delay(400);
+          current = await onControlCheck(current);
+
+          if (current.session.state === 'cancelled') {
+            return current;
+          }
+        }
+
+        if (current.session.state === 'retrying') {
+          current = resumeExecution(current);
+          break;
+        }
+      }
+
       const outcome = await executeTask(call);
 
       if ('error' in outcome) {
@@ -720,4 +779,10 @@ export async function runTeamRuntimeExecution(
   }
 
   return current;
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }

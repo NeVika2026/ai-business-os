@@ -118,6 +118,11 @@ describe('OSA run history helpers', () => {
   it('exposes timeline label for osa_execution_plan_created and progress updates', () => {
     assert.equal(RUN_EVENT_LABELS.osa_execution_plan_created, 'Execution Plan создан');
     assert.equal(RUN_EVENT_LABELS.osa_progress_updated, 'Progress обновлён');
+    assert.equal(RUN_EVENT_LABELS.osa_execution_paused, 'Выполнение приостановлено');
+    assert.equal(RUN_EVENT_LABELS.osa_execution_resumed, 'Выполнение возобновлено');
+    assert.equal(RUN_EVENT_LABELS.osa_execution_cancelled, 'Выполнение отменено');
+    assert.equal(RUN_EVENT_LABELS.osa_execution_restarted, 'Выполнение перезапущено');
+    assert.equal(RUN_EVENT_LABELS.osa_execution_retry, 'Повтор задачи / stage');
   });
 
   it('parses execution graph from run input', () => {

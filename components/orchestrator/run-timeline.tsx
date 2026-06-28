@@ -105,6 +105,24 @@ function renderProgressPayload(payload: Record<string, unknown>) {
   );
 }
 
+function renderControlPayload(payload: Record<string, unknown>) {
+  const action = typeof payload.action === 'string' ? payload.action : null;
+  const taskId = typeof payload.task_id === 'string' ? payload.task_id : null;
+  const stageId = typeof payload.stage_id === 'string' ? payload.stage_id : null;
+  const controlState = typeof payload.control_state === 'string' ? payload.control_state : null;
+
+  return (
+    <div className="mt-3 space-y-1 rounded-lg bg-[var(--surface-1)] p-3 text-sm text-[var(--text-primary)]">
+      {action ? <p>Action: {action.replace('_', ' ')}</p> : null}
+      {taskId ? <p className="text-[var(--text-secondary)]">Task: {taskId}</p> : null}
+      {stageId ? <p className="text-[var(--text-secondary)]">Stage: {stageId}</p> : null}
+      {controlState ? (
+        <p className="text-xs text-[var(--text-secondary)]">Session state: {controlState}</p>
+      ) : null}
+    </div>
+  );
+}
+
 function renderEventPayload(event: OrchestratorEvent) {
   if (event.type === 'osa_execution_plan_created') {
     return renderExecutionPlanPayload(event.payload);
@@ -112,6 +130,16 @@ function renderEventPayload(event: OrchestratorEvent) {
 
   if (event.type === 'osa_progress_updated') {
     return renderProgressPayload(event.payload);
+  }
+
+  if (
+    event.type === 'osa_execution_paused' ||
+    event.type === 'osa_execution_resumed' ||
+    event.type === 'osa_execution_cancelled' ||
+    event.type === 'osa_execution_restarted' ||
+    event.type === 'osa_execution_retry'
+  ) {
+    return renderControlPayload(event.payload);
   }
 
   if (Object.keys(event.payload).length === 0) {

@@ -12,6 +12,11 @@ import {
 import { createClient } from '@/services/supabase/server';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
 import {
+  applyExecutionControl,
+  canControlExecution,
+  type ExecutionControlAction,
+} from '@/utils/osa/execution-controls';
+import {
   buildExecutionProgress,
   parseExecutionProgress,
   type ExecutionProgress,
@@ -20,6 +25,7 @@ import { resolveOsaCoordinatorEmployeeId } from '@/utils/osa/osa-coordinator';
 import { buildOsaRuntimeInputFromTaskCall } from '@/utils/osa/osa-runtime-context';
 import {
   buildOsaExecutionPlanCreatedEvent,
+  buildOsaExecutionControlEvent,
   buildOsaProgressUpdatedEvent,
   buildOsaRunInsertRecord,
   buildOsaRunInputPayload,
@@ -37,6 +43,7 @@ import {
   type OsaRunPersistenceContext,
 } from '@/utils/osa/osa-run-persistence';
 import {
+  buildOsaAgentTrace,
   buildOsaExecutionGraph,
   prepareOsaTaskSubmitInput,
   validateOsaTaskInput,
@@ -46,6 +53,7 @@ import {
 import { extractRuntimeTaskResult } from '@/utils/osa/runtime-output';
 import {
   createExecutionCoordinatorFromSubmit,
+  parseExecutionSession,
   runTeamRuntimeExecution,
   serializeExecutionSession,
   type ExecutionCoordinator,
@@ -73,22 +81,109 @@ async function createOsaEvent(
   }
 }
 
+export type OsaExecutionControlResult =
+  | {
+      status: 'ok';
+      progress: ExecutionProgress;
+    }
+  | {
+      status: 'failed';
+      message: string;
+    };
+
+async function persistExecutionSession(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  runId: string,
+  organizationId: string,
+  inputRecord: Record<string, unknown>,
+  coordinator: ExecutionCoordinator,
+) {
+  const { error } = await supabase
+    .from('agent_runs')
+    .update({
+      input: {
+        ...inputRecord,
+        execution_session: serializeExecutionSession(coordinator.session),
+      },
+    })
+    .eq('id', runId)
+    .eq('organization_id', organizationId);
+
+  if (error) {
+    throw error;
+  }
+}
+
 async function persistOsaProgressUpdate(
   supabase: Awaited<ReturnType<typeof createClient>>,
   context: OsaRunPersistenceContext,
   coordinator: ExecutionCoordinator,
+  inputRecord?: Record<string, unknown>,
 ) {
   const progress = buildExecutionProgress(coordinator.session);
   await createOsaEvent(supabase, buildOsaProgressUpdatedEvent(context, progress));
+
+  if (inputRecord) {
+    await persistExecutionSession(
+      supabase,
+      context.runId,
+      context.organizationId,
+      inputRecord,
+      coordinator,
+    );
+  }
 }
 
 function createProgressHook(
   supabase: Awaited<ReturnType<typeof createClient>>,
   context: OsaRunPersistenceContext,
+  inputRecord: Record<string, unknown>,
 ) {
   return async (coordinator: ExecutionCoordinator) => {
-    await persistOsaProgressUpdate(supabase, context, coordinator);
+    await persistOsaProgressUpdate(supabase, context, coordinator, inputRecord);
   };
+}
+
+function createControlCheckHook(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  runId: string,
+  organizationId: string,
+  fallback: ExecutionCoordinator,
+): (coordinator: ExecutionCoordinator) => Promise<ExecutionCoordinator> {
+  return async (coordinator) => {
+    const { data: run, error } = await supabase
+      .from('agent_runs')
+      .select('input')
+      .eq('id', runId)
+      .eq('organization_id', organizationId)
+      .single();
+
+    if (error || !run) {
+      return coordinator;
+    }
+
+    const session = parseExecutionSession(
+      (run.input as Record<string, unknown>).execution_session ?? null,
+    );
+
+    return session ? { session } : fallback;
+  };
+}
+
+function resolveCoordinatorFromRunInput(
+  inputRecord: Record<string, unknown>,
+  preparedInput: ReturnType<typeof prepareOsaTaskSubmitInput>,
+  sessionId: string,
+): ExecutionCoordinator {
+  const persisted = parseExecutionSession(inputRecord.execution_session);
+
+  if (persisted) {
+    return { session: persisted };
+  }
+
+  const executionGraph = buildOsaExecutionGraph(preparedInput, `osa-graph-${sessionId}`);
+
+  return createExecutionCoordinatorFromSubmit(preparedInput, executionGraph, sessionId);
 }
 
 async function resolveOsaAuthContext(): Promise<
@@ -251,6 +346,125 @@ export async function getOsaRunProgress(runId: string): Promise<ExecutionProgres
   }
 }
 
+export async function controlOsaExecution(
+  runId: string,
+  action: ExecutionControlAction,
+  options?: { taskId?: string; stageId?: string },
+): Promise<OsaExecutionControlResult> {
+  if (!runId.trim()) {
+    return { status: 'failed', message: 'runId is required' };
+  }
+
+  try {
+    const auth = await resolveOsaAuthContext();
+
+    if ('error' in auth) {
+      return { status: 'failed', message: auth.error };
+    }
+
+    const { supabase, organizationId, userId, aiEmployeeId } = auth;
+    const { data: run, error: runError } = await supabase
+      .from('agent_runs')
+      .select('id, input, status, created_by')
+      .eq('id', runId)
+      .eq('organization_id', organizationId)
+      .single();
+
+    if (runError || !run) {
+      return { status: 'failed', message: 'Запуск не найден' };
+    }
+
+    const inputRecord = run.input as Record<string, unknown>;
+    const sessionId =
+      typeof inputRecord.session_id === 'string' ? inputRecord.session_id : randomUUID();
+    const preparedInput = prepareOsaTaskSubmitInput({
+      userPrompt: String(inputRecord.user_prompt ?? ''),
+      businessDescription: String(inputRecord.business_description ?? ''),
+      selectedAgents: Array.isArray(inputRecord.selected_agents)
+        ? (inputRecord.selected_agents as OsaTaskSubmitInput['selectedAgents'])
+        : [],
+      sessionId,
+      executionPlan: inputRecord.execution_plan as OsaTaskSubmitInput['executionPlan'],
+    });
+    const coordinator = resolveCoordinatorFromRunInput(inputRecord, preparedInput, sessionId);
+    const runOwnerId = typeof run.created_by === 'string' ? run.created_by : userId;
+    const runStatus = run.status as 'running' | 'completed' | 'failed' | 'cancelled';
+
+    if (
+      !canControlExecution(
+        { userId, runOwnerId, runStatus },
+        coordinator,
+        action,
+      )
+    ) {
+      return { status: 'failed', message: 'Действие недоступно для текущего состояния' };
+    }
+
+    const executionGraph = buildOsaExecutionGraph(preparedInput, `osa-graph-${sessionId}`);
+    const previousState = coordinator.session.state;
+    const nextCoordinator = applyExecutionControl(coordinator, action, {
+      taskId: options?.taskId,
+      stageId: options?.stageId,
+      initialGraph: executionGraph,
+    });
+
+    if (nextCoordinator.session.state === previousState && action !== 'restart') {
+      return { status: 'failed', message: 'Не удалось применить действие' };
+    }
+
+    const context: OsaRunPersistenceContext = {
+      runId: run.id,
+      sessionId,
+      organizationId,
+      aiEmployeeId,
+      userId,
+      runtimeBridgeEnabled: inputRecord.runtime_bridge_enabled === true,
+    };
+
+    await persistExecutionSession(
+      supabase,
+      run.id,
+      organizationId,
+      inputRecord,
+      nextCoordinator,
+    );
+
+    await createOsaEvent(
+      supabase,
+      buildOsaExecutionControlEvent(context, action, {
+        task_id: options?.taskId ?? null,
+        stage_id: options?.stageId ?? null,
+        control_state: nextCoordinator.session.state,
+      }),
+    );
+
+    const progress = buildExecutionProgress(nextCoordinator.session);
+    await createOsaEvent(supabase, buildOsaProgressUpdatedEvent(context, progress));
+
+    const runUpdate: Record<string, unknown> = {};
+
+    if (action === 'cancel') {
+      runUpdate.status = 'cancelled';
+      runUpdate.completed_at = new Date().toISOString();
+      runUpdate.error_message = 'Execution cancelled by user';
+    } else if (action === 'restart') {
+      runUpdate.status = 'running';
+      runUpdate.completed_at = null;
+      runUpdate.error_message = null;
+    }
+
+    if (Object.keys(runUpdate).length > 0) {
+      await supabase.from('agent_runs').update(runUpdate).eq('id', run.id);
+    }
+
+    revalidateOsaRunPaths(run.id, aiEmployeeId);
+    return { status: 'ok', progress };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Не удалось выполнить действие';
+    return { status: 'failed', message };
+  }
+}
+
 export async function executeOsaTaskRun(runId: string): Promise<OsaTaskSubmitResult> {
   if (!runId.trim()) {
     return {
@@ -303,7 +517,7 @@ export async function executeOsaTaskRun(runId: string): Promise<OsaTaskSubmitRes
       };
     }
 
-    const inputRecord = run.input;
+    const inputRecord = run.input as Record<string, unknown>;
     const sessionId =
       typeof inputRecord.session_id === 'string' ? inputRecord.session_id : randomUUID();
     const runtimeBridgeEnabled = inputRecord.runtime_bridge_enabled === true;
@@ -316,12 +530,7 @@ export async function executeOsaTaskRun(runId: string): Promise<OsaTaskSubmitRes
       sessionId,
       executionPlan: inputRecord.execution_plan as OsaTaskSubmitInput['executionPlan'],
     });
-    const executionGraph = buildOsaExecutionGraph(preparedInput, `osa-graph-${sessionId}`);
-    const initialCoordinator = createExecutionCoordinatorFromSubmit(
-      preparedInput,
-      executionGraph,
-      sessionId,
-    );
+    const initialCoordinator = resolveCoordinatorFromRunInput(inputRecord, preparedInput, sessionId);
 
     const context: OsaRunPersistenceContext = {
       runId: run.id,
@@ -332,7 +541,13 @@ export async function executeOsaTaskRun(runId: string): Promise<OsaTaskSubmitRes
       runtimeBridgeEnabled,
     };
 
-    const onProgress = createProgressHook(supabase, context);
+    const onProgress = createProgressHook(supabase, context, inputRecord);
+    const onControlCheck = createControlCheckHook(
+      supabase,
+      run.id,
+      organizationId,
+      initialCoordinator,
+    );
 
     if (!runtimeBridgeEnabled) {
       const coordinator = await runTeamRuntimeExecution(
@@ -343,7 +558,19 @@ export async function executeOsaTaskRun(runId: string): Promise<OsaTaskSubmitRes
           output: `Demo output for ${call.stageId}`,
         }),
         async (nextCoordinator) => onProgress(nextCoordinator),
+        onControlCheck,
       );
+
+      if (coordinator.session.state === 'cancelled') {
+        revalidateOsaRunPaths(run.id, aiEmployeeId);
+        return {
+          status: 'failed',
+          message: 'Выполнение отменено',
+          resultText: null,
+          agentTrace: buildOsaAgentTrace(preparedInput.selectedAgents),
+          runtimeReport: { runId: run.id, durationMs: null, toolCallCount: 0, gatewayCallCount: 0, inputTokens: 0, outputTokens: 0 },
+        };
+      }
 
       const update = buildOsaRunUpdateForSimulated(preparedInput, context, coordinator);
       const result = buildPersistedSimulatedOsaTaskResult(preparedInput, sessionId, run.id);
@@ -410,7 +637,26 @@ export async function executeOsaTaskRun(runId: string): Promise<OsaTaskSubmitRes
         return extractRuntimeTaskResult(runtimeResult.result?.output);
       },
       async (nextCoordinator) => onProgress(nextCoordinator),
+      onControlCheck,
     );
+
+    if (coordinator.session.state === 'cancelled') {
+      revalidateOsaRunPaths(run.id, aiEmployeeId);
+      return {
+        status: 'failed',
+        message: 'Выполнение отменено',
+        resultText: null,
+        agentTrace: buildOsaAgentTrace(preparedInput.selectedAgents),
+        runtimeReport: {
+          runId: run.id,
+          durationMs: runtimeTotals.durationMs || null,
+          toolCallCount: runtimeTotals.toolCallCount,
+          gatewayCallCount: runtimeTotals.gatewayCallCount,
+          inputTokens: runtimeTotals.inputTokens,
+          outputTokens: runtimeTotals.outputTokens,
+        },
+      };
+    }
 
     const aggregatedRuntimeResult = {
       success: coordinator.session.state === 'completed',

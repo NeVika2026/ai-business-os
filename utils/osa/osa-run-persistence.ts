@@ -12,6 +12,7 @@ import {
 } from '@/utils/osa/osa-task';
 import { serializeExecutionPlan, type ExecutionPlan } from '@/utils/osa/execution-planner';
 import { serializeExecutionProgress, type ExecutionProgress } from '@/utils/osa/execution-progress';
+import type { ExecutionControlAction } from '@/utils/osa/execution-controls';
 import { buildOsaExecutionGraph } from '@/utils/osa/osa-task';
 import { serializeExecutionGraph } from '@/utils/osa/team-execution';
 import {
@@ -29,6 +30,11 @@ export type OsaRunEventType =
   | 'osa_execution_plan_created'
   | 'osa_runtime_started'
   | 'osa_progress_updated'
+  | 'osa_execution_paused'
+  | 'osa_execution_resumed'
+  | 'osa_execution_cancelled'
+  | 'osa_execution_restarted'
+  | 'osa_execution_retry'
   | 'osa_runtime_completed'
   | 'osa_runtime_failed';
 
@@ -147,6 +153,43 @@ export function buildOsaProgressUpdatedEvent(
     session_id: context.sessionId,
     ...serializeExecutionProgress(progress),
   });
+}
+
+const CONTROL_ACTION_EVENT_TYPE: Record<
+  ExecutionControlAction,
+  Extract<
+    OsaRunEventType,
+    | 'osa_execution_paused'
+    | 'osa_execution_resumed'
+    | 'osa_execution_cancelled'
+    | 'osa_execution_restarted'
+    | 'osa_execution_retry'
+  >
+> = {
+  pause: 'osa_execution_paused',
+  resume: 'osa_execution_resumed',
+  cancel: 'osa_execution_cancelled',
+  restart: 'osa_execution_restarted',
+  retry_task: 'osa_execution_retry',
+  retry_stage: 'osa_execution_retry',
+};
+
+export function buildOsaExecutionControlEvent(
+  context: OsaRunPersistenceContext,
+  action: ExecutionControlAction,
+  payload: Record<string, unknown> = {},
+): OsaEventInsertRecord {
+  return buildOsaEventRecord(
+    context,
+    CONTROL_ACTION_EVENT_TYPE[action],
+    'user',
+    context.userId,
+    {
+      session_id: context.sessionId,
+      action,
+      ...payload,
+    },
+  );
 }
 
 export function buildOsaRuntimeStartedEvent(

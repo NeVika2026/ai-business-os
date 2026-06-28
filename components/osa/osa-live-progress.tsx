@@ -27,6 +27,7 @@ export function OsaLiveProgress({ progress, loading = false }: OsaLiveProgressPr
     progress: 0,
     eta: 0,
     lastUpdate: new Date().toISOString(),
+    controlState: 'active' as const,
   };
 
   return (
