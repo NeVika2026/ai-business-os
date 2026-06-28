@@ -12,6 +12,7 @@ import {
 import { createClient } from '@/services/supabase/server';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
 import { resolveOsaCoordinatorEmployeeId } from '@/utils/osa/osa-coordinator';
+import { buildOsaRuntimeInput } from '@/utils/osa/osa-runtime-context';
 import {
   buildOsaExecutionPlanCreatedEvent,
   buildOsaRunInsertRecord,
@@ -178,13 +179,10 @@ export async function submitOsaTask(input: OsaTaskSubmitInput): Promise<OsaTaskS
       employeeId: aiEmployeeId,
       runId: run.id,
       action: 'osa_task',
-      payload: {
-        userPrompt: preparedInput.userPrompt.trim(),
-        businessDescription: preparedInput.businessDescription.trim(),
-        selectedAgents: preparedInput.selectedAgents,
+      payload: buildOsaRuntimeInput(preparedInput, {
         sessionId,
         source: 'osa_workspace',
-      },
+      }),
     });
 
     const runtimeResult = await executeOrchestratorRuntimeAgent(execution);

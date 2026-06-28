@@ -1,7 +1,10 @@
 import type { OrchestratorRuntimeExecutionResult } from '@/services/runtime/runtime-orchestrator-execution';
 import { OSA_AGENT_TRACE_ORDER, type OsaAgentId } from '@/utils/osa/agent-registry';
 import type { ExecutionPlan } from '@/utils/osa/execution-planner';
-import { resolveExecutionPlanForTask } from '@/utils/osa/execution-planner';
+import {
+  buildExecutionPlanSummary,
+  resolveExecutionPlanForTask,
+} from '@/utils/osa/execution-planner';
 
 export type OsaTaskStatus = 'completed' | 'simulated' | 'failed';
 
@@ -82,12 +85,14 @@ export function buildSimulatedOsaTaskResult(
   sessionId: string,
 ): OsaTaskSubmitResult {
   const trace = buildOsaAgentTrace(input.selectedAgents);
+  const prepared = prepareOsaTaskSubmitInput(input);
+  const planSummary = buildExecutionPlanSummary(prepared.executionPlan);
 
   return {
     status: 'simulated',
     message:
-      'Задача обработана в демо-режиме. Включите RUNTIME_BRIDGE_ENABLED для реального выполнения.',
-    resultText: `Команда OSA подготовила план по задаче: «${input.userPrompt.trim()}». Сессия: ${sessionId}.`,
+      'Задача обработана в демо-режиме по Execution Plan. Включите RUNTIME_BRIDGE_ENABLED для реального выполнения.',
+    resultText: `Команда OSA обработала задачу по Execution Plan (${planSummary}): «${input.userPrompt.trim()}». Сессия: ${sessionId}.`,
     agentTrace: trace,
     runtimeReport: null,
   };

@@ -42,7 +42,7 @@ describe('OSA task submission helpers', () => {
     );
 
     assert.equal(result.status, 'simulated');
-    assert.ok(result.resultText?.includes('Подготовь план на неделю'));
+    assert.ok(result.resultText?.includes('Execution Plan'));
     assert.equal(result.agentTrace.length, 4);
   });
 

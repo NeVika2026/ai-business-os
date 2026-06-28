@@ -398,6 +398,13 @@ export function formatExecutionPlanEta(minutes: number): string {
   return `${hours} ч ${remainder} мин`;
 }
 
+export function buildExecutionPlanSummary(plan: ExecutionPlan): string {
+  const stageCount = plan.stages.length;
+  const riskCount = plan.risks.length;
+
+  return `${stageCount} stage${stageCount === 1 ? '' : 's'} · ETA ${formatExecutionPlanEta(plan.estimatedMinutes)} · ${plan.executionMode} · ${riskCount} risk${riskCount === 1 ? '' : 's'}${plan.reviewRequired ? ' · review required' : ''}`;
+}
+
 export function serializeExecutionPlan(plan: ExecutionPlan): Record<string, unknown> {
   return {
     stages: plan.stages,
