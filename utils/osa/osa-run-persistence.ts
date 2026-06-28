@@ -13,6 +13,12 @@ import {
 import { serializeExecutionPlan, type ExecutionPlan } from '@/utils/osa/execution-planner';
 import { buildOsaExecutionGraph } from '@/utils/osa/osa-runtime-context';
 import { serializeExecutionGraph } from '@/utils/osa/team-execution';
+import {
+  createExecutionCoordinatorFromSubmit,
+  serializeExecutionSession,
+  type ExecutionCoordinator,
+  type ExecutionSession,
+} from '@/utils/osa/team-runtime';
 
 export const OSA_EVENT_SOURCE = 'osa';
 
@@ -64,6 +70,7 @@ export interface OsaEventInsertRecord {
 export function buildOsaRunInsertRecord(
   input: OsaTaskSubmitInput & { executionPlan: ExecutionPlan },
   context: OsaRunPersistenceContext,
+  executionSession?: ExecutionSession,
 ): OsaRunInsertRecord {
   return {
     organization_id: context.organizationId,
@@ -71,15 +78,19 @@ export function buildOsaRunInsertRecord(
     status: 'running',
     started_at: new Date().toISOString(),
     created_by: context.userId,
-    input: buildOsaRunInputPayload(input, context),
+    input: buildOsaRunInputPayload(input, context, executionSession),
   };
 }
 
 export function buildOsaRunInputPayload(
   input: OsaTaskSubmitInput & { executionPlan: ExecutionPlan },
   context: OsaRunPersistenceContext,
+  executionSession?: ExecutionSession,
 ): Record<string, unknown> {
   const executionGraph = buildOsaExecutionGraph(input, `osa-graph-${context.sessionId}`);
+  const session =
+    executionSession ??
+    createExecutionCoordinatorFromSubmit(input, executionGraph, context.sessionId).session;
 
   return {
     action: 'osa_task',
@@ -91,6 +102,7 @@ export function buildOsaRunInputPayload(
     agent_trace: buildOsaAgentTrace(input.selectedAgents),
     execution_plan: serializeExecutionPlan(input.executionPlan),
     execution_graph: serializeExecutionGraph(executionGraph),
+    execution_session: serializeExecutionSession(session),
     simulated: !context.runtimeBridgeEnabled,
     runtime_bridge_enabled: context.runtimeBridgeEnabled,
   };
@@ -158,6 +170,7 @@ export function buildOsaRuntimeFailedEvent(
 export function buildOsaRunUpdateForSimulated(
   input: OsaTaskSubmitInput,
   context: OsaRunPersistenceContext,
+  coordinator?: ExecutionCoordinator,
 ): OsaRunUpdateRecord {
   const trace = buildOsaAgentTrace(input.selectedAgents);
 
@@ -173,6 +186,7 @@ export function buildOsaRunUpdateForSimulated(
       session_id: context.sessionId,
       agent_trace: trace,
       message: `OSA demo pipeline completed for session ${context.sessionId}`,
+      execution_session: coordinator ? serializeExecutionSession(coordinator.session) : undefined,
     },
   };
 }
@@ -181,6 +195,7 @@ export function buildOsaRunUpdateForRuntimeSuccess(
   runtime: OrchestratorRuntimeExecutionResult,
   input: OsaTaskSubmitInput,
   context: OsaRunPersistenceContext,
+  coordinator?: ExecutionCoordinator,
 ): OsaRunUpdateRecord {
   return {
     status: 'completed',
@@ -196,6 +211,7 @@ export function buildOsaRunUpdateForRuntimeSuccess(
       report: runtime.report,
       result_status: runtime.result?.status ?? null,
       result_text: extractPersistedResultText(runtime),
+      execution_session: coordinator ? serializeExecutionSession(coordinator.session) : undefined,
     },
   };
 }
@@ -204,6 +220,7 @@ export function buildOsaRunUpdateForRuntimeFailure(
   runtime: OrchestratorRuntimeExecutionResult,
   input: OsaTaskSubmitInput,
   context: OsaRunPersistenceContext,
+  coordinator?: ExecutionCoordinator,
 ): OsaRunUpdateRecord {
   const errorMessage = runtime.error?.message ?? 'Runtime execution failed';
 
@@ -219,6 +236,7 @@ export function buildOsaRunUpdateForRuntimeFailure(
       agent_trace: buildOsaAgentTrace(input.selectedAgents),
       error: runtime.error,
       report: runtime.report,
+      execution_session: coordinator ? serializeExecutionSession(coordinator.session) : undefined,
     },
   };
 }

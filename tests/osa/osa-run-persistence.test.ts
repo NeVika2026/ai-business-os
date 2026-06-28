@@ -56,6 +56,8 @@ describe('OSA run persistence mapping', () => {
     assert.equal((inputPayload.execution_plan as { stages: unknown[] }).stages.length, 3);
     assert.ok(inputPayload.execution_graph);
     assert.equal((inputPayload.execution_graph as { totalTasks: number }).totalTasks > 0, true);
+    assert.ok(inputPayload.execution_session);
+    assert.equal((inputPayload.execution_session as { id: string }).id, 'session-001');
   });
 
   it('persists execution plan in run input mapper', () => {

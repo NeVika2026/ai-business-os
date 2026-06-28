@@ -5,8 +5,13 @@ import { useState } from 'react';
 import { RunTimeline } from '@/components/orchestrator/run-timeline';
 import { RunsTable } from '@/components/orchestrator/runs-table';
 import { OsaExecutionGraphPanel } from '@/components/osa/osa-execution-graph';
+import { OsaExecutionSessionPanel } from '@/components/osa/osa-execution-session';
 import type { OrchestratorEvent, OrchestratorRun } from '@/types/orchestrator';
-import { filterOsaTimelineEvents, getOsaExecutionGraph } from '@/utils/osa/osa-runs';
+import {
+  filterOsaTimelineEvents,
+  getOsaExecutionGraph,
+  getOsaExecutionSession,
+} from '@/utils/osa/osa-runs';
 
 type OsaRunHistoryProps = {
   runs: OrchestratorRun[];
@@ -24,6 +29,7 @@ export function OsaRunHistory({ runs, eventsByRunId }: OsaRunHistoryProps) {
   const selectedEvents = activeRunId ? (eventsByRunId[activeRunId] ?? []) : [];
   const selectedRun = runs.find((run) => run.id === activeRunId) ?? null;
   const executionGraph = selectedRun ? getOsaExecutionGraph(selectedRun) : null;
+  const executionSession = selectedRun ? getOsaExecutionSession(selectedRun) : null;
 
   return (
     <div className="space-y-6">
@@ -38,6 +44,7 @@ export function OsaRunHistory({ runs, eventsByRunId }: OsaRunHistoryProps) {
 
       {activeRunId ? (
         <>
+          <OsaExecutionSessionPanel session={executionSession} />
           <OsaExecutionGraphPanel graph={executionGraph} />
           <RunTimeline
             events={filterOsaTimelineEvents(selectedEvents)}

@@ -1,6 +1,7 @@
 import type { OrchestratorEvent, OrchestratorRun } from '@/types/orchestrator';
 import { OSA_EVENT_SOURCE } from '@/utils/osa/osa-run-persistence';
 import { parseExecutionGraph, type ExecutionGraph } from '@/utils/osa/team-execution';
+import { parseExecutionSession, type ExecutionSession } from '@/utils/osa/team-runtime';
 
 export const OSA_RUN_ACTION = 'osa_task';
 export const OSA_RUN_SOURCE = 'osa_workspace';
@@ -72,6 +73,17 @@ export function getOsaRuntimeMode(run: OrchestratorRun): string {
 
 export function getOsaExecutionGraph(run: OrchestratorRun): ExecutionGraph | null {
   return parseExecutionGraph(run.input.execution_graph ?? run.input.executionGraph);
+}
+
+export function getOsaExecutionSession(run: OrchestratorRun): ExecutionSession | null {
+  const fromInput = parseExecutionSession(
+    run.input.execution_session ?? run.input.executionSession,
+  );
+  const fromOutput = parseExecutionSession(
+    run.output?.execution_session ?? run.output?.executionSession,
+  );
+
+  return fromOutput ?? fromInput;
 }
 
 export function groupEventsByRunId(

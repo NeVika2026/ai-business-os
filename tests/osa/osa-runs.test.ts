@@ -6,6 +6,7 @@ import { RUN_EVENT_LABELS } from '@/types/orchestrator';
 import {
   filterOsaTimelineEvents,
   getOsaExecutionGraph,
+  getOsaExecutionSession,
   getOsaRunGoal,
   getOsaRuntimeMode,
   getOsaRunTeam,
@@ -13,6 +14,10 @@ import {
   isOsaRun,
 } from '@/utils/osa/osa-runs';
 import { buildExecutionGraph } from '@/utils/osa/team-execution';
+import {
+  createExecutionCoordinatorFromSubmit,
+  serializeExecutionSession,
+} from '@/utils/osa/team-runtime';
 import { prepareOsaTaskSubmitInput } from '@/utils/osa/osa-task';
 
 const BASE_RUN: OrchestratorRun = {
@@ -126,5 +131,25 @@ describe('OSA run history helpers', () => {
     const parsed = getOsaExecutionGraph(run);
     assert.ok(parsed);
     assert.equal(parsed?.totalTasks, graph.totalTasks);
+  });
+
+  it('parses execution session from run input or output', () => {
+    const prepared = prepareOsaTaskSubmitInput(SAMPLE_INPUT);
+    const graph = buildExecutionGraph({ plan: prepared.executionPlan, graphId: 'graph-session' });
+    const coordinator = createExecutionCoordinatorFromSubmit(prepared, graph, 'session-run-001');
+    const session = serializeExecutionSession(coordinator.session);
+
+    const run = {
+      ...BASE_RUN,
+      input: {
+        ...BASE_RUN.input,
+        execution_session: session,
+      },
+    };
+
+    const parsed = getOsaExecutionSession(run);
+    assert.ok(parsed);
+    assert.equal(parsed?.id, 'session-run-001');
+    assert.equal(parsed?.state, 'idle');
   });
 });

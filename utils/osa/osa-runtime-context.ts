@@ -142,6 +142,25 @@ export function buildOsaRuntimeInput(
   };
 }
 
+export function buildOsaRuntimeInputFromTaskCall(
+  input: PreparedOsaTaskSubmitInput,
+  taskPayload: Record<string, unknown>,
+  options: BuildOsaRuntimeInputOptions,
+): Record<string, unknown> {
+  const base = buildOsaRuntimeInput(input, options);
+
+  return {
+    ...base,
+    ...taskPayload,
+    userPrompt: typeof taskPayload.userGoal === 'string' ? taskPayload.userGoal : base.userPrompt,
+    businessDescription:
+      typeof taskPayload.businessContext === 'string'
+        ? taskPayload.businessContext
+        : base.businessDescription,
+    taskGoal: typeof taskPayload.userGoal === 'string' ? taskPayload.userGoal : base.taskGoal,
+  };
+}
+
 export function buildOsaExecutionGraph(input: OsaTaskSubmitInput, graphId: string): ExecutionGraph {
   const prepared = prepareOsaTaskSubmitInput(input);
 
