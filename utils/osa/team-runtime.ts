@@ -669,16 +669,30 @@ export function createExecutionCoordinatorFromSubmit(
 
 export type TeamRuntimeTaskOutcome = ExecutionResult | { error: string };
 
+export type TeamRuntimeProgressHook = (
+  coordinator: ExecutionCoordinator,
+  meta: { phase: 'started' | 'tasks_prepared' | 'task_completed' | 'task_failed' },
+) => void | Promise<void>;
+
 export async function runTeamRuntimeExecution(
   coordinator: ExecutionCoordinator,
   options: PrepareRuntimeCallOptions,
   executeTask: (call: PreparedRuntimeCall) => Promise<TeamRuntimeTaskOutcome>,
+  onProgress?: TeamRuntimeProgressHook,
 ): Promise<ExecutionCoordinator> {
   let current = startExecution(coordinator);
+
+  if (onProgress) {
+    await onProgress(current, { phase: 'started' });
+  }
 
   while (!isTeamExecutionComplete(current) && !hasTeamExecutionFailure(current)) {
     const { coordinator: prepared, calls } = prepareRuntimeCallsForReadyTasks(current, options);
     current = prepared;
+
+    if (onProgress) {
+      await onProgress(current, { phase: 'tasks_prepared' });
+    }
 
     if (calls.length === 0) {
       break;
@@ -688,10 +702,20 @@ export async function runTeamRuntimeExecution(
       const outcome = await executeTask(call);
 
       if ('error' in outcome) {
-        return failRuntimeTask(current, call.taskId, outcome.error);
+        current = failRuntimeTask(current, call.taskId, outcome.error);
+
+        if (onProgress) {
+          await onProgress(current, { phase: 'task_failed' });
+        }
+
+        return current;
       }
 
       current = completeRuntimeTask(current, call.taskId, outcome);
+
+      if (onProgress) {
+        await onProgress(current, { phase: 'task_completed' });
+      }
     }
   }
 

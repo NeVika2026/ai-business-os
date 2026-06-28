@@ -1,4 +1,10 @@
 import type { OrchestratorEvent, OrchestratorRun } from '@/types/orchestrator';
+import {
+  buildExecutionProgressSnapshot,
+  parseExecutionProgress,
+  type ExecutionProgress,
+  type ExecutionProgressSnapshot,
+} from '@/utils/osa/execution-progress';
 import { OSA_EVENT_SOURCE } from '@/utils/osa/osa-run-persistence';
 import { parseExecutionGraph, type ExecutionGraph } from '@/utils/osa/team-execution';
 import { parseExecutionSession, type ExecutionSession } from '@/utils/osa/team-runtime';
@@ -84,6 +90,43 @@ export function getOsaExecutionSession(run: OrchestratorRun): ExecutionSession |
   );
 
   return fromOutput ?? fromInput;
+}
+
+export function getOsaExecutionProgressFromEvents(
+  events: OrchestratorEvent[],
+): ExecutionProgress | null {
+  const progressEvents = events.filter((event) => event.type === 'osa_progress_updated');
+
+  if (progressEvents.length === 0) {
+    return null;
+  }
+
+  const latest = progressEvents.at(-1);
+
+  if (!latest) {
+    return null;
+  }
+
+  return parseExecutionProgress(latest.payload);
+}
+
+export function getOsaProgressSnapshots(events: OrchestratorEvent[]): ExecutionProgressSnapshot[] {
+  return events
+    .filter((event) => event.type === 'osa_progress_updated')
+    .map((event) => {
+      const progress = parseExecutionProgress(event.payload);
+
+      if (!progress) {
+        return null;
+      }
+
+      return buildExecutionProgressSnapshot(progress, {
+        id: event.id,
+        runId: event.correlation_id,
+        createdAt: event.created_at,
+      });
+    })
+    .filter((snapshot): snapshot is ExecutionProgressSnapshot => snapshot !== null);
 }
 
 export function groupEventsByRunId(

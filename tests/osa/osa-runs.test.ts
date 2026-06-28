@@ -6,7 +6,9 @@ import { RUN_EVENT_LABELS } from '@/types/orchestrator';
 import {
   filterOsaTimelineEvents,
   getOsaExecutionGraph,
+  getOsaExecutionProgressFromEvents,
   getOsaExecutionSession,
+  getOsaProgressSnapshots,
   getOsaRunGoal,
   getOsaRuntimeMode,
   getOsaRunTeam,
@@ -18,6 +20,7 @@ import {
   createExecutionCoordinatorFromSubmit,
   serializeExecutionSession,
 } from '@/utils/osa/team-runtime';
+import { buildExecutionProgress, serializeExecutionProgress } from '@/utils/osa/execution-progress';
 import { prepareOsaTaskSubmitInput } from '@/utils/osa/osa-task';
 
 const BASE_RUN: OrchestratorRun = {
@@ -112,8 +115,9 @@ describe('OSA run history helpers', () => {
     assert.equal(filterOsaTimelineEvents(events)[0]?.type, 'osa_task_submitted');
   });
 
-  it('exposes timeline label for osa_execution_plan_created', () => {
+  it('exposes timeline label for osa_execution_plan_created and progress updates', () => {
     assert.equal(RUN_EVENT_LABELS.osa_execution_plan_created, 'Execution Plan создан');
+    assert.equal(RUN_EVENT_LABELS.osa_progress_updated, 'Progress обновлён');
   });
 
   it('parses execution graph from run input', () => {
@@ -151,5 +155,35 @@ describe('OSA run history helpers', () => {
     assert.ok(parsed);
     assert.equal(parsed?.id, 'session-run-001');
     assert.equal(parsed?.state, 'idle');
+  });
+
+  it('parses progress snapshots from timeline events', () => {
+    const prepared = prepareOsaTaskSubmitInput(SAMPLE_INPUT);
+    const graph = buildExecutionGraph({ plan: prepared.executionPlan, graphId: 'graph-progress' });
+    const coordinator = createExecutionCoordinatorFromSubmit(prepared, graph, 'session-progress');
+    const progress = serializeExecutionProgress(
+      buildExecutionProgress(coordinator.session, '2026-06-28T10:00:00.000Z'),
+    );
+
+    const events: OrchestratorEvent[] = [
+      {
+        id: 'event-progress',
+        organization_id: BASE_RUN.organization_id,
+        type: 'osa_progress_updated',
+        source: 'osa',
+        actor_type: 'system',
+        actor_id: null,
+        payload: progress,
+        correlation_id: 'run-001',
+        created_at: '2026-06-28T10:00:00.000Z',
+      },
+    ];
+
+    const latest = getOsaExecutionProgressFromEvents(events);
+    const snapshots = getOsaProgressSnapshots(events);
+
+    assert.ok(latest);
+    assert.equal(snapshots.length, 1);
+    assert.equal(snapshots[0]?.runId, 'run-001');
   });
 });

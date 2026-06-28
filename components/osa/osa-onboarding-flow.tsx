@@ -3,13 +3,15 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { submitOsaTask } from '@/app/(dashboard)/osa/actions';
+import { executeOsaTaskRun, getOsaRunProgress, startOsaTask } from '@/app/(dashboard)/osa/actions';
+import { OsaLiveProgress } from '@/components/osa/osa-live-progress';
 import type { OsaAgentDefinition } from '@/utils/osa/agent-registry';
 import {
   buildExecutionPlan,
   formatExecutionPlanEta,
   type ExecutionPlan,
 } from '@/utils/osa/execution-planner';
+import type { ExecutionProgress } from '@/utils/osa/execution-progress';
 import {
   getOsaTeamRecommendation,
   OSA_ONBOARDING_EXAMPLES,
@@ -40,6 +42,8 @@ export function OsaOnboardingFlow() {
   const [taskInput, setTaskInput] = useState('');
   const [taskLoading, setTaskLoading] = useState(false);
   const [taskResult, setTaskResult] = useState<OsaTaskSubmitResult | null>(null);
+  const [liveProgress, setLiveProgress] = useState<ExecutionProgress | null>(null);
+  const [activeRunId, setActiveRunId] = useState<string | null>(null);
 
   useEffect(() => {
     if (step !== 'loading') {
@@ -91,9 +95,13 @@ export function OsaOnboardingFlow() {
 
     setTaskLoading(true);
     setTaskResult(null);
+    setLiveProgress(null);
+    setActiveRunId(null);
+
+    let pollTimer: number | undefined;
 
     try {
-      const result = await submitOsaTask({
+      const started = await startOsaTask({
         userPrompt: taskInput.trim(),
         selectedAgents: team.map((agent) => ({ id: agent.id, name: agent.name })),
         businessDescription: userInput.trim(),
@@ -101,7 +109,34 @@ export function OsaOnboardingFlow() {
         executionPlan,
       });
 
+      if (started.status === 'failed') {
+        setTaskResult({
+          status: 'failed',
+          message: started.message,
+          resultText: null,
+          agentTrace: [],
+          runtimeReport: null,
+        });
+        return;
+      }
+
+      setActiveRunId(started.runId);
+
+      pollTimer = window.setInterval(async () => {
+        const progress = await getOsaRunProgress(started.runId);
+        if (progress) {
+          setLiveProgress(progress);
+        }
+      }, 800);
+
+      const result = await executeOsaTaskRun(started.runId);
+      const finalProgress = await getOsaRunProgress(started.runId);
+
       setTaskResult(result);
+      if (finalProgress) {
+        setLiveProgress(finalProgress);
+      }
+
       if (result.status !== 'failed') {
         setTaskInput('');
         router.refresh();
@@ -115,6 +150,9 @@ export function OsaOnboardingFlow() {
         runtimeReport: null,
       });
     } finally {
+      if (pollTimer !== undefined) {
+        window.clearInterval(pollTimer);
+      }
       setTaskLoading(false);
     }
   }
@@ -339,6 +377,8 @@ export function OsaOnboardingFlow() {
         ))}
       </div>
 
+      <OsaLiveProgress progress={liveProgress} loading={taskLoading} />
+
       <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-4 sm:p-5">
         <form onSubmit={handleSubmitTask} className="space-y-3">
           <label className="block space-y-2">
@@ -382,6 +422,7 @@ export function OsaOnboardingFlow() {
                 Runtime: {taskResult.runtimeReport.gatewayCallCount} gateway ·{' '}
                 {taskResult.runtimeReport.toolCallCount} tools ·{' '}
                 {taskResult.runtimeReport.durationMs ?? 0} ms
+                {activeRunId ? ` · Run ${activeRunId}` : ''}
               </p>
             ) : null}
           </div>

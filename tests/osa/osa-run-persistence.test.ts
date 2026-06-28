@@ -2,8 +2,10 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { resolveExecutionPlanForTask } from '@/utils/osa/execution-planner';
+import { buildExecutionProgress } from '@/utils/osa/execution-progress';
 import {
   buildOsaExecutionPlanCreatedEvent,
+  buildOsaProgressUpdatedEvent,
   buildOsaRunInputPayload,
   buildOsaRunInsertRecord,
   buildOsaRunUpdateForRuntimeFailure,
@@ -18,6 +20,8 @@ import {
   attachRunIdToOsaTaskResult,
 } from '@/utils/osa/osa-run-persistence';
 import { prepareOsaTaskSubmitInput } from '@/utils/osa/osa-task';
+import { buildExecutionGraph } from '@/utils/osa/team-execution';
+import { createExecutionCoordinatorFromSubmit } from '@/utils/osa/team-runtime';
 
 const SAMPLE_AGENTS = [
   { id: 'business-manager', name: 'AI Business Manager' },
@@ -161,6 +165,25 @@ describe('OSA run persistence mapping', () => {
 
     assert.equal(failure.status, 'failed');
     assert.equal(failure.error_message, 'Provider unavailable');
+  });
+
+  it('builds progress updated event payload', () => {
+    const preparedInput = prepareOsaTaskSubmitInput(SAMPLE_INPUT);
+    const graph = buildExecutionGraph({
+      plan: preparedInput.executionPlan,
+      graphId: 'graph-event',
+    });
+    const coordinator = createExecutionCoordinatorFromSubmit(
+      preparedInput,
+      graph,
+      'session-progress',
+    );
+    const progress = buildExecutionProgress(coordinator.session);
+    const event = buildOsaProgressUpdatedEvent(BASE_CONTEXT, progress);
+
+    assert.equal(event.type, 'osa_progress_updated');
+    assert.equal(event.payload.progress, progress.progress);
+    assert.ok(Array.isArray(event.payload.completedTasks));
   });
 
   it('builds OSA lifecycle events with osa source', () => {

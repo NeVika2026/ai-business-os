@@ -1,6 +1,11 @@
 import type { OrchestratorEvent } from '@/types/orchestrator';
 import { RUN_EVENT_LABELS } from '@/types/orchestrator';
 import { formatExecutionPlanEta } from '@/utils/osa/execution-planner';
+import {
+  formatExecutionProgressBar,
+  formatExecutionProgressEta,
+  parseExecutionProgress,
+} from '@/utils/osa/execution-progress';
 import { formatDateTime } from '@/utils/orchestrator/runs';
 
 type RunTimelineProps = {
@@ -77,9 +82,36 @@ function renderExecutionPlanPayload(payload: Record<string, unknown>) {
   );
 }
 
+function renderProgressPayload(payload: Record<string, unknown>) {
+  const progress = parseExecutionProgress(payload);
+
+  if (!progress) {
+    return null;
+  }
+
+  return (
+    <div className="mt-3 space-y-2 rounded-lg bg-[var(--surface-1)] p-3 text-sm text-[var(--text-primary)]">
+      <p className="font-mono">{formatExecutionProgressBar(progress.progress)}</p>
+      <p className="text-[var(--text-secondary)]">
+        {progress.currentAgent ?? '—'} · {progress.currentTask ?? '—'} ·{' '}
+        {progress.currentStage ?? '—'}
+      </p>
+      <p className="text-xs text-[var(--text-secondary)]">
+        Completed {progress.completedTasks.length} · Running {progress.runningTasks.length} · Failed{' '}
+        {progress.failedTasks.length} · Blocked {progress.blockedTasks.length} · ETA{' '}
+        {formatExecutionProgressEta(progress)}
+      </p>
+    </div>
+  );
+}
+
 function renderEventPayload(event: OrchestratorEvent) {
   if (event.type === 'osa_execution_plan_created') {
     return renderExecutionPlanPayload(event.payload);
+  }
+
+  if (event.type === 'osa_progress_updated') {
+    return renderProgressPayload(event.payload);
   }
 
   if (Object.keys(event.payload).length === 0) {

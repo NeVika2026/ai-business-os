@@ -6,11 +6,15 @@ import { RunTimeline } from '@/components/orchestrator/run-timeline';
 import { RunsTable } from '@/components/orchestrator/runs-table';
 import { OsaExecutionGraphPanel } from '@/components/osa/osa-execution-graph';
 import { OsaExecutionSessionPanel } from '@/components/osa/osa-execution-session';
+import { OsaLiveProgress } from '@/components/osa/osa-live-progress';
+import { OsaProgressSnapshotsPanel } from '@/components/osa/osa-progress-snapshots';
 import type { OrchestratorEvent, OrchestratorRun } from '@/types/orchestrator';
 import {
   filterOsaTimelineEvents,
   getOsaExecutionGraph,
+  getOsaExecutionProgressFromEvents,
   getOsaExecutionSession,
+  getOsaProgressSnapshots,
 } from '@/utils/osa/osa-runs';
 
 type OsaRunHistoryProps = {
@@ -30,6 +34,8 @@ export function OsaRunHistory({ runs, eventsByRunId }: OsaRunHistoryProps) {
   const selectedRun = runs.find((run) => run.id === activeRunId) ?? null;
   const executionGraph = selectedRun ? getOsaExecutionGraph(selectedRun) : null;
   const executionSession = selectedRun ? getOsaExecutionSession(selectedRun) : null;
+  const progressSnapshots = getOsaProgressSnapshots(selectedEvents);
+  const latestProgress = getOsaExecutionProgressFromEvents(selectedEvents);
 
   return (
     <div className="space-y-6">
@@ -44,6 +50,8 @@ export function OsaRunHistory({ runs, eventsByRunId }: OsaRunHistoryProps) {
 
       {activeRunId ? (
         <>
+          <OsaLiveProgress progress={latestProgress} />
+          <OsaProgressSnapshotsPanel snapshots={progressSnapshots} />
           <OsaExecutionSessionPanel session={executionSession} />
           <OsaExecutionGraphPanel graph={executionGraph} />
           <RunTimeline

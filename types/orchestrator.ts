@@ -9,6 +9,7 @@ export const OSA_EVENT_TYPES = [
   'osa_team_selected',
   'osa_execution_plan_created',
   'osa_runtime_started',
+  'osa_progress_updated',
   'osa_runtime_completed',
   'osa_runtime_failed',
 ] as const;
@@ -85,6 +86,7 @@ export const OSA_EVENT_LABELS: Record<OsaEventType, string> = {
   osa_team_selected: 'Команда выбрана',
   osa_execution_plan_created: 'Execution Plan создан',
   osa_runtime_started: 'Runtime запущен',
+  osa_progress_updated: 'Progress обновлён',
   osa_runtime_completed: 'Runtime завершён',
   osa_runtime_failed: 'Runtime ошибка',
 };

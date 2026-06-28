@@ -11,10 +11,16 @@ import {
 } from '@/services/runtime/runtime-orchestrator-execution';
 import { createClient } from '@/services/supabase/server';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
+import {
+  buildExecutionProgress,
+  parseExecutionProgress,
+  type ExecutionProgress,
+} from '@/utils/osa/execution-progress';
 import { resolveOsaCoordinatorEmployeeId } from '@/utils/osa/osa-coordinator';
 import { buildOsaRuntimeInputFromTaskCall } from '@/utils/osa/osa-runtime-context';
 import {
   buildOsaExecutionPlanCreatedEvent,
+  buildOsaProgressUpdatedEvent,
   buildOsaRunInsertRecord,
   buildOsaRunInputPayload,
   buildOsaRunUpdateForRuntimeFailure,
@@ -42,7 +48,19 @@ import {
   createExecutionCoordinatorFromSubmit,
   runTeamRuntimeExecution,
   serializeExecutionSession,
+  type ExecutionCoordinator,
 } from '@/utils/osa/team-runtime';
+
+export type OsaTaskStartResult =
+  | {
+      status: 'started';
+      runId: string;
+      sessionId: string;
+    }
+  | {
+      status: 'failed';
+      message: string;
+    };
 
 async function createOsaEvent(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -55,59 +73,72 @@ async function createOsaEvent(
   }
 }
 
-export async function submitOsaTask(input: OsaTaskSubmitInput): Promise<OsaTaskSubmitResult> {
+async function persistOsaProgressUpdate(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  context: OsaRunPersistenceContext,
+  coordinator: ExecutionCoordinator,
+) {
+  const progress = buildExecutionProgress(coordinator.session);
+  await createOsaEvent(supabase, buildOsaProgressUpdatedEvent(context, progress));
+}
+
+function createProgressHook(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  context: OsaRunPersistenceContext,
+) {
+  return async (coordinator: ExecutionCoordinator) => {
+    await persistOsaProgressUpdate(supabase, context, coordinator);
+  };
+}
+
+async function resolveOsaAuthContext(): Promise<
+  | {
+      supabase: Awaited<ReturnType<typeof createClient>>;
+      organizationId: string;
+      userId: string;
+      aiEmployeeId: string;
+    }
+  | { error: string }
+> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'Требуется авторизация' };
+  }
+
+  const organizationId = await getCurrentOrganizationId(supabase);
+
+  if (!organizationId) {
+    return { error: 'Организация не найдена' };
+  }
+
+  const aiEmployeeId = await resolveOsaCoordinatorEmployeeId(supabase, organizationId);
+
+  if (!aiEmployeeId) {
+    return { error: 'OSA Navigator не настроен для организации' };
+  }
+
+  return { supabase, organizationId, userId: user.id, aiEmployeeId };
+}
+
+export async function startOsaTask(input: OsaTaskSubmitInput): Promise<OsaTaskStartResult> {
   const validationError = validateOsaTaskInput(input);
 
   if (validationError) {
-    return {
-      status: 'failed',
-      message: validationError,
-      resultText: null,
-      agentTrace: [],
-      runtimeReport: null,
-    };
+    return { status: 'failed', message: validationError };
   }
 
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await resolveOsaAuthContext();
 
-    if (!user) {
-      return {
-        status: 'failed',
-        message: 'Требуется авторизация',
-        resultText: null,
-        agentTrace: [],
-        runtimeReport: null,
-      };
+    if ('error' in auth) {
+      return { status: 'failed', message: auth.error };
     }
 
-    const organizationId = await getCurrentOrganizationId(supabase);
-
-    if (!organizationId) {
-      return {
-        status: 'failed',
-        message: 'Организация не найдена',
-        resultText: null,
-        agentTrace: [],
-        runtimeReport: null,
-      };
-    }
-
-    const aiEmployeeId = await resolveOsaCoordinatorEmployeeId(supabase, organizationId);
-
-    if (!aiEmployeeId) {
-      return {
-        status: 'failed',
-        message: 'OSA Navigator не настроен для организации',
-        resultText: null,
-        agentTrace: [],
-        runtimeReport: null,
-      };
-    }
-
+    const { supabase, organizationId, userId, aiEmployeeId } = auth;
     const sessionId = input.sessionId?.trim() || randomUUID();
     const runtimeBridgeEnabled = isRuntimeBridgeEnabled();
     const preparedInput = prepareOsaTaskSubmitInput(input);
@@ -128,7 +159,7 @@ export async function submitOsaTask(input: OsaTaskSubmitInput): Promise<OsaTaskS
             sessionId,
             organizationId,
             aiEmployeeId,
-            userId: user.id,
+            userId,
             runtimeBridgeEnabled,
           },
           initialCoordinator.session,
@@ -146,7 +177,7 @@ export async function submitOsaTask(input: OsaTaskSubmitInput): Promise<OsaTaskS
       sessionId,
       organizationId,
       aiEmployeeId,
-      userId: user.id,
+      userId,
       runtimeBridgeEnabled,
     };
 
@@ -172,6 +203,136 @@ export async function submitOsaTask(input: OsaTaskSubmitInput): Promise<OsaTaskS
       buildOsaExecutionPlanCreatedEvent(context, preparedInput.executionPlan),
     );
     await createOsaEvent(supabase, buildOsaRuntimeStartedEvent(context));
+    await persistOsaProgressUpdate(supabase, context, initialCoordinator);
+
+    revalidateOsaRunPaths(run.id, aiEmployeeId);
+    return { status: 'started', runId: run.id, sessionId };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Не удалось запустить задачу';
+    return { status: 'failed', message };
+  }
+}
+
+export async function getOsaRunProgress(runId: string): Promise<ExecutionProgress | null> {
+  if (!runId.trim()) {
+    return null;
+  }
+
+  try {
+    const auth = await resolveOsaAuthContext();
+
+    if ('error' in auth) {
+      return null;
+    }
+
+    const { supabase, organizationId } = auth;
+    const { data: events, error } = await supabase
+      .from('events')
+      .select('payload, type, created_at')
+      .eq('organization_id', organizationId)
+      .eq('correlation_id', runId)
+      .eq('type', 'osa_progress_updated')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      throw error;
+    }
+
+    const latest = events?.[0];
+
+    if (!latest) {
+      return null;
+    }
+
+    return parseExecutionProgress(latest.payload);
+  } catch {
+    return null;
+  }
+}
+
+export async function executeOsaTaskRun(runId: string): Promise<OsaTaskSubmitResult> {
+  if (!runId.trim()) {
+    return {
+      status: 'failed',
+      message: 'runId is required',
+      resultText: null,
+      agentTrace: [],
+      runtimeReport: null,
+    };
+  }
+
+  try {
+    const auth = await resolveOsaAuthContext();
+
+    if ('error' in auth) {
+      return {
+        status: 'failed',
+        message: auth.error,
+        resultText: null,
+        agentTrace: [],
+        runtimeReport: null,
+      };
+    }
+
+    const { supabase, organizationId, aiEmployeeId } = auth;
+    const { data: run, error: runError } = await supabase
+      .from('agent_runs')
+      .select('id, input, status')
+      .eq('id', runId)
+      .eq('organization_id', organizationId)
+      .single();
+
+    if (runError || !run) {
+      return {
+        status: 'failed',
+        message: 'Запуск не найден',
+        resultText: null,
+        agentTrace: [],
+        runtimeReport: null,
+      };
+    }
+
+    if (run.status !== 'running') {
+      return {
+        status: 'failed',
+        message: 'Запуск уже завершён',
+        resultText: null,
+        agentTrace: [],
+        runtimeReport: null,
+      };
+    }
+
+    const inputRecord = run.input;
+    const sessionId =
+      typeof inputRecord.session_id === 'string' ? inputRecord.session_id : randomUUID();
+    const runtimeBridgeEnabled = inputRecord.runtime_bridge_enabled === true;
+    const preparedInput = prepareOsaTaskSubmitInput({
+      userPrompt: String(inputRecord.user_prompt ?? ''),
+      businessDescription: String(inputRecord.business_description ?? ''),
+      selectedAgents: Array.isArray(inputRecord.selected_agents)
+        ? (inputRecord.selected_agents as OsaTaskSubmitInput['selectedAgents'])
+        : [],
+      sessionId,
+      executionPlan: inputRecord.execution_plan as OsaTaskSubmitInput['executionPlan'],
+    });
+    const executionGraph = buildOsaExecutionGraph(preparedInput, `osa-graph-${sessionId}`);
+    const initialCoordinator = createExecutionCoordinatorFromSubmit(
+      preparedInput,
+      executionGraph,
+      sessionId,
+    );
+
+    const context: OsaRunPersistenceContext = {
+      runId: run.id,
+      sessionId,
+      organizationId,
+      aiEmployeeId,
+      userId: auth.userId,
+      runtimeBridgeEnabled,
+    };
+
+    const onProgress = createProgressHook(supabase, context);
 
     if (!runtimeBridgeEnabled) {
       const coordinator = await runTeamRuntimeExecution(
@@ -181,6 +342,7 @@ export async function submitOsaTask(input: OsaTaskSubmitInput): Promise<OsaTaskS
           summary: `Simulated ${call.taskId}`,
           output: `Demo output for ${call.stageId}`,
         }),
+        async (nextCoordinator) => onProgress(nextCoordinator),
       );
 
       const update = buildOsaRunUpdateForSimulated(preparedInput, context, coordinator);
@@ -247,6 +409,7 @@ export async function submitOsaTask(input: OsaTaskSubmitInput): Promise<OsaTaskS
 
         return extractRuntimeTaskResult(runtimeResult.result?.output);
       },
+      async (nextCoordinator) => onProgress(nextCoordinator),
     );
 
     const aggregatedRuntimeResult = {
@@ -339,7 +502,7 @@ export async function submitOsaTask(input: OsaTaskSubmitInput): Promise<OsaTaskS
     revalidateOsaRunPaths(run.id, aiEmployeeId);
     return result;
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Не удалось отправить задачу';
+    const message = error instanceof Error ? error.message : 'Не удалось выполнить задачу';
 
     return {
       status: 'failed',
@@ -349,6 +512,22 @@ export async function submitOsaTask(input: OsaTaskSubmitInput): Promise<OsaTaskS
       runtimeReport: null,
     };
   }
+}
+
+export async function submitOsaTask(input: OsaTaskSubmitInput): Promise<OsaTaskSubmitResult> {
+  const started = await startOsaTask(input);
+
+  if (started.status === 'failed') {
+    return {
+      status: 'failed',
+      message: started.message,
+      resultText: null,
+      agentTrace: [],
+      runtimeReport: null,
+    };
+  }
+
+  return executeOsaTaskRun(started.runId);
 }
 
 function revalidateOsaRunPaths(runId: string, aiEmployeeId: string) {

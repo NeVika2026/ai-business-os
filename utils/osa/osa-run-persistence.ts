@@ -11,6 +11,7 @@ import {
   mapRuntimeResultToOsaTaskResult,
 } from '@/utils/osa/osa-task';
 import { serializeExecutionPlan, type ExecutionPlan } from '@/utils/osa/execution-planner';
+import { serializeExecutionProgress, type ExecutionProgress } from '@/utils/osa/execution-progress';
 import { buildOsaExecutionGraph } from '@/utils/osa/osa-task';
 import { serializeExecutionGraph } from '@/utils/osa/team-execution';
 import {
@@ -27,6 +28,7 @@ export type OsaRunEventType =
   | 'osa_team_selected'
   | 'osa_execution_plan_created'
   | 'osa_runtime_started'
+  | 'osa_progress_updated'
   | 'osa_runtime_completed'
   | 'osa_runtime_failed';
 
@@ -134,6 +136,16 @@ export function buildOsaTaskSubmittedEvent(
 ): OsaEventInsertRecord {
   return buildOsaEventRecord(context, 'osa_task_submitted', 'user', context.userId, {
     session_id: context.sessionId,
+  });
+}
+
+export function buildOsaProgressUpdatedEvent(
+  context: OsaRunPersistenceContext,
+  progress: ExecutionProgress,
+): OsaEventInsertRecord {
+  return buildOsaEventRecord(context, 'osa_progress_updated', 'system', null, {
+    session_id: context.sessionId,
+    ...serializeExecutionProgress(progress),
   });
 }
 
