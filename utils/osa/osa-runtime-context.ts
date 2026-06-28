@@ -6,6 +6,11 @@ import {
   type ExecutionPlan,
 } from '@/utils/osa/execution-planner';
 import {
+  buildExecutionGraph,
+  serializeExecutionGraph,
+  type ExecutionGraph,
+} from '@/utils/osa/team-execution';
+import {
   buildOsaAgentTrace,
   prepareOsaTaskSubmitInput,
   type OsaTaskAgentRef,
@@ -112,6 +117,10 @@ export function buildOsaRuntimeInput(
 ): Record<string, unknown> {
   const prepared = prepareOsaTaskSubmitInput(input);
   const context = buildOsaRuntimePromptContext(prepared);
+  const executionGraph = buildExecutionGraph({
+    plan: prepared.executionPlan,
+    graphId: `osa-graph-${options.sessionId}`,
+  });
 
   return {
     userPrompt: context.taskGoal,
@@ -127,8 +136,19 @@ export function buildOsaRuntimeInput(
     executionMode: context.executionMode,
     estimatedMinutes: context.estimatedMinutes,
     reviewRequired: context.reviewRequired,
+    executionGraph: serializeExecutionGraph(executionGraph),
+    executionGraphSummary: `${executionGraph.totalTasks} tasks · ${executionGraph.progress}% · ETA ${formatExecutionPlanEta(executionGraph.eta)}`,
     osaRuntimeContext: context,
   };
+}
+
+export function buildOsaExecutionGraph(input: OsaTaskSubmitInput, graphId: string): ExecutionGraph {
+  const prepared = prepareOsaTaskSubmitInput(input);
+
+  return buildExecutionGraph({
+    plan: prepared.executionPlan,
+    graphId,
+  });
 }
 
 export function resolveOsaRuntimePromptContext(input: OsaTaskSubmitInput): OsaRuntimePromptContext {

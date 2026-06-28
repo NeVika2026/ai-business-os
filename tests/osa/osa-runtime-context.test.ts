@@ -71,6 +71,8 @@ describe('OSA runtime context', () => {
     assert.ok(typeof runtimeInput.executionPlanText === 'string');
     assert.ok(Array.isArray((runtimeInput.selectedAgents as unknown[] | undefined) ?? []));
     assert.ok(runtimeInput.executionPlan);
+    assert.ok(runtimeInput.executionGraph);
+    assert.ok(typeof runtimeInput.executionGraphSummary === 'string');
     assert.ok(runtimeInput.osaRuntimeContext);
   });
 

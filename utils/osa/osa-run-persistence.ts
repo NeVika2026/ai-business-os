@@ -11,6 +11,8 @@ import {
   mapRuntimeResultToOsaTaskResult,
 } from '@/utils/osa/osa-task';
 import { serializeExecutionPlan, type ExecutionPlan } from '@/utils/osa/execution-planner';
+import { buildOsaExecutionGraph } from '@/utils/osa/osa-runtime-context';
+import { serializeExecutionGraph } from '@/utils/osa/team-execution';
 
 export const OSA_EVENT_SOURCE = 'osa';
 
@@ -77,6 +79,8 @@ export function buildOsaRunInputPayload(
   input: OsaTaskSubmitInput & { executionPlan: ExecutionPlan },
   context: OsaRunPersistenceContext,
 ): Record<string, unknown> {
+  const executionGraph = buildOsaExecutionGraph(input, `osa-graph-${context.sessionId}`);
+
   return {
     action: 'osa_task',
     source: 'osa_workspace',
@@ -86,6 +90,7 @@ export function buildOsaRunInputPayload(
     selected_agents: input.selectedAgents,
     agent_trace: buildOsaAgentTrace(input.selectedAgents),
     execution_plan: serializeExecutionPlan(input.executionPlan),
+    execution_graph: serializeExecutionGraph(executionGraph),
     simulated: !context.runtimeBridgeEnabled,
     runtime_bridge_enabled: context.runtimeBridgeEnabled,
   };

@@ -5,12 +5,15 @@ import type { OrchestratorEvent, OrchestratorRun } from '@/types/orchestrator';
 import { RUN_EVENT_LABELS } from '@/types/orchestrator';
 import {
   filterOsaTimelineEvents,
+  getOsaExecutionGraph,
   getOsaRunGoal,
   getOsaRuntimeMode,
   getOsaRunTeam,
   groupEventsByRunId,
   isOsaRun,
 } from '@/utils/osa/osa-runs';
+import { buildExecutionGraph } from '@/utils/osa/team-execution';
+import { prepareOsaTaskSubmitInput } from '@/utils/osa/osa-task';
 
 const BASE_RUN: OrchestratorRun = {
   id: 'run-001',
@@ -41,6 +44,15 @@ const BASE_RUN: OrchestratorRun = {
     name: 'OSA Navigator',
     role_title: 'OSA Navigator',
   },
+};
+
+const SAMPLE_INPUT = {
+  userPrompt: 'Подготовь план на неделю',
+  selectedAgents: [
+    { id: 'business-manager', name: 'AI Business Manager' },
+    { id: 'crm', name: 'AI CRM' },
+  ],
+  businessDescription: 'Я инвест-брокер',
 };
 
 describe('OSA run history helpers', () => {
@@ -97,5 +109,22 @@ describe('OSA run history helpers', () => {
 
   it('exposes timeline label for osa_execution_plan_created', () => {
     assert.equal(RUN_EVENT_LABELS.osa_execution_plan_created, 'Execution Plan создан');
+  });
+
+  it('parses execution graph from run input', () => {
+    const prepared = prepareOsaTaskSubmitInput(SAMPLE_INPUT);
+    const graph = buildExecutionGraph({ plan: prepared.executionPlan, graphId: 'graph-run' });
+
+    const run = {
+      ...BASE_RUN,
+      input: {
+        ...BASE_RUN.input,
+        execution_graph: graph,
+      },
+    };
+
+    const parsed = getOsaExecutionGraph(run);
+    assert.ok(parsed);
+    assert.equal(parsed?.totalTasks, graph.totalTasks);
   });
 });

@@ -5,6 +5,7 @@ import {
   buildExecutionPlanSummary,
   resolveExecutionPlanForTask,
 } from '@/utils/osa/execution-planner';
+import { buildExecutionGraph } from '@/utils/osa/team-execution';
 
 export type OsaTaskStatus = 'completed' | 'simulated' | 'failed';
 
@@ -87,12 +88,16 @@ export function buildSimulatedOsaTaskResult(
   const trace = buildOsaAgentTrace(input.selectedAgents);
   const prepared = prepareOsaTaskSubmitInput(input);
   const planSummary = buildExecutionPlanSummary(prepared.executionPlan);
+  const graph = buildExecutionGraph({
+    plan: prepared.executionPlan,
+    graphId: `osa-graph-${sessionId}`,
+  });
 
   return {
     status: 'simulated',
     message:
-      'Задача обработана в демо-режиме по Execution Plan. Включите RUNTIME_BRIDGE_ENABLED для реального выполнения.',
-    resultText: `Команда OSA обработала задачу по Execution Plan (${planSummary}): «${input.userPrompt.trim()}». Сессия: ${sessionId}.`,
+      'Задача обработана в демо-режиме по Execution Plan и Execution Graph. Включите RUNTIME_BRIDGE_ENABLED для реального выполнения.',
+    resultText: `Команда OSA обработала задачу по Execution Plan (${planSummary}) и Execution Graph (${graph.totalTasks} tasks, ETA ${graph.eta} min): «${input.userPrompt.trim()}». Сессия: ${sessionId}.`,
     agentTrace: trace,
     runtimeReport: null,
   };
