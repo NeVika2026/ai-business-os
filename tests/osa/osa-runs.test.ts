@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import type { OrchestratorEvent, OrchestratorRun } from '@/types/orchestrator';
+import { RUN_EVENT_LABELS } from '@/types/orchestrator';
 import {
   filterOsaTimelineEvents,
   getOsaRunGoal,
@@ -92,5 +93,9 @@ describe('OSA run history helpers', () => {
     assert.equal(grouped['run-001']?.length, 2);
     assert.equal(filterOsaTimelineEvents(events).length, 1);
     assert.equal(filterOsaTimelineEvents(events)[0]?.type, 'osa_task_submitted');
+  });
+
+  it('exposes timeline label for osa_execution_plan_created', () => {
+    assert.equal(RUN_EVENT_LABELS.osa_execution_plan_created, 'Execution Plan создан');
   });
 });

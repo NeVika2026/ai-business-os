@@ -13,6 +13,7 @@ import { createClient } from '@/services/supabase/server';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
 import { resolveOsaCoordinatorEmployeeId } from '@/utils/osa/osa-coordinator';
 import {
+  buildOsaExecutionPlanCreatedEvent,
   buildOsaRunInsertRecord,
   buildOsaRunUpdateForRuntimeFailure,
   buildOsaRunUpdateForRuntimeSuccess,
@@ -28,6 +29,7 @@ import {
   type OsaRunPersistenceContext,
 } from '@/utils/osa/osa-run-persistence';
 import {
+  prepareOsaTaskSubmitInput,
   validateOsaTaskInput,
   type OsaTaskSubmitInput,
   type OsaTaskSubmitResult,
@@ -99,11 +101,12 @@ export async function submitOsaTask(input: OsaTaskSubmitInput): Promise<OsaTaskS
 
     const sessionId = input.sessionId?.trim() || randomUUID();
     const runtimeBridgeEnabled = isRuntimeBridgeEnabled();
+    const preparedInput = prepareOsaTaskSubmitInput(input);
 
     const { data: run, error: runError } = await supabase
       .from('agent_runs')
       .insert(
-        buildOsaRunInsertRecord(input, {
+        buildOsaRunInsertRecord(preparedInput, {
           runId: '',
           sessionId,
           organizationId,
@@ -141,12 +144,19 @@ export async function submitOsaTask(input: OsaTaskSubmitInput): Promise<OsaTaskS
 
     await supabase.from('agent_runs').update({ event_id: submittedEventRow.id }).eq('id', run.id);
 
-    await createOsaEvent(supabase, buildOsaTeamSelectedEvent(context, input.selectedAgents));
+    await createOsaEvent(
+      supabase,
+      buildOsaTeamSelectedEvent(context, preparedInput.selectedAgents),
+    );
+    await createOsaEvent(
+      supabase,
+      buildOsaExecutionPlanCreatedEvent(context, preparedInput.executionPlan),
+    );
     await createOsaEvent(supabase, buildOsaRuntimeStartedEvent(context));
 
     if (!runtimeBridgeEnabled) {
-      const update = buildOsaRunUpdateForSimulated(input, context);
-      const result = buildPersistedSimulatedOsaTaskResult(input, sessionId, run.id);
+      const update = buildOsaRunUpdateForSimulated(preparedInput, context);
+      const result = buildPersistedSimulatedOsaTaskResult(preparedInput, sessionId, run.id);
 
       await supabase.from('agent_runs').update(update).eq('id', run.id);
       await createOsaEvent(
@@ -169,19 +179,19 @@ export async function submitOsaTask(input: OsaTaskSubmitInput): Promise<OsaTaskS
       runId: run.id,
       action: 'osa_task',
       payload: {
-        userPrompt: input.userPrompt.trim(),
-        businessDescription: input.businessDescription.trim(),
-        selectedAgents: input.selectedAgents,
+        userPrompt: preparedInput.userPrompt.trim(),
+        businessDescription: preparedInput.businessDescription.trim(),
+        selectedAgents: preparedInput.selectedAgents,
         sessionId,
         source: 'osa_workspace',
       },
     });
 
     const runtimeResult = await executeOrchestratorRuntimeAgent(execution);
-    const result = buildPersistedRuntimeOsaTaskResult(input, runtimeResult, run.id);
+    const result = buildPersistedRuntimeOsaTaskResult(preparedInput, runtimeResult, run.id);
 
     if (!runtimeResult.success) {
-      const update = buildOsaRunUpdateForRuntimeFailure(runtimeResult, input, context);
+      const update = buildOsaRunUpdateForRuntimeFailure(runtimeResult, preparedInput, context);
 
       await supabase.from('agent_runs').update(update).eq('id', run.id);
       await createOsaEvent(
@@ -199,7 +209,7 @@ export async function submitOsaTask(input: OsaTaskSubmitInput): Promise<OsaTaskS
       return result;
     }
 
-    const update = buildOsaRunUpdateForRuntimeSuccess(runtimeResult, input, context);
+    const update = buildOsaRunUpdateForRuntimeSuccess(runtimeResult, preparedInput, context);
 
     await supabase.from('agent_runs').update(update).eq('id', run.id);
     await createOsaEvent(

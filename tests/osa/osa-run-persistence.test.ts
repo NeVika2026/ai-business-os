@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import { resolveExecutionPlanForTask } from '@/utils/osa/execution-planner';
 import {
+  buildOsaExecutionPlanCreatedEvent,
   buildOsaRunInputPayload,
   buildOsaRunInsertRecord,
   buildOsaRunUpdateForRuntimeFailure,
@@ -15,6 +17,7 @@ import {
   buildPersistedSimulatedOsaTaskResult,
   attachRunIdToOsaTaskResult,
 } from '@/utils/osa/osa-run-persistence';
+import { prepareOsaTaskSubmitInput } from '@/utils/osa/osa-task';
 
 const SAMPLE_AGENTS = [
   { id: 'business-manager', name: 'AI Business Manager' },
@@ -40,7 +43,8 @@ const BASE_CONTEXT = {
 
 describe('OSA run persistence mapping', () => {
   it('builds agent_run input with OSA metadata', () => {
-    const inputPayload = buildOsaRunInputPayload(SAMPLE_INPUT, BASE_CONTEXT);
+    const preparedInput = prepareOsaTaskSubmitInput(SAMPLE_INPUT);
+    const inputPayload = buildOsaRunInputPayload(preparedInput, BASE_CONTEXT);
 
     assert.equal(inputPayload.action, 'osa_task');
     assert.equal(inputPayload.source, 'osa_workspace');
@@ -48,10 +52,36 @@ describe('OSA run persistence mapping', () => {
     assert.equal(inputPayload.simulated, true);
     assert.equal(inputPayload.runtime_bridge_enabled, false);
     assert.deepEqual(inputPayload.agent_trace, ['Navigator', 'AI Estate', 'AI CRM', 'AI Analyst']);
+    assert.ok(inputPayload.execution_plan);
+    assert.equal((inputPayload.execution_plan as { stages: unknown[] }).stages.length, 3);
+  });
+
+  it('persists execution plan in run input mapper', () => {
+    const preparedInput = prepareOsaTaskSubmitInput(SAMPLE_INPUT);
+    const inputPayload = buildOsaRunInputPayload(preparedInput, BASE_CONTEXT);
+    const plan = inputPayload.execution_plan as Record<string, unknown>;
+
+    assert.ok(Array.isArray(plan.stages));
+    assert.ok(plan.dependencies);
+    assert.ok(Array.isArray(plan.parallelGroups));
+    assert.equal(typeof plan.estimatedMinutes, 'number');
+    assert.ok(Array.isArray(plan.risks));
+    assert.ok(['sequential', 'hybrid', 'parallel'].includes(String(plan.executionMode)));
+    assert.equal(typeof plan.reviewRequired, 'boolean');
+  });
+
+  it('rebuilds execution plan when missing from submit input', () => {
+    const preparedInput = prepareOsaTaskSubmitInput(SAMPLE_INPUT);
+    const fallback = resolveExecutionPlanForTask(SAMPLE_INPUT);
+
+    assert.equal(preparedInput.executionPlan.stages.length, 3);
+    assert.equal(fallback.stages.length, 3);
+    assert.ok(preparedInput.executionPlan.estimatedMinutes > 0);
   });
 
   it('builds running agent_run insert record', () => {
-    const record = buildOsaRunInsertRecord(SAMPLE_INPUT, BASE_CONTEXT);
+    const preparedInput = prepareOsaTaskSubmitInput(SAMPLE_INPUT);
+    const record = buildOsaRunInsertRecord(preparedInput, BASE_CONTEXT);
 
     assert.equal(record.organization_id, BASE_CONTEXT.organizationId);
     assert.equal(record.ai_employee_id, BASE_CONTEXT.aiEmployeeId);
@@ -130,8 +160,13 @@ describe('OSA run persistence mapping', () => {
   });
 
   it('builds OSA lifecycle events with osa source', () => {
+    const preparedInput = prepareOsaTaskSubmitInput(SAMPLE_INPUT);
     const submitted = buildOsaTaskSubmittedEvent(BASE_CONTEXT);
     const teamSelected = buildOsaTeamSelectedEvent(BASE_CONTEXT, SAMPLE_AGENTS);
+    const executionPlanCreated = buildOsaExecutionPlanCreatedEvent(
+      BASE_CONTEXT,
+      preparedInput.executionPlan,
+    );
     const started = buildOsaRuntimeStartedEvent(BASE_CONTEXT);
     const completed = buildOsaRuntimeCompletedEvent(BASE_CONTEXT, { status: 'simulated' });
     const failed = buildOsaRuntimeFailedEvent(BASE_CONTEXT, { error: 'boom' });
@@ -139,6 +174,7 @@ describe('OSA run persistence mapping', () => {
     assert.equal(submitted.source, 'osa');
     assert.equal(submitted.type, 'osa_task_submitted');
     assert.equal(teamSelected.type, 'osa_team_selected');
+    assert.equal(executionPlanCreated.type, 'osa_execution_plan_created');
     assert.equal(started.type, 'osa_runtime_started');
     assert.equal(completed.type, 'osa_runtime_completed');
     assert.equal(failed.type, 'osa_runtime_failed');
@@ -150,6 +186,33 @@ describe('OSA run persistence mapping', () => {
       'AI CRM',
       'AI Analyst',
     ]);
+    assert.ok(Array.isArray(executionPlanCreated.payload.stages));
+    assert.equal(
+      executionPlanCreated.payload.estimatedMinutes,
+      preparedInput.executionPlan.estimatedMinutes,
+    );
+    assert.equal(
+      executionPlanCreated.payload.executionMode,
+      preparedInput.executionPlan.executionMode,
+    );
+    assert.equal(
+      executionPlanCreated.payload.reviewRequired,
+      preparedInput.executionPlan.reviewRequired,
+    );
+  });
+
+  it('generates execution plan event payload with required fields', () => {
+    const executionPlan = resolveExecutionPlanForTask(SAMPLE_INPUT);
+    const event = buildOsaExecutionPlanCreatedEvent(BASE_CONTEXT, executionPlan);
+
+    assert.equal(event.type, 'osa_execution_plan_created');
+    assert.ok(Array.isArray(event.payload.stages));
+    assert.ok(event.payload.dependencies);
+    assert.ok(Array.isArray(event.payload.parallelGroups));
+    assert.equal(event.payload.estimatedMinutes, executionPlan.estimatedMinutes);
+    assert.ok(Array.isArray(event.payload.risks));
+    assert.equal(event.payload.executionMode, executionPlan.executionMode);
+    assert.equal(event.payload.reviewRequired, executionPlan.reviewRequired);
   });
 
   it('attaches persisted run id to submit result', () => {

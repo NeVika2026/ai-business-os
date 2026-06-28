@@ -98,6 +98,7 @@ export function OsaOnboardingFlow() {
         selectedAgents: team.map((agent) => ({ id: agent.id, name: agent.name })),
         businessDescription: userInput.trim(),
         sessionId: sessionId || createSessionId(),
+        executionPlan,
       });
 
       setTaskResult(result);

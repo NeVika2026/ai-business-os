@@ -1,5 +1,6 @@
 import type { OsaAgentDefinition, OsaAgentId } from '@/utils/osa/agent-registry';
 import type { NavigatorRecommendation } from '@/utils/osa/navigator-engine';
+import { getOsaAgentDefinitionById } from '@/utils/osa/team-recommendation';
 
 export type ExecutionStageStatus = 'pending' | 'ready' | 'running' | 'completed';
 
@@ -395,4 +396,121 @@ export function formatExecutionPlanEta(minutes: number): string {
   }
 
   return `${hours} ч ${remainder} мин`;
+}
+
+export function serializeExecutionPlan(plan: ExecutionPlan): Record<string, unknown> {
+  return {
+    stages: plan.stages,
+    dependencies: plan.dependencies,
+    parallelGroups: plan.parallelGroups,
+    estimatedMinutes: plan.estimatedMinutes,
+    risks: plan.risks,
+    executionMode: plan.executionMode,
+    reviewRequired: plan.reviewRequired,
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isExecutionMode(value: unknown): value is ExecutionMode {
+  return value === 'sequential' || value === 'hybrid' || value === 'parallel';
+}
+
+function isExecutionStageStatus(value: unknown): value is ExecutionStageStatus {
+  return value === 'pending' || value === 'ready' || value === 'running' || value === 'completed';
+}
+
+function isValidExecutionStage(value: unknown): value is ExecutionStage {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.id === 'string' &&
+    value.id.trim().length > 0 &&
+    typeof value.title === 'string' &&
+    typeof value.description === 'string' &&
+    Array.isArray(value.assignedAgents) &&
+    typeof value.estimatedMinutes === 'number' &&
+    Number.isFinite(value.estimatedMinutes) &&
+    Array.isArray(value.dependsOn) &&
+    value.dependsOn.every((item) => typeof item === 'string') &&
+    typeof value.parallel === 'boolean' &&
+    isExecutionStageStatus(value.status)
+  );
+}
+
+export function isValidExecutionPlan(value: unknown): value is ExecutionPlan {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  if (
+    !Array.isArray(value.stages) ||
+    value.stages.length === 0 ||
+    !value.stages.every(isValidExecutionStage)
+  ) {
+    return false;
+  }
+
+  if (!isRecord(value.dependencies)) {
+    return false;
+  }
+
+  if (!Array.isArray(value.parallelGroups)) {
+    return false;
+  }
+
+  if (typeof value.estimatedMinutes !== 'number' || !Number.isFinite(value.estimatedMinutes)) {
+    return false;
+  }
+
+  if (!Array.isArray(value.risks)) {
+    return false;
+  }
+
+  if (!isExecutionMode(value.executionMode)) {
+    return false;
+  }
+
+  return typeof value.reviewRequired === 'boolean';
+}
+
+export type ResolveExecutionPlanInput = {
+  userPrompt: string;
+  businessDescription: string;
+  selectedAgents: Array<{ id: string; name: string }>;
+  executionPlan?: ExecutionPlan | null;
+};
+
+export function resolveExecutionPlanForTask(input: ResolveExecutionPlanInput): ExecutionPlan {
+  if (input.executionPlan && isValidExecutionPlan(input.executionPlan)) {
+    return input.executionPlan;
+  }
+
+  const team: OsaAgentDefinition[] = input.selectedAgents.map((agent) => {
+    const definition = getOsaAgentDefinitionById(agent.id);
+
+    if (definition) {
+      return definition;
+    }
+
+    return {
+      id: agent.id as OsaAgentId,
+      name: agent.name,
+      description: '',
+      workspaceStatus: 'Ready',
+    };
+  });
+
+  const userInput = [input.businessDescription.trim(), input.userPrompt.trim()]
+    .filter(Boolean)
+    .join('\n');
+
+  return buildExecutionPlan({
+    userInput,
+    team,
+  });
 }

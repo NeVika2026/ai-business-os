@@ -1,5 +1,7 @@
 import type { OrchestratorRuntimeExecutionResult } from '@/services/runtime/runtime-orchestrator-execution';
 import { OSA_AGENT_TRACE_ORDER, type OsaAgentId } from '@/utils/osa/agent-registry';
+import type { ExecutionPlan } from '@/utils/osa/execution-planner';
+import { resolveExecutionPlanForTask } from '@/utils/osa/execution-planner';
 
 export type OsaTaskStatus = 'completed' | 'simulated' | 'failed';
 
@@ -13,7 +15,12 @@ export interface OsaTaskSubmitInput {
   selectedAgents: OsaTaskAgentRef[];
   businessDescription: string;
   sessionId?: string;
+  executionPlan?: ExecutionPlan | null;
 }
+
+export type PreparedOsaTaskSubmitInput = OsaTaskSubmitInput & {
+  executionPlan: ExecutionPlan;
+};
 
 export interface OsaTaskRuntimeReport {
   runId: string;
@@ -139,6 +146,13 @@ export function mapRuntimeResultToOsaTaskResult(
     resultText,
     agentTrace: trace,
     runtimeReport: runtime.report,
+  };
+}
+
+export function prepareOsaTaskSubmitInput(input: OsaTaskSubmitInput): PreparedOsaTaskSubmitInput {
+  return {
+    ...input,
+    executionPlan: resolveExecutionPlanForTask(input),
   };
 }
 

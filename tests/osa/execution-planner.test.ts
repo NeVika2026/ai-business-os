@@ -4,6 +4,8 @@ import { describe, it } from 'node:test';
 import {
   buildExecutionPlan,
   formatExecutionPlanEta,
+  isValidExecutionPlan,
+  resolveExecutionPlanForTask,
   type ExecutionPlan,
 } from '@/utils/osa/execution-planner';
 import { buildNavigatorRecommendation } from '@/utils/osa/navigator-engine';
@@ -157,5 +159,26 @@ describe('OSA execution planner', () => {
     assert.equal(plan.stages.length, 3);
     assert.ok(plan.stages[1]?.assignedAgents.length >= 1);
     assert.ok(plan.risks.some((risk) => risk.id === 'data-quality'));
+  });
+
+  it('rejects invalid execution plans and rebuilds from task input', () => {
+    const team = buildSampleTeam();
+    const validPlan = buildExecutionPlan({
+      userInput: 'Я инвест-брокер и хочу больше клиентов по новостройкам',
+      team,
+    });
+
+    assert.equal(isValidExecutionPlan(validPlan), true);
+    assert.equal(isValidExecutionPlan(null), false);
+    assert.equal(isValidExecutionPlan({ stages: [] }), false);
+
+    const resolved = resolveExecutionPlanForTask({
+      userPrompt: 'Подготовь план на неделю',
+      businessDescription: 'Я инвест-брокер',
+      selectedAgents: team.map((agent) => ({ id: agent.id, name: agent.name })),
+      executionPlan: { stages: [] } as unknown as ExecutionPlan,
+    });
+
+    assert.equal(resolved.stages.length, 3);
   });
 });

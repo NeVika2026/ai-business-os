@@ -10,12 +10,14 @@ import {
   buildSimulatedOsaTaskResult,
   mapRuntimeResultToOsaTaskResult,
 } from '@/utils/osa/osa-task';
+import { serializeExecutionPlan, type ExecutionPlan } from '@/utils/osa/execution-planner';
 
 export const OSA_EVENT_SOURCE = 'osa';
 
 export type OsaRunEventType =
   | 'osa_task_submitted'
   | 'osa_team_selected'
+  | 'osa_execution_plan_created'
   | 'osa_runtime_started'
   | 'osa_runtime_completed'
   | 'osa_runtime_failed';
@@ -58,7 +60,7 @@ export interface OsaEventInsertRecord {
 }
 
 export function buildOsaRunInsertRecord(
-  input: OsaTaskSubmitInput,
+  input: OsaTaskSubmitInput & { executionPlan: ExecutionPlan },
   context: OsaRunPersistenceContext,
 ): OsaRunInsertRecord {
   return {
@@ -72,7 +74,7 @@ export function buildOsaRunInsertRecord(
 }
 
 export function buildOsaRunInputPayload(
-  input: OsaTaskSubmitInput,
+  input: OsaTaskSubmitInput & { executionPlan: ExecutionPlan },
   context: OsaRunPersistenceContext,
 ): Record<string, unknown> {
   return {
@@ -83,9 +85,20 @@ export function buildOsaRunInputPayload(
     business_description: input.businessDescription.trim(),
     selected_agents: input.selectedAgents,
     agent_trace: buildOsaAgentTrace(input.selectedAgents),
+    execution_plan: serializeExecutionPlan(input.executionPlan),
     simulated: !context.runtimeBridgeEnabled,
     runtime_bridge_enabled: context.runtimeBridgeEnabled,
   };
+}
+
+export function buildOsaExecutionPlanCreatedEvent(
+  context: OsaRunPersistenceContext,
+  executionPlan: ExecutionPlan,
+): OsaEventInsertRecord {
+  return buildOsaEventRecord(context, 'osa_execution_plan_created', 'system', null, {
+    session_id: context.sessionId,
+    ...serializeExecutionPlan(executionPlan),
+  });
 }
 
 export function buildOsaTeamSelectedEvent(

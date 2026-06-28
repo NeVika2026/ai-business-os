@@ -1,5 +1,6 @@
 import type { OrchestratorEvent } from '@/types/orchestrator';
 import { RUN_EVENT_LABELS } from '@/types/orchestrator';
+import { formatExecutionPlanEta } from '@/utils/osa/execution-planner';
 import { formatDateTime } from '@/utils/orchestrator/runs';
 
 type RunTimelineProps = {
@@ -10,6 +11,86 @@ type RunTimelineProps = {
 
 function getEventLabel(type: string) {
   return RUN_EVENT_LABELS[type] ?? type;
+}
+
+function renderExecutionPlanPayload(payload: Record<string, unknown>) {
+  const stages = Array.isArray(payload.stages) ? payload.stages : [];
+  const estimatedMinutes =
+    typeof payload.estimatedMinutes === 'number' ? payload.estimatedMinutes : null;
+  const executionMode =
+    typeof payload.executionMode === 'string' ? payload.executionMode : 'sequential';
+  const reviewRequired = payload.reviewRequired === true;
+  const risks = Array.isArray(payload.risks) ? payload.risks : [];
+
+  return (
+    <div className="mt-3 space-y-3 rounded-lg bg-[var(--surface-1)] p-3 text-sm text-[var(--text-primary)]">
+      <p className="text-[var(--text-secondary)]">
+        {estimatedMinutes !== null ? `ETA: ${formatExecutionPlanEta(estimatedMinutes)}` : 'ETA: —'}
+        {' · '}
+        {stages.length} stage{stages.length === 1 ? '' : 's'}
+        {' · '}
+        Mode: {executionMode}
+        {reviewRequired ? ' · Review required' : ''}
+      </p>
+      <ol className="space-y-2">
+        {stages.map((stage, index) => {
+          if (!stage || typeof stage !== 'object') {
+            return null;
+          }
+
+          const record = stage as Record<string, unknown>;
+          const title = typeof record.title === 'string' ? record.title : `Stage ${index + 1}`;
+          const minutes =
+            typeof record.estimatedMinutes === 'number' ? record.estimatedMinutes : null;
+
+          return (
+            <li key={typeof record.id === 'string' ? record.id : `stage-${index}`}>
+              <span className="font-medium">{title}</span>
+              {minutes !== null ? (
+                <span className="text-[var(--text-secondary)]"> · {minutes} мин</span>
+              ) : null}
+            </li>
+          );
+        })}
+      </ol>
+      {risks.length > 0 ? (
+        <p className="text-xs text-[var(--text-secondary)]">
+          Risks: {risks.length}
+          {risks.slice(0, 2).map((risk, index) => {
+            if (!risk || typeof risk !== 'object') {
+              return null;
+            }
+
+            const record = risk as Record<string, unknown>;
+            const title = typeof record.title === 'string' ? record.title : 'Risk';
+
+            return (
+              <span key={typeof record.id === 'string' ? record.id : `risk-${index}`}>
+                {index === 0 ? ' · ' : ' · '}
+                {title}
+              </span>
+            );
+          })}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function renderEventPayload(event: OrchestratorEvent) {
+  if (event.type === 'osa_execution_plan_created') {
+    return renderExecutionPlanPayload(event.payload);
+  }
+
+  if (Object.keys(event.payload).length === 0) {
+    return null;
+  }
+
+  return (
+    <pre className="mt-3 overflow-x-auto rounded-lg bg-[var(--surface-1)] p-3 text-xs text-[var(--text-primary)]">
+      {JSON.stringify(event.payload, null, 2)}
+    </pre>
+  );
 }
 
 export function RunTimeline({
@@ -47,11 +128,7 @@ export function RunTimeline({
               <p className="mt-1 text-xs text-[var(--text-secondary)]">
                 Source: {event.source} · Actor: {event.actor_type}
               </p>
-              {Object.keys(event.payload).length > 0 ? (
-                <pre className="mt-3 overflow-x-auto rounded-lg bg-[var(--surface-1)] p-3 text-xs text-[var(--text-primary)]">
-                  {JSON.stringify(event.payload, null, 2)}
-                </pre>
-              ) : null}
+              {renderEventPayload(event)}
             </li>
           ))}
         </ol>
