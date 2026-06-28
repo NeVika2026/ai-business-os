@@ -5,6 +5,7 @@ export type NavItem = {
 };
 
 export const MAIN_NAVIGATION: NavItem[] = [
+  { label: 'OSA', href: '/osa', icon: '✨' },
   { label: 'Dashboard', href: '/dashboard', icon: '🏠' },
   { label: 'CRM', href: '/crm', icon: '👥' },
   { label: 'Projects', href: '/projects', icon: '📁' },
