@@ -1,20 +1,15 @@
+import { CABINET_NAVIGATION } from '@/utils/cabinet/cabinet-config';
+
 export type NavItem = {
   label: string;
   href: string;
   icon: string;
 };
 
-export const MAIN_NAVIGATION: NavItem[] = [
-  { label: 'OSA', href: '/osa', icon: '✨' },
-  { label: 'Dashboard', href: '/dashboard', icon: '🏠' },
-  { label: 'CRM', href: '/crm', icon: '👥' },
-  { label: 'Projects', href: '/projects', icon: '📁' },
-  { label: 'Knowledge', href: '/knowledge', icon: '📚' },
-  { label: 'AI Employees', href: '/ai-employees', icon: '🤖' },
-  { label: 'Orchestrator', href: '/orchestrator', icon: '⚡' },
-  { label: 'Marketplace', href: '/marketplace', icon: '🛒' },
-  { label: 'Academy', href: '/academy', icon: '🎓' },
-  { label: 'Settings', href: '/settings', icon: '⚙️' },
-];
+export const MAIN_NAVIGATION: NavItem[] = CABINET_NAVIGATION.map((item) => ({
+  label: item.label,
+  href: item.href,
+  icon: item.icon,
+}));
 
 export const NAVIGATION_HREF_SET = new Set(MAIN_NAVIGATION.map((item) => item.href));
