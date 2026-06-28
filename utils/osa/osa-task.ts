@@ -1,5 +1,5 @@
 import type { OrchestratorRuntimeExecutionResult } from '@/services/runtime/runtime-orchestrator-execution';
-import type { OsaAgentId } from '@/utils/osa/team-recommendation';
+import { OSA_AGENT_TRACE_ORDER, type OsaAgentId } from '@/utils/osa/agent-registry';
 
 export type OsaTaskStatus = 'completed' | 'simulated' | 'failed';
 
@@ -32,15 +32,7 @@ export interface OsaTaskSubmitResult {
   runtimeReport: OsaTaskRuntimeReport | null;
 }
 
-const TRACE_ORDER: OsaAgentId[] = [
-  'business-manager',
-  'marketing',
-  'estate',
-  'crm',
-  'analyst',
-  'mlm',
-  'content',
-];
+const TRACE_ORDER = OSA_AGENT_TRACE_ORDER;
 
 export function validateOsaTaskInput(input: OsaTaskSubmitInput): string | null {
   if (!input || typeof input !== 'object') {

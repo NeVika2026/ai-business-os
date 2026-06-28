@@ -4,10 +4,10 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { submitOsaTask } from '@/app/(dashboard)/osa/actions';
+import type { OsaAgentDefinition } from '@/utils/osa/agent-registry';
 import {
   getOsaTeamRecommendation,
   OSA_ONBOARDING_EXAMPLES,
-  type OsaAgentDefinition,
   type OsaTeamRecommendation,
 } from '@/utils/osa/team-recommendation';
 import type { OsaTaskSubmitResult } from '@/utils/osa/osa-task';

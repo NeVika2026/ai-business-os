@@ -1,73 +1,22 @@
 import {
+  getCoreOsaAgents,
+  getOsaAgentById,
+  resolveOsaAgents,
+  toOsaAgentDefinition,
+  type OsaAgentDefinition,
+  type OsaAgentId,
+} from '@/utils/osa/agent-registry';
+import {
   buildNavigatorRecommendation,
   type NavigatorRecommendation,
   type NavigatorTeamCategory,
 } from '@/utils/osa/navigator-engine';
 
-export type OsaAgentId =
-  | 'business-manager'
-  | 'marketing'
-  | 'crm'
-  | 'analyst'
-  | 'estate'
-  | 'mlm'
-  | 'content';
-
-export type OsaAgentDefinition = {
-  id: OsaAgentId;
-  name: string;
-  description: string;
-  workspaceStatus: string;
-};
+export type { OsaAgentDefinition, OsaAgentId } from '@/utils/osa/agent-registry';
 
 export type OsaTeamRecommendation = {
   team: OsaAgentDefinition[];
   recommendation: NavigatorRecommendation;
-};
-
-const AGENT_CATALOG: Record<OsaAgentId, OsaAgentDefinition> = {
-  'business-manager': {
-    id: 'business-manager',
-    name: 'AI Business Manager',
-    description: 'Координирует остальных агентов.',
-    workspaceStatus: 'Работает',
-  },
-  marketing: {
-    id: 'marketing',
-    name: 'AI Marketing',
-    description: 'Создаёт рекламу, посты и контент.',
-    workspaceStatus: 'Готовит стратегию',
-  },
-  crm: {
-    id: 'crm',
-    name: 'AI CRM',
-    description: 'Ведёт клиентов и напоминает о следующих шагах.',
-    workspaceStatus: 'Создаёт карточку клиента',
-  },
-  analyst: {
-    id: 'analyst',
-    name: 'AI Analyst',
-    description: 'Анализирует эффективность и предлагает улучшения.',
-    workspaceStatus: 'Считает показатели',
-  },
-  estate: {
-    id: 'estate',
-    name: 'AI Estate',
-    description: 'Подбирает недвижимость и рассчитывает инвестиции.',
-    workspaceStatus: 'Анализирует объекты',
-  },
-  mlm: {
-    id: 'mlm',
-    name: 'AI MLM',
-    description: 'Помогает с рекрутингом, контентом и обработкой возражений.',
-    workspaceStatus: 'Готовит рекрутинговую систему',
-  },
-  content: {
-    id: 'content',
-    name: 'AI Content',
-    description: 'Создаёт посты, сценарии, видео и публикации.',
-    workspaceStatus: 'Создаёт контент-план',
-  },
 };
 
 const CATEGORY_AGENT_MAP: Record<NavigatorTeamCategory, OsaAgentId[]> = {
@@ -145,22 +94,8 @@ function resolveSpecialAgents(userInput: string): OsaAgentId[] {
 }
 
 function dedupeAgents(agentIds: OsaAgentId[]): OsaAgentDefinition[] {
-  const seen = new Set<OsaAgentId>();
-  const team: OsaAgentDefinition[] = [];
-
-  for (const agentId of agentIds) {
-    if (seen.has(agentId)) {
-      continue;
-    }
-
-    seen.add(agentId);
-    team.push(AGENT_CATALOG[agentId]);
-  }
-
-  return team;
+  return resolveOsaAgents(agentIds).map(toOsaAgentDefinition);
 }
-
-const CORE_AGENT_IDS: OsaAgentId[] = ['business-manager', 'marketing', 'crm', 'analyst'];
 
 export function mapNavigatorRecommendationToOsaTeam(
   userInput: string,
@@ -170,8 +105,9 @@ export function mapNavigatorRecommendationToOsaTeam(
 
   const mappedAgents = resolveAgentsForCategories(selectedCategories);
   const specialAgents = resolveSpecialAgents(userInput);
+  const coreAgentIds = getCoreOsaAgents().map((agent) => agent.id);
 
-  return dedupeAgents([...CORE_AGENT_IDS, ...mappedAgents, ...specialAgents]);
+  return dedupeAgents([...coreAgentIds, ...mappedAgents, ...specialAgents]);
 }
 
 export function getOsaTeamRecommendation(userInput: string): OsaTeamRecommendation {
@@ -185,6 +121,11 @@ export function getOsaTeamRecommendation(userInput: string): OsaTeamRecommendati
 
 export function recommendOsaTeam(userInput: string): OsaAgentDefinition[] {
   return getOsaTeamRecommendation(userInput).team;
+}
+
+export function getOsaAgentDefinitionById(id: string): OsaAgentDefinition | undefined {
+  const agent = getOsaAgentById(id);
+  return agent ? toOsaAgentDefinition(agent) : undefined;
 }
 
 export const OSA_ONBOARDING_EXAMPLES = [
