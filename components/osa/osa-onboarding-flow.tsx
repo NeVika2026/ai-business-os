@@ -6,13 +6,18 @@ import { useEffect, useState } from 'react';
 import { submitOsaTask } from '@/app/(dashboard)/osa/actions';
 import type { OsaAgentDefinition } from '@/utils/osa/agent-registry';
 import {
+  buildExecutionPlan,
+  formatExecutionPlanEta,
+  type ExecutionPlan,
+} from '@/utils/osa/execution-planner';
+import {
   getOsaTeamRecommendation,
   OSA_ONBOARDING_EXAMPLES,
   type OsaTeamRecommendation,
 } from '@/utils/osa/team-recommendation';
 import type { OsaTaskSubmitResult } from '@/utils/osa/osa-task';
 
-type FlowStep = 'onboarding' | 'loading' | 'team' | 'workspace';
+type FlowStep = 'onboarding' | 'loading' | 'team' | 'plan' | 'workspace';
 
 const LOADING_DELAY_MS = 1600;
 
@@ -30,6 +35,7 @@ export function OsaOnboardingFlow() {
   const [userInput, setUserInput] = useState('');
   const [team, setTeam] = useState<OsaAgentDefinition[]>([]);
   const [teamRecommendation, setTeamRecommendation] = useState<OsaTeamRecommendation | null>(null);
+  const [executionPlan, setExecutionPlan] = useState<ExecutionPlan | null>(null);
   const [sessionId, setSessionId] = useState('');
   const [taskInput, setTaskInput] = useState('');
   const [taskLoading, setTaskLoading] = useState(false);
@@ -57,11 +63,23 @@ export function OsaOnboardingFlow() {
     }
 
     setTaskResult(null);
+    setExecutionPlan(null);
     setStep('loading');
   }
 
   function handleLaunchTeam() {
     setSessionId(createSessionId());
+    setExecutionPlan(
+      buildExecutionPlan({
+        userInput: userInput.trim(),
+        team,
+        recommendation: teamRecommendation?.recommendation,
+      }),
+    );
+    setStep('plan');
+  }
+
+  function handleEnterWorkspace() {
     setStep('workspace');
   }
 
@@ -162,6 +180,79 @@ export function OsaOnboardingFlow() {
           className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--border-subtle)] border-t-[var(--accent)]"
         />
         <p className="text-lg font-medium text-[var(--text-primary)]">Анализирую ваш бизнес...</p>
+      </section>
+    );
+  }
+
+  if (step === 'plan' && executionPlan) {
+    return (
+      <section className="mx-auto w-full max-w-3xl space-y-6">
+        <header className="space-y-2 text-center">
+          <p className="text-sm font-medium uppercase tracking-wide text-[var(--accent)]">
+            Execution Plan
+          </p>
+          <h1 className="text-2xl font-semibold text-[var(--text-primary)] sm:text-3xl">
+            План выполнения задачи
+          </h1>
+          <p className="text-sm text-[var(--text-secondary)]">
+            Общий ETA: {formatExecutionPlanEta(executionPlan.estimatedMinutes)}
+            {executionPlan.reviewRequired ? ' · Review required' : ''}
+          </p>
+        </header>
+
+        <div className="space-y-4">
+          {executionPlan.stages.map((stage, index) => (
+            <article
+              key={stage.id}
+              className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-5"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-xs font-medium uppercase tracking-wide text-[var(--accent)]">
+                    Stage {index + 1}
+                  </p>
+                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                    {stage.title}
+                  </h2>
+                </div>
+                <span className="rounded-full bg-[var(--surface-2)] px-3 py-1 text-xs text-[var(--text-secondary)]">
+                  {stage.estimatedMinutes} мин
+                </span>
+              </div>
+              <p className="mt-3 text-sm text-[var(--text-secondary)]">{stage.description}</p>
+              <p className="mt-3 text-sm text-[var(--text-primary)]">
+                Агенты: {stage.assignedAgents.map((agent) => agent.name).join(', ')}
+              </p>
+              {stage.parallel ? (
+                <p className="mt-2 text-xs text-[var(--text-secondary)]">Параллельное выполнение</p>
+              ) : null}
+            </article>
+          ))}
+        </div>
+
+        {executionPlan.risks.length > 0 ? (
+          <div className="space-y-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
+            <h2 className="text-sm font-semibold text-[var(--text-primary)]">Risk Detection</h2>
+            <ul className="space-y-2">
+              {executionPlan.risks.map((risk) => (
+                <li key={risk.id} className="text-sm text-[var(--text-secondary)]">
+                  <span className="font-medium text-[var(--text-primary)]">
+                    [{risk.severity}] {risk.title}:
+                  </span>{' '}
+                  {risk.description} — {risk.mitigation}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={handleEnterWorkspace}
+          className="w-full rounded-xl bg-[var(--accent)] px-4 py-3 text-sm font-medium text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+        >
+          Перейти в Workspace
+        </button>
       </section>
     );
   }
