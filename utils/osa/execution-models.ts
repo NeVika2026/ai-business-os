@@ -4,6 +4,8 @@
  * - ExecutionPlan (`execution-planner.ts`): strategic multi-stage plan with agents, risks, and ETA.
  * - ExecutionGraph (`team-execution.ts`): task-level DAG derived from a plan.
  * - ExecutionSession (`team-runtime.ts`): coordinator state while walking a graph stage-by-stage.
+ * - ExecutionProgress (`execution-progress.ts`): UI/history snapshot derived from a session.
+ * - ExecutionControls (`execution-controls.ts`): user-facing pause/resume/cancel/retry/restart API.
  */
 
 export type {

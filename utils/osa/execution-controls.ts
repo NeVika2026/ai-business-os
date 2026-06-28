@@ -1,4 +1,9 @@
-import type { ExecutionProgress } from '@/utils/osa/execution-progress';
+/**
+ * Execution control layer for OSA Team Runtime.
+ *
+ * Manipulates ExecutionSession state only — does not call RuntimeBridge internals.
+ * Pause/resume/cancel delegate to team-runtime; retry/restart reset graph task state in-session.
+ */
 import {
   applyGraphTasks,
   buildExecutionGraph,
@@ -47,8 +52,6 @@ export type ExecutionControlContext = {
   runStatus: 'running' | 'completed' | 'failed' | 'cancelled';
 };
 
-const TERMINAL_SESSION_STATES = new Set<ExecutionState>(['completed', 'cancelled']);
-
 export function mapSessionToControlState(state: ExecutionState): ExecutionControlState {
   switch (state) {
     case 'running':
@@ -69,9 +72,7 @@ export function mapSessionToControlState(state: ExecutionState): ExecutionContro
   }
 }
 
-export function getExecutionControlState(
-  coordinator: ExecutionCoordinator,
-): ExecutionControlState {
+export function getExecutionControlState(coordinator: ExecutionCoordinator): ExecutionControlState {
   return mapSessionToControlState(coordinator.session.state);
 }
 
@@ -86,37 +87,25 @@ function resetTask(task: ExecutionTask): ExecutionTask {
   };
 }
 
-function applyGraphWithSessionState(
+function syncRetrySession(
   coordinator: ExecutionCoordinator,
   graph: ExecutionGraph,
-  state: ExecutionState,
+  results: ExecutionSession['results'],
 ): ExecutionCoordinator {
-  const metricsGraph = applyGraphTasks(graph, graph.tasks);
-
   return {
     session: {
       ...coordinator.session,
-      graph: metricsGraph,
-      state,
-      currentStage: metricsGraph.stages.find((stage) =>
-        metricsGraph.tasks.some(
-          (task) =>
-            task.stageId === stage.id &&
-            ['ready', 'running', 'pending'].includes(task.status),
-        ),
-      )?.id ?? coordinator.session.currentStage,
-      completedTasks: metricsGraph.tasks
+      graph,
+      results,
+      state: 'retrying',
+      completedTasks: graph.tasks
         .filter((task) => task.status === 'completed')
         .map((task) => task.id),
-      runningTasks: metricsGraph.tasks
-        .filter((task) => task.status === 'running')
-        .map((task) => task.id),
-      failedTasks: metricsGraph.tasks.filter((task) => task.status === 'failed').map((task) => task.id),
-      blockedTasks: metricsGraph.tasks
-        .filter((task) => task.status === 'blocked')
-        .map((task) => task.id),
-      progress: metricsGraph.progress,
-      eta: metricsGraph.eta,
+      runningTasks: graph.tasks.filter((task) => task.status === 'running').map((task) => task.id),
+      failedTasks: graph.tasks.filter((task) => task.status === 'failed').map((task) => task.id),
+      blockedTasks: graph.tasks.filter((task) => task.status === 'blocked').map((task) => task.id),
+      progress: graph.progress,
+      eta: graph.eta,
       updatedAt: new Date().toISOString(),
     },
   };
@@ -150,10 +139,7 @@ export function canRetryTask(coordinator: ExecutionCoordinator, taskId?: string)
   return task?.status === 'failed' || task?.status === 'blocked';
 }
 
-function resolveRetryStageId(
-  coordinator: ExecutionCoordinator,
-  stageId?: string,
-): string | null {
+function resolveRetryStageId(coordinator: ExecutionCoordinator, stageId?: string): string | null {
   if (stageId) {
     return stageId;
   }
@@ -303,7 +289,10 @@ export function retryTask(
     return coordinator;
   }
 
-  const resetIds = new Set<string>([targetId, ...getDownstreamTaskIds(targetId, coordinator.session.graph.tasks)]);
+  const resetIds = new Set<string>([
+    targetId,
+    ...getDownstreamTaskIds(targetId, coordinator.session.graph.tasks),
+  ]);
 
   const tasks = coordinator.session.graph.tasks.map((task) =>
     resetIds.has(task.id) && task.status !== 'completed' ? resetTask(task) : task,
@@ -318,21 +307,7 @@ export function retryTask(
 
   const graph = applyGraphTasks(coordinator.session.graph, refreshed);
 
-  return {
-    session: {
-      ...coordinator.session,
-      graph,
-      results: nextResults,
-      state: 'retrying',
-      completedTasks: graph.tasks.filter((task) => task.status === 'completed').map((task) => task.id),
-      runningTasks: graph.tasks.filter((task) => task.status === 'running').map((task) => task.id),
-      failedTasks: graph.tasks.filter((task) => task.status === 'failed').map((task) => task.id),
-      blockedTasks: graph.tasks.filter((task) => task.status === 'blocked').map((task) => task.id),
-      progress: graph.progress,
-      eta: graph.eta,
-      updatedAt: new Date().toISOString(),
-    },
-  };
+  return syncRetrySession(coordinator, graph, nextResults);
 }
 
 export function retryStage(
@@ -371,21 +346,7 @@ export function retryStage(
 
   const graph = applyGraphTasks(coordinator.session.graph, refreshed);
 
-  return {
-    session: {
-      ...coordinator.session,
-      graph,
-      results: nextResults,
-      state: 'retrying',
-      completedTasks: graph.tasks.filter((task) => task.status === 'completed').map((task) => task.id),
-      runningTasks: graph.tasks.filter((task) => task.status === 'running').map((task) => task.id),
-      failedTasks: graph.tasks.filter((task) => task.status === 'failed').map((task) => task.id),
-      blockedTasks: graph.tasks.filter((task) => task.status === 'blocked').map((task) => task.id),
-      progress: graph.progress,
-      eta: graph.eta,
-      updatedAt: new Date().toISOString(),
-    },
-  };
+  return syncRetrySession(coordinator, graph, nextResults);
 }
 
 export function applyExecutionControl(
@@ -411,37 +372,6 @@ export function applyExecutionControl(
   }
 }
 
-export function shouldStopExecution(coordinator: ExecutionCoordinator): boolean {
-  return (
-    coordinator.session.state === 'cancelled' ||
-    TERMINAL_SESSION_STATES.has(coordinator.session.state)
-  );
-}
-
-export function shouldWaitForResume(coordinator: ExecutionCoordinator): boolean {
-  return coordinator.session.state === 'paused';
-}
-
-export function getExecutionControlAvailabilityFromProgress(
-  progress: Pick<ExecutionProgress, 'controlState' | 'failedTasks'> | null,
-): ExecutionControlAvailability {
-  const state = progress?.controlState ?? 'active';
-  const hasFailures = (progress?.failedTasks.length ?? 0) > 0;
-
-  return {
-    pause: state === 'active' || state === 'retrying',
-    resume: state === 'paused',
-    cancel: state === 'active' || state === 'paused' || state === 'retrying',
-    restart: state === 'failed' || state === 'cancelled' || state === 'completed' || state === 'paused',
-    retryTask:
-      hasFailures &&
-      (state === 'failed' || state === 'paused' || state === 'active' || state === 'retrying'),
-    retryStage:
-      hasFailures &&
-      (state === 'failed' || state === 'paused' || state === 'active' || state === 'retrying'),
-  };
-}
-
 export const EXECUTION_CONTROL_STATE_LABELS: Record<ExecutionControlState, string> = {
   active: 'Active',
   paused: 'Paused',
@@ -450,11 +380,3 @@ export const EXECUTION_CONTROL_STATE_LABELS: Record<ExecutionControlState, strin
   completed: 'Completed',
   failed: 'Failed',
 };
-
-export function promoteRetryingToRunning(coordinator: ExecutionCoordinator): ExecutionCoordinator {
-  if (coordinator.session.state !== 'retrying') {
-    return coordinator;
-  }
-
-  return resumeTeamExecution(coordinator);
-}

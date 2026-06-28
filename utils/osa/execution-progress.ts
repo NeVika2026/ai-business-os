@@ -1,5 +1,9 @@
 import { formatExecutionPlanEta } from '@/utils/osa/execution-planner';
-import { getExecutionControlState, type ExecutionControlState } from '@/utils/osa/execution-controls';
+import {
+  mapSessionToControlState,
+  type ExecutionControlAvailability,
+  type ExecutionControlState,
+} from '@/utils/osa/execution-controls';
 import { estimateProgress } from '@/utils/osa/team-execution';
 import type { ExecutionSession } from '@/utils/osa/team-runtime';
 
@@ -78,7 +82,28 @@ export function buildExecutionProgress(
     progress: session.progress,
     eta: estimateLiveEta(session),
     lastUpdate,
-    controlState: getExecutionControlState({ session }),
+    controlState: mapSessionToControlState(session.state),
+  };
+}
+
+export function getExecutionControlAvailabilityFromProgress(
+  progress: Pick<ExecutionProgress, 'controlState' | 'failedTasks'> | null,
+): ExecutionControlAvailability {
+  const state = progress?.controlState ?? 'active';
+  const hasFailures = (progress?.failedTasks.length ?? 0) > 0;
+
+  return {
+    pause: state === 'active' || state === 'retrying',
+    resume: state === 'paused',
+    cancel: state === 'active' || state === 'paused' || state === 'retrying',
+    restart:
+      state === 'failed' || state === 'cancelled' || state === 'completed' || state === 'paused',
+    retryTask:
+      hasFailures &&
+      (state === 'failed' || state === 'paused' || state === 'active' || state === 'retrying'),
+    retryStage:
+      hasFailures &&
+      (state === 'failed' || state === 'paused' || state === 'active' || state === 'retrying'),
   };
 }
 

@@ -1,3 +1,4 @@
+import { OSA_CONTROL_CHECK_INTERVAL_MS } from '@/utils/osa/osa-constants';
 import { serializeExecutionPlan, type ExecutionPlan } from '@/utils/osa/execution-planner';
 import type { OsaTaskAgentRef } from '@/utils/osa/osa-task';
 import {
@@ -707,7 +708,7 @@ export async function runTeamRuntimeExecution(
       }
 
       while (current.session.state === 'paused') {
-        await delay(400);
+        await delay(OSA_CONTROL_CHECK_INTERVAL_MS);
         current = await onControlCheck(current);
 
         if (current.session.state === 'cancelled') {
@@ -744,7 +745,7 @@ export async function runTeamRuntimeExecution(
         }
 
         while (current.session.state === 'paused') {
-          await delay(400);
+          await delay(OSA_CONTROL_CHECK_INTERVAL_MS);
           current = await onControlCheck(current);
 
           if (current.session.state === 'cancelled') {

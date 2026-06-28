@@ -1,6 +1,7 @@
 {
   "all": true,
   "include": [
+    "utils/osa/**/*.ts",
     "services/runtime/gateway/**/*.ts",
     "services/runtime/tools/**/*.ts",
     "services/runtime/execution/**/*.ts",

@@ -390,13 +390,7 @@ export async function controlOsaExecution(
     const runOwnerId = typeof run.created_by === 'string' ? run.created_by : userId;
     const runStatus = run.status as 'running' | 'completed' | 'failed' | 'cancelled';
 
-    if (
-      !canControlExecution(
-        { userId, runOwnerId, runStatus },
-        coordinator,
-        action,
-      )
-    ) {
+    if (!canControlExecution({ userId, runOwnerId, runStatus }, coordinator, action)) {
       return { status: 'failed', message: 'Действие недоступно для текущего состояния' };
     }
 
@@ -421,13 +415,7 @@ export async function controlOsaExecution(
       runtimeBridgeEnabled: inputRecord.runtime_bridge_enabled === true,
     };
 
-    await persistExecutionSession(
-      supabase,
-      run.id,
-      organizationId,
-      inputRecord,
-      nextCoordinator,
-    );
+    await persistExecutionSession(supabase, run.id, organizationId, inputRecord, nextCoordinator);
 
     await createOsaEvent(
       supabase,
@@ -530,7 +518,11 @@ export async function executeOsaTaskRun(runId: string): Promise<OsaTaskSubmitRes
       sessionId,
       executionPlan: inputRecord.execution_plan as OsaTaskSubmitInput['executionPlan'],
     });
-    const initialCoordinator = resolveCoordinatorFromRunInput(inputRecord, preparedInput, sessionId);
+    const initialCoordinator = resolveCoordinatorFromRunInput(
+      inputRecord,
+      preparedInput,
+      sessionId,
+    );
 
     const context: OsaRunPersistenceContext = {
       runId: run.id,
@@ -568,7 +560,14 @@ export async function executeOsaTaskRun(runId: string): Promise<OsaTaskSubmitRes
           message: 'Выполнение отменено',
           resultText: null,
           agentTrace: buildOsaAgentTrace(preparedInput.selectedAgents),
-          runtimeReport: { runId: run.id, durationMs: null, toolCallCount: 0, gatewayCallCount: 0, inputTokens: 0, outputTokens: 0 },
+          runtimeReport: {
+            runId: run.id,
+            durationMs: null,
+            toolCallCount: 0,
+            gatewayCallCount: 0,
+            inputTokens: 0,
+            outputTokens: 0,
+          },
         };
       }
 

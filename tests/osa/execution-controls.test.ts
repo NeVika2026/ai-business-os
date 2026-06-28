@@ -12,7 +12,6 @@ import {
   canRetryTask,
   cancelExecution,
   getExecutionControlAvailability,
-  getExecutionControlAvailabilityFromProgress,
   getExecutionControlState,
   isValidControlTransition,
   mapSessionToControlState,
@@ -22,7 +21,10 @@ import {
   retryStage,
   retryTask,
 } from '@/utils/osa/execution-controls';
-import { buildExecutionProgress } from '@/utils/osa/execution-progress';
+import {
+  buildExecutionProgress,
+  getExecutionControlAvailabilityFromProgress,
+} from '@/utils/osa/execution-progress';
 import {
   buildOsaExecutionControlEvent,
   buildOsaProgressUpdatedEvent,
@@ -234,11 +236,7 @@ describe('OSA execution controls', () => {
       true,
     );
     assert.equal(
-      canControlExecution(
-        { ...ownerContext, runStatus: 'completed' },
-        running,
-        'pause',
-      ),
+      canControlExecution({ ...ownerContext, runStatus: 'completed' }, running, 'pause'),
       false,
     );
   });

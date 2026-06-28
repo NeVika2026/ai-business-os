@@ -8,11 +8,11 @@ import {
   type OsaExecutionControlResult,
 } from '@/app/(dashboard)/osa/actions';
 import type { ExecutionControlAction } from '@/utils/osa/execution-controls';
+import { EXECUTION_CONTROL_STATE_LABELS } from '@/utils/osa/execution-controls';
 import {
-  EXECUTION_CONTROL_STATE_LABELS,
   getExecutionControlAvailabilityFromProgress,
-} from '@/utils/osa/execution-controls';
-import type { ExecutionProgress } from '@/utils/osa/execution-progress';
+  type ExecutionProgress,
+} from '@/utils/osa/execution-progress';
 
 type OsaControlCenterProps = {
   runId: string | null;

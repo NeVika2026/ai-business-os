@@ -11,7 +11,7 @@ import { parseExecutionSession, type ExecutionSession } from '@/utils/osa/team-r
 
 export const OSA_RUN_ACTION = 'osa_task';
 export const OSA_RUN_SOURCE = 'osa_workspace';
-export const OSA_RUN_HISTORY_LIMIT = 20;
+export { OSA_RUN_HISTORY_LIMIT } from '@/utils/osa/osa-constants';
 
 export function isOsaRun(run: Pick<OrchestratorRun, 'input'>): boolean {
   return run.input.action === OSA_RUN_ACTION || run.input.source === OSA_RUN_SOURCE;

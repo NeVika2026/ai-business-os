@@ -14,6 +14,7 @@ import { serializeExecutionPlan, type ExecutionPlan } from '@/utils/osa/executio
 import { serializeExecutionProgress, type ExecutionProgress } from '@/utils/osa/execution-progress';
 import type { ExecutionControlAction } from '@/utils/osa/execution-controls';
 import { buildOsaExecutionGraph } from '@/utils/osa/osa-task';
+import { extractRuntimeOutputText } from '@/utils/osa/runtime-output';
 import { serializeExecutionGraph } from '@/utils/osa/team-execution';
 import {
   createExecutionCoordinatorFromSubmit,
@@ -179,17 +180,11 @@ export function buildOsaExecutionControlEvent(
   action: ExecutionControlAction,
   payload: Record<string, unknown> = {},
 ): OsaEventInsertRecord {
-  return buildOsaEventRecord(
-    context,
-    CONTROL_ACTION_EVENT_TYPE[action],
-    'user',
-    context.userId,
-    {
-      session_id: context.sessionId,
-      action,
-      ...payload,
-    },
-  );
+  return buildOsaEventRecord(context, CONTROL_ACTION_EVENT_TYPE[action], 'user', context.userId, {
+    session_id: context.sessionId,
+    action,
+    ...payload,
+  });
 }
 
 export function buildOsaRuntimeStartedEvent(
@@ -360,5 +355,3 @@ function buildOsaEventRecord(
     },
   };
 }
-
-import { extractRuntimeOutputText } from '@/utils/osa/runtime-output';

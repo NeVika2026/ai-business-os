@@ -13,12 +13,13 @@ import {
   type ExecutionPlan,
 } from '@/utils/osa/execution-planner';
 import type { ExecutionProgress } from '@/utils/osa/execution-progress';
+import { OSA_PROGRESS_POLL_INTERVAL_MS } from '@/utils/osa/osa-constants';
+import type { OsaTaskSubmitResult } from '@/utils/osa/osa-task';
 import {
   getOsaTeamRecommendation,
   OSA_ONBOARDING_EXAMPLES,
   type OsaTeamRecommendation,
 } from '@/utils/osa/team-recommendation';
-import type { OsaTaskSubmitResult } from '@/utils/osa/osa-task';
 
 type FlowStep = 'onboarding' | 'loading' | 'team' | 'plan' | 'workspace';
 
@@ -128,7 +129,7 @@ export function OsaOnboardingFlow() {
         if (progress) {
           setLiveProgress(progress);
         }
-      }, 800);
+      }, OSA_PROGRESS_POLL_INTERVAL_MS);
 
       const result = await executeOsaTaskRun(started.runId);
       const finalProgress = await getOsaRunProgress(started.runId);
