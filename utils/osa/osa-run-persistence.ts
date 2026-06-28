@@ -11,7 +11,7 @@ import {
   mapRuntimeResultToOsaTaskResult,
 } from '@/utils/osa/osa-task';
 import { serializeExecutionPlan, type ExecutionPlan } from '@/utils/osa/execution-planner';
-import { buildOsaExecutionGraph } from '@/utils/osa/osa-runtime-context';
+import { buildOsaExecutionGraph } from '@/utils/osa/osa-task';
 import { serializeExecutionGraph } from '@/utils/osa/team-execution';
 import {
   createExecutionCoordinatorFromSubmit,
@@ -210,7 +210,7 @@ export function buildOsaRunUpdateForRuntimeSuccess(
       agent_trace: buildOsaAgentTrace(input.selectedAgents),
       report: runtime.report,
       result_status: runtime.result?.status ?? null,
-      result_text: extractPersistedResultText(runtime),
+      result_text: extractRuntimeOutputText(runtime.result?.output),
       execution_session: coordinator ? serializeExecutionSession(coordinator.session) : undefined,
     },
   };
@@ -306,18 +306,4 @@ function buildOsaEventRecord(
   };
 }
 
-function extractPersistedResultText(runtime: OrchestratorRuntimeExecutionResult): string | null {
-  const output = runtime.result?.output;
-  if (!output || typeof output !== 'object') {
-    return null;
-  }
-
-  for (const key of ['content', 'summary', 'message'] as const) {
-    const value = output[key];
-    if (typeof value === 'string' && value.trim().length > 0) {
-      return value.trim();
-    }
-  }
-
-  return null;
-}
+import { extractRuntimeOutputText } from '@/utils/osa/runtime-output';

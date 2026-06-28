@@ -31,7 +31,7 @@ export type ExecutionTask = {
   error: string | null;
 };
 
-export type ExecutionStage = {
+export type ExecutionGraphStage = {
   id: string;
   title: string;
   description: string;
@@ -43,7 +43,7 @@ export type ExecutionStage = {
 
 export type ExecutionGraph = {
   id: string;
-  stages: ExecutionStage[];
+  stages: ExecutionGraphStage[];
   tasks: ExecutionTask[];
   parallelGroups: string[][];
   totalTasks: number;
@@ -109,7 +109,10 @@ export function buildAgentTasks(
   return tasks;
 }
 
-export function groupParallelTasks(tasks: ExecutionTask[], stages: ExecutionStage[]): string[][] {
+export function groupParallelTasks(
+  tasks: ExecutionTask[],
+  stages: ExecutionGraphStage[],
+): string[][] {
   const taskIds = new Set(tasks.map((task) => task.id));
   const groups: string[][] = [];
 
@@ -213,6 +216,13 @@ function applyProgressMetrics(graph: ExecutionGraph): ExecutionGraph {
   };
 }
 
+export function applyGraphTasks(graph: ExecutionGraph, tasks: ExecutionTask[]): ExecutionGraph {
+  return applyProgressMetrics({
+    ...graph,
+    tasks,
+  });
+}
+
 export function getReadyTasks(graph: ExecutionGraph): ExecutionTask[] {
   return graph.tasks.filter((task) => task.status === 'ready');
 }
@@ -286,7 +296,7 @@ export function failTask(
 export function buildExecutionGraph(input: BuildExecutionGraphInput): ExecutionGraph {
   const graphId =
     input.graphId ?? `osa-graph-${input.plan.stages.map((stage) => stage.id).join('-') || 'empty'}`;
-  const stageSnapshots: ExecutionStage[] = [];
+  const stageSnapshots: ExecutionGraphStage[] = [];
   const tasks: ExecutionTask[] = [];
   const tasksByStage = new Map<string, ExecutionTask[]>();
 
@@ -355,7 +365,7 @@ export function parseExecutionGraph(value: unknown): ExecutionGraph | null {
   }
 
   const tasks = record.tasks as ExecutionTask[];
-  const stages = record.stages as ExecutionStage[];
+  const stages = record.stages as ExecutionGraphStage[];
   const parallelGroups = Array.isArray(record.parallelGroups)
     ? (record.parallelGroups as string[][])
     : groupParallelTasks(tasks, stages);

@@ -1,15 +1,9 @@
 import {
   buildExecutionPlanSummary,
   formatExecutionPlanEta,
-  resolveExecutionPlanForTask,
   serializeExecutionPlan,
   type ExecutionPlan,
 } from '@/utils/osa/execution-planner';
-import {
-  buildExecutionGraph,
-  serializeExecutionGraph,
-  type ExecutionGraph,
-} from '@/utils/osa/team-execution';
 import {
   buildOsaAgentTrace,
   prepareOsaTaskSubmitInput,
@@ -17,6 +11,7 @@ import {
   type OsaTaskSubmitInput,
   type PreparedOsaTaskSubmitInput,
 } from '@/utils/osa/osa-task';
+import { buildExecutionGraph, serializeExecutionGraph } from '@/utils/osa/team-execution';
 
 export type OsaRuntimePromptContext = {
   taskGoal: string;
@@ -161,18 +156,6 @@ export function buildOsaRuntimeInputFromTaskCall(
   };
 }
 
-export function buildOsaExecutionGraph(input: OsaTaskSubmitInput, graphId: string): ExecutionGraph {
-  const prepared = prepareOsaTaskSubmitInput(input);
-
-  return buildExecutionGraph({
-    plan: prepared.executionPlan,
-    graphId,
-  });
-}
-
 export function resolveOsaRuntimePromptContext(input: OsaTaskSubmitInput): OsaRuntimePromptContext {
-  return buildOsaRuntimePromptContext({
-    ...input,
-    executionPlan: resolveExecutionPlanForTask(input),
-  });
+  return buildOsaRuntimePromptContext(prepareOsaTaskSubmitInput(input));
 }

@@ -302,6 +302,30 @@ export function toOsaAgentDefinition(agent: OsaAgent): OsaAgentDefinition {
   };
 }
 
+export function getOsaAgentDefinitionById(id: string): OsaAgentDefinition | undefined {
+  const agent = getOsaAgentById(id);
+  return agent ? toOsaAgentDefinition(agent) : undefined;
+}
+
+export function resolveOsaAgentRefs(
+  agents: Array<{ id: string; name: string }>,
+): OsaAgentDefinition[] {
+  return agents.map((agent) => {
+    const definition = getOsaAgentDefinitionById(agent.id);
+
+    if (definition) {
+      return definition;
+    }
+
+    return {
+      id: agent.id as OsaAgentId,
+      name: agent.name,
+      description: '',
+      workspaceStatus: 'Ready',
+    };
+  });
+}
+
 export const OSA_AGENT_TRACE_ORDER: OsaAgentId[] = [
   'business-manager',
   'marketing',

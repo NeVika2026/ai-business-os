@@ -12,10 +12,7 @@ import {
 import { createClient } from '@/services/supabase/server';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
 import { resolveOsaCoordinatorEmployeeId } from '@/utils/osa/osa-coordinator';
-import {
-  buildOsaExecutionGraph,
-  buildOsaRuntimeInputFromTaskCall,
-} from '@/utils/osa/osa-runtime-context';
+import { buildOsaRuntimeInputFromTaskCall } from '@/utils/osa/osa-runtime-context';
 import {
   buildOsaExecutionPlanCreatedEvent,
   buildOsaRunInsertRecord,
@@ -34,11 +31,13 @@ import {
   type OsaRunPersistenceContext,
 } from '@/utils/osa/osa-run-persistence';
 import {
+  buildOsaExecutionGraph,
   prepareOsaTaskSubmitInput,
   validateOsaTaskInput,
   type OsaTaskSubmitInput,
   type OsaTaskSubmitResult,
 } from '@/utils/osa/osa-task';
+import { extractRuntimeTaskResult } from '@/utils/osa/runtime-output';
 import {
   createExecutionCoordinatorFromSubmit,
   runTeamRuntimeExecution,
@@ -246,7 +245,7 @@ export async function submitOsaTask(input: OsaTaskSubmitInput): Promise<OsaTaskS
           return { error: runtimeResult.error?.message ?? 'Runtime execution failed' };
         }
 
-        return extractTeamRuntimeTaskResult(runtimeResult);
+        return extractRuntimeTaskResult(runtimeResult.result?.output);
       },
     );
 
@@ -359,25 +358,4 @@ function revalidateOsaRunPaths(runId: string, aiEmployeeId: string) {
   revalidatePath(`/orchestrator/runs/${runId}`);
   revalidatePath('/ai-employees');
   revalidatePath(`/ai-employees/${aiEmployeeId}`);
-}
-
-function extractTeamRuntimeTaskResult(
-  runtime: Awaited<ReturnType<typeof executeOrchestratorRuntimeAgent>>,
-): { summary: string; output: string } {
-  const output = runtime.result?.output;
-
-  if (output && typeof output === 'object') {
-    for (const key of ['content', 'summary', 'message'] as const) {
-      const value = output[key];
-      if (typeof value === 'string' && value.trim().length > 0) {
-        const text = value.trim();
-        return { summary: text, output: text };
-      }
-    }
-  }
-
-  return {
-    summary: 'Task completed via RuntimeBridge',
-    output: 'Task completed via RuntimeBridge',
-  };
 }

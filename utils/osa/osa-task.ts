@@ -5,7 +5,8 @@ import {
   buildExecutionPlanSummary,
   resolveExecutionPlanForTask,
 } from '@/utils/osa/execution-planner';
-import { buildExecutionGraph } from '@/utils/osa/team-execution';
+import { buildExecutionGraph, type ExecutionGraph } from '@/utils/osa/team-execution';
+import { extractRuntimeOutputText } from '@/utils/osa/runtime-output';
 
 export type OsaTaskStatus = 'completed' | 'simulated' | 'failed';
 
@@ -105,24 +106,14 @@ export function buildSimulatedOsaTaskResult(
 
 function extractResultText(runtime: OrchestratorRuntimeExecutionResult): string | null {
   const output = runtime.result?.output;
+  const extracted = extractRuntimeOutputText(output);
+
+  if (extracted) {
+    return extracted;
+  }
 
   if (!output) {
     return runtime.success ? 'Задача выполнена через RuntimeBridge.' : null;
-  }
-
-  const content = output.content;
-  if (typeof content === 'string' && content.trim().length > 0) {
-    return content.trim();
-  }
-
-  const summary = output.summary;
-  if (typeof summary === 'string' && summary.trim().length > 0) {
-    return summary.trim();
-  }
-
-  const message = output.message;
-  if (typeof message === 'string' && message.trim().length > 0) {
-    return message.trim();
   }
 
   if (runtime.success) {
@@ -164,6 +155,15 @@ export function prepareOsaTaskSubmitInput(input: OsaTaskSubmitInput): PreparedOs
     ...input,
     executionPlan: resolveExecutionPlanForTask(input),
   };
+}
+
+export function buildOsaExecutionGraph(input: OsaTaskSubmitInput, graphId: string): ExecutionGraph {
+  const prepared = prepareOsaTaskSubmitInput(input);
+
+  return buildExecutionGraph({
+    plan: prepared.executionPlan,
+    graphId,
+  });
 }
 
 export const OSA_COORDINATOR_EMPLOYEE_ID = 'osa000001-0000-4000-8000-000000000001';

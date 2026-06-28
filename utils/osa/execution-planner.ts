@@ -1,6 +1,7 @@
 import type { OsaAgentDefinition, OsaAgentId } from '@/utils/osa/agent-registry';
+import { resolveOsaAgentRefs } from '@/utils/osa/agent-registry';
 import type { NavigatorRecommendation } from '@/utils/osa/navigator-engine';
-import { getOsaAgentDefinitionById } from '@/utils/osa/team-recommendation';
+import { matchesAnyOsaPattern, normalizeOsaText } from '@/utils/osa/text-matching';
 
 export type ExecutionStageStatus = 'pending' | 'ready' | 'running' | 'completed';
 
@@ -104,23 +105,11 @@ type RiskContext = {
 };
 
 function normalizeInput(input: string): string {
-  return ` ${input.trim().toLowerCase().replace(/\s+/g, ' ')} `;
+  return normalizeOsaText(input);
 }
 
 function matchesPattern(text: string, pattern: string): boolean {
-  const normalizedPattern = pattern.trim().toLowerCase();
-
-  if (!normalizedPattern) {
-    return false;
-  }
-
-  if (normalizedPattern.length <= 4) {
-    return new RegExp(
-      `(?:^|\\s)${normalizedPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s|$|[.,!?;:])`,
-    ).test(text);
-  }
-
-  return text.includes(normalizedPattern);
+  return matchesAnyOsaPattern(text, [pattern]);
 }
 
 function pickAgents(team: OsaAgentDefinition[], agentIds: OsaAgentId[]): OsaAgentDefinition[] {
@@ -497,20 +486,7 @@ export function resolveExecutionPlanForTask(input: ResolveExecutionPlanInput): E
     return input.executionPlan;
   }
 
-  const team: OsaAgentDefinition[] = input.selectedAgents.map((agent) => {
-    const definition = getOsaAgentDefinitionById(agent.id);
-
-    if (definition) {
-      return definition;
-    }
-
-    return {
-      id: agent.id as OsaAgentId,
-      name: agent.name,
-      description: '',
-      workspaceStatus: 'Ready',
-    };
-  });
+  const team = resolveOsaAgentRefs(input.selectedAgents);
 
   const userInput = [input.businessDescription.trim(), input.userPrompt.trim()]
     .filter(Boolean)

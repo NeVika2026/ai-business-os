@@ -1,11 +1,7 @@
 'use client';
 
 import { formatExecutionPlanEta } from '@/utils/osa/execution-planner';
-import {
-  parseExecutionGraph,
-  type ExecutionGraph,
-  type ExecutionTask,
-} from '@/utils/osa/team-execution';
+import type { ExecutionGraph, ExecutionTask } from '@/utils/osa/team-execution';
 
 type OsaExecutionGraphPanelProps = {
   graph: ExecutionGraph | null;
@@ -93,10 +89,4 @@ export function OsaExecutionGraphPanel({ graph }: OsaExecutionGraphPanelProps) {
       </div>
     </section>
   );
-}
-
-export function parseOsaExecutionGraphFromRunInput(
-  input: Record<string, unknown>,
-): ExecutionGraph | null {
-  return parseExecutionGraph(input.execution_graph ?? input.executionGraph);
 }

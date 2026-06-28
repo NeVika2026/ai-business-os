@@ -5,10 +5,12 @@ import {
   getCoreOsaAgents,
   getOsaAgentById,
   getOsaAgentByName,
+  getOsaAgentDefinitionById,
   getOsaAgentsByCategory,
   getOsaAgentsByTags,
   listOsaAgents,
   resolveOsaAgents,
+  resolveOsaAgentRefs,
   type OsaAgentId,
 } from '@/utils/osa/agent-registry';
 
@@ -69,6 +71,26 @@ describe('OSA agent registry', () => {
       resolved.map((agent) => agent.id),
       ['business-manager', 'marketing'],
     );
+  });
+
+  it('resolves agent refs into definitions with fallback', () => {
+    const refs = resolveOsaAgentRefs([
+      { id: 'marketing', name: 'AI Marketing' },
+      { id: 'custom-agent', name: 'Custom Agent' },
+    ]);
+
+    assert.equal(refs.length, 2);
+    assert.equal(refs[0]?.id, 'marketing');
+    assert.equal(refs[1]?.id, 'custom-agent');
+    assert.equal(refs[1]?.workspaceStatus, 'Ready');
+  });
+
+  it('returns agent definition by id', () => {
+    const definition = getOsaAgentDefinitionById('crm');
+
+    assert.ok(definition);
+    assert.equal(definition?.name, 'AI CRM');
+    assert.equal(definition?.workspaceStatus, 'Создаёт карточку клиента');
   });
 
   it('includes all required initial agent ids', () => {

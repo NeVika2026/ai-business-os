@@ -1,6 +1,7 @@
 import { serializeExecutionPlan, type ExecutionPlan } from '@/utils/osa/execution-planner';
 import type { OsaTaskAgentRef } from '@/utils/osa/osa-task';
 import {
+  applyGraphTasks,
   completeTask,
   estimateProgress,
   failTask,
@@ -8,8 +9,8 @@ import {
   parseExecutionGraph,
   serializeExecutionGraph,
   type ExecutionGraph,
+  type ExecutionGraphStage,
   type ExecutionResult,
-  type ExecutionStage,
   type ExecutionTask,
 } from '@/utils/osa/team-execution';
 
@@ -89,7 +90,10 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
-function getStageById(stages: ExecutionStage[], stageId: string): ExecutionStage | undefined {
+function getStageById(
+  stages: ExecutionGraphStage[],
+  stageId: string,
+): ExecutionGraphStage | undefined {
   return stages.find((stage) => stage.id === stageId);
 }
 
@@ -180,16 +184,6 @@ function syncSession(session: ExecutionSession, graph: ExecutionGraph): Executio
 
 function withCoordinator(session: ExecutionSession): ExecutionCoordinator {
   return { session };
-}
-
-function applyGraphTasks(graph: ExecutionGraph, tasks: ExecutionTask[]): ExecutionGraph {
-  const metrics = estimateProgress(tasks);
-
-  return {
-    ...graph,
-    tasks,
-    ...metrics,
-  };
 }
 
 function markTaskRunning(graph: ExecutionGraph, taskId: string): ExecutionGraph {

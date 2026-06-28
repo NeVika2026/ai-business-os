@@ -1,6 +1,5 @@
 import {
   getCoreOsaAgents,
-  getOsaAgentById,
   resolveOsaAgents,
   toOsaAgentDefinition,
   type OsaAgentDefinition,
@@ -11,6 +10,7 @@ import {
   type NavigatorRecommendation,
   type NavigatorTeamCategory,
 } from '@/utils/osa/navigator-engine';
+import { matchesAnyOsaPattern, normalizeOsaText } from '@/utils/osa/text-matching';
 
 export type { OsaAgentDefinition, OsaAgentId } from '@/utils/osa/agent-registry';
 
@@ -55,7 +55,7 @@ const SPECIAL_AGENT_RULES: Array<{
 ];
 
 function normalizeInput(input: string): string {
-  return input.trim().toLowerCase();
+  return normalizeOsaText(input);
 }
 
 function resolveAgentsForCategories(categories: NavigatorTeamCategory[]): OsaAgentId[] {
@@ -71,21 +71,11 @@ function resolveAgentsForCategories(categories: NavigatorTeamCategory[]): OsaAge
 }
 
 function resolveSpecialAgents(userInput: string): OsaAgentId[] {
-  const text = ` ${normalizeInput(userInput)} `;
+  const text = normalizeInput(userInput);
   const agentIds: OsaAgentId[] = [];
 
   for (const rule of SPECIAL_AGENT_RULES) {
-    if (
-      rule.patterns.some((pattern) => {
-        const normalizedPattern = pattern.trim().toLowerCase();
-        if (normalizedPattern.length <= 4) {
-          return new RegExp(
-            `(?:^|\\s)${normalizedPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s|$|[.,!?;:])`,
-          ).test(text);
-        }
-        return text.includes(normalizedPattern);
-      })
-    ) {
+    if (matchesAnyOsaPattern(text, rule.patterns)) {
       agentIds.push(rule.agentId);
     }
   }
@@ -121,11 +111,6 @@ export function getOsaTeamRecommendation(userInput: string): OsaTeamRecommendati
 
 export function recommendOsaTeam(userInput: string): OsaAgentDefinition[] {
   return getOsaTeamRecommendation(userInput).team;
-}
-
-export function getOsaAgentDefinitionById(id: string): OsaAgentDefinition | undefined {
-  const agent = getOsaAgentById(id);
-  return agent ? toOsaAgentDefinition(agent) : undefined;
 }
 
 export const OSA_ONBOARDING_EXAMPLES = [

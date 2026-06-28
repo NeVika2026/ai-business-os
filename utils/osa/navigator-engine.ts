@@ -1,3 +1,5 @@
+import { matchesOsaPattern, normalizeOsaText } from '@/utils/osa/text-matching';
+
 export const NAVIGATOR_TEAM_CATEGORIES = [
   'Marketing',
   'Sales',
@@ -447,23 +449,11 @@ function createEmptyScores(): Record<NavigatorTeamCategory, number> {
 }
 
 export function normalizeNavigatorInput(input: string): string {
-  return ` ${input.trim().toLowerCase().replace(/\s+/g, ' ')} `;
+  return normalizeOsaText(input);
 }
 
 function matchesPattern(text: string, pattern: string): boolean {
-  const normalizedPattern = pattern.trim().toLowerCase();
-
-  if (!normalizedPattern) {
-    return false;
-  }
-
-  if (normalizedPattern.length <= 4) {
-    return new RegExp(
-      `(?:^|\\s)${normalizedPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s|$|[.,!?;:])`,
-    ).test(text);
-  }
-
-  return text.includes(normalizedPattern);
+  return matchesOsaPattern(text, pattern);
 }
 
 export function analyzeNavigatorInput(userInput: string): {
