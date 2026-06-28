@@ -5,9 +5,10 @@ import { useEffect, useState } from 'react';
 
 import { submitOsaTask } from '@/app/(dashboard)/osa/actions';
 import {
+  getOsaTeamRecommendation,
   OSA_ONBOARDING_EXAMPLES,
-  recommendOsaTeam,
   type OsaAgentDefinition,
+  type OsaTeamRecommendation,
 } from '@/utils/osa/team-recommendation';
 import type { OsaTaskSubmitResult } from '@/utils/osa/osa-task';
 
@@ -28,6 +29,7 @@ export function OsaOnboardingFlow() {
   const [step, setStep] = useState<FlowStep>('onboarding');
   const [userInput, setUserInput] = useState('');
   const [team, setTeam] = useState<OsaAgentDefinition[]>([]);
+  const [teamRecommendation, setTeamRecommendation] = useState<OsaTeamRecommendation | null>(null);
   const [sessionId, setSessionId] = useState('');
   const [taskInput, setTaskInput] = useState('');
   const [taskLoading, setTaskLoading] = useState(false);
@@ -39,7 +41,9 @@ export function OsaOnboardingFlow() {
     }
 
     const timer = window.setTimeout(() => {
-      setTeam(recommendOsaTeam(userInput));
+      const recommendation = getOsaTeamRecommendation(userInput);
+      setTeamRecommendation(recommendation);
+      setTeam(recommendation.team);
       setStep('team');
     }, LOADING_DELAY_MS);
 
@@ -170,6 +174,27 @@ export function OsaOnboardingFlow() {
             Для вас я собрал команду
           </h1>
           <p className="text-sm text-[var(--text-secondary)]">{userInput}</p>
+          {teamRecommendation ? (
+            <div className="mx-auto max-w-2xl space-y-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] px-4 py-3 text-left text-sm">
+              <p className="text-[var(--text-primary)]">
+                Confidence: {teamRecommendation.recommendation.confidence}%
+                {teamRecommendation.recommendation.needsNavigatorReview
+                  ? ' · Navigator review recommended'
+                  : ''}
+              </p>
+              <p className="text-[var(--text-secondary)]">
+                Primary: {teamRecommendation.recommendation.primaryTeam.join(', ')}
+                {teamRecommendation.recommendation.secondaryTeam.length > 0
+                  ? ` · Secondary: ${teamRecommendation.recommendation.secondaryTeam.join(', ')}`
+                  : ''}
+              </p>
+              {teamRecommendation.recommendation.tags.length > 0 ? (
+                <p className="text-xs text-[var(--text-secondary)]">
+                  Tags: {teamRecommendation.recommendation.tags.join(', ')}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
         </header>
 
         <div className="grid gap-4 sm:grid-cols-2">
