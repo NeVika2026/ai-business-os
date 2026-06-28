@@ -134,7 +134,7 @@ describe('Personal Cabinet v1.0', () => {
     assert.match(overviewSource, /QuickActions/);
     assert.match(overviewSource, /ModuleGrid/);
     assert.match(overviewSource, /SystemHealth/);
-    assert.match(profileSource, />—</);
+    assert.match(profileSource, /profile\./);
     assert.match(profileSource, /Subscription/);
   });
 });

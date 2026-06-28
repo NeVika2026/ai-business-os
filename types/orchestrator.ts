@@ -29,6 +29,7 @@ export type OrchestratorEvent = {
   actor_type: string;
   actor_id: string | null;
   payload: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
   correlation_id: string | null;
   created_at: string;
 };
