@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { submitOsaTask } from '@/app/(dashboard)/osa/actions';
@@ -23,6 +24,7 @@ function createSessionId(): string {
 }
 
 export function OsaOnboardingFlow() {
+  const router = useRouter();
   const [step, setStep] = useState<FlowStep>('onboarding');
   const [userInput, setUserInput] = useState('');
   const [team, setTeam] = useState<OsaAgentDefinition[]>([]);
@@ -79,6 +81,7 @@ export function OsaOnboardingFlow() {
       setTaskResult(result);
       if (result.status !== 'failed') {
         setTaskInput('');
+        router.refresh();
       }
     } catch {
       setTaskResult({

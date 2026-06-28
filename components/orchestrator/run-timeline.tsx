@@ -1,25 +1,27 @@
 import type { OrchestratorEvent } from '@/types/orchestrator';
-import { ORCHESTRATOR_EVENT_LABELS, ORCHESTRATOR_EVENT_TYPES } from '@/types/orchestrator';
+import { RUN_EVENT_LABELS } from '@/types/orchestrator';
 import { formatDateTime } from '@/utils/orchestrator/runs';
 
 type RunTimelineProps = {
   events: OrchestratorEvent[];
+  title?: string;
+  description?: string;
 };
 
 function getEventLabel(type: string) {
-  if (ORCHESTRATOR_EVENT_TYPES.includes(type as (typeof ORCHESTRATOR_EVENT_TYPES)[number])) {
-    return ORCHESTRATOR_EVENT_LABELS[type as keyof typeof ORCHESTRATOR_EVENT_LABELS];
-  }
-
-  return type;
+  return RUN_EVENT_LABELS[type] ?? type;
 }
 
-export function RunTimeline({ events }: RunTimelineProps) {
+export function RunTimeline({
+  events,
+  title = 'Event Timeline',
+  description = 'Events for this run',
+}: RunTimelineProps) {
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-[var(--text-primary)]">Event Timeline</h2>
-        <p className="text-sm text-[var(--text-secondary)]">Events for this run</p>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">{title}</h2>
+        <p className="text-sm text-[var(--text-secondary)]">{description}</p>
       </div>
 
       {events.length === 0 ? (

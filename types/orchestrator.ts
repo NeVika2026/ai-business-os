@@ -4,6 +4,16 @@ export const ORCHESTRATOR_EVENT_TYPES = ['run_started', 'run_completed', 'run_fa
 
 export type OrchestratorEventType = (typeof ORCHESTRATOR_EVENT_TYPES)[number];
 
+export const OSA_EVENT_TYPES = [
+  'osa_task_submitted',
+  'osa_team_selected',
+  'osa_runtime_started',
+  'osa_runtime_completed',
+  'osa_runtime_failed',
+] as const;
+
+export type OsaEventType = (typeof OSA_EVENT_TYPES)[number];
+
 export type OrchestratorEvent = {
   id: string;
   organization_id: string;
@@ -67,4 +77,17 @@ export const ORCHESTRATOR_EVENT_LABELS: Record<OrchestratorEventType, string> = 
   run_started: 'Run Started',
   run_completed: 'Run Completed',
   run_failed: 'Run Failed',
+};
+
+export const OSA_EVENT_LABELS: Record<OsaEventType, string> = {
+  osa_task_submitted: 'Задача отправлена',
+  osa_team_selected: 'Команда выбрана',
+  osa_runtime_started: 'Runtime запущен',
+  osa_runtime_completed: 'Runtime завершён',
+  osa_runtime_failed: 'Runtime ошибка',
+};
+
+export const RUN_EVENT_LABELS: Record<string, string> = {
+  ...ORCHESTRATOR_EVENT_LABELS,
+  ...OSA_EVENT_LABELS,
 };
