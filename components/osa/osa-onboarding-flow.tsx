@@ -2,22 +2,34 @@
 
 import { useEffect, useState } from 'react';
 
+import { submitOsaTask } from '@/app/(dashboard)/osa/actions';
 import {
   OSA_ONBOARDING_EXAMPLES,
   recommendOsaTeam,
   type OsaAgentDefinition,
 } from '@/utils/osa/team-recommendation';
+import type { OsaTaskSubmitResult } from '@/utils/osa/osa-task';
 
 type FlowStep = 'onboarding' | 'loading' | 'team' | 'workspace';
 
 const LOADING_DELAY_MS = 1600;
 
+function createSessionId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  return `osa-session-${Date.now()}`;
+}
+
 export function OsaOnboardingFlow() {
   const [step, setStep] = useState<FlowStep>('onboarding');
   const [userInput, setUserInput] = useState('');
   const [team, setTeam] = useState<OsaAgentDefinition[]>([]);
+  const [sessionId, setSessionId] = useState('');
   const [taskInput, setTaskInput] = useState('');
-  const [taskMessage, setTaskMessage] = useState<string | null>(null);
+  const [taskLoading, setTaskLoading] = useState(false);
+  const [taskResult, setTaskResult] = useState<OsaTaskSubmitResult | null>(null);
 
   useEffect(() => {
     if (step !== 'loading') {
@@ -38,22 +50,47 @@ export function OsaOnboardingFlow() {
       return;
     }
 
-    setTaskMessage(null);
+    setTaskResult(null);
     setStep('loading');
   }
 
   function handleLaunchTeam() {
+    setSessionId(createSessionId());
     setStep('workspace');
   }
 
-  function handleSubmitTask(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmitTask(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!taskInput.trim()) {
+    if (!taskInput.trim() || taskLoading) {
       return;
     }
 
-    setTaskMessage(`Задача принята: «${taskInput.trim()}». Команда начнёт работу в ближайшее время.`);
-    setTaskInput('');
+    setTaskLoading(true);
+    setTaskResult(null);
+
+    try {
+      const result = await submitOsaTask({
+        userPrompt: taskInput.trim(),
+        selectedAgents: team.map((agent) => ({ id: agent.id, name: agent.name })),
+        businessDescription: userInput.trim(),
+        sessionId: sessionId || createSessionId(),
+      });
+
+      setTaskResult(result);
+      if (result.status !== 'failed') {
+        setTaskInput('');
+      }
+    } catch {
+      setTaskResult({
+        status: 'failed',
+        message: 'Не удалось отправить задачу. Попробуйте ещё раз.',
+        resultText: null,
+        agentTrace: [],
+        runtimeReport: null,
+      });
+    } finally {
+      setTaskLoading(false);
+    }
   }
 
   if (step === 'onboarding') {
@@ -158,7 +195,9 @@ export function OsaOnboardingFlow() {
   return (
     <section className="mx-auto w-full max-w-4xl space-y-6">
       <header className="space-y-1">
-        <h1 className="text-2xl font-semibold text-[var(--text-primary)] sm:text-3xl">OSA Workspace</h1>
+        <h1 className="text-2xl font-semibold text-[var(--text-primary)] sm:text-3xl">
+          OSA Workspace
+        </h1>
         <p className="text-sm text-[var(--text-secondary)]">Ваша команда AI-сотрудников активна</p>
       </header>
 
@@ -170,7 +209,10 @@ export function OsaOnboardingFlow() {
           >
             <div className="mb-3 flex items-center justify-between gap-2">
               <h2 className="text-base font-semibold text-[var(--text-primary)]">{agent.name}</h2>
-              <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
+              <span
+                className="inline-flex h-2 w-2 rounded-full bg-emerald-500"
+                aria-hidden="true"
+              />
             </div>
             <p className="text-sm text-[var(--text-secondary)]">{agent.workspaceStatus}</p>
           </article>
@@ -180,7 +222,9 @@ export function OsaOnboardingFlow() {
       <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-4 sm:p-5">
         <form onSubmit={handleSubmitTask} className="space-y-3">
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-[var(--text-primary)]">Что поручить команде?</span>
+            <span className="text-sm font-medium text-[var(--text-primary)]">
+              Что поручить команде?
+            </span>
             <input
               value={taskInput}
               onChange={(event) => setTaskInput(event.target.value)}
@@ -190,17 +234,37 @@ export function OsaOnboardingFlow() {
           </label>
           <button
             type="submit"
-            disabled={!taskInput.trim()}
+            disabled={!taskInput.trim() || taskLoading}
             className="rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
           >
-            Отправить задачу
+            {taskLoading ? 'Отправляю задачу...' : 'Отправить задачу'}
           </button>
         </form>
 
-        {taskMessage ? (
-          <p className="mt-4 rounded-xl bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--text-primary)]">
-            {taskMessage}
-          </p>
+        {taskResult ? (
+          <div
+            className={`mt-4 space-y-3 rounded-xl px-4 py-3 text-sm ${
+              taskResult.status === 'failed'
+                ? 'border border-red-500/30 bg-red-500/10 text-[var(--text-primary)]'
+                : 'bg-[var(--accent-soft)] text-[var(--text-primary)]'
+            }`}
+          >
+            <p className="font-medium">{taskResult.message}</p>
+
+            {taskResult.agentTrace.length > 0 ? (
+              <p className="text-[var(--text-secondary)]">{taskResult.agentTrace.join(' → ')}</p>
+            ) : null}
+
+            {taskResult.resultText ? <p>{taskResult.resultText}</p> : null}
+
+            {taskResult.runtimeReport ? (
+              <p className="text-xs text-[var(--text-secondary)]">
+                Runtime: {taskResult.runtimeReport.gatewayCallCount} gateway ·{' '}
+                {taskResult.runtimeReport.toolCallCount} tools ·{' '}
+                {taskResult.runtimeReport.durationMs ?? 0} ms
+              </p>
+            ) : null}
+          </div>
         ) : null}
       </div>
     </section>

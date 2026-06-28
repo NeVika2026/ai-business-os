@@ -55,7 +55,16 @@ const ESTATE_KEYWORDS = [
 
 const MLM_KEYWORDS = ['сетевой', 'сетевик', 'млм', 'mlm', 'famall', 'рекрутинг', 'рекрут'];
 
-const CONTENT_KEYWORDS = ['контент', 'блог', 'reels', 'shorts', 'telegram', 'телеграм', 'вк', 'вконтакте'];
+const CONTENT_KEYWORDS = [
+  'контент',
+  'блог',
+  'reels',
+  'shorts',
+  'telegram',
+  'телеграм',
+  'вк',
+  'вконтакте',
+];
 
 const OPTIONAL_AGENTS: Record<'estate' | 'mlm' | 'content', OsaAgentDefinition> = {
   estate: {
