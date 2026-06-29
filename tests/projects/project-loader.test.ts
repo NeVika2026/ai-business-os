@@ -160,7 +160,7 @@ describe('project loader and mappers', () => {
     const activity = mapEventsToProjectActivity(snapshot.events, runIds);
 
     assert.equal(activity.length, 2);
-    assert.equal(classifyProjectActivityCategory(snapshot.events[0]!), 'OSA');
+    assert.equal(classifyProjectActivityCategory(snapshot.events[0]!), 'Work');
 
     const executions = mapRunsToExecutions(
       filterProjectOsaRuns(

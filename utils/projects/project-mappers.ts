@@ -149,7 +149,7 @@ function formatEventTitle(event: OrchestratorEvent): string {
 
 export function classifyProjectActivityCategory(event: OrchestratorEvent): string {
   if (event.source === 'osa' || event.type.startsWith('osa_')) {
-    return 'OSA';
+    return 'Work';
   }
 
   if (event.source === 'knowledge' || event.type.includes('knowledge')) {
@@ -194,7 +194,7 @@ export function mapRunToExecution(run: OrchestratorRun): ProjectExecution {
   const label =
     typeof run.input.user_prompt === 'string' && run.input.user_prompt.trim().length > 0
       ? run.input.user_prompt.trim()
-      : (run.employee?.name ?? 'OSA run');
+      : (run.employee?.name ?? 'Completed task');
 
   return {
     id: run.id,
@@ -273,8 +273,8 @@ export function mapSnapshotToModules(
   const modules: ProjectModule[] = [
     {
       id: 'osa',
-      label: 'OSA',
-      href: `/osa?project=${projectId}`,
+      label: 'Work',
+      href: `/projects/${projectId}`,
       icon: '✨',
       enabled: osaRuns.length > 0 || snapshot.agentCount > 0,
       count: osaRuns.length,
@@ -457,9 +457,9 @@ export function mapSnapshotToTimeline(
 export function mapSnapshotToQuickActions(projectId: string): ProjectQuickAction[] {
   return [
     {
-      id: 'run_osa',
-      label: 'Run OSA',
-      href: `/osa?project=${projectId}`,
+      id: 'continue_work',
+      label: 'Continue work',
+      href: `/projects/${projectId}`,
       icon: '✨',
       enabled: true,
     },

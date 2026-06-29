@@ -39,7 +39,7 @@ export function GoalSelector() {
         What would you like to achieve today?
       </h2>
       <p className="mt-2 text-sm text-[var(--text-secondary)]">
-        Choose an outcome. OSA will prepare the right workspace — no modules to pick.
+        Choose an outcome — your workspace will be prepared automatically.
       </p>
 
       {isPreparing && selectedGoal ? (
@@ -47,7 +47,7 @@ export function GoalSelector() {
           role="status"
           className="mt-5 rounded-xl border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-4 py-3 text-sm text-[var(--text-primary)]"
         >
-          OSA is preparing your workspace for <strong>{selectedGoal.label}</strong>...
+          Getting ready for <strong>{selectedGoal.label}</strong>...
         </div>
       ) : null}
 

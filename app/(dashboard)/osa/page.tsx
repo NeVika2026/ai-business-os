@@ -1,11 +1,19 @@
 import { redirect } from 'next/navigation';
 
+import { legacyProjectPath } from '@/utils/navigation/legacy-redirect';
+
 type OsaPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export default async function OsaPage({ searchParams }: OsaPageProps) {
   const resolvedSearchParams = await searchParams;
+  const projectPath = legacyProjectPath(resolvedSearchParams);
+
+  if (projectPath) {
+    redirect(projectPath);
+  }
+
   const params = new URLSearchParams();
 
   for (const [key, value] of Object.entries(resolvedSearchParams)) {

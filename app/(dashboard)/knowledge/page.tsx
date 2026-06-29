@@ -1,40 +1,5 @@
 import { redirect } from 'next/navigation';
 
-import { KnowledgeStats } from '@/components/knowledge/knowledge-stats';
-import { SourceTable } from '@/components/knowledge/source-table';
-import { createClient } from '@/services/supabase/server';
-import { getCurrentOrganizationId } from '@/utils/auth/organization';
-import {
-  computeKnowledgeStats,
-  mapKnowledgeSources,
-  SOURCE_SELECT,
-} from '@/utils/knowledge/sources';
-
-export default async function KnowledgePage() {
-  const supabase = await createClient();
-  const organizationId = await getCurrentOrganizationId(supabase);
-
-  if (!organizationId) {
-    redirect('/login');
-  }
-
-  const { data, error } = await supabase
-    .from('knowledge_sources')
-    .select(SOURCE_SELECT)
-    .eq('organization_id', organizationId)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    throw error;
-  }
-
-  const sources = mapKnowledgeSources(data ?? []);
-  const stats = computeKnowledgeStats(sources);
-
-  return (
-    <div className="space-y-6">
-      <KnowledgeStats stats={stats} />
-      <SourceTable sources={sources} />
-    </div>
-  );
+export default function KnowledgePage() {
+  redirect('/projects');
 }

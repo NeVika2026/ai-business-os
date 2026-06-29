@@ -1,7 +1,5 @@
-import { PlaceholderPage } from '@/components/layout/placeholder-page';
+import { redirect } from 'next/navigation';
 
 export default function MarketplacePage() {
-  return (
-    <PlaceholderPage title="Marketplace" description="Marketplace module shell placeholder." />
-  );
+  redirect('/home');
 }

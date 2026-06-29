@@ -44,10 +44,10 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
 
         <div className="flex flex-wrap gap-2">
           <Link
-            href={`/osa?project=${project.id}`}
+            href="/home"
             className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white"
           >
-            Run OSA
+            Start new task
           </Link>
           <Link
             href={`/knowledge?project=${project.id}`}

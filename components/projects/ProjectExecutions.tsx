@@ -12,8 +12,8 @@ export function ProjectExecutions({ executions }: ProjectExecutionsProps) {
     <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-4 sm:p-5">
       <header className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Executions</h2>
-          <p className="mt-1 text-sm text-[var(--text-secondary)]">Latest OSA runs</p>
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Recent results</h2>
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">Latest completed work</p>
         </div>
         <Link href="/history" className="text-sm text-[var(--accent)] hover:underline">
           View history
@@ -21,7 +21,7 @@ export function ProjectExecutions({ executions }: ProjectExecutionsProps) {
       </header>
 
       {executions.length === 0 ? (
-        <p className="text-sm text-[var(--text-secondary)]">No OSA executions for this project.</p>
+        <p className="text-sm text-[var(--text-secondary)]">No completed work for this project yet.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">

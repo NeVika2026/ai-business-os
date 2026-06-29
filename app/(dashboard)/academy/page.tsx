@@ -1,5 +1,5 @@
-import { PlaceholderPage } from '@/components/layout/placeholder-page';
+import { redirect } from 'next/navigation';
 
 export default function AcademyPage() {
-  return <PlaceholderPage title="Academy" description="Academy module shell placeholder." />;
+  redirect('/home');
 }

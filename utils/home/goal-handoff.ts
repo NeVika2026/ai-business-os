@@ -125,7 +125,7 @@ export const HOME_GOAL_DEFINITIONS: HomeGoalDefinition[] = [
   {
     id: 'launch_project',
     title: 'Launch Business',
-    description: 'Start a new initiative with OSA, projects, and execution planning.',
+    description: 'Start a new initiative with projects, documents, and a clear plan.',
     category: 'launch',
     priority: 'high',
     recommendedTeam: ['Business Manager', 'Marketing Agent', 'Analyst'],
@@ -190,7 +190,7 @@ export const HOME_GOAL_DEFINITIONS: HomeGoalDefinition[] = [
   {
     id: 'dont_know',
     title: "Don't Know Where To Start",
-    description: 'Let OSA guide you step by step from a blank slate.',
+    description: 'Get guided step by step from a blank slate.',
     category: 'discovery',
     priority: 'high',
     recommendedTeam: ['Business Manager'],

@@ -4,6 +4,7 @@ import { InvisibleWorkspaceFlow } from '@/components/osa/osa-onboarding-flow';
 import { createClient } from '@/services/supabase/server';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
 import { openHandoffSession, parseHandoffIdFromSearchParams } from '@/utils/home/handoff-session';
+import { legacyProjectPath } from '@/utils/navigation/legacy-redirect';
 
 type WorkspacePageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -11,6 +12,12 @@ type WorkspacePageProps = {
 
 export default async function WorkspacePage({ searchParams }: WorkspacePageProps) {
   const resolvedSearchParams = await searchParams;
+  const projectPath = legacyProjectPath(resolvedSearchParams);
+
+  if (projectPath) {
+    redirect(projectPath);
+  }
+
   const handoffId = parseHandoffIdFromSearchParams(resolvedSearchParams);
   const supabase = await createClient();
   const organizationId = await getCurrentOrganizationId(supabase);

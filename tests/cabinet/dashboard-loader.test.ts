@@ -179,17 +179,17 @@ describe('Cabinet dashboard loader mappers', () => {
     const actions = mapSnapshotToQuickActions(createSnapshot());
     const byId = Object.fromEntries(actions.map((action) => [action.id, action.count]));
 
-    assert.equal(byId.new_project, 3);
-    assert.equal(byId.create_ai_team, 4);
-    assert.equal(byId.import_documents, 12);
-    assert.equal(byId.connect_crm, 8);
+    assert.equal(byId.open_project, 3);
+    assert.equal(byId.new_task, 3);
+    assert.equal(byId.recent_results, 1);
+    assert.equal(byId.continue_work, 1);
   });
 
   it('maps module counters for platform modules', () => {
     const modules = mapSnapshotToModules(createSnapshot());
     const byId = Object.fromEntries(modules.map((module) => [module.id, module.count]));
 
-    assert.equal(byId.osa, 3);
+    assert.equal(byId.work, 3);
     assert.equal(byId.projects, 3);
     assert.equal(byId.documents, 12);
     assert.equal(byId.knowledge, 5);

@@ -196,10 +196,10 @@ export function mapSmartSuggestions(snapshot: CabinetRawSnapshot, limit = 4): Sm
 
   if (suggestions.length === 0) {
     suggestions.push({
-      id: 'start-osa',
-      title: 'Ask OSA what to do next',
-      description: 'Describe your goal and OSA will prepare the workspace.',
-      href: '/osa',
+      id: 'start-today',
+      title: 'Choose what to achieve today',
+      description: 'Pick a goal on Today and your workspace will be prepared.',
+      href: '/home',
       reason: 'Getting started',
     });
   }
@@ -211,15 +211,15 @@ export function mapPinnedActions(snapshot: CabinetRawSnapshot): PinnedAction[] {
   const lastProject = mapRecentProjects(snapshot, 1)[0];
 
   return [
-    { id: 'run_osa', label: 'Run OSA', href: '/osa', icon: '✨' },
+    { id: 'continue_work', label: 'Continue Work', href: '/home', icon: '🎯' },
     {
       id: 'open_last_project',
-      label: 'Open last project',
+      label: 'Open Project',
       href: lastProject?.href ?? '/projects',
       icon: '📁',
     },
-    { id: 'upload_document', label: 'Upload document', href: '/knowledge', icon: '📄' },
-    { id: 'create_project', label: 'Create project', href: '/projects', icon: '➕' },
+    { id: 'new_task', label: 'New Task', href: '/home', icon: '✨' },
+    { id: 'recent_results', label: 'Recent Results', href: '/history', icon: '📜' },
   ];
 }
 

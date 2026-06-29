@@ -139,7 +139,7 @@ describe('home loader and mappers', () => {
 
     assert.ok(suggestions.length > 0);
     assert.equal(pinnedActions.length, 4);
-    assert.equal(pinnedActions[0]?.label, 'Run OSA');
+    assert.equal(pinnedActions[0]?.label, 'Continue Work');
     assert.equal(dailySummary.todayExecutions >= 1, true);
     assert.equal(dailySummary.completed >= 1, true);
     assert.equal(dailySummary.failed >= 1, true);

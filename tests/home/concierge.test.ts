@@ -163,6 +163,6 @@ describe('concierge loader and mappers', () => {
 
     assert.equal(concierge.greeting.currentProject, null);
     assert.equal(concierge.continueJourney.projectName, null);
-    assert.ok(concierge.insights[0]?.message.includes('Start a conversation'));
+    assert.ok(concierge.insights[0]?.message.includes('Choose a goal'));
   });
 });

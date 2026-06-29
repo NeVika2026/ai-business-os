@@ -54,22 +54,20 @@ describe('Personal Cabinet v1.0', () => {
     const labels = CABINET_QUICK_ACTIONS.map((action) => action.label);
 
     assert.deepEqual(labels, [
-      'New Project',
-      'Run OSA',
-      'Open Workspace',
-      'Create AI Team',
-      'Import Documents',
-      'Connect CRM',
+      'Continue Work',
+      'Open Project',
+      'New Task',
+      'Recent Results',
     ]);
   });
 
-  it('defines modular platform modules with OSA pinned', () => {
+  it('defines modular platform modules with Today pinned', () => {
     const moduleLabels = CABINET_MODULES.map((module) => module.label);
 
-    assert.ok(moduleLabels.includes('OSA'));
+    assert.ok(moduleLabels.includes('Today'));
     assert.ok(moduleLabels.includes('CRM'));
     assert.ok(moduleLabels.includes('Finance'));
-    assert.equal(CABINET_MODULES.find((module) => module.id === 'osa')?.pinned, true);
+    assert.equal(CABINET_MODULES.find((module) => module.id === 'work')?.pinned, true);
   });
 
   it('defines system health statuses', () => {

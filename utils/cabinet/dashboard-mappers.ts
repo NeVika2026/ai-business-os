@@ -226,7 +226,7 @@ function resolveRunLabel(run: OrchestratorRun): string {
       return prompt.trim();
     }
 
-    return 'OSA execution';
+    return 'Completed work';
   }
 
   const action = run.input.action;
@@ -411,13 +411,13 @@ export function mapSnapshotToQuickActions(
   >,
 ): QuickActionWithCount[] {
   const osaRuns = snapshot.runs.filter(isOsaRun).length;
+  const runningRuns = snapshot.runs.filter((run) => run.status === 'running' || run.status === 'pending').length;
+  const completedRuns = snapshot.runs.filter((run) => run.status === 'completed').length;
   const counts: Record<string, number> = {
-    new_project: snapshot.projectCount,
-    open_workspace: snapshot.workspaceCount,
-    create_ai_team: snapshot.agentCount,
-    import_documents: snapshot.documentCount,
-    run_osa: osaRuns,
-    connect_crm: snapshot.crmLeadCount,
+    continue_work: runningRuns,
+    open_project: snapshot.projectCount,
+    new_task: osaRuns,
+    recent_results: completedRuns,
   };
 
   return CABINET_QUICK_ACTIONS.map((action) => ({
@@ -438,7 +438,7 @@ export function mapSnapshotToModules(snapshot: CabinetRawSnapshot): ModuleWithCo
   ).length;
 
   const counts: Record<string, number> = {
-    osa: osaRuns,
+    work: osaRuns,
     crm: snapshot.crmLeadCount,
     documents: snapshot.documentCount,
     marketing: snapshot.crmLeadCount,
@@ -452,7 +452,7 @@ export function mapSnapshotToModules(snapshot: CabinetRawSnapshot): ModuleWithCo
   };
 
   const moduleIds = [
-    'osa',
+    'work',
     'projects',
     'documents',
     'knowledge',

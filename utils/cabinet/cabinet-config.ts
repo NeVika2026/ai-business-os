@@ -68,21 +68,19 @@ export const CABINET_WIDGETS: CabinetWidget[] = [
 ];
 
 export const CABINET_QUICK_ACTIONS: CabinetQuickAction[] = [
-  { id: 'new_project', label: 'New Project', href: '/projects', icon: '📁' },
-  { id: 'run_osa', label: 'Run OSA', href: '/osa', icon: '✨' },
-  { id: 'open_workspace', label: 'Open Workspace', href: '/workspace', icon: '🖥️' },
-  { id: 'create_ai_team', label: 'Create AI Team', href: '/ai-employees', icon: '🤖' },
-  { id: 'import_documents', label: 'Import Documents', href: '/knowledge', icon: '📄' },
-  { id: 'connect_crm', label: 'Connect CRM', href: '/crm', icon: '👥' },
+  { id: 'continue_work', label: 'Continue Work', href: '/home', icon: '🎯' },
+  { id: 'open_project', label: 'Open Project', href: '/projects', icon: '📁' },
+  { id: 'new_task', label: 'New Task', href: '/home', icon: '✨' },
+  { id: 'recent_results', label: 'Recent Results', href: '/history', icon: '📜' },
 ];
 
 export const CABINET_MODULES: CabinetModule[] = [
   {
-    id: 'osa',
-    label: 'OSA',
-    href: '/osa',
-    icon: '✨',
-    description: 'AI orchestrator',
+    id: 'work',
+    label: 'Today',
+    href: '/home',
+    icon: '🎯',
+    description: 'Pick up where you left off',
     pinned: true,
   },
   { id: 'crm', label: 'CRM', href: '/crm', icon: '👥', description: 'Customer relationships' },
@@ -91,7 +89,7 @@ export const CABINET_MODULES: CabinetModule[] = [
     label: 'Documents',
     href: '/knowledge',
     icon: '📄',
-    description: 'Knowledge base',
+    description: 'Files and references',
   },
   {
     id: 'marketing',
@@ -102,43 +100,43 @@ export const CABINET_MODULES: CabinetModule[] = [
   },
   {
     id: 'analytics',
-    label: 'Analytics',
-    href: '/orchestrator',
+    label: 'Results',
+    href: '/history',
     icon: '📊',
-    description: 'Runs & insights',
+    description: 'Past work and outcomes',
   },
   {
     id: 'automation',
     label: 'Automation',
-    href: '/orchestrator/runs',
+    href: '/history',
     icon: '⚡',
-    description: 'Workflow automation',
+    description: 'Completed workflows',
   },
   {
     id: 'knowledge',
     label: 'Knowledge',
     href: '/knowledge',
     icon: '📚',
-    description: 'Sources & vault',
+    description: 'Sources & references',
   },
   {
     id: 'estate',
     label: 'Estate',
-    href: '/cabinet',
+    href: '/home',
     icon: '🏢',
-    description: 'Real estate module',
+    description: 'Real estate work',
   },
   {
     id: 'mlm',
     label: 'MLM',
-    href: '/cabinet',
+    href: '/home',
     icon: '🔗',
-    description: 'Network marketing module',
+    description: 'Network marketing work',
   },
   {
     id: 'finance',
     label: 'Finance',
-    href: '/cabinet',
+    href: '/home',
     icon: '💰',
     description: 'Financial operations',
   },
@@ -156,8 +154,8 @@ export const SYSTEM_HEALTH_ITEMS: SystemHealthItem[] = [
 export const PROFILE_METRICS: ProfileMetric[] = [
   { id: 'workspaces', label: 'Workspaces' },
   { id: 'projects', label: 'Projects' },
-  { id: 'agents', label: 'AI agents' },
-  { id: 'executions', label: 'Executions' },
+  { id: 'agents', label: 'Specialists' },
+  { id: 'executions', label: 'Results' },
 ];
 
 export const CABINET_LAYOUT = {

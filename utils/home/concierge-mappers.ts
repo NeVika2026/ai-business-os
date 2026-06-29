@@ -173,8 +173,8 @@ export function mapSuggestedJourneys(home: HomeData): SuggestedJourney[] {
   journeys.push({
     id: 'generate-strategy',
     title: 'Generate new strategy',
-    description: 'Ask OSA to propose the next strategic move.',
-    href: '/osa',
+    description: 'Pick a new direction for your business.',
+    href: '/home',
     goalId: 'dont_know',
     kind: 'strategy',
   });
@@ -191,8 +191,8 @@ export function mapSuggestedJourneys(home: HomeData): SuggestedJourney[] {
   journeys.push({
     id: 'marketing-plan',
     title: 'Create marketing plan',
-    description: 'Launch a guided marketing workflow with OSA.',
-    href: '/osa',
+    description: 'Start a guided marketing workflow.',
+    href: '/home',
     goalId: 'create_content',
     kind: 'plan',
   });
@@ -256,7 +256,7 @@ export function mapPersonalInsights(snapshot: CabinetRawSnapshot): PersonalInsig
   if (insights.length === 0) {
     insights.push({
       id: 'getting-started',
-      message: 'Start a conversation with OSA to unlock personalized insights.',
+      message: 'Choose a goal on Today to unlock personalized insights.',
       tone: 'neutral',
     });
   }
@@ -290,7 +290,7 @@ export function mapDailyMission(home: HomeData, snapshot: CabinetRawSnapshot): D
   if (marketingProject) {
     return {
       title: 'Complete your marketing workflow',
-      description: `Advance ${marketingProject.name} with OSA today.`,
+      description: `Advance ${marketingProject.name} today.`,
       href: marketingProject.href,
       goalId: 'create_content',
     };
@@ -299,16 +299,16 @@ export function mapDailyMission(home: HomeData, snapshot: CabinetRawSnapshot): D
   if (home.recentProjects.length === 0) {
     return {
       title: 'Launch your first project',
-      description: 'Create a project so OSA can organize work around an outcome.',
+      description: 'Create a project so your work stays organized around an outcome.',
       href: '/projects',
       goalId: 'launch_project',
     };
   }
 
   return {
-    title: 'Define today’s priority with OSA',
-    description: 'Tell OSA what you want to improve and it will prepare the workspace.',
-    href: '/osa',
+    title: 'Choose today’s priority',
+    description: 'Tell the platform what you want to improve and it will prepare your workspace.',
+    href: '/home',
     goalId: 'dont_know',
   };
 }

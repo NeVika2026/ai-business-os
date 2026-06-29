@@ -26,8 +26,8 @@ export function DashboardOverview({ dashboard }: DashboardOverviewProps) {
           AI Business OS
         </h1>
         <p className="max-w-2xl text-sm text-[var(--text-secondary)] sm:text-base">
-          Central operating system for {dashboard.profile.organizationName}. OSA orchestrates
-          modules, workspace, and execution from one place.
+          Your business overview for {dashboard.profile.organizationName}. Continue work, open
+          projects, and review recent results from one place.
         </p>
       </header>
 
