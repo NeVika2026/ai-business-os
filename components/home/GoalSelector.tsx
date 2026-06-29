@@ -1,35 +1,37 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import { getHomeGoalById, HOME_GOALS, isHomeGoalId } from '@/utils/home/home-mappers';
-import { HOME_GOAL_STORAGE_KEY, type HomeGoalId } from '@/utils/home/home-types';
-
-function readStoredGoal(): HomeGoalId | null {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  const stored = window.localStorage.getItem(HOME_GOAL_STORAGE_KEY);
-
-  if (stored && isHomeGoalId(stored)) {
-    return stored;
-  }
-
-  return null;
-}
+import { startGoalHandoff } from '@/app/(dashboard)/home/actions';
+import { HOME_GOALS, isHomeGoalId } from '@/utils/home/home-mappers';
+import type { HomeGoalId } from '@/utils/home/home-types';
 
 export function GoalSelector() {
-  const [selectedGoalId, setSelectedGoalId] = useState<HomeGoalId | null>(readStoredGoal);
+  const router = useRouter();
+  const [selectedGoalId, setSelectedGoalId] = useState<HomeGoalId | null>(null);
   const [isPreparing, setIsPreparing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  function handleSelect(goalId: HomeGoalId) {
-    window.localStorage.setItem(HOME_GOAL_STORAGE_KEY, goalId);
+  async function handleSelect(goalId: HomeGoalId) {
     setSelectedGoalId(goalId);
     setIsPreparing(true);
+    setErrorMessage(null);
+
+    const result = await startGoalHandoff(goalId);
+
+    if (result.status === 'ok') {
+      router.push(result.navigation.url);
+      return;
+    }
+
+    setErrorMessage(result.message);
+    setIsPreparing(false);
   }
 
-  const selectedGoal = selectedGoalId ? getHomeGoalById(selectedGoalId) : null;
+  const selectedGoal = selectedGoalId
+    ? HOME_GOALS.find((goal) => goal.id === selectedGoalId)
+    : null;
 
   return (
     <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-5 sm:p-6">
@@ -49,6 +51,12 @@ export function GoalSelector() {
         </div>
       ) : null}
 
+      {errorMessage ? (
+        <p className="mt-4 text-sm text-red-500" role="alert">
+          {errorMessage}
+        </p>
+      ) : null}
+
       <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {HOME_GOALS.map((goal) => {
           const isSelected = selectedGoalId === goal.id;
@@ -57,8 +65,13 @@ export function GoalSelector() {
             <button
               key={goal.id}
               type="button"
-              onClick={() => handleSelect(goal.id)}
-              className={`rounded-xl border px-4 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
+              disabled={isPreparing}
+              onClick={() => {
+                if (isHomeGoalId(goal.id)) {
+                  void handleSelect(goal.id);
+                }
+              }}
+              className={`rounded-xl border px-4 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] disabled:cursor-wait disabled:opacity-70 ${
                 isSelected
                   ? 'border-[var(--accent)] bg-[var(--accent)]/10'
                   : 'border-[var(--border-subtle)] bg-[var(--surface-0)] hover:border-[var(--accent)]'

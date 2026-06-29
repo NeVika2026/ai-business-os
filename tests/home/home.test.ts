@@ -110,7 +110,7 @@ describe('home loader and mappers', () => {
     assert.equal(HOME_GOAL_STORAGE_KEY, 'ai-business-os-home-goal');
     assert.equal(isHomeGoalId('launch_project'), true);
     assert.equal(isHomeGoalId('invalid'), false);
-    assert.equal(getHomeGoalById('dont_know')?.label, "I don't know where to start");
+    assert.equal(getHomeGoalById('dont_know')?.label, "Don't Know Where To Start");
   });
 
   it('maps welcome and resolves user name', () => {

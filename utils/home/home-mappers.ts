@@ -11,8 +11,8 @@ import {
   type ExecutionHistoryItem,
 } from '@/utils/cabinet/dashboard-mappers';
 import { formatAverageRuntime, formatExecutionTimeMs } from '@/utils/cabinet/dashboard-mappers';
+import { HOME_GOAL_DEFINITIONS, resolveContinueWorkingMode } from '@/utils/home/goal-handoff';
 import {
-  HOME_GOAL_IDS,
   type ContinueWorkingData,
   type DailySummaryData,
   type HomeData,
@@ -28,56 +28,12 @@ import {
 
 const RUNNING_STATUSES = new Set<AgentRunStatus>(['pending', 'running']);
 
-export const HOME_GOALS: HomeGoal[] = [
-  {
-    id: 'increase_revenue',
-    label: 'Increase revenue',
-    description: 'Grow sales and improve conversion with AI-guided actions.',
-    icon: '📈',
-  },
-  {
-    id: 'find_clients',
-    label: 'Find clients',
-    description: 'Build pipeline, outreach, and CRM workflows.',
-    icon: '🎯',
-  },
-  {
-    id: 'launch_project',
-    label: 'Launch project',
-    description: 'Start a new initiative with OSA and project workspace.',
-    icon: '🚀',
-  },
-  {
-    id: 'create_content',
-    label: 'Create content',
-    description: 'Draft campaigns, documents, and marketing assets.',
-    icon: '✍️',
-  },
-  {
-    id: 'automate_routine',
-    label: 'Automate routine',
-    description: 'Reduce manual work with orchestrated automations.',
-    icon: '⚙️',
-  },
-  {
-    id: 'organize_business',
-    label: 'Organize business',
-    description: 'Structure projects, knowledge, and team workflows.',
-    icon: '🗂️',
-  },
-  {
-    id: 'understand_ai',
-    label: 'Understand AI',
-    description: 'Learn what AI can do for your organization today.',
-    icon: '🧠',
-  },
-  {
-    id: 'dont_know',
-    label: "I don't know where to start",
-    description: 'Let OSA guide you step by step from here.',
-    icon: '🧭',
-  },
-];
+export const HOME_GOALS: HomeGoal[] = HOME_GOAL_DEFINITIONS.map((goal) => ({
+  id: goal.id,
+  label: goal.title,
+  description: goal.description,
+  icon: goal.icon,
+}));
 
 export const ASK_OSA_PLACEHOLDERS = [
   'I need more clients',
@@ -87,7 +43,7 @@ export const ASK_OSA_PLACEHOLDERS = [
 ];
 
 export function isHomeGoalId(value: string): value is HomeGoalId {
-  return (HOME_GOAL_IDS as readonly string[]).includes(value);
+  return HOME_GOAL_DEFINITIONS.some((goal) => goal.id === value);
 }
 
 export function getHomeGoalById(goalId: HomeGoalId): HomeGoal | undefined {
@@ -147,30 +103,20 @@ export function mapContinueWorking(snapshot: CabinetRawSnapshot): ContinueWorkin
   const runningRun = snapshot.runs.find((run) => RUNNING_STATUSES.has(run.status));
   const lastProject = mapRecentProjects(snapshot, 1)[0] ?? null;
   const runningExecution = runningRun ? mapExecutionItem(mapRunsToHistory([runningRun])[0]!) : null;
-
-  if (runningExecution) {
-    return {
-      runningExecution,
-      lastProject,
-      resumeHref: runningExecution.href,
-      resumeLabel: 'Resume execution',
-    };
-  }
-
-  if (lastProject) {
-    return {
-      runningExecution: null,
-      lastProject,
-      resumeHref: lastProject.href,
-      resumeLabel: 'Open last project',
-    };
-  }
+  const resume = resolveContinueWorkingMode({
+    projectCount: snapshot.projectCount,
+    activeProjectId: lastProject?.id ?? null,
+    activeProjectName: lastProject?.name ?? null,
+    resumeExecutionId: runningExecution?.id ?? null,
+    resumeExecutionHref: runningExecution?.href ?? null,
+    resumeExecutionLabel: runningExecution?.label ?? null,
+  });
 
   return {
-    runningExecution: null,
-    lastProject: null,
-    resumeHref: '/osa',
-    resumeLabel: 'Start with OSA',
+    runningExecution,
+    lastProject,
+    resumeHref: resume.resumeHref,
+    resumeLabel: resume.resumeLabel,
   };
 }
 

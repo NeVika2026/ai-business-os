@@ -1,12 +1,19 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { executeOsaTaskRun, getOsaRunProgress, startOsaTask } from '@/app/(dashboard)/osa/actions';
 import { OsaControlCenter } from '@/components/osa/osa-control-center';
 import { OsaLiveProgress } from '@/components/osa/osa-live-progress';
-import type { OsaAgentDefinition } from '@/utils/osa/agent-registry';
+import type { OsaHomeHandoffInput } from '@/utils/home/goal-handoff';
+import {
+  resolveOsaAgents,
+  toOsaAgentDefinition,
+  type OsaAgentDefinition,
+  type OsaAgentId,
+} from '@/utils/osa/agent-registry';
 import {
   buildExecutionPlan,
   formatExecutionPlanEta,
@@ -25,6 +32,10 @@ type FlowStep = 'onboarding' | 'loading' | 'team' | 'plan' | 'workspace';
 
 const LOADING_DELAY_MS = 1600;
 
+type OsaOnboardingFlowProps = {
+  homeHandoff?: OsaHomeHandoffInput | null;
+};
+
 function createSessionId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
@@ -33,19 +44,50 @@ function createSessionId(): string {
   return `osa-session-${Date.now()}`;
 }
 
-export function OsaOnboardingFlow() {
+function buildTeamFromHandoff(
+  handoff: OsaHomeHandoffInput,
+  fallbackInput: string,
+): OsaTeamRecommendation {
+  const fallback = getOsaTeamRecommendation(fallbackInput);
+
+  if (handoff.recommendedTeamIds.length > 0) {
+    const team = resolveOsaAgents(handoff.recommendedTeamIds as OsaAgentId[]).map(
+      toOsaAgentDefinition,
+    );
+
+    if (team.length > 0) {
+      return {
+        team,
+        recommendation: fallback.recommendation,
+      };
+    }
+  }
+
+  return fallback;
+}
+
+function HomePreparedBanner({ goalTitle }: { goalTitle: string }) {
+  return (
+    <div className="rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-4 py-3 text-sm text-[var(--text-primary)]">
+      I&apos;ve already prepared your workspace for <strong>{goalTitle}</strong>.
+    </div>
+  );
+}
+
+export function OsaOnboardingFlow({ homeHandoff = null }: OsaOnboardingFlowProps) {
   const router = useRouter();
-  const [step, setStep] = useState<FlowStep>('onboarding');
-  const [userInput, setUserInput] = useState('');
+  const [step, setStep] = useState<FlowStep>(() => (homeHandoff ? 'loading' : 'onboarding'));
+  const [userInput, setUserInput] = useState(() => homeHandoff?.starterPrompt ?? '');
   const [team, setTeam] = useState<OsaAgentDefinition[]>([]);
   const [teamRecommendation, setTeamRecommendation] = useState<OsaTeamRecommendation | null>(null);
   const [executionPlan, setExecutionPlan] = useState<ExecutionPlan | null>(null);
-  const [sessionId, setSessionId] = useState('');
+  const [sessionId, setSessionId] = useState(() => homeHandoff?.sessionId ?? '');
   const [taskInput, setTaskInput] = useState('');
   const [taskLoading, setTaskLoading] = useState(false);
   const [taskResult, setTaskResult] = useState<OsaTaskSubmitResult | null>(null);
   const [liveProgress, setLiveProgress] = useState<ExecutionProgress | null>(null);
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
+  const [projectPromptDismissed, setProjectPromptDismissed] = useState(false);
 
   useEffect(() => {
     if (step !== 'loading') {
@@ -53,14 +95,16 @@ export function OsaOnboardingFlow() {
     }
 
     const timer = window.setTimeout(() => {
-      const recommendation = getOsaTeamRecommendation(userInput);
+      const recommendation = homeHandoff
+        ? buildTeamFromHandoff(homeHandoff, userInput)
+        : getOsaTeamRecommendation(userInput);
       setTeamRecommendation(recommendation);
       setTeam(recommendation.team);
       setStep('team');
     }, LOADING_DELAY_MS);
 
     return () => window.clearTimeout(timer);
-  }, [step, userInput]);
+  }, [step, userInput, homeHandoff]);
 
   function handleSubmitOnboarding(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -74,7 +118,7 @@ export function OsaOnboardingFlow() {
   }
 
   function handleLaunchTeam() {
-    setSessionId(createSessionId());
+    setSessionId(homeHandoff?.sessionId || createSessionId());
     setExecutionPlan(
       buildExecutionPlan({
         userInput: userInput.trim(),
@@ -216,6 +260,11 @@ export function OsaOnboardingFlow() {
   if (step === 'loading') {
     return (
       <section className="mx-auto flex min-h-[320px] w-full max-w-xl flex-col items-center justify-center space-y-4 text-center">
+        {homeHandoff ? (
+          <div className="w-full max-w-xl">
+            <HomePreparedBanner goalTitle={homeHandoff.goalTitle} />
+          </div>
+        ) : null}
         <div
           aria-hidden="true"
           className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--border-subtle)] border-t-[var(--accent)]"
@@ -299,8 +348,39 @@ export function OsaOnboardingFlow() {
   }
 
   if (step === 'team') {
+    const resumeHref =
+      homeHandoff?.resumeRunHref ??
+      (homeHandoff?.resumeRunId ? `/orchestrator/runs/${homeHandoff.resumeRunId}` : null);
+
     return (
       <section className="mx-auto w-full max-w-3xl space-y-6">
+        {homeHandoff ? <HomePreparedBanner goalTitle={homeHandoff.goalTitle} /> : null}
+
+        {homeHandoff?.needsProject && !projectPromptDismissed ? (
+          <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-4 sm:p-5">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">Create a project?</h2>
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">
+              Projects connect OSA, documents, CRM, and knowledge. Recommended type:{' '}
+              {homeHandoff.recommendedProjectType}.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Link
+                href={`/projects?project_type=${homeHandoff.recommendedProjectType}`}
+                className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white"
+              >
+                Create project
+              </Link>
+              <button
+                type="button"
+                onClick={() => setProjectPromptDismissed(true)}
+                className="rounded-xl border border-[var(--border-subtle)] px-4 py-2 text-sm"
+              >
+                Skip
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         <header className="space-y-2 text-center">
           <h1 className="text-2xl font-semibold text-[var(--text-primary)] sm:text-3xl">
             Для вас я собрал команду
@@ -341,13 +421,22 @@ export function OsaOnboardingFlow() {
           ))}
         </div>
 
-        <button
-          type="button"
-          onClick={handleLaunchTeam}
-          className="w-full rounded-xl bg-[var(--accent)] px-4 py-3 text-sm font-medium text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-        >
-          Запустить команду
-        </button>
+        {resumeHref ? (
+          <Link
+            href={resumeHref}
+            className="flex w-full items-center justify-center rounded-xl bg-[var(--accent)] px-4 py-3 text-sm font-medium text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+          >
+            Resume: {homeHandoff?.resumeRunLabel ?? 'Continue execution'}
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={handleLaunchTeam}
+            className="w-full rounded-xl bg-[var(--accent)] px-4 py-3 text-sm font-medium text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+          >
+            Запустить команду
+          </button>
+        )}
       </section>
     );
   }
