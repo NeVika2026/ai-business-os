@@ -85,7 +85,7 @@ describe('OSA architecture validation', () => {
     assert.match(modelsSource, /ExecutionSession/);
   });
 
-  it('uses shared OSA constants for polling and history limits', () => {
+  it('uses shared OSA constants for history limits and intent-first workspace flow', () => {
     const constantsSource = readFileSync(join(OSA_UTILS_DIR, 'osa-constants.ts'), 'utf8');
     const onboardingSource = readFileSync(
       join(OSA_COMPONENTS_DIR, 'osa-onboarding-flow.tsx'),
@@ -94,7 +94,8 @@ describe('OSA architecture validation', () => {
     const runsSource = readFileSync(join(OSA_UTILS_DIR, 'osa-runs.ts'), 'utf8');
 
     assert.match(constantsSource, /OSA_PROGRESS_POLL_INTERVAL_MS/);
-    assert.match(onboardingSource, /OSA_PROGRESS_POLL_INTERVAL_MS/);
+    assert.match(onboardingSource, /buildIntentConfirmation/);
+    assert.match(onboardingSource, /\/results\//);
     assert.match(runsSource, /from '@\/utils\/osa\/osa-constants'/);
   });
 });

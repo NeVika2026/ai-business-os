@@ -2,11 +2,19 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { consumeHomeHandoff } from '@/app/(dashboard)/home/actions';
-import { executeOsaTaskRun, getOsaRunProgress, startOsaTask } from '@/app/(dashboard)/osa/actions';
-import type { OsaHomeHandoffInput } from '@/utils/home/goal-handoff';
+import { executeOsaTaskRun, startOsaTask } from '@/app/(dashboard)/osa/actions';
+import { IntentClarificationQuestion } from '@/components/intent/IntentClarificationQuestion';
+import { IntentConfirmationScreen } from '@/components/intent/IntentConfirmationScreen';
+import { isHomeGoalId, type OsaHomeHandoffInput } from '@/utils/home/goal-handoff';
+import type { HomeGoalId } from '@/utils/home/home-types';
+import {
+  applyClarificationToPrompt,
+  buildIntentConfirmation,
+  type IntentConfirmationData,
+} from '@/utils/intent/intent-confirmation';
 import {
   resolveOsaAgents,
   toOsaAgentDefinition,
@@ -14,17 +22,19 @@ import {
   type OsaAgentId,
 } from '@/utils/osa/agent-registry';
 import { buildExecutionPlan, type ExecutionPlan } from '@/utils/osa/execution-planner';
-import type { ExecutionProgress } from '@/utils/osa/execution-progress';
-import { OSA_PROGRESS_POLL_INTERVAL_MS } from '@/utils/osa/osa-constants';
-import type { OsaTaskSubmitResult } from '@/utils/osa/osa-task';
-import { getOsaTeamRecommendation, type OsaTeamRecommendation } from '@/utils/osa/team-recommendation';
+import { getOsaTeamRecommendation } from '@/utils/osa/team-recommendation';
 
-type FlowStep = 'loading' | 'prepared' | 'working';
+type FlowStep = 'preparing' | 'clarify' | 'confirm' | 'working' | 'failed';
 
-const PREPARATION_MESSAGES = [
+const PREPARING_MESSAGES = [
   'Understanding your goal...',
-  'Finding the best approach...',
-  'Preparing your workspace...',
+  'Reviewing what you need...',
+] as const;
+
+const WORK_PROGRESS_MESSAGES = [
+  'Understanding your business...',
+  'Researching your market...',
+  'Preparing recommendations...',
   'Almost ready...',
 ] as const;
 
@@ -44,11 +54,16 @@ function createSessionId(): string {
   return `session-${Date.now()}`;
 }
 
-function buildTeamFromHandoff(
-  handoff: OsaHomeHandoffInput,
-  fallbackInput: string,
-): OsaTeamRecommendation {
-  const fallback = getOsaTeamRecommendation(fallbackInput);
+function resolveGoalId(handoff: OsaHomeHandoffInput | null): HomeGoalId {
+  if (handoff?.goalId && isHomeGoalId(handoff.goalId)) {
+    return handoff.goalId;
+  }
+
+  return 'dont_know';
+}
+
+function buildTeamFromHandoff(handoff: OsaHomeHandoffInput, prompt: string) {
+  const fallback = getOsaTeamRecommendation(prompt);
 
   if (handoff.recommendedTeamIds.length > 0) {
     const team = resolveOsaAgents(handoff.recommendedTeamIds as OsaAgentId[]).map(
@@ -66,77 +81,107 @@ function buildTeamFromHandoff(
   return fallback;
 }
 
-function buildPreparedSummary(goalTitle: string, plan: ExecutionPlan | null): string {
-  if (plan && plan.stages.length > 0) {
-    const stageTitles = plan.stages
-      .slice(0, 3)
-      .map((stage) => stage.title)
-      .join(', ');
-
-    return `Your workspace for "${goalTitle}" is set up with a clear path: ${stageTitles}.`;
-  }
-
-  return `Your workspace for "${goalTitle}" is ready. We'll start with your top priority.`;
-}
-
 export function InvisibleWorkspaceFlow({
   homeHandoff = null,
   handoffId = null,
   handoffError = null,
 }: InvisibleWorkspaceFlowProps) {
   const router = useRouter();
-  const [step, setStep] = useState<FlowStep>('loading');
-  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
-  const [userInput] = useState(() => homeHandoff?.starterPrompt ?? '');
+  const [step, setStep] = useState<FlowStep>('preparing');
+  const [preparingMessageIndex, setPreparingMessageIndex] = useState(0);
+  const [workMessageIndex, setWorkMessageIndex] = useState(0);
+  const [starterPrompt, setStarterPrompt] = useState(() => homeHandoff?.starterPrompt ?? '');
   const [team, setTeam] = useState<OsaAgentDefinition[]>([]);
   const [executionPlan, setExecutionPlan] = useState<ExecutionPlan | null>(null);
   const [sessionId, setSessionId] = useState(() => homeHandoff?.sessionId ?? '');
+  const [intent, setIntent] = useState<IntentConfirmationData | null>(null);
+  const [clarificationAnswerId, setClarificationAnswerId] = useState<string | null>(null);
   const [taskLoading, setTaskLoading] = useState(false);
-  const [taskResult, setTaskResult] = useState<OsaTaskSubmitResult | null>(null);
-  const [liveProgress, setLiveProgress] = useState<ExecutionProgress | null>(null);
+  const [failureMessage, setFailureMessage] = useState<string | null>(null);
 
-  const goalTitle = homeHandoff?.goalTitle ?? 'Your goal';
-  const suggestedAction = homeHandoff?.starterPrompt ?? userInput;
+  const goalId = useMemo(() => resolveGoalId(homeHandoff), [homeHandoff]);
 
   useEffect(() => {
-    if (step !== 'loading') {
+    if (step !== 'preparing' || !homeHandoff) {
       return;
     }
 
     const messageTimer = window.setInterval(() => {
-      setLoadingMessageIndex((current) =>
-        Math.min(current + 1, PREPARATION_MESSAGES.length - 1),
+      setPreparingMessageIndex((current) =>
+        Math.min(current + 1, PREPARING_MESSAGES.length - 1),
       );
     }, MESSAGE_INTERVAL_MS);
 
     const completeTimer = window.setTimeout(() => {
-      const recommendation = homeHandoff
-        ? buildTeamFromHandoff(homeHandoff, userInput)
-        : getOsaTeamRecommendation(userInput);
+      const recommendation = buildTeamFromHandoff(homeHandoff, starterPrompt);
       const resolvedTeam = recommendation.team;
-      const resolvedSessionId = homeHandoff?.sessionId || createSessionId();
+      const resolvedSessionId = homeHandoff.sessionId || createSessionId();
+      const plan = buildExecutionPlan({
+        userInput: starterPrompt.trim(),
+        team: resolvedTeam,
+        recommendation: recommendation.recommendation,
+      });
+      const nextIntent = buildIntentConfirmation({
+        goalId,
+        starterPrompt,
+        executionPlan: plan,
+        recommendation: recommendation.recommendation,
+        clarificationAnswerId,
+      });
 
       setTeam(resolvedTeam);
       setSessionId(resolvedSessionId);
-      setExecutionPlan(
-        buildExecutionPlan({
-          userInput: userInput.trim(),
-          team: resolvedTeam,
-          recommendation: recommendation.recommendation,
-        }),
-      );
-      if (handoffId) {
-        void consumeHomeHandoff(handoffId);
-      }
-
-      setStep('prepared');
-    }, PREPARATION_MESSAGES.length * MESSAGE_INTERVAL_MS);
+      setExecutionPlan(plan);
+      setIntent(nextIntent);
+      setStep(nextIntent.needsClarification && nextIntent.clarification ? 'clarify' : 'confirm');
+    }, PREPARING_MESSAGES.length * MESSAGE_INTERVAL_MS);
 
     return () => {
       window.clearInterval(messageTimer);
       window.clearTimeout(completeTimer);
     };
-  }, [step, userInput, homeHandoff, handoffId]);
+  }, [step, starterPrompt, homeHandoff, goalId, clarificationAnswerId]);
+
+  useEffect(() => {
+    if (step !== 'working' || !taskLoading) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setWorkMessageIndex((current) => Math.min(current + 1, WORK_PROGRESS_MESSAGES.length - 1));
+    }, MESSAGE_INTERVAL_MS);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [step, taskLoading]);
+
+  function rebuildAfterClarification(optionId: string) {
+    const updatedPrompt = applyClarificationToPrompt(goalId, starterPrompt, optionId);
+    const recommendation = homeHandoff
+      ? buildTeamFromHandoff(homeHandoff, updatedPrompt)
+      : getOsaTeamRecommendation(updatedPrompt);
+    const plan = buildExecutionPlan({
+      userInput: updatedPrompt.trim(),
+      team: recommendation.team,
+      recommendation: recommendation.recommendation,
+    });
+
+    setStarterPrompt(updatedPrompt);
+    setClarificationAnswerId(optionId);
+    setTeam(recommendation.team);
+    setExecutionPlan(plan);
+    setIntent(
+      buildIntentConfirmation({
+        goalId,
+        starterPrompt: updatedPrompt,
+        executionPlan: plan,
+        recommendation: recommendation.recommendation,
+        clarificationAnswerId: optionId,
+      }),
+    );
+    setStep('confirm');
+  }
 
   async function runTask(prompt: string) {
     if (!prompt.trim() || taskLoading) {
@@ -145,61 +190,41 @@ export function InvisibleWorkspaceFlow({
 
     setStep('working');
     setTaskLoading(true);
-    setTaskResult(null);
-    setLiveProgress(null);
+    setFailureMessage(null);
+    setWorkMessageIndex(0);
 
-    let pollTimer: number | undefined;
+    if (handoffId) {
+      void consumeHomeHandoff(handoffId);
+    }
 
     try {
       const started = await startOsaTask({
         userPrompt: prompt.trim(),
         selectedAgents: team.map((agent) => ({ id: agent.id, name: agent.name })),
-        businessDescription: userInput.trim(),
+        businessDescription: prompt.trim(),
         sessionId: sessionId || createSessionId(),
         executionPlan,
       });
 
       if (started.status === 'failed') {
-        setTaskResult({
-          status: 'failed',
-          message: started.message,
-          resultText: null,
-          agentTrace: [],
-          runtimeReport: null,
-        });
+        setFailureMessage(started.message);
+        setStep('failed');
         return;
       }
 
-      pollTimer = window.setInterval(async () => {
-        const progress = await getOsaRunProgress(started.runId);
-        if (progress) {
-          setLiveProgress(progress);
-        }
-      }, OSA_PROGRESS_POLL_INTERVAL_MS);
-
       const result = await executeOsaTaskRun(started.runId);
-      const finalProgress = await getOsaRunProgress(started.runId);
 
-      setTaskResult(result);
-      if (finalProgress) {
-        setLiveProgress(finalProgress);
+      if (result.status === 'failed') {
+        setFailureMessage(result.message);
+        setStep('failed');
+        return;
       }
 
-      if (result.status !== 'failed') {
-        router.refresh();
-      }
+      router.push(`/results/${started.runId}`);
     } catch {
-      setTaskResult({
-        status: 'failed',
-        message: 'Something went wrong. Please try again.',
-        resultText: null,
-        agentTrace: [],
-        runtimeReport: null,
-      });
+      setFailureMessage('Something went wrong. Please try again.');
+      setStep('failed');
     } finally {
-      if (pollTimer !== undefined) {
-        window.clearInterval(pollTimer);
-      }
       setTaskLoading(false);
     }
   }
@@ -208,9 +233,7 @@ export function InvisibleWorkspaceFlow({
     return (
       <section className="mx-auto w-full max-w-xl space-y-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-6 text-center">
         <h1 className="text-xl font-semibold text-[var(--text-primary)]">This session has expired</h1>
-        <p className="text-sm text-[var(--text-secondary)]">
-          Pick a goal on Today to start fresh.
-        </p>
+        <p className="text-sm text-[var(--text-secondary)]">Pick a goal on Today to start fresh.</p>
         <Link
           href="/home"
           className="inline-flex rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white"
@@ -221,7 +244,7 @@ export function InvisibleWorkspaceFlow({
     );
   }
 
-  if (step === 'loading') {
+  if (step === 'preparing') {
     return (
       <section className="mx-auto flex min-h-[320px] w-full max-w-xl flex-col items-center justify-center space-y-4 text-center">
         <div
@@ -229,112 +252,69 @@ export function InvisibleWorkspaceFlow({
           className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--border-subtle)] border-t-[var(--accent)]"
         />
         <p className="text-lg font-medium text-[var(--text-primary)]" role="status">
-          {PREPARATION_MESSAGES[loadingMessageIndex]}
+          {PREPARING_MESSAGES[preparingMessageIndex]}
         </p>
       </section>
     );
   }
 
-  if (step === 'prepared' && !taskResult) {
-    const summary = buildPreparedSummary(goalTitle, executionPlan);
-
+  if (step === 'clarify' && intent?.clarification) {
     return (
-      <section className="mx-auto w-full max-w-2xl space-y-6">
-        <header className="space-y-2">
-          <h1 className="text-2xl font-semibold text-[var(--text-primary)] sm:text-3xl">
-            Here&apos;s what I&apos;ve prepared
-          </h1>
-          <p className="text-sm text-[var(--text-secondary)]">{summary}</p>
-        </header>
+      <IntentClarificationQuestion
+        clarification={intent.clarification}
+        onSelect={rebuildAfterClarification}
+      />
+    );
+  }
 
-        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-5">
-          <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-secondary)]">
-            Suggested next step
-          </p>
-          <p className="mt-2 text-sm text-[var(--text-primary)]">{suggestedAction}</p>
+  if (step === 'confirm' && intent) {
+    return (
+      <IntentConfirmationScreen
+        intent={intent}
+        starting={taskLoading}
+        onStart={() => void runTask(starterPrompt)}
+      />
+    );
+  }
+
+  if (step === 'failed') {
+    return (
+      <section className="mx-auto w-full max-w-xl space-y-4 rounded-2xl border border-red-500/30 bg-red-500/10 p-6 text-center">
+        <h1 className="text-xl font-semibold text-[var(--text-primary)]">Something went wrong</h1>
+        <p className="text-sm text-[var(--text-secondary)]">
+          {failureMessage ?? 'We could not finish this request.'}
+        </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <button
+            type="button"
+            onClick={() => {
+              setFailureMessage(null);
+              setStep('confirm');
+            }}
+            className="rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-white"
+          >
+            Try again
+          </button>
+          <Link
+            href="/home"
+            className="rounded-xl border border-[var(--border-subtle)] px-4 py-2.5 text-sm font-medium text-[var(--text-primary)]"
+          >
+            Change Goal
+          </Link>
         </div>
-
-        <button
-          type="button"
-          onClick={() => void runTask(suggestedAction)}
-          className="w-full rounded-xl bg-[var(--accent)] px-4 py-3 text-sm font-medium text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-        >
-          Get started
-        </button>
       </section>
     );
   }
 
   return (
-    <section className="mx-auto w-full max-w-2xl space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold text-[var(--text-primary)] sm:text-3xl">
-          {taskResult?.status === 'failed' ? 'Something went wrong' : 'Your result'}
-        </h1>
-        <p className="text-sm text-[var(--text-secondary)]">
-          {taskLoading
-            ? 'Working on it...'
-            : taskResult?.status === 'failed'
-              ? 'We could not finish this request.'
-              : 'Here is what was prepared for you.'}
-        </p>
-      </header>
-
-      {taskLoading ? (
-        <div
-          role="status"
-          className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] px-5 py-4 text-sm text-[var(--text-primary)]"
-        >
-          {liveProgress?.currentTask
-            ? `Working on: ${liveProgress.currentTask}`
-            : 'Working on your request...'}
-        </div>
-      ) : null}
-
-      {taskResult ? (
-        <div
-          className={`space-y-4 rounded-2xl border px-5 py-4 text-sm ${
-            taskResult.status === 'failed'
-              ? 'border-red-500/30 bg-red-500/10'
-              : 'border-[var(--border-subtle)] bg-[var(--surface-1)]'
-          }`}
-        >
-          <p className="font-medium text-[var(--text-primary)]">{taskResult.message}</p>
-          {taskResult.resultText ? (
-            <p className="whitespace-pre-wrap text-[var(--text-primary)]">{taskResult.resultText}</p>
-          ) : null}
-        </div>
-      ) : null}
-
-      {!taskLoading && taskResult?.status !== 'failed' && taskResult?.resultText ? (
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href="/projects"
-            className="inline-flex rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-white"
-          >
-            Save to project
-          </Link>
-          <Link
-            href="/home"
-            className="inline-flex rounded-xl border border-[var(--border-subtle)] px-4 py-2.5 text-sm font-medium text-[var(--text-primary)]"
-          >
-            Back to Today
-          </Link>
-        </div>
-      ) : null}
-
-      {!taskLoading && taskResult?.status === 'failed' ? (
-        <button
-          type="button"
-          onClick={() => {
-            setTaskResult(null);
-            setStep('prepared');
-          }}
-          className="rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-white"
-        >
-          Try again
-        </button>
-      ) : null}
+    <section className="mx-auto flex min-h-[320px] w-full max-w-xl flex-col items-center justify-center space-y-4 text-center">
+      <div
+        aria-hidden="true"
+        className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--border-subtle)] border-t-[var(--accent)]"
+      />
+      <p className="text-lg font-medium text-[var(--text-primary)]" role="status">
+        {WORK_PROGRESS_MESSAGES[workMessageIndex]}
+      </p>
     </section>
   );
 }

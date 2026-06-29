@@ -39,7 +39,7 @@ export function GoalSelector() {
         What would you like to achieve today?
       </h2>
       <p className="mt-2 text-sm text-[var(--text-secondary)]">
-        Choose an outcome — your workspace will be prepared automatically.
+        Choose an outcome — we&apos;ll confirm what you need before we start.
       </p>
 
       {isPreparing && selectedGoal ? (
