@@ -1,9 +1,9 @@
 import { redirect } from 'next/navigation';
 
-import { AdaptiveHome } from '@/components/home/AdaptiveHome';
+import { AIConcierge } from '@/components/home/AIConcierge';
 import { createClient } from '@/services/supabase/server';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
-import { loadHomeData } from '@/utils/home/home-loader';
+import { loadConciergeData } from '@/utils/home/concierge-loader';
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -13,11 +13,11 @@ export default async function HomePage() {
     redirect('/login');
   }
 
-  const data = await loadHomeData(supabase, organizationId);
+  const data = await loadConciergeData(supabase, organizationId);
 
   if (!data) {
     redirect('/login');
   }
 
-  return <AdaptiveHome data={data} />;
+  return <AIConcierge data={data} />;
 }

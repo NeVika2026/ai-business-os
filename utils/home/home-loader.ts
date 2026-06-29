@@ -5,7 +5,9 @@ import { loadCabinetRawSnapshot } from '@/utils/cabinet/load-dashboard';
 import { buildHomeFromSnapshot, createEmptyHome } from '@/utils/home/home-mappers';
 import type { HomeData, HomeUserContext } from '@/utils/home/home-types';
 
-async function loadHomeUserContext(supabase: SupabaseClient): Promise<HomeUserContext | null> {
+export async function loadHomeUserContext(
+  supabase: SupabaseClient,
+): Promise<HomeUserContext | null> {
   const context = await getDashboardContext(supabase);
 
   if (!context) {
