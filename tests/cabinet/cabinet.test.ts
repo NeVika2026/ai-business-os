@@ -30,7 +30,7 @@ describe('Personal Cabinet v1.0', () => {
   it('defines sidebar navigation items in required order', () => {
     assert.deepEqual(
       MAIN_NAVIGATION.map((item) => item.label),
-      ['Dashboard', 'Cabinet', 'OSA', 'Workspace', 'Projects', 'History', 'Settings'],
+      ['Home', 'Cabinet', 'OSA', 'Workspace', 'Projects', 'History', 'Settings'],
     );
   });
 

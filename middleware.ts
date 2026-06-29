@@ -31,7 +31,7 @@ export async function middleware(request: NextRequest) {
 
   if (pathname === '/login' && user) {
     const dashboardUrl = request.nextUrl.clone();
-    dashboardUrl.pathname = '/dashboard';
+    dashboardUrl.pathname = '/home';
     dashboardUrl.search = '';
     return NextResponse.redirect(dashboardUrl);
   }

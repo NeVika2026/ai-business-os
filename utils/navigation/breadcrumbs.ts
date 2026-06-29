@@ -18,7 +18,7 @@ export function buildBreadcrumbs(pathname: string): BreadcrumbItem[] {
   const segments = pathname.split('/').filter(Boolean);
 
   if (segments.length === 0) {
-    return [{ label: 'Dashboard', href: '/dashboard' }];
+    return [{ label: 'Home', href: '/home' }];
   }
 
   const crumbs: BreadcrumbItem[] = [];

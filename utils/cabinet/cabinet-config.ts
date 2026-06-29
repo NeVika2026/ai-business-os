@@ -42,7 +42,7 @@ export type ProfileMetric = {
 export const CABINET_ROUTE = '/cabinet';
 
 export const CABINET_NAVIGATION: CabinetNavItem[] = [
-  { label: 'Dashboard', href: '/dashboard', icon: '🏠' },
+  { label: 'Home', href: '/home', icon: '🏠' },
   { label: 'Cabinet', href: '/cabinet', icon: '🧭' },
   { label: 'OSA', href: '/osa', icon: '✨' },
   { label: 'Workspace', href: '/workspace', icon: '🖥️' },
