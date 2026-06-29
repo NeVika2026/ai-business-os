@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { consumeHomeHandoff } from '@/app/(dashboard)/home/actions';
 import { executeOsaTaskRun, getOsaRunProgress, startOsaTask } from '@/app/(dashboard)/osa/actions';
 import { OsaControlCenter } from '@/components/osa/osa-control-center';
 import { OsaLiveProgress } from '@/components/osa/osa-live-progress';
@@ -34,6 +35,8 @@ const LOADING_DELAY_MS = 1600;
 
 type OsaOnboardingFlowProps = {
   homeHandoff?: OsaHomeHandoffInput | null;
+  handoffId?: string | null;
+  handoffError?: 'expired' | 'invalid' | 'consumed' | null;
 };
 
 function createSessionId(): string {
@@ -74,7 +77,11 @@ function HomePreparedBanner({ goalTitle }: { goalTitle: string }) {
   );
 }
 
-export function OsaOnboardingFlow({ homeHandoff = null }: OsaOnboardingFlowProps) {
+export function OsaOnboardingFlow({
+  homeHandoff = null,
+  handoffId = null,
+  handoffError = null,
+}: OsaOnboardingFlowProps) {
   const router = useRouter();
   const [step, setStep] = useState<FlowStep>(() => (homeHandoff ? 'loading' : 'onboarding'));
   const [userInput, setUserInput] = useState(() => homeHandoff?.starterPrompt ?? '');
@@ -127,6 +134,29 @@ export function OsaOnboardingFlow({ homeHandoff = null }: OsaOnboardingFlowProps
       }),
     );
     setStep('plan');
+
+    if (handoffId) {
+      void consumeHomeHandoff(handoffId);
+    }
+  }
+
+  if (handoffError) {
+    return (
+      <section className="mx-auto w-full max-w-xl space-y-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-6 text-center">
+        <h1 className="text-xl font-semibold text-[var(--text-primary)]">
+          This launch session has expired.
+        </h1>
+        <p className="text-sm text-[var(--text-secondary)]">
+          Start again from Home to prepare a fresh OSA workspace.
+        </p>
+        <Link
+          href="/home"
+          className="inline-flex rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white"
+        >
+          Return Home
+        </Link>
+      </section>
+    );
   }
 
   function handleEnterWorkspace() {

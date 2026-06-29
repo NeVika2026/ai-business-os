@@ -21,7 +21,7 @@ export function GoalSelector() {
     const result = await startGoalHandoff(goalId);
 
     if (result.status === 'ok') {
-      router.push(result.navigation.url);
+      router.push(result.url);
       return;
     }
 

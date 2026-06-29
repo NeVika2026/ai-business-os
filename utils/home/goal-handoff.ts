@@ -60,13 +60,15 @@ export type HomeHandoffSession = {
 };
 
 export type HomeHandoffEventType =
-  | 'home_goal_selected'
-  | 'goal_handoff_started'
-  | 'goal_handoff_completed';
+  | 'home_handoff_created'
+  | 'home_handoff_opened'
+  | 'home_handoff_consumed'
+  | 'home_handoff_expired';
 
 export type HomeHandoffNavigation = {
-  url: string;
   session: HomeHandoffSession;
+  handoffId: string;
+  url: string;
 };
 
 export type OsaHomeHandoffInput = {
@@ -87,9 +89,10 @@ export type OsaHomeHandoffInput = {
 };
 
 export const HOME_HANDOFF_EVENT_LABELS: Record<HomeHandoffEventType, string> = {
-  home_goal_selected: 'Goal selected',
-  goal_handoff_started: 'OSA handoff started',
-  goal_handoff_completed: 'Workspace prepared',
+  home_handoff_created: 'Handoff session created',
+  home_handoff_opened: 'Handoff session opened',
+  home_handoff_consumed: 'Handoff session consumed',
+  home_handoff_expired: 'Handoff session expired',
 };
 
 export const HOME_GOAL_DEFINITIONS: HomeGoalDefinition[] = [
@@ -265,143 +268,14 @@ export function buildHomeHandoffSession(
   };
 }
 
-export function buildOsaHandoffUrl(session: HomeHandoffSession): string {
-  const params = new URLSearchParams({
-    source: session.source,
-    goalId: session.goalId,
-    goalTitle: session.goalTitle,
-    starterPrompt: session.starterPrompt,
-    recommendedTeam: session.recommendedTeam.join('|'),
-    recommendedTeamIds: session.recommendedTeamIds.join('|'),
-    recommendedModules: session.recommendedModules.join('|'),
-    recommendedProjectType: session.recommendedProjectType,
-    sessionId: session.sessionId,
-  });
-
-  if (session.resumeExecutionId) {
-    params.set('resumeRunId', session.resumeExecutionId);
-  }
-
-  if (session.resumeExecutionHref) {
-    params.set('resumeRunHref', session.resumeExecutionHref);
-  }
-
-  if (session.resumeExecutionLabel) {
-    params.set('resumeRunLabel', session.resumeExecutionLabel);
-  }
-
-  if (!session.hasActiveProject) {
-    params.set('needsProject', '1');
-  }
-
-  if (session.activeProjectName) {
-    params.set('activeProjectName', session.activeProjectName);
-  }
-
-  return `/osa?${params.toString()}`;
-}
-
 export function buildHomeHandoffNavigation(
   goalId: HomeGoalId,
   context: HomeHandoffContext,
   sessionId?: string,
-): HomeHandoffNavigation {
+): Omit<HomeHandoffNavigation, 'handoffId' | 'url'> & { session: HomeHandoffSession } {
   const session = buildHomeHandoffSession(goalId, context, sessionId);
 
-  return {
-    session,
-    url: buildOsaHandoffUrl(session),
-  };
-}
-
-export function buildHomeHandoffEvents(
-  session: HomeHandoffSession,
-  organizationId: string,
-  userId: string,
-) {
-  const base = {
-    organization_id: organizationId,
-    source: HOME_EVENT_SOURCE,
-    actor_type: 'user',
-    actor_id: userId,
-    correlation_id: session.sessionId,
-  };
-
-  return [
-    {
-      ...base,
-      type: 'home_goal_selected' satisfies HomeHandoffEventType,
-      payload: {
-        goal_id: session.goalId,
-        goal_title: session.goalTitle,
-        category: getHomeGoalDefinition(session.goalId).category,
-      },
-    },
-    {
-      ...base,
-      type: 'goal_handoff_started' satisfies HomeHandoffEventType,
-      payload: {
-        goal_id: session.goalId,
-        starter_prompt: session.starterPrompt,
-        recommended_project_type: session.recommendedProjectType,
-      },
-    },
-    {
-      ...base,
-      type: 'goal_handoff_completed' satisfies HomeHandoffEventType,
-      payload: {
-        goal_id: session.goalId,
-        recommended_team: session.recommendedTeam,
-        recommended_modules: session.recommendedModules,
-        resume_execution_id: session.resumeExecutionId,
-        has_active_project: session.hasActiveProject,
-      },
-    },
-  ];
-}
-
-export function parseOsaHomeHandoffInput(
-  searchParams: Record<string, string | string[] | undefined>,
-): OsaHomeHandoffInput | null {
-  const source = readParam(searchParams.source);
-
-  if (source !== 'home') {
-    return null;
-  }
-
-  const goalId = readParam(searchParams.goalId);
-
-  if (!goalId || !isHomeGoalId(goalId)) {
-    return null;
-  }
-
-  const goalTitle = readParam(searchParams.goalTitle) ?? getHomeGoalDefinition(goalId).title;
-  const starterPrompt =
-    readParam(searchParams.starterPrompt) ?? getHomeGoalDefinition(goalId).starterPrompt;
-  const recommendedTeam = splitParam(readParam(searchParams.recommendedTeam));
-  const recommendedTeamIds = splitParam(readParam(searchParams.recommendedTeamIds));
-  const recommendedModules = splitParam(readParam(searchParams.recommendedModules));
-  const recommendedProjectType =
-    (readParam(searchParams.recommendedProjectType) as ProjectType | null) ??
-    getHomeGoalDefinition(goalId).suggestedProjectType;
-  const sessionId = readParam(searchParams.sessionId) ?? randomUUID();
-
-  return {
-    goalId,
-    goalTitle,
-    starterPrompt,
-    recommendedTeam,
-    recommendedTeamIds,
-    recommendedModules,
-    recommendedProjectType,
-    source: 'home',
-    sessionId,
-    resumeRunId: readParam(searchParams.resumeRunId),
-    resumeRunHref: readParam(searchParams.resumeRunHref),
-    resumeRunLabel: readParam(searchParams.resumeRunLabel),
-    needsProject: readParam(searchParams.needsProject) === '1',
-    activeProjectName: readParam(searchParams.activeProjectName),
-  };
+  return { session };
 }
 
 export function mapHandoffContextFromSnapshot(input: {
@@ -453,62 +327,4 @@ export function getHomeHandoffEventLabel(type: string): string | null {
   }
 
   return null;
-}
-
-function readParam(value: string | string[] | undefined): string | null {
-  if (Array.isArray(value)) {
-    return value[0] ?? null;
-  }
-
-  return typeof value === 'string' && value.length > 0 ? value : null;
-}
-
-function splitParam(value: string | null): string[] {
-  if (!value) {
-    return [];
-  }
-
-  return value
-    .split('|')
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-}
-
-export function serializeHomeSessionForSettings(session: HomeHandoffSession) {
-  return session;
-}
-
-export type StoredHomeSessions = Record<string, HomeHandoffSession>;
-
-export function readStoredHomeSession(
-  settings: Record<string, unknown> | null | undefined,
-  userId: string,
-): HomeHandoffSession | null {
-  const sessions = settings?.home_sessions;
-
-  if (!sessions || typeof sessions !== 'object') {
-    return null;
-  }
-
-  const session = (sessions as StoredHomeSessions)[userId];
-
-  return session ?? null;
-}
-
-export function writeStoredHomeSession(
-  settings: Record<string, unknown> | null | undefined,
-  userId: string,
-  session: HomeHandoffSession,
-): Record<string, unknown> {
-  const nextSettings = { ...(settings ?? {}) };
-  const sessions =
-    nextSettings.home_sessions && typeof nextSettings.home_sessions === 'object'
-      ? { ...(nextSettings.home_sessions as StoredHomeSessions) }
-      : {};
-
-  sessions[userId] = session;
-  nextSettings.home_sessions = sessions;
-  nextSettings.last_home_goal_id = session.goalId;
-
-  return nextSettings;
 }

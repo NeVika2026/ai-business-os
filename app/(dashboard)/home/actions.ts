@@ -4,25 +4,27 @@ import { revalidatePath } from 'next/cache';
 
 import { createClient } from '@/services/supabase/server';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
-import { loadCabinetRawSnapshot } from '@/utils/cabinet/load-dashboard';
 import { mapRunsToHistory } from '@/utils/cabinet/dashboard-mappers';
+import { loadCabinetRawSnapshot } from '@/utils/cabinet/load-dashboard';
 import {
-  buildHomeHandoffEvents,
   buildHomeHandoffNavigation,
   isHomeGoalId,
   mapHandoffContextFromSnapshot,
-  writeStoredHomeSession,
-  type HomeHandoffNavigation,
 } from '@/utils/home/goal-handoff';
+import {
+  consumeHandoffSession,
+  createPersistedHandoffSession,
+  expireOldHandoffs,
+} from '@/utils/home/handoff-session';
 import type { HomeGoalId } from '@/utils/home/home-types';
 
 const RUNNING_STATUSES = new Set(['pending', 'running']);
 
-export async function startGoalHandoff(
-  goalId: string,
-): Promise<
-  { status: 'ok'; navigation: HomeHandoffNavigation } | { status: 'failed'; message: string }
-> {
+export type StartGoalHandoffResult =
+  | { status: 'ok'; handoffId: string; url: string }
+  | { status: 'failed'; message: string };
+
+export async function startGoalHandoff(goalId: string): Promise<StartGoalHandoffResult> {
   if (!isHomeGoalId(goalId)) {
     return { status: 'failed', message: 'Unknown goal' };
   }
@@ -43,6 +45,8 @@ export async function startGoalHandoff(
   }
 
   try {
+    await expireOldHandoffs(supabase, organizationId);
+
     const snapshot = await loadCabinetRawSnapshot(
       supabase,
       organizationId,
@@ -64,46 +68,54 @@ export async function startGoalHandoff(
         : null,
     });
 
-    const navigation = buildHomeHandoffNavigation(goalId as HomeGoalId, context);
-    const events = buildHomeHandoffEvents(navigation.session, organizationId, user.id);
-
-    const { data: organization, error: organizationError } = await supabase
-      .from('organizations')
-      .select('settings')
-      .eq('id', organizationId)
-      .single();
-
-    if (organizationError) {
-      throw organizationError;
-    }
-
-    const nextSettings = writeStoredHomeSession(
-      (organization.settings as Record<string, unknown> | null) ?? {},
+    const { session } = buildHomeHandoffNavigation(goalId as HomeGoalId, context);
+    const persisted = await createPersistedHandoffSession(
+      supabase,
+      session,
+      organizationId,
       user.id,
-      navigation.session,
     );
-
-    const { error: settingsError } = await supabase
-      .from('organizations')
-      .update({ settings: nextSettings })
-      .eq('id', organizationId);
-
-    if (settingsError) {
-      throw settingsError;
-    }
-
-    const { error: eventsError } = await supabase.from('events').insert(events);
-
-    if (eventsError) {
-      throw eventsError;
-    }
 
     revalidatePath('/home');
     revalidatePath('/osa');
 
-    return { status: 'ok', navigation };
+    return {
+      status: 'ok',
+      handoffId: persisted.handoffId,
+      url: persisted.url,
+    };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to start goal handoff';
     return { status: 'failed', message };
   }
+}
+
+export async function consumeHomeHandoff(handoffId: string): Promise<boolean> {
+  if (!handoffId.trim()) {
+    return false;
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return false;
+  }
+
+  const organizationId = await getCurrentOrganizationId(supabase);
+
+  if (!organizationId) {
+    return false;
+  }
+
+  const consumed = await consumeHandoffSession(supabase, handoffId, organizationId, user.id);
+
+  if (consumed) {
+    revalidatePath('/osa');
+    revalidatePath('/home');
+  }
+
+  return consumed;
 }
