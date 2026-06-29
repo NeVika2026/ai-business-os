@@ -1,9 +1,10 @@
 import { redirect } from 'next/navigation';
 
 import { AIConcierge } from '@/components/home/AIConcierge';
+import { TodayFallback } from '@/components/home/TodayFallback';
 import { createClient } from '@/services/supabase/server';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
-import { loadConciergeData } from '@/utils/home/concierge-loader';
+import { loadHomePageConcierge } from '@/utils/home/concierge-loader';
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -13,11 +14,15 @@ export default async function HomePage() {
     redirect('/login');
   }
 
-  const data = await loadConciergeData(supabase, organizationId);
+  const result = await loadHomePageConcierge(supabase, organizationId);
 
-  if (!data) {
+  if (result.status === 'unauthorized') {
     redirect('/login');
   }
 
-  return <AIConcierge data={data} />;
+  if (result.status === 'fallback') {
+    return <TodayFallback />;
+  }
+
+  return <AIConcierge data={result.data} />;
 }
