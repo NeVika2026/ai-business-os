@@ -1,3 +1,4 @@
+import { buildRoutingHintsFromContext } from '@/lib/ai/model-router';
 import { buildContext } from '@/services/runtime/context/context-builder';
 import type { BuildContextInput } from '@/services/runtime/context/types';
 import { ContextValidationError } from '@/services/runtime/context/validation';
@@ -219,13 +220,14 @@ export function toGatewayRequest(prompt: PromptRequest, context: ContextPackage)
   return {
     scope: prompt.scope,
     trace: prompt.trace,
-    providerCode: context.provider.code,
-    modelCode: context.model.code,
+    providerCode: 'auto',
+    modelCode: 'auto',
     messages: prompt.messages,
     tools: prompt.tools,
     parameters: prompt.parameters,
     timeoutMs: DEFAULT_GATEWAY_TIMEOUT_MS,
     retryPolicy: DEFAULT_RETRY_POLICY,
+    routing: buildRoutingHintsFromContext(context, prompt.messages, prompt.tools),
   };
 }
 

@@ -141,6 +141,27 @@ export interface PromptResponse {
   raw?: Record<string, unknown>;
 }
 
+export interface GatewayRoutingHints {
+  intent: string;
+  taskCategory?:
+    | 'coding'
+    | 'business_strategy'
+    | 'research'
+    | 'writing'
+    | 'analysis'
+    | 'planning'
+    | 'summarization'
+    | 'automation'
+    | 'customer_support'
+    | 'creative'
+    | 'unknown';
+  estimatedContextLength?: number;
+  reasoningComplexity?: 'low' | 'medium' | 'high';
+  latencyTarget?: 'fast' | 'balanced' | 'quality';
+  costTarget?: 'low' | 'balanced' | 'quality';
+  toolUsage?: boolean;
+}
+
 export interface GatewayRequest {
   scope: TenantScope;
   trace: TraceContext;
@@ -158,6 +179,7 @@ export interface GatewayRequest {
     maxAttempts: number;
     backoffMs: number[];
   };
+  routing?: GatewayRoutingHints;
 }
 
 export interface GatewayResponse {

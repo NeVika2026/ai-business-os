@@ -1,3 +1,4 @@
+import { completeWithModelRouter, streamWithModelRouter } from '@/lib/ai/model-router';
 import { isGatewayMockMode } from '@/services/runtime/gateway/adapter-factory';
 import { cancelStream } from '@/services/runtime/gateway/stream-cancellation';
 import { checkGatewayRateLimit } from '@/services/runtime/gateway/gateway-rate-limiter';
@@ -119,7 +120,7 @@ function toGatewayResponse(
   };
 }
 
-async function executeComplete(request: GatewayRequestDto): Promise<GatewayResponse> {
+async function executeCompleteOnce(request: GatewayRequestDto): Promise<GatewayResponse> {
   validateRequest(request);
   checkGatewayRateLimit(request.providerCode as ProviderCode, request.scope.organizationId);
 
@@ -179,10 +180,10 @@ async function executeComplete(request: GatewayRequestDto): Promise<GatewayRespo
 }
 
 export async function complete(request: GatewayRequestDto): Promise<GatewayResponse> {
-  return executeComplete(request);
+  return completeWithModelRouter(request, executeCompleteOnce);
 }
 
-export async function* stream(request: GatewayRequestDto): AsyncGenerator<StreamChunk> {
+async function* executeStreamOnce(request: GatewayRequestDto): AsyncGenerator<StreamChunk> {
   validateRequest(request);
   checkGatewayRateLimit(request.providerCode as ProviderCode, request.scope.organizationId);
 
@@ -199,6 +200,10 @@ export async function* stream(request: GatewayRequestDto): AsyncGenerator<Stream
 
   const normalizedRequest = toNormalizedRequest(request);
   yield* adapter.stream(normalizedRequest);
+}
+
+export async function* stream(request: GatewayRequestDto): AsyncGenerator<StreamChunk> {
+  yield* streamWithModelRouter(request, executeStreamOnce);
 }
 
 export const aiGateway = {

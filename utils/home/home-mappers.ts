@@ -102,22 +102,60 @@ export function mapRecentExecutions(snapshot: CabinetRawSnapshot, limit = 5): Ho
 
 export function mapContinueWorking(snapshot: CabinetRawSnapshot): ContinueWorkingData {
   const runningRun = snapshot.runs.find((run) => RUNNING_STATUSES.has(run.status));
+  const lastCompleted = snapshot.runs.find((run) => run.status === 'completed');
   const lastProject = mapRecentProjects(snapshot, 1)[0] ?? null;
   const runningExecution = runningRun ? mapExecutionItem(mapRunsToHistory([runningRun])[0]!) : null;
+
+  let activeProjectId = lastProject?.id ?? null;
+  let activeProjectName = lastProject?.name ?? null;
+
+  if (lastCompleted) {
+    const goalId = lastCompleted.input.goal_id;
+    const projectId = lastCompleted.input.project_id;
+
+    if (goalId === 'find_clients' && typeof projectId === 'string') {
+      const linkedProject = snapshot.projects.find((project) => project.id === projectId);
+
+      if (linkedProject) {
+        activeProjectId = linkedProject.id;
+        activeProjectName = linkedProject.name;
+      }
+    }
+  }
+
   const resume = resolveContinueWorkingMode({
     projectCount: snapshot.projectCount,
-    activeProjectId: lastProject?.id ?? null,
-    activeProjectName: lastProject?.name ?? null,
+    activeProjectId,
+    activeProjectName,
     resumeExecutionId: runningExecution?.id ?? null,
     resumeExecutionHref: runningExecution?.href ?? null,
     resumeExecutionLabel: runningExecution?.label ?? null,
   });
 
+  const resumeLabel =
+    lastCompleted?.input.goal_id === 'find_clients' && activeProjectId
+      ? 'Continue working'
+      : resume.resumeLabel;
+
+  const linkedProjectItem =
+    activeProjectId && activeProjectName
+      ? {
+          id: activeProjectId,
+          name: activeProjectName,
+          href: `/projects/${activeProjectId}`,
+          type: lastProject?.type ?? 'crm',
+          updatedAt: lastProject?.updatedAt ?? '',
+        }
+      : lastProject;
+
   return {
     runningExecution,
-    lastProject,
-    resumeHref: resume.resumeHref,
-    resumeLabel: resume.resumeLabel,
+    lastProject: linkedProjectItem,
+    resumeHref:
+      lastCompleted?.input.goal_id === 'find_clients' && activeProjectId
+        ? `/projects/${activeProjectId}`
+        : resume.resumeHref,
+    resumeLabel,
   };
 }
 

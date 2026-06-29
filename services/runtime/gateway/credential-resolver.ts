@@ -8,6 +8,7 @@ const ENV_KEYS: Record<ProviderCode, { apiKey?: string; baseUrl?: string }> = {
   groq: { apiKey: 'GROQ_API_KEY', baseUrl: 'GROQ_BASE_URL' },
   openrouter: { apiKey: 'OPENROUTER_API_KEY', baseUrl: 'OPENROUTER_BASE_URL' },
   ollama: { baseUrl: 'OLLAMA_BASE_URL' },
+  fugu: { apiKey: 'FUGU_API_KEY', baseUrl: 'FUGU_BASE_URL' },
 };
 
 const DEFAULT_BASE_URLS: Partial<Record<ProviderCode, string>> = {
@@ -67,9 +68,10 @@ export function hasProviderCredentials(providerCode: ProviderCode): boolean {
 
 function readEnvBaseUrl(providerCode: ProviderCode): string | undefined {
   const mapping = ENV_KEYS[providerCode];
-  return (
-    (mapping.baseUrl ? readEnv(mapping.baseUrl) : undefined) ?? DEFAULT_BASE_URLS[providerCode]
-  );
+  const raw =
+    (mapping.baseUrl ? readEnv(mapping.baseUrl) : undefined) ?? DEFAULT_BASE_URLS[providerCode];
+
+  return raw?.replace(/\/$/, '');
 }
 
 function readEnv(key: string): string | undefined {

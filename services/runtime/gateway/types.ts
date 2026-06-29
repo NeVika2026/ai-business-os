@@ -5,7 +5,14 @@ import type {
   ToolDefinition,
 } from '@/types/runtime/dto';
 
-export type ProviderCode = 'openai' | 'anthropic' | 'gemini' | 'groq' | 'openrouter' | 'ollama';
+export type ProviderCode =
+  | 'openai'
+  | 'anthropic'
+  | 'gemini'
+  | 'groq'
+  | 'openrouter'
+  | 'ollama'
+  | 'fugu';
 
 export const PROVIDER_CODES: ProviderCode[] = [
   'openai',
@@ -14,6 +21,7 @@ export const PROVIDER_CODES: ProviderCode[] = [
   'groq',
   'openrouter',
   'ollama',
+  'fugu',
 ];
 
 export interface ProviderCredentials {

@@ -1,3 +1,4 @@
+import { createFuguAdapter } from '@/lib/ai/providers/fugu';
 import { MockProviderAdapter } from '@/services/runtime/gateway/adapters/base';
 import { HttpAnthropicAdapter } from '@/services/runtime/gateway/adapters/http-anthropic-adapter';
 import { HttpGeminiAdapter } from '@/services/runtime/gateway/adapters/http-gemini-adapter';
@@ -31,6 +32,10 @@ class OllamaMockAdapter extends MockProviderAdapter {
   readonly code = 'ollama' as const;
 }
 
+class FuguMockAdapter extends MockProviderAdapter {
+  readonly code = 'fugu' as const;
+}
+
 export function isGatewayMockMode(): boolean {
   return process.env.GATEWAY_USE_MOCK === 'true';
 }
@@ -43,6 +48,7 @@ export function createProductionAdapters(): Record<ProviderCode, ProviderAdapter
     groq: new HttpOpenAiCompatibleAdapter('groq'),
     openrouter: new HttpOpenAiCompatibleAdapter('openrouter'),
     ollama: new HttpOllamaAdapter(),
+    fugu: createFuguAdapter(),
   };
 }
 
@@ -54,6 +60,7 @@ export function createMockAdapters(): Record<ProviderCode, ProviderAdapter> {
     groq: new GroqMockAdapter(),
     openrouter: new OpenRouterMockAdapter(),
     ollama: new OllamaMockAdapter(),
+    fugu: new FuguMockAdapter(),
   };
 }
 

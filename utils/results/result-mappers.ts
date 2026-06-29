@@ -1,7 +1,13 @@
 import type { OrchestratorEvent, OrchestratorRun } from '@/types/orchestrator';
+import { buildPaymentPlaceholder, type PaymentPlaceholderData } from '@/utils/billing/payment-placeholder';
+import { isHomeGoalId } from '@/utils/home/goal-handoff';
 import { extractRuntimeOutputText } from '@/utils/osa/runtime-output';
 import { isOsaRun } from '@/utils/osa/osa-runs';
 import { formatDateTime, formatDuration } from '@/utils/orchestrator/runs';
+import {
+  parseFindClientsDeliverable,
+  type FindClientsSection,
+} from '@/utils/results/find-clients-deliverable';
 import {
   buildResultCelebration,
   buildResultPresentationHeadline,
@@ -66,6 +72,27 @@ export type ResultSummary = {
   keyOutcome: string;
 };
 
+export type ResultPrimaryActionData = {
+  label: string;
+  href: string;
+};
+
+export type ResultSecondaryActionData = {
+  label: string;
+  href: string;
+};
+
+export type ResultExperienceData = {
+  enabled: boolean;
+  goalId: string | null;
+  goalTitle: string;
+  metaLine: string;
+  deliverableSections: FindClientsSection[];
+  primaryAction: ResultPrimaryActionData;
+  secondaryAction: ResultSecondaryActionData;
+  paymentPlaceholder: PaymentPlaceholderData;
+};
+
 export type ResultData = {
   id: string;
   title: string;
@@ -82,6 +109,7 @@ export type ResultData = {
   presentationHeadline: string;
   celebration: ResultCelebrationData;
   whatsNext: WhatsNextRecommendation;
+  experience: ResultExperienceData;
 };
 
 export function buildResultHref(resultId: string): string {
@@ -175,7 +203,137 @@ function resolveCompletedText(run: OrchestratorRun): string {
   return 'The platform finished this request successfully.';
 }
 
+function readGoalId(run: OrchestratorRun): string | null {
+  const goalId = run.input.goal_id ?? run.output?.goal_id;
+
+  if (typeof goalId === 'string' && isHomeGoalId(goalId)) {
+    return goalId;
+  }
+
+  return null;
+}
+
+function readGoalTitle(run: OrchestratorRun): string {
+  const goalTitle = run.input.goal_title;
+
+  if (typeof goalTitle === 'string' && goalTitle.trim().length > 0) {
+    return goalTitle.trim();
+  }
+
+  return resolveResultTitle(run);
+}
+
+function readStoredKeyOutcome(run: OrchestratorRun): string | null {
+  const keyOutcome = run.output?.key_outcome;
+
+  if (typeof keyOutcome === 'string' && keyOutcome.trim().length > 0) {
+    return keyOutcome.trim();
+  }
+
+  return null;
+}
+
+function formatResultMetaLine(goalTitle: string, projectName: string | null, createdAt: string): string {
+  const parts = [goalTitle];
+
+  if (projectName) {
+    parts.push(`Saved to ${projectName}`);
+  }
+
+  const createdDate = new Date(createdAt);
+  const now = new Date();
+  const isToday =
+    createdDate.getFullYear() === now.getFullYear() &&
+    createdDate.getMonth() === now.getMonth() &&
+    createdDate.getDate() === now.getDate();
+
+  parts.push(isToday ? 'Today' : formatDateTime(createdAt));
+
+  return parts.join(' · ');
+}
+
+function buildFindClientsCelebration(
+  completedResultsCount: number,
+  status: ResultStatusLabel,
+): ResultCelebrationData {
+  const isFirst = completedResultsCount <= 1;
+
+  if (!isFirst || status !== 'Completed') {
+    return {
+      show: false,
+      headline: '',
+      message: '',
+    };
+  }
+
+  return {
+    show: true,
+    headline: 'Your client acquisition plan is ready.',
+    message: 'Everything below is yours to use today.',
+  };
+}
+
+function buildFindClientsExperience(
+  run: OrchestratorRun,
+  projectName: string | null,
+  projectHref: string | null,
+  completedResultsCount: number,
+): ResultExperienceData {
+  const resultText = resolveCompletedText(run);
+  const deliverable = parseFindClientsDeliverable(resultText);
+  const goalTitle = readGoalTitle(run);
+  const outreachHref = deliverable.outreachDraft
+    ? `${buildResultHref(run.id)}#outreach-draft`
+    : projectHref ?? '/home';
+
+  return {
+    enabled: deliverable.sections.length > 0,
+    goalId: 'find_clients',
+    goalTitle,
+    metaLine: formatResultMetaLine(goalTitle, projectName, run.created_at),
+    deliverableSections: deliverable.sections,
+    primaryAction: {
+      label: 'Send your first outreach today',
+      href: outreachHref,
+    },
+    secondaryAction: {
+      label: 'Continue tomorrow',
+      href: '/home',
+    },
+    paymentPlaceholder: buildPaymentPlaceholder(completedResultsCount),
+  };
+}
+
+function buildDefaultExperience(): ResultExperienceData {
+  return {
+    enabled: false,
+    goalId: null,
+    goalTitle: '',
+    metaLine: '',
+    deliverableSections: [],
+    primaryAction: { label: '', href: '/home' },
+    secondaryAction: { label: 'Continue tomorrow', href: '/home' },
+    paymentPlaceholder: buildPaymentPlaceholder(0),
+  };
+}
+
 function resolveKeyOutcome(run: OrchestratorRun): string {
+  const stored = readStoredKeyOutcome(run);
+
+  if (stored) {
+    return stored;
+  }
+
+  const goalId = readGoalId(run);
+
+  if (goalId === 'find_clients' && run.status === 'completed') {
+    const deliverable = parseFindClientsDeliverable(resolveCompletedText(run));
+
+    if (deliverable.keyOutcome) {
+      return deliverable.keyOutcome;
+    }
+  }
+
   if (run.status === 'failed') {
     return 'Review the details below and try again from Today.';
   }
@@ -403,7 +561,17 @@ export function mapRunToResult(
   const projectId = readProjectId(run);
   const projectHref = projectId ? `/projects/${projectId}` : null;
   const status = mapResultStatus(run.status);
-  const goalTitle = resolveResultTitle(run);
+  const goalId = readGoalId(run);
+  const goalTitle = readGoalTitle(run);
+  const keyOutcome = resolveKeyOutcome(run);
+  const experience =
+    goalId === 'find_clients' && status === 'Completed'
+      ? buildFindClientsExperience(run, projectName, projectHref, completedResultsCount)
+      : buildDefaultExperience();
+  const celebration =
+    goalId === 'find_clients'
+      ? buildFindClientsCelebration(completedResultsCount, status)
+      : buildResultCelebration(completedResultsCount, status);
 
   return {
     id: run.id,
@@ -416,19 +584,20 @@ export function mapRunToResult(
     summary: {
       requested: resolveRequestedText(run),
       completed: resolveCompletedText(run),
-      keyOutcome: resolveKeyOutcome(run),
+      keyOutcome,
     },
-    artifacts: mapResultArtifacts(run),
-    nextSteps: mapResultNextSteps(run, projectHref),
+    artifacts: experience.enabled ? [] : mapResultArtifacts(run),
+    nextSteps: experience.enabled ? [] : mapResultNextSteps(run, projectHref),
     timeline: mapResultTimeline(run, events),
-    actions: mapResultActions(run),
-    presentationHeadline: buildResultPresentationHeadline(status),
-    celebration: buildResultCelebration(completedResultsCount, status),
+    actions: experience.enabled ? [] : mapResultActions(run),
+    presentationHeadline: experience.enabled ? keyOutcome : buildResultPresentationHeadline(status),
+    celebration,
     whatsNext: buildWhatsNextRecommendation({
       goalTitle,
       projectHref,
       status,
     }),
+    experience,
   };
 }
 

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import type { OrchestratorEvent, OrchestratorRun } from '@/types/orchestrator';
+import { buildFindClientsFallbackDeliverable } from '@/utils/results/find-clients-deliverable';
 import {
   buildResultHref,
   mapResultArtifacts,
@@ -99,7 +100,63 @@ describe('result mappers', () => {
     assert.equal(result.timeline.at(-1)?.label, 'Completed');
     assert.equal(result.presentationHeadline, "Here's what I prepared for you.");
     assert.equal(result.celebration.show, true);
-    assert.equal(result.whatsNext.title, "What's next?");
+    assert.equal(result.experience.enabled, false);
+  });
+
+  it('maps find_clients into the structured result experience', () => {
+    const run = createRun({
+      id: 'run-fc',
+      status: 'completed',
+      input: {
+        action: 'osa_task',
+        source: 'osa_workspace',
+        user_prompt: 'Find clients for my design studio',
+        goal_id: 'find_clients',
+        goal_title: 'Find Clients',
+        project_id: 'project-001',
+      },
+      output: {
+        result_text: buildFindClientsFallbackDeliverable(
+          'Find clients for my design studio',
+          'Brand design for startups',
+        ),
+        key_outcome: 'Reach startup founders on LinkedIn this week.',
+        goal_id: 'find_clients',
+      },
+    });
+    const result = mapRunToResult(run, [], 'Client Growth', 1);
+
+    assert.equal(result.experience.enabled, true);
+    assert.equal(result.presentationHeadline, 'Reach startup founders on LinkedIn this week.');
+    assert.equal(result.experience.primaryAction.label, 'Send your first outreach today');
+    assert.match(result.experience.primaryAction.href, /#outreach-draft$/);
+    assert.equal(result.experience.secondaryAction.label, 'Continue tomorrow');
+    assert.equal(result.celebration.headline, 'Your client acquisition plan is ready.');
+    assert.ok(result.experience.deliverableSections.length >= 3);
+    assert.equal(result.artifacts.length, 0);
+    assert.equal(result.actions.length, 0);
+  });
+
+  it('shows payment placeholder after the third completed result', () => {
+    const run = createRun({
+      id: 'run-pay',
+      status: 'completed',
+      input: {
+        action: 'osa_task',
+        source: 'osa_workspace',
+        user_prompt: 'Find clients',
+        goal_id: 'find_clients',
+        goal_title: 'Find Clients',
+        project_id: 'project-001',
+      },
+      output: {
+        result_text: buildFindClientsFallbackDeliverable('Find clients', 'Consulting'),
+        goal_id: 'find_clients',
+      },
+    });
+    const result = mapRunToResult(run, [], 'Client Growth', 3);
+
+    assert.equal(result.experience.paymentPlaceholder.show, true);
   });
 
   it('maps timeline fallbacks when events are missing', () => {

@@ -106,5 +106,15 @@
       "supportsStreaming": true,
       "supportsReasoning": false
     }
+  },
+  "fugu": {
+    "fugu": {
+      "contextWindow": 128000,
+      "supportsTools": true,
+      "supportsVision": false,
+      "supportsJson": true,
+      "supportsStreaming": true,
+      "supportsReasoning": false
+    }
   }
 }

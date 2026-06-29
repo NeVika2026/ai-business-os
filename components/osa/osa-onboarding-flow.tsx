@@ -26,13 +26,13 @@ import {
 import { buildExecutionPlan, type ExecutionPlan } from '@/utils/osa/execution-planner';
 import { getOsaTeamRecommendation } from '@/utils/osa/team-recommendation';
 
+import { USER_FACING_EXECUTION_STATUS } from '@/lib/ai/router-messages';
+
 type FlowStep = 'wow' | 'clarify' | 'confirm' | 'working' | 'failed';
 
 const WORK_PROGRESS_MESSAGES = [
-  'Understanding your business...',
-  'Researching your market...',
-  'Preparing recommendations...',
-  'Almost ready...',
+  USER_FACING_EXECUTION_STATUS.working,
+  USER_FACING_EXECUTION_STATUS.preparing,
 ] as const;
 
 const MESSAGE_INTERVAL_MS = 800;
@@ -208,6 +208,8 @@ export function InvisibleWorkspaceFlow({
         businessDescription: prompt.trim(),
         sessionId: sessionId || createSessionId(),
         executionPlan,
+        goalId: homeHandoff?.goalId ?? null,
+        goalTitle: homeHandoff?.goalTitle ?? null,
       });
 
       if (started.status === 'failed') {

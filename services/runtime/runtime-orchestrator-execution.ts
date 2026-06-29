@@ -1,8 +1,10 @@
 import type { AgentExecution, AgentResult } from '@/types/runtime/dto';
+import {
+  isRuntimeBridgeEnabled,
+  isRuntimeBridgeEnabledForGoal,
+} from '@/utils/osa/runtime-bridge-policy';
 
-export function isRuntimeBridgeEnabled(): boolean {
-  return process.env.RUNTIME_BRIDGE_ENABLED === 'true';
-}
+export { isRuntimeBridgeEnabled, isRuntimeBridgeEnabledForGoal };
 
 export interface BuildOrchestratorAgentExecutionInput {
   organizationId: string;

@@ -114,6 +114,9 @@ export function buildOsaRunInputPayload(
     execution_session: serializeExecutionSession(session),
     simulated: !context.runtimeBridgeEnabled,
     runtime_bridge_enabled: context.runtimeBridgeEnabled,
+    goal_id: input.goalId ?? null,
+    goal_title: input.goalTitle ?? null,
+    project_id: input.projectId ?? null,
   };
 }
 
@@ -237,6 +240,34 @@ export function buildOsaRunUpdateForSimulated(
       agent_trace: trace,
       message: `OSA demo pipeline completed for session ${context.sessionId}`,
       execution_session: coordinator ? serializeExecutionSession(coordinator.session) : undefined,
+    },
+  };
+}
+
+export function buildOsaRunUpdateForFindClientsResult(
+  input: OsaTaskSubmitInput,
+  context: OsaRunPersistenceContext,
+  resultText: string,
+  keyOutcome: string,
+  usedRuntime: boolean,
+  report: OrchestratorRuntimeExecutionResult['report'],
+): OsaRunUpdateRecord {
+  return {
+    status: 'completed',
+    completed_at: new Date().toISOString(),
+    tokens_input: report?.inputTokens ?? 0,
+    tokens_output: report?.outputTokens ?? 0,
+    output: {
+      simulated: false,
+      runtime_bridge_enabled: usedRuntime,
+      status: 'completed',
+      session_id: context.sessionId,
+      agent_trace: buildOsaAgentTrace(input.selectedAgents),
+      result_text: resultText,
+      resultText,
+      key_outcome: keyOutcome,
+      goal_id: 'find_clients',
+      report,
     },
   };
 }

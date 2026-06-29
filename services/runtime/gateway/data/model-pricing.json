@@ -70,5 +70,12 @@
       "outputPer1k": 0,
       "currency": "USD"
     }
+  },
+  "fugu": {
+    "fugu": {
+      "inputPer1k": 0.001,
+      "outputPer1k": 0.002,
+      "currency": "USD"
+    }
   }
 }

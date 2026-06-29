@@ -64,6 +64,7 @@ export function createAllUnifiedAiProviders(): Record<ProviderCode, UnifiedAiPro
     groq: createUnifiedAiProvider('groq'),
     openrouter: createUnifiedAiProvider('openrouter'),
     ollama: createUnifiedAiProvider('ollama'),
+    fugu: createUnifiedAiProvider('fugu'),
   };
 }
 

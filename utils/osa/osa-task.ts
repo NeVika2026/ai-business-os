@@ -21,6 +21,9 @@ export interface OsaTaskSubmitInput {
   businessDescription: string;
   sessionId?: string;
   executionPlan?: ExecutionPlan | null;
+  goalId?: string | null;
+  goalTitle?: string | null;
+  projectId?: string | null;
 }
 
 export type PreparedOsaTaskSubmitInput = OsaTaskSubmitInput & {
