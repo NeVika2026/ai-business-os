@@ -301,7 +301,7 @@ export function resolveContinueWorkingMode(context: HomeHandoffContext): {
   if (context.resumeExecutionHref) {
     return {
       resumeHref: context.resumeExecutionHref,
-      resumeLabel: 'Resume execution',
+      resumeLabel: 'Continue previous work',
       preferResume: true,
     };
   }

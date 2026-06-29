@@ -11,6 +11,7 @@ import {
   type ExecutionHistoryItem,
 } from '@/utils/cabinet/dashboard-mappers';
 import { formatAverageRuntime, formatExecutionTimeMs } from '@/utils/cabinet/dashboard-mappers';
+import { buildResultHref } from '@/utils/results/result-mappers';
 import { HOME_GOAL_DEFINITIONS, resolveContinueWorkingMode } from '@/utils/home/goal-handoff';
 import {
   type ContinueWorkingData,
@@ -134,13 +135,13 @@ function suggestionFromRun(run: OrchestratorRun, reason: string): SmartSuggestio
   const label =
     typeof run.input.user_prompt === 'string' && run.input.user_prompt.trim().length > 0
       ? run.input.user_prompt.trim()
-      : 'Review execution';
+      : 'Review result';
 
   return {
     id: `run-${run.id}`,
     title: label,
     description: `Status: ${run.status}`,
-    href: `/orchestrator/runs/${run.id}`,
+    href: buildResultHref(run.id),
     reason,
   };
 }
@@ -152,7 +153,7 @@ export function mapSmartSuggestions(snapshot: CabinetRawSnapshot, limit = 4): Sm
   const failedRun = snapshot.runs.find((run) => run.status === 'failed');
 
   if (failedRun) {
-    suggestions.push(suggestionFromRun(failedRun, 'Failed execution needs attention'));
+    suggestions.push(suggestionFromRun(failedRun, 'This result needs attention'));
   }
 
   if (profile.projectCount === 0) {

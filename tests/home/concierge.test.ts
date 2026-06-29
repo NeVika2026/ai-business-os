@@ -145,7 +145,7 @@ describe('concierge loader and mappers', () => {
 
     assert.match(mission.title, /workflow/i);
     assert.equal(journey.runningExecutionLabel, 'Build marketing campaign');
-    assert.match(journey.resumeHref, /\/orchestrator\/runs\//);
+    assert.match(journey.resumeHref, /\/results\//);
   });
 
   it('builds full concierge data from snapshot', () => {

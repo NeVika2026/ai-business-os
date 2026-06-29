@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { RunStatusBadge } from '@/components/orchestrator/run-status';
 import type { OrchestratorRun } from '@/types/orchestrator';
 import { formatDateTime, formatDuration, formatRunId } from '@/utils/orchestrator/runs';
+import { buildResultHref } from '@/utils/results/result-mappers';
 import { getOsaRunGoal, getOsaRuntimeMode, getOsaRunTeam } from '@/utils/osa/osa-runs';
 
 type RunsTableProps = {
@@ -38,10 +39,10 @@ export function RunsTable({
         </div>
         {showViewAll ? (
           <Link
-            href="/orchestrator/runs"
+            href="/history"
             className="text-sm text-[var(--accent)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
           >
-            Все запуски →
+            View history →
           </Link>
         ) : null}
       </div>
@@ -122,7 +123,7 @@ export function RunsTable({
                 <tr key={run.id} className="hover:bg-[var(--surface-1)]">
                   <td className="px-4 py-3">
                     <Link
-                      href={`/orchestrator/runs/${run.id}`}
+                      href={buildResultHref(run.id)}
                       className="font-mono text-[var(--accent)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                     >
                       {formatRunId(run.id)}

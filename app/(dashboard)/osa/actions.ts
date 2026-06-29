@@ -777,6 +777,9 @@ export async function submitOsaTask(input: OsaTaskSubmitInput): Promise<OsaTaskS
 
 function revalidateOsaRunPaths(runId: string, aiEmployeeId: string) {
   revalidatePath('/osa');
+  revalidatePath('/history');
+  revalidatePath('/results');
+  revalidatePath(`/results/${runId}`);
   revalidatePath('/orchestrator');
   revalidatePath('/orchestrator/runs');
   revalidatePath(`/orchestrator/runs/${runId}`);

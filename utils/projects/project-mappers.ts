@@ -1,6 +1,7 @@
 import type { OrchestratorEvent, OrchestratorRun } from '@/types/orchestrator';
 import { isOsaRun } from '@/utils/osa/osa-runs';
 import { formatDateTime, formatDuration } from '@/utils/orchestrator/runs';
+import { buildResultHref, resolveHistoryResultLabel } from '@/utils/results/result-mappers';
 
 import {
   PROJECT_STATUS_LABELS,
@@ -203,7 +204,7 @@ export function mapRunToExecution(run: OrchestratorRun): ProjectExecution {
     duration: formatDuration(run.started_at, run.completed_at),
     startedAt: run.started_at,
     finishedAt: run.completed_at,
-    href: `/orchestrator/runs/${run.id}`,
+    href: buildResultHref(run.id),
   };
 }
 
@@ -415,9 +416,9 @@ export function mapSnapshotToTimeline(
     entries.push({
       id: `execution-${run.id}`,
       kind: 'execution',
-      title: `Execution ${run.status}`,
+      title: resolveHistoryResultLabel(run),
       timestamp: run.created_at,
-      href: `/orchestrator/runs/${run.id}`,
+      href: buildResultHref(run.id),
     });
   }
 
@@ -445,9 +446,9 @@ export function mapSnapshotToTimeline(
     entries.push({
       id: `automation-${run.id}`,
       kind: 'automation',
-      title: `Automation ${run.status}`,
+      title: resolveHistoryResultLabel(run),
       timestamp: run.created_at,
-      href: `/orchestrator/runs/${run.id}`,
+      href: buildResultHref(run.id),
     });
   }
 

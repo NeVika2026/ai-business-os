@@ -4,6 +4,12 @@ import { RUN_EVENT_LABELS } from '@/types/orchestrator';
 import { CABINET_MODULES, CABINET_QUICK_ACTIONS } from '@/utils/cabinet/cabinet-config';
 import { isOsaRun } from '@/utils/osa/osa-runs';
 import { formatDateTime, formatDuration } from '@/utils/orchestrator/runs';
+import {
+  buildResultHref,
+  mapResultStatus,
+  resolveHistoryResultContext,
+  resolveHistoryResultLabel,
+} from '@/utils/results/result-mappers';
 
 export type HealthDisplayStatus = 'healthy' | 'warning' | 'offline' | 'unknown';
 
@@ -84,6 +90,7 @@ export type NotificationItem = {
 export type ExecutionHistoryItem = {
   id: string;
   status: AgentRunStatus;
+  statusLabel: string;
   label: string;
   mode: string;
   timestamp: string;
@@ -219,35 +226,11 @@ function resolveSubscription(settings: Record<string, unknown> | null): string {
 }
 
 function resolveRunLabel(run: OrchestratorRun): string {
-  if (isOsaRun(run)) {
-    const prompt = run.input.user_prompt;
-
-    if (typeof prompt === 'string' && prompt.trim().length > 0) {
-      return prompt.trim();
-    }
-
-    return 'Completed work';
-  }
-
-  const action = run.input.action;
-
-  if (typeof action === 'string' && action.trim().length > 0) {
-    return action;
-  }
-
-  return run.employee?.name ?? 'Agent run';
+  return resolveHistoryResultLabel(run);
 }
 
 function resolveRunMode(run: OrchestratorRun): string {
-  if (run.input.runtime_bridge_enabled === true || run.output?.runtime_bridge_enabled === true) {
-    return 'Runtime';
-  }
-
-  if (run.input.simulated === true || run.output?.simulated === true) {
-    return 'Demo';
-  }
-
-  return 'Standard';
+  return resolveHistoryResultContext(run);
 }
 
 function isUnreadEvent(event: OrchestratorEvent): boolean {
@@ -354,7 +337,7 @@ export function mapEventsToActivity(events: OrchestratorEvent[]): ActivityItem[]
         event.type.replaceAll('_', ' '),
       subtitle: `${event.source} · ${event.actor_type}`,
       timestamp: event.created_at,
-      href: event.correlation_id ? `/orchestrator/runs/${event.correlation_id}` : null,
+      href: event.correlation_id ? buildResultHref(event.correlation_id) : null,
     }));
 }
 
@@ -370,7 +353,7 @@ export function mapEventsToNotifications(events: OrchestratorEvent[]): Notificat
       body: `${event.source} · ${formatDateTime(event.created_at)}`,
       timestamp: event.created_at,
       unread: true,
-      href: event.correlation_id ? `/orchestrator/runs/${event.correlation_id}` : null,
+      href: event.correlation_id ? buildResultHref(event.correlation_id) : null,
     }));
 }
 
@@ -378,11 +361,12 @@ export function mapRunsToHistory(runs: OrchestratorRun[]): ExecutionHistoryItem[
   return runs.slice(0, HISTORY_LIMIT).map((run) => ({
     id: run.id,
     status: run.status,
+    statusLabel: mapResultStatus(run.status),
     label: resolveRunLabel(run),
     mode: resolveRunMode(run),
     timestamp: run.created_at,
     duration: formatDuration(run.started_at, run.completed_at),
-    href: `/orchestrator/runs/${run.id}`,
+    href: buildResultHref(run.id),
   }));
 }
 

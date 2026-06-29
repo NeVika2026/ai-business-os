@@ -60,7 +60,7 @@ describe('goal handoff', () => {
       runningExecution: {
         id: 'run-001',
         label: 'Grow revenue',
-        href: '/orchestrator/runs/run-001',
+        href: '/results/run-001',
       },
     });
     const session = buildHomeHandoffSession('increase_revenue', context, 'session-002');
@@ -68,7 +68,7 @@ describe('goal handoff', () => {
 
     assert.equal(session.resumeExecutionId, 'run-001');
     assert.equal(resume.preferResume, true);
-    assert.equal(resume.resumeLabel, 'Resume execution');
+    assert.equal(resume.resumeLabel, 'Continue previous work');
   });
 
   it('uses existing project context without forcing project creation', () => {

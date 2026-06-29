@@ -260,11 +260,14 @@ export async function executeAgent(formData: FormData) {
     });
   }
 
+  revalidatePath('/history');
+  revalidatePath('/results');
+  revalidatePath(`/results/${run.id}`);
   revalidatePath('/orchestrator');
   revalidatePath('/orchestrator/runs');
   revalidatePath(`/orchestrator/runs/${run.id}`);
   revalidatePath('/ai-employees');
   revalidatePath(`/ai-employees/${aiEmployeeId}`);
 
-  redirect(`/orchestrator/runs/${run.id}`);
+  redirect(`/results/${run.id}`);
 }

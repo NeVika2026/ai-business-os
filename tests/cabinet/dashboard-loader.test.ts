@@ -224,7 +224,7 @@ describe('Cabinet dashboard loader mappers', () => {
 
     assert.equal(notifications.length, 3);
     assert.equal(history.length, 3);
-    assert.equal(history[0]?.href, '/orchestrator/runs/run-active');
+    assert.equal(history[0]?.href, '/results/run-active');
   });
 
   it('builds full dashboard from snapshot', () => {

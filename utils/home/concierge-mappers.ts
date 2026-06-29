@@ -1,5 +1,6 @@
 import type { OrchestratorRun } from '@/types/orchestrator';
 import { mapRunsToUsageStats, type CabinetRawSnapshot } from '@/utils/cabinet/dashboard-mappers';
+import { buildResultHref } from '@/utils/results/result-mappers';
 import type { HomeGoalId, HomeUserContext, HomeData } from '@/utils/home/home-types';
 import { buildHomeFromSnapshot, createEmptyHome } from '@/utils/home/home-mappers';
 
@@ -282,7 +283,7 @@ export function mapDailyMission(home: HomeData, snapshot: CabinetRawSnapshot): D
     return {
       title: 'Review a failed execution',
       description: 'Resolve the latest failed run before starting something new.',
-      href: `/orchestrator/runs/${failedRun.id}`,
+      href: buildResultHref(failedRun.id),
       goalId: null,
     };
   }

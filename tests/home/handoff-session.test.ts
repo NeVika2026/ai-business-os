@@ -157,7 +157,7 @@ describe('handoff session', () => {
         activeProjectId: 'project-001',
         activeProjectName: 'Marketing Launch',
         resumeExecutionId: 'run-001',
-        resumeExecutionHref: '/orchestrator/runs/run-001',
+        resumeExecutionHref: '/results/run-001',
         resumeExecutionLabel: 'Grow revenue',
       },
     });

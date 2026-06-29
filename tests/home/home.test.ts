@@ -127,8 +127,8 @@ describe('home loader and mappers', () => {
 
     assert.equal(continueWorking.runningExecution?.status, 'running');
     assert.equal(continueWorking.lastProject?.name, 'Marketing Launch');
-    assert.equal(continueWorking.resumeLabel, 'Resume execution');
-    assert.match(continueWorking.resumeHref ?? '', /\/orchestrator\/runs\//);
+    assert.equal(continueWorking.resumeLabel, 'Continue previous work');
+    assert.match(continueWorking.resumeHref ?? '', /\/results\//);
   });
 
   it('maps suggestions, pinned actions, and daily summary', () => {

@@ -30,7 +30,7 @@ export default async function HistoryPage() {
 
       {history.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-[var(--border-subtle)] bg-[var(--surface-1)] px-4 py-10 text-center text-sm text-[var(--text-secondary)]">
-          No executions yet.
+          No results yet.
         </div>
       ) : (
         <ol className="space-y-3">
@@ -48,7 +48,7 @@ export default async function HistoryPage() {
                     {item.label}
                   </Link>
                   <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                    {item.mode} · {item.status} · {item.duration}
+                    {item.mode} · {item.statusLabel} · {item.duration}
                   </p>
                 </div>
                 <time className="text-xs text-[var(--text-secondary)]">
