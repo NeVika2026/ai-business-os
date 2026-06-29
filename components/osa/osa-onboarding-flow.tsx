@@ -2,14 +2,16 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { consumeHomeHandoff } from '@/app/(dashboard)/home/actions';
 import { executeOsaTaskRun, startOsaTask } from '@/app/(dashboard)/osa/actions';
+import { WowMoment } from '@/components/home/WowMoment';
 import { IntentClarificationQuestion } from '@/components/intent/IntentClarificationQuestion';
 import { IntentConfirmationScreen } from '@/components/intent/IntentConfirmationScreen';
 import { isHomeGoalId, type OsaHomeHandoffInput } from '@/utils/home/goal-handoff';
 import type { HomeGoalId } from '@/utils/home/home-types';
+import { buildMeaningfulLoading, buildWowMoment } from '@/utils/home/wow-engine';
 import {
   applyClarificationToPrompt,
   buildIntentConfirmation,
@@ -24,12 +26,7 @@ import {
 import { buildExecutionPlan, type ExecutionPlan } from '@/utils/osa/execution-planner';
 import { getOsaTeamRecommendation } from '@/utils/osa/team-recommendation';
 
-type FlowStep = 'preparing' | 'clarify' | 'confirm' | 'working' | 'failed';
-
-const PREPARING_MESSAGES = [
-  'Understanding your goal...',
-  'Reviewing what you need...',
-] as const;
+type FlowStep = 'wow' | 'clarify' | 'confirm' | 'working' | 'failed';
 
 const WORK_PROGRESS_MESSAGES = [
   'Understanding your business...',
@@ -87,8 +84,7 @@ export function InvisibleWorkspaceFlow({
   handoffError = null,
 }: InvisibleWorkspaceFlowProps) {
   const router = useRouter();
-  const [step, setStep] = useState<FlowStep>('preparing');
-  const [preparingMessageIndex, setPreparingMessageIndex] = useState(0);
+  const [step, setStep] = useState<FlowStep>('wow');
   const [workMessageIndex, setWorkMessageIndex] = useState(0);
   const [starterPrompt, setStarterPrompt] = useState(() => homeHandoff?.starterPrompt ?? '');
   const [team, setTeam] = useState<OsaAgentDefinition[]>([]);
@@ -101,46 +97,54 @@ export function InvisibleWorkspaceFlow({
 
   const goalId = useMemo(() => resolveGoalId(homeHandoff), [homeHandoff]);
 
-  useEffect(() => {
-    if (step !== 'preparing' || !homeHandoff) {
+  const wowLoading = useMemo(
+    () =>
+      buildMeaningfulLoading({
+        projectCount: homeHandoff?.wowContext?.projectCount ?? 0,
+        hasPreviousWork: Boolean(homeHandoff?.wowContext?.lastCompletedResultLabel),
+        goalTitle: homeHandoff?.goalTitle ?? 'Your goal',
+      }),
+    [homeHandoff],
+  );
+
+  const wowMoment = useMemo(
+    () =>
+      buildWowMoment({
+        userName: homeHandoff?.wowContext?.userName ?? 'there',
+        goalTitle: homeHandoff?.goalTitle ?? 'Your goal',
+        projectCount: homeHandoff?.wowContext?.projectCount ?? 0,
+        activeProjectName: homeHandoff?.activeProjectName ?? null,
+      }),
+    [homeHandoff],
+  );
+
+  const advanceFromWow = useCallback(() => {
+    if (!homeHandoff) {
       return;
     }
 
-    const messageTimer = window.setInterval(() => {
-      setPreparingMessageIndex((current) =>
-        Math.min(current + 1, PREPARING_MESSAGES.length - 1),
-      );
-    }, MESSAGE_INTERVAL_MS);
+    const recommendation = buildTeamFromHandoff(homeHandoff, starterPrompt);
+    const resolvedTeam = recommendation.team;
+    const resolvedSessionId = homeHandoff.sessionId || createSessionId();
+    const plan = buildExecutionPlan({
+      userInput: starterPrompt.trim(),
+      team: resolvedTeam,
+      recommendation: recommendation.recommendation,
+    });
+    const nextIntent = buildIntentConfirmation({
+      goalId,
+      starterPrompt,
+      executionPlan: plan,
+      recommendation: recommendation.recommendation,
+      clarificationAnswerId,
+    });
 
-    const completeTimer = window.setTimeout(() => {
-      const recommendation = buildTeamFromHandoff(homeHandoff, starterPrompt);
-      const resolvedTeam = recommendation.team;
-      const resolvedSessionId = homeHandoff.sessionId || createSessionId();
-      const plan = buildExecutionPlan({
-        userInput: starterPrompt.trim(),
-        team: resolvedTeam,
-        recommendation: recommendation.recommendation,
-      });
-      const nextIntent = buildIntentConfirmation({
-        goalId,
-        starterPrompt,
-        executionPlan: plan,
-        recommendation: recommendation.recommendation,
-        clarificationAnswerId,
-      });
-
-      setTeam(resolvedTeam);
-      setSessionId(resolvedSessionId);
-      setExecutionPlan(plan);
-      setIntent(nextIntent);
-      setStep(nextIntent.needsClarification && nextIntent.clarification ? 'clarify' : 'confirm');
-    }, PREPARING_MESSAGES.length * MESSAGE_INTERVAL_MS);
-
-    return () => {
-      window.clearInterval(messageTimer);
-      window.clearTimeout(completeTimer);
-    };
-  }, [step, starterPrompt, homeHandoff, goalId, clarificationAnswerId]);
+    setTeam(resolvedTeam);
+    setSessionId(resolvedSessionId);
+    setExecutionPlan(plan);
+    setIntent(nextIntent);
+    setStep(nextIntent.needsClarification && nextIntent.clarification ? 'clarify' : 'confirm');
+  }, [clarificationAnswerId, goalId, homeHandoff, starterPrompt]);
 
   useEffect(() => {
     if (step !== 'working' || !taskLoading) {
@@ -244,17 +248,9 @@ export function InvisibleWorkspaceFlow({
     );
   }
 
-  if (step === 'preparing') {
+  if (step === 'wow' && homeHandoff) {
     return (
-      <section className="mx-auto flex min-h-[320px] w-full max-w-xl flex-col items-center justify-center space-y-4 text-center">
-        <div
-          aria-hidden="true"
-          className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--border-subtle)] border-t-[var(--accent)]"
-        />
-        <p className="text-lg font-medium text-[var(--text-primary)]" role="status">
-          {PREPARING_MESSAGES[preparingMessageIndex]}
-        </p>
-      </section>
+      <WowMoment loading={wowLoading} moment={wowMoment} onContinue={advanceFromWow} />
     );
   }
 
@@ -308,11 +304,7 @@ export function InvisibleWorkspaceFlow({
 
   return (
     <section className="mx-auto flex min-h-[320px] w-full max-w-xl flex-col items-center justify-center space-y-4 text-center">
-      <div
-        aria-hidden="true"
-        className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--border-subtle)] border-t-[var(--accent)]"
-      />
-      <p className="text-lg font-medium text-[var(--text-primary)]" role="status">
+      <p className="text-lg font-medium text-[var(--text-primary)] wow-fade-in" role="status">
         {WORK_PROGRESS_MESSAGES[workMessageIndex]}
       </p>
     </section>

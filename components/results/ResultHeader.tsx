@@ -12,7 +12,7 @@ const STATUS_STYLES: Record<ResultStatusLabel, string> = {
 type ResultHeaderProps = {
   result: Pick<
     ResultData,
-    'title' | 'createdAt' | 'status' | 'projectName' | 'projectHref' | 'duration'
+    'title' | 'createdAt' | 'status' | 'projectName' | 'projectHref' | 'duration' | 'presentationHeadline'
   >;
 };
 
@@ -23,8 +23,9 @@ export function ResultHeader({ result }: ResultHeaderProps) {
         <div className="min-w-0 space-y-2">
           <p className="text-sm font-medium uppercase tracking-wide text-[var(--accent)]">Result</p>
           <h1 className="text-2xl font-semibold text-[var(--text-primary)] sm:text-3xl">
-            {result.title}
+            {result.presentationHeadline}
           </h1>
+          <p className="text-sm text-[var(--text-secondary)]">{result.title}</p>
         </div>
         <span
           className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[result.status]}`}

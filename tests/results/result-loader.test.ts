@@ -97,6 +97,9 @@ describe('result mappers', () => {
     assert.equal(result.actions[0]?.label, 'Continue');
     assert.equal(result.timeline[0]?.label, 'Requested');
     assert.equal(result.timeline.at(-1)?.label, 'Completed');
+    assert.equal(result.presentationHeadline, "Here's what I prepared for you.");
+    assert.equal(result.celebration.show, true);
+    assert.equal(result.whatsNext.title, "What's next?");
   });
 
   it('maps timeline fallbacks when events are missing', () => {

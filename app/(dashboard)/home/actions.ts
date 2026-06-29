@@ -16,7 +16,9 @@ import {
   createPersistedHandoffSession,
   expireOldHandoffs,
 } from '@/utils/home/handoff-session';
+import { loadHomeUserContext } from '@/utils/home/home-loader';
 import type { HomeGoalId } from '@/utils/home/home-types';
+import { buildWowHandoffContext } from '@/utils/home/wow-engine';
 
 const RUNNING_STATUSES = new Set(['pending', 'running']);
 
@@ -68,7 +70,21 @@ export async function startGoalHandoff(goalId: string): Promise<StartGoalHandoff
         : null,
     });
 
-    const { session } = buildHomeHandoffNavigation(goalId as HomeGoalId, context);
+    const userContext = await loadHomeUserContext(supabase);
+    const wowContext = userContext
+      ? buildWowHandoffContext(snapshot, {
+          userName: userContext.userName,
+          email: userContext.email,
+          organizationName: userContext.organizationName,
+        })
+      : null;
+
+    const { session } = buildHomeHandoffNavigation(
+      goalId as HomeGoalId,
+      context,
+      undefined,
+      wowContext,
+    );
     const persisted = await createPersistedHandoffSession(
       supabase,
       session,

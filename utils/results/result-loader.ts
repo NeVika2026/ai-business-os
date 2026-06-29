@@ -84,5 +84,11 @@ export async function loadResult(
 
   const events = mapOrchestratorEvents((eventsData ?? []) as OrchestratorEvent[]);
 
-  return mapRunToResult(run, events, projectName);
+  const { count: completedResultsCount } = await supabase
+    .from('agent_runs')
+    .select('id', { count: 'exact', head: true })
+    .eq('organization_id', organizationId)
+    .eq('status', 'completed');
+
+  return mapRunToResult(run, events, projectName, completedResultsCount ?? 1);
 }

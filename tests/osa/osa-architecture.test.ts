@@ -95,6 +95,7 @@ describe('OSA architecture validation', () => {
 
     assert.match(constantsSource, /OSA_PROGRESS_POLL_INTERVAL_MS/);
     assert.match(onboardingSource, /buildIntentConfirmation/);
+    assert.match(onboardingSource, /WowMoment/);
     assert.match(onboardingSource, /\/results\//);
     assert.match(runsSource, /from '@\/utils\/osa\/osa-constants'/);
   });

@@ -3,6 +3,11 @@ import { mapRunsToUsageStats, type CabinetRawSnapshot } from '@/utils/cabinet/da
 import { buildResultHref } from '@/utils/results/result-mappers';
 import type { HomeGoalId, HomeUserContext, HomeData } from '@/utils/home/home-types';
 import { buildHomeFromSnapshot, createEmptyHome } from '@/utils/home/home-mappers';
+import {
+  buildHomeWowContextFromSnapshot,
+  type PersonalWelcomeData,
+  type SmartGreetingData,
+} from '@/utils/home/wow-engine';
 
 export type ConciergeGreeting = {
   salutation: string;
@@ -53,6 +58,8 @@ export type ContinueJourney = {
 
 export type ConciergeData = {
   greeting: ConciergeGreeting;
+  smartGreeting: SmartGreetingData;
+  personalWelcome: PersonalWelcomeData;
   conversationChips: ConversationChip[];
   suggestedJourneys: SuggestedJourney[];
   insights: PersonalInsight[];
@@ -363,10 +370,15 @@ export function getJourneyGoalId(
 export function buildConciergeFromHomeData(
   home: HomeData,
   snapshot: CabinetRawSnapshot,
+  context: HomeUserContext,
   now: Date = new Date(),
 ): ConciergeData {
+  const wow = buildHomeWowContextFromSnapshot(snapshot, context, now);
+
   return {
     greeting: mapConciergeGreeting(home, now),
+    smartGreeting: wow.smartGreeting,
+    personalWelcome: wow.personalWelcome,
     conversationChips: CONVERSATION_CHIPS,
     suggestedJourneys: mapSuggestedJourneys(home),
     insights: mapPersonalInsights(snapshot),
@@ -382,7 +394,7 @@ export function buildConciergeFromSnapshot(
 ): ConciergeData {
   const home = buildHomeFromSnapshot(snapshot, context);
 
-  return buildConciergeFromHomeData(home, snapshot, now);
+  return buildConciergeFromHomeData(home, snapshot, context, now);
 }
 
 export function createEmptyConcierge(context: HomeUserContext): ConciergeData {
@@ -410,5 +422,5 @@ export function createEmptyConcierge(context: HomeUserContext): ConciergeData {
     userEmail: context.email,
   };
 
-  return buildConciergeFromHomeData(home, emptySnapshot);
+  return buildConciergeFromHomeData(home, emptySnapshot, context);
 }

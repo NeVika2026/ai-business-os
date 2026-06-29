@@ -42,6 +42,11 @@ export type HandoffSessionMetadata = {
   resumeExecutionId: string | null;
   resumeExecutionHref: string | null;
   resumeExecutionLabel: string | null;
+  userName: string | null;
+  projectCount: number;
+  lastCompletedResultLabel: string | null;
+  lastCompletedTiming: 'today' | 'yesterday' | 'recent' | null;
+  recommendedContinuationLabel: string | null;
 };
 
 export type HandoffSessionRow = {
@@ -118,6 +123,8 @@ export function parseHandoffIdFromSearchParams(
 }
 
 export function buildHandoffSessionMetadata(session: HomeHandoffSession): HandoffSessionMetadata {
+  const wow = session.wowContext;
+
   return {
     recommendedTeamIds: session.recommendedTeamIds,
     hasActiveProject: session.hasActiveProject,
@@ -126,6 +133,11 @@ export function buildHandoffSessionMetadata(session: HomeHandoffSession): Handof
     resumeExecutionId: session.resumeExecutionId,
     resumeExecutionHref: session.resumeExecutionHref,
     resumeExecutionLabel: session.resumeExecutionLabel,
+    userName: wow?.userName ?? null,
+    projectCount: wow?.projectCount ?? 0,
+    lastCompletedResultLabel: wow?.lastCompletedResultLabel ?? null,
+    lastCompletedTiming: wow?.lastCompletedTiming ?? null,
+    recommendedContinuationLabel: wow?.recommendedContinuationLabel ?? null,
   };
 }
 
@@ -174,6 +186,22 @@ function normalizeMetadata(value: unknown): HandoffSessionMetadata {
       typeof metadata.resumeExecutionHref === 'string' ? metadata.resumeExecutionHref : null,
     resumeExecutionLabel:
       typeof metadata.resumeExecutionLabel === 'string' ? metadata.resumeExecutionLabel : null,
+    userName: typeof metadata.userName === 'string' ? metadata.userName : null,
+    projectCount: typeof metadata.projectCount === 'number' ? metadata.projectCount : 0,
+    lastCompletedResultLabel:
+      typeof metadata.lastCompletedResultLabel === 'string'
+        ? metadata.lastCompletedResultLabel
+        : null,
+    lastCompletedTiming:
+      metadata.lastCompletedTiming === 'today' ||
+      metadata.lastCompletedTiming === 'yesterday' ||
+      metadata.lastCompletedTiming === 'recent'
+        ? metadata.lastCompletedTiming
+        : null,
+    recommendedContinuationLabel:
+      typeof metadata.recommendedContinuationLabel === 'string'
+        ? metadata.recommendedContinuationLabel
+        : null,
   };
 }
 
@@ -213,6 +241,13 @@ export function mapHandoffRowToOsaInput(row: HandoffSessionRow): OsaHomeHandoffI
     resumeRunLabel: row.metadata.resumeExecutionLabel,
     needsProject: !row.metadata.hasActiveProject,
     activeProjectName: row.metadata.activeProjectName,
+    wowContext: {
+      userName: row.metadata.userName ?? 'there',
+      projectCount: row.metadata.projectCount,
+      lastCompletedResultLabel: row.metadata.lastCompletedResultLabel,
+      lastCompletedTiming: row.metadata.lastCompletedTiming,
+      recommendedContinuationLabel: row.metadata.recommendedContinuationLabel,
+    },
   };
 }
 

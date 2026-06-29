@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-
 import { ResultActions } from '@/components/results/ResultActions';
 import { ResultArtifacts } from '@/components/results/ResultArtifacts';
+import { ResultCelebration } from '@/components/results/ResultCelebration';
 import { ResultHeader } from '@/components/results/ResultHeader';
 import { ResultNextSteps } from '@/components/results/ResultNextSteps';
 import { ResultSummary } from '@/components/results/ResultSummary';
@@ -39,10 +39,24 @@ export default async function ResultPage({ params }: ResultPageProps) {
         ← History
       </Link>
 
+      <ResultCelebration celebration={result.celebration} />
       <ResultHeader result={result} />
       <ResultSummary summary={result.summary} />
       <ResultArtifacts artifacts={result.artifacts} />
       <ResultNextSteps steps={result.nextSteps} />
+
+      <section className="wow-fade-in rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-5">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">{result.whatsNext.title}</h2>
+        <p className="mt-2 text-sm font-medium text-[var(--text-primary)]">{result.whatsNext.label}</p>
+        <p className="mt-1 text-sm text-[var(--text-secondary)]">{result.whatsNext.description}</p>
+        <Link
+          href={result.whatsNext.href}
+          className="mt-4 inline-flex rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-white hover:opacity-90"
+        >
+          {result.whatsNext.label}
+        </Link>
+      </section>
+
       <ResultTimeline timeline={result.timeline} />
       <ResultActions actions={result.actions} />
     </section>

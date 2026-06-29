@@ -1,4 +1,5 @@
-import { AIConciergeHeader } from '@/components/home/AIConciergeHeader';
+import { PersonalWelcome } from '@/components/home/PersonalWelcome';
+import { SmartGreeting } from '@/components/home/SmartGreeting';
 import { ContinueJourney } from '@/components/home/ContinueJourney';
 import { ConversationStarter } from '@/components/home/ConversationStarter';
 import type { ConciergeData } from '@/utils/home/concierge-mappers';
@@ -20,7 +21,8 @@ export function AIConcierge({ data }: AIConciergeProps) {
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-8">
-      <AIConciergeHeader greeting={data.greeting} />
+      <SmartGreeting greeting={data.smartGreeting} />
+      <PersonalWelcome welcome={data.personalWelcome} />
       <ConversationStarter chips={data.conversationChips} />
       {showContinue ? <ContinueJourney journey={data.continueJourney} /> : null}
     </div>

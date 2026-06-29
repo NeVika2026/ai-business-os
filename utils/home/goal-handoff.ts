@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import type { ProjectType } from '@/utils/projects/project-types';
+import type { WowHandoffContext } from '@/utils/home/wow-engine';
 import { getOsaTeamRecommendation } from '@/utils/osa/team-recommendation';
 import type { HomeGoalId } from '@/utils/home/home-types';
 
@@ -57,6 +58,7 @@ export type HomeHandoffSession = {
   resumeExecutionId: string | null;
   resumeExecutionHref: string | null;
   resumeExecutionLabel: string | null;
+  wowContext: WowHandoffContext | null;
 };
 
 export type HomeHandoffEventType =
@@ -86,6 +88,7 @@ export type OsaHomeHandoffInput = {
   resumeRunLabel: string | null;
   needsProject: boolean;
   activeProjectName: string | null;
+  wowContext: WowHandoffContext | null;
 };
 
 export const HOME_HANDOFF_EVENT_LABELS: Record<HomeHandoffEventType, string> = {
@@ -243,6 +246,7 @@ export function buildHomeHandoffSession(
   goalId: HomeGoalId,
   context: HomeHandoffContext,
   sessionId: string = randomUUID(),
+  wowContext: WowHandoffContext | null = null,
 ): HomeHandoffSession {
   const goal = getHomeGoalDefinition(goalId);
   const starterPrompt = generateStarterPrompt(goalId, context);
@@ -265,6 +269,7 @@ export function buildHomeHandoffSession(
     resumeExecutionId: context.resumeExecutionId,
     resumeExecutionHref: context.resumeExecutionHref,
     resumeExecutionLabel: context.resumeExecutionLabel,
+    wowContext,
   };
 }
 
@@ -272,8 +277,9 @@ export function buildHomeHandoffNavigation(
   goalId: HomeGoalId,
   context: HomeHandoffContext,
   sessionId?: string,
+  wowContext: WowHandoffContext | null = null,
 ): Omit<HomeHandoffNavigation, 'handoffId' | 'url'> & { session: HomeHandoffSession } {
-  const session = buildHomeHandoffSession(goalId, context, sessionId);
+  const session = buildHomeHandoffSession(goalId, context, sessionId, wowContext);
 
   return { session };
 }

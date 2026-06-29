@@ -2,6 +2,13 @@ import type { OrchestratorEvent, OrchestratorRun } from '@/types/orchestrator';
 import { extractRuntimeOutputText } from '@/utils/osa/runtime-output';
 import { isOsaRun } from '@/utils/osa/osa-runs';
 import { formatDateTime, formatDuration } from '@/utils/orchestrator/runs';
+import {
+  buildResultCelebration,
+  buildResultPresentationHeadline,
+  buildWhatsNextRecommendation,
+  type ResultCelebrationData,
+  type WhatsNextRecommendation,
+} from '@/utils/home/wow-engine';
 
 export const RESULT_ROUTE_PREFIX = '/results';
 
@@ -72,6 +79,9 @@ export type ResultData = {
   nextSteps: ResultNextStep[];
   timeline: ResultTimelineEntry[];
   actions: ResultAction[];
+  presentationHeadline: string;
+  celebration: ResultCelebrationData;
+  whatsNext: WhatsNextRecommendation;
 };
 
 export function buildResultHref(resultId: string): string {
@@ -388,15 +398,18 @@ export function mapRunToResult(
   run: OrchestratorRun,
   events: OrchestratorEvent[],
   projectName: string | null = null,
+  completedResultsCount = 1,
 ): ResultData {
   const projectId = readProjectId(run);
   const projectHref = projectId ? `/projects/${projectId}` : null;
+  const status = mapResultStatus(run.status);
+  const goalTitle = resolveResultTitle(run);
 
   return {
     id: run.id,
-    title: resolveResultTitle(run),
+    title: goalTitle,
     createdAt: formatDateTime(run.created_at),
-    status: mapResultStatus(run.status),
+    status,
     projectName,
     projectHref,
     duration: formatDuration(run.started_at, run.completed_at),
@@ -409,6 +422,13 @@ export function mapRunToResult(
     nextSteps: mapResultNextSteps(run, projectHref),
     timeline: mapResultTimeline(run, events),
     actions: mapResultActions(run),
+    presentationHeadline: buildResultPresentationHeadline(status),
+    celebration: buildResultCelebration(completedResultsCount, status),
+    whatsNext: buildWhatsNextRecommendation({
+      goalTitle,
+      projectHref,
+      status,
+    }),
   };
 }
 
