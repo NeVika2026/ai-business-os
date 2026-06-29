@@ -102,7 +102,7 @@ export function calculateHandoffExpiresAt(
 }
 
 export function buildHandoffNavigationUrl(handoffId: string): string {
-  return `/osa?handoff=${encodeURIComponent(handoffId)}`;
+  return `/workspace?handoff=${encodeURIComponent(handoffId)}`;
 }
 
 export function parseHandoffIdFromSearchParams(

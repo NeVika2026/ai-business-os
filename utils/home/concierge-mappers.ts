@@ -59,17 +59,16 @@ export type ConciergeData = {
   continueJourney: ContinueJourney;
 };
 
-export const CONVERSATION_CHIPS: ConversationChip[] = [
-  { id: 'revenue', label: 'Revenue', icon: '📈', goalId: 'increase_revenue' },
-  { id: 'clients', label: 'Clients', icon: '🎯', goalId: 'find_clients' },
-  { id: 'automation', label: 'Automation', icon: '⚙️', goalId: 'automate_routine' },
-  { id: 'marketing', label: 'Marketing', icon: '📣', goalId: 'create_content' },
-  { id: 'content', label: 'Content', icon: '✍️', goalId: 'create_content' },
-  { id: 'ai', label: 'AI', icon: '🧠', goalId: 'understand_ai' },
-  { id: 'projects', label: 'Projects', icon: '🚀', goalId: 'launch_project' },
-  { id: 'organization', label: 'Organization', icon: '🗂️', goalId: 'organize_business' },
-  { id: 'not_sure', label: 'Not sure', icon: '🧭', goalId: 'dont_know' },
+export const FTU_GOAL_CARDS: ConversationChip[] = [
+  { id: 'clients', label: 'Find more clients', icon: '🎯', goalId: 'find_clients' },
+  { id: 'revenue', label: 'Grow revenue', icon: '📈', goalId: 'increase_revenue' },
+  { id: 'marketing', label: 'Improve marketing', icon: '📣', goalId: 'create_content' },
+  { id: 'automation', label: 'Automate routine work', icon: '⚙️', goalId: 'automate_routine' },
+  { id: 'projects', label: 'Launch something new', icon: '🚀', goalId: 'launch_project' },
+  { id: 'not_sure', label: 'Help me decide', icon: '💡', goalId: 'dont_know' },
 ];
+
+export const CONVERSATION_CHIPS: ConversationChip[] = FTU_GOAL_CARDS;
 
 export function resolveConciergeSalutation(now: Date = new Date()): string {
   const hour = now.getHours();
@@ -124,7 +123,7 @@ export function mapConciergeGreeting(home: HomeData, now: Date = new Date()): Co
   const latestProject = home.recentProjects[0] ?? null;
   const runningExecution = continueWorking.runningExecution;
 
-  let currentFocus = 'Start a conversation with OSA to define your next outcome.';
+  let currentFocus = 'Pick a goal below to get started.';
 
   if (runningExecution) {
     currentFocus = `Resume ${runningExecution.label}`;
@@ -341,8 +340,8 @@ export function mapContinueJourney(home: HomeData): ContinueJourney {
 
   return {
     title: 'Start your first journey',
-    description: 'OSA will guide you from a blank slate.',
-    resumeHref: continueWorking.resumeHref ?? '/osa',
+    description: 'Choose a goal on Today and your workspace will be ready.',
+    resumeHref: continueWorking.resumeHref ?? '/home',
     resumeLabel: continueWorking.resumeLabel,
     runningExecutionLabel: null,
     projectName: null,

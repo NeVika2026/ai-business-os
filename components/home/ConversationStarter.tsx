@@ -37,30 +37,29 @@ export function ConversationStarter({ chips }: ConversationStarterProps) {
   const selectedChip = chips.find((chip) => chip.id === selectedChipId);
 
   return (
-    <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-5 sm:p-6">
-      <h2 className="text-xl font-semibold text-[var(--text-primary)] sm:text-2xl">
-        What would you like to improve today?
-      </h2>
-      <p className="mt-2 text-sm text-[var(--text-secondary)]">
-        OSA starts the conversation — pick a direction and your workspace will be prepared.
-      </p>
+    <section className="space-y-5">
+      <div>
+        <h2 className="text-xl font-semibold text-[var(--text-primary)] sm:text-2xl">
+          What would you like to achieve today?
+        </h2>
+      </div>
 
       {isPreparing && selectedChip ? (
         <div
           role="status"
-          className="mt-5 rounded-xl border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-4 py-3 text-sm text-[var(--text-primary)]"
+          className="rounded-xl border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-4 py-3 text-sm text-[var(--text-primary)]"
         >
-          OSA is preparing your workspace for <strong>{selectedChip.label}</strong>...
+          Getting ready for <strong>{selectedChip.label}</strong>...
         </div>
       ) : null}
 
       {errorMessage ? (
-        <p className="mt-4 text-sm text-red-500" role="alert">
+        <p className="text-sm text-red-500" role="alert">
           {errorMessage}
         </p>
       ) : null}
 
-      <div className="mt-5 flex flex-wrap gap-2">
+      <div className="grid gap-3 sm:grid-cols-2">
         {chips.map((chip) => (
           <button
             key={chip.id}
@@ -71,14 +70,16 @@ export function ConversationStarter({ chips }: ConversationStarterProps) {
                 void handleSelect(chip.goalId, chip.id);
               }
             }}
-            className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] disabled:cursor-wait disabled:opacity-70 ${
+            className={`flex items-center gap-3 rounded-2xl border px-4 py-4 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] disabled:cursor-wait disabled:opacity-70 ${
               selectedChipId === chip.id
                 ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--text-primary)]'
-                : 'border-[var(--border-subtle)] bg-[var(--surface-0)] text-[var(--text-primary)] hover:border-[var(--accent)]'
+                : 'border-[var(--border-subtle)] bg-[var(--surface-1)] text-[var(--text-primary)] hover:border-[var(--accent)]'
             }`}
           >
-            <span aria-hidden="true">{chip.icon}</span>
-            {chip.label}
+            <span aria-hidden="true" className="text-xl">
+              {chip.icon}
+            </span>
+            <span className="font-medium">{chip.label}</span>
           </button>
         ))}
       </div>

@@ -80,7 +80,7 @@ describe('handoff session', () => {
   it('builds secure navigation url with handoff id only', () => {
     const url = buildHandoffNavigationUrl('00000000-0000-4000-8000-000000000099');
 
-    assert.equal(url, '/osa?handoff=00000000-0000-4000-8000-000000000099');
+    assert.equal(url, '/workspace?handoff=00000000-0000-4000-8000-000000000099');
     assert.doesNotMatch(url, /starterPrompt=/);
     assert.doesNotMatch(url, /goalTitle=/);
   });

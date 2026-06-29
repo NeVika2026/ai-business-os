@@ -7,6 +7,11 @@ export type BreadcrumbItem = {
 
 const NAV_BY_HREF = new Map(MAIN_NAVIGATION.map((item) => [item.href, item.label]));
 
+const BREADCRUMB_LABEL_OVERRIDES: Record<string, string> = {
+  '/home': 'Today',
+  '/workspace': 'Workspace',
+};
+
 function formatSegment(segment: string) {
   return segment
     .split('-')
@@ -27,7 +32,7 @@ export function buildBreadcrumbs(pathname: string): BreadcrumbItem[] {
   for (const segment of segments) {
     path += `/${segment}`;
     crumbs.push({
-      label: NAV_BY_HREF.get(path) ?? formatSegment(segment),
+      label: BREADCRUMB_LABEL_OVERRIDES[path] ?? NAV_BY_HREF.get(path) ?? formatSegment(segment),
       href: path,
     });
   }

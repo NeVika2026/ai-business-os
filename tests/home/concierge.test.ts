@@ -104,7 +104,7 @@ const context = {
 
 describe('concierge loader and mappers', () => {
   it('maps conversation chips to goal ids', () => {
-    assert.equal(CONVERSATION_CHIPS.length, 9);
+    assert.equal(CONVERSATION_CHIPS.length, 6);
     assert.equal(getConversationChipGoalId('revenue'), 'increase_revenue');
     assert.equal(getConversationChipGoalId('not_sure'), 'dont_know');
     assert.equal(getConversationChipGoalId('missing'), null);
@@ -151,7 +151,7 @@ describe('concierge loader and mappers', () => {
   it('builds full concierge data from snapshot', () => {
     const concierge = buildConciergeFromSnapshot(createSnapshot(), context, now);
 
-    assert.equal(concierge.conversationChips.length, 9);
+    assert.equal(concierge.conversationChips.length, 6);
     assert.equal(concierge.suggestedJourneys.length >= 4, true);
     assert.equal(concierge.insights.length >= 1, true);
     assert.ok(concierge.dailyMission.title.length > 0);

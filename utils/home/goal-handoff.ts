@@ -315,8 +315,8 @@ export function resolveContinueWorkingMode(context: HomeHandoffContext): {
   }
 
   return {
-    resumeHref: '/osa',
-    resumeLabel: 'Start with OSA',
+    resumeHref: '/home',
+    resumeLabel: 'Go to Today',
     preferResume: false,
   };
 }

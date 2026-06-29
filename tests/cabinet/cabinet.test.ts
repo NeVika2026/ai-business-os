@@ -8,7 +8,6 @@ import {
   CABINET_LAYOUT,
   CABINET_MODULES,
   CABINET_QUICK_ACTIONS,
-  CABINET_ROUTE,
   CABINET_WIDGETS,
   getCabinetNavIndex,
   isCabinetNavigationOrdered,
@@ -19,18 +18,20 @@ import {
 const REPO_ROOT = join(import.meta.dirname, '..', '..');
 
 describe('Personal Cabinet v1.0', () => {
-  it('registers cabinet route in navigation above OSA', () => {
+  it('registers primary navigation in product order', () => {
     assert.equal(isCabinetNavigationOrdered(), true);
-    assert.equal(getCabinetNavIndex('Cabinet'), 1);
-    assert.equal(getCabinetNavIndex('OSA'), 2);
-    assert.equal(MAIN_NAVIGATION[1]?.href, CABINET_ROUTE);
-    assert.equal(NAVIGATION_HREF_SET.has('/cabinet'), true);
+    assert.equal(getCabinetNavIndex('Today'), 0);
+    assert.equal(getCabinetNavIndex('Projects'), 1);
+    assert.equal(MAIN_NAVIGATION[0]?.href, '/home');
+    assert.equal(NAVIGATION_HREF_SET.has('/projects'), true);
+    assert.equal(NAVIGATION_HREF_SET.has('/cabinet'), false);
+    assert.equal(NAVIGATION_HREF_SET.has('/osa'), false);
   });
 
   it('defines sidebar navigation items in required order', () => {
     assert.deepEqual(
       MAIN_NAVIGATION.map((item) => item.label),
-      ['Home', 'Cabinet', 'OSA', 'Workspace', 'Projects', 'History', 'Settings'],
+      ['Today', 'Projects', 'History', 'Settings'],
     );
   });
 

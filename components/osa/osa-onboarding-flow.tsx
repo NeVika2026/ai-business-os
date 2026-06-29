@@ -6,8 +6,6 @@ import { useEffect, useState } from 'react';
 
 import { consumeHomeHandoff } from '@/app/(dashboard)/home/actions';
 import { executeOsaTaskRun, getOsaRunProgress, startOsaTask } from '@/app/(dashboard)/osa/actions';
-import { OsaControlCenter } from '@/components/osa/osa-control-center';
-import { OsaLiveProgress } from '@/components/osa/osa-live-progress';
 import type { OsaHomeHandoffInput } from '@/utils/home/goal-handoff';
 import {
   resolveOsaAgents,
@@ -15,25 +13,24 @@ import {
   type OsaAgentDefinition,
   type OsaAgentId,
 } from '@/utils/osa/agent-registry';
-import {
-  buildExecutionPlan,
-  formatExecutionPlanEta,
-  type ExecutionPlan,
-} from '@/utils/osa/execution-planner';
+import { buildExecutionPlan, type ExecutionPlan } from '@/utils/osa/execution-planner';
 import type { ExecutionProgress } from '@/utils/osa/execution-progress';
 import { OSA_PROGRESS_POLL_INTERVAL_MS } from '@/utils/osa/osa-constants';
 import type { OsaTaskSubmitResult } from '@/utils/osa/osa-task';
-import {
-  getOsaTeamRecommendation,
-  OSA_ONBOARDING_EXAMPLES,
-  type OsaTeamRecommendation,
-} from '@/utils/osa/team-recommendation';
+import { getOsaTeamRecommendation, type OsaTeamRecommendation } from '@/utils/osa/team-recommendation';
 
-type FlowStep = 'onboarding' | 'loading' | 'team' | 'plan' | 'workspace';
+type FlowStep = 'loading' | 'prepared' | 'working';
 
-const LOADING_DELAY_MS = 1600;
+const PREPARATION_MESSAGES = [
+  'Understanding your goal...',
+  'Finding the best approach...',
+  'Preparing your workspace...',
+  'Almost ready...',
+] as const;
 
-type OsaOnboardingFlowProps = {
+const MESSAGE_INTERVAL_MS = 800;
+
+type InvisibleWorkspaceFlowProps = {
   homeHandoff?: OsaHomeHandoffInput | null;
   handoffId?: string | null;
   handoffError?: 'expired' | 'invalid' | 'consumed' | null;
@@ -44,7 +41,7 @@ function createSessionId(): string {
     return crypto.randomUUID();
   }
 
-  return `osa-session-${Date.now()}`;
+  return `session-${Date.now()}`;
 }
 
 function buildTeamFromHandoff(
@@ -69,116 +66,93 @@ function buildTeamFromHandoff(
   return fallback;
 }
 
-function HomePreparedBanner({ goalTitle }: { goalTitle: string }) {
-  return (
-    <div className="rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-4 py-3 text-sm text-[var(--text-primary)]">
-      I&apos;ve already prepared your workspace for <strong>{goalTitle}</strong>.
-    </div>
-  );
+function buildPreparedSummary(goalTitle: string, plan: ExecutionPlan | null): string {
+  if (plan && plan.stages.length > 0) {
+    const stageTitles = plan.stages
+      .slice(0, 3)
+      .map((stage) => stage.title)
+      .join(', ');
+
+    return `Your workspace for "${goalTitle}" is set up with a clear path: ${stageTitles}.`;
+  }
+
+  return `Your workspace for "${goalTitle}" is ready. We'll start with your top priority.`;
 }
 
-export function OsaOnboardingFlow({
+export function InvisibleWorkspaceFlow({
   homeHandoff = null,
   handoffId = null,
   handoffError = null,
-}: OsaOnboardingFlowProps) {
+}: InvisibleWorkspaceFlowProps) {
   const router = useRouter();
-  const [step, setStep] = useState<FlowStep>(() => (homeHandoff ? 'loading' : 'onboarding'));
-  const [userInput, setUserInput] = useState(() => homeHandoff?.starterPrompt ?? '');
+  const [step, setStep] = useState<FlowStep>('loading');
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+  const [userInput] = useState(() => homeHandoff?.starterPrompt ?? '');
   const [team, setTeam] = useState<OsaAgentDefinition[]>([]);
-  const [teamRecommendation, setTeamRecommendation] = useState<OsaTeamRecommendation | null>(null);
   const [executionPlan, setExecutionPlan] = useState<ExecutionPlan | null>(null);
   const [sessionId, setSessionId] = useState(() => homeHandoff?.sessionId ?? '');
-  const [taskInput, setTaskInput] = useState('');
   const [taskLoading, setTaskLoading] = useState(false);
   const [taskResult, setTaskResult] = useState<OsaTaskSubmitResult | null>(null);
   const [liveProgress, setLiveProgress] = useState<ExecutionProgress | null>(null);
-  const [activeRunId, setActiveRunId] = useState<string | null>(null);
-  const [projectPromptDismissed, setProjectPromptDismissed] = useState(false);
+
+  const goalTitle = homeHandoff?.goalTitle ?? 'Your goal';
+  const suggestedAction = homeHandoff?.starterPrompt ?? userInput;
 
   useEffect(() => {
     if (step !== 'loading') {
       return;
     }
 
-    const timer = window.setTimeout(() => {
+    const messageTimer = window.setInterval(() => {
+      setLoadingMessageIndex((current) =>
+        Math.min(current + 1, PREPARATION_MESSAGES.length - 1),
+      );
+    }, MESSAGE_INTERVAL_MS);
+
+    const completeTimer = window.setTimeout(() => {
       const recommendation = homeHandoff
         ? buildTeamFromHandoff(homeHandoff, userInput)
         : getOsaTeamRecommendation(userInput);
-      setTeamRecommendation(recommendation);
-      setTeam(recommendation.team);
-      setStep('team');
-    }, LOADING_DELAY_MS);
+      const resolvedTeam = recommendation.team;
+      const resolvedSessionId = homeHandoff?.sessionId || createSessionId();
 
-    return () => window.clearTimeout(timer);
-  }, [step, userInput, homeHandoff]);
+      setTeam(resolvedTeam);
+      setSessionId(resolvedSessionId);
+      setExecutionPlan(
+        buildExecutionPlan({
+          userInput: userInput.trim(),
+          team: resolvedTeam,
+          recommendation: recommendation.recommendation,
+        }),
+      );
+      if (handoffId) {
+        void consumeHomeHandoff(handoffId);
+      }
 
-  function handleSubmitOnboarding(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!userInput.trim()) {
+      setStep('prepared');
+    }, PREPARATION_MESSAGES.length * MESSAGE_INTERVAL_MS);
+
+    return () => {
+      window.clearInterval(messageTimer);
+      window.clearTimeout(completeTimer);
+    };
+  }, [step, userInput, homeHandoff, handoffId]);
+
+  async function runTask(prompt: string) {
+    if (!prompt.trim() || taskLoading) {
       return;
     }
 
-    setTaskResult(null);
-    setExecutionPlan(null);
-    setStep('loading');
-  }
-
-  function handleLaunchTeam() {
-    setSessionId(homeHandoff?.sessionId || createSessionId());
-    setExecutionPlan(
-      buildExecutionPlan({
-        userInput: userInput.trim(),
-        team,
-        recommendation: teamRecommendation?.recommendation,
-      }),
-    );
-    setStep('plan');
-
-    if (handoffId) {
-      void consumeHomeHandoff(handoffId);
-    }
-  }
-
-  if (handoffError) {
-    return (
-      <section className="mx-auto w-full max-w-xl space-y-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-6 text-center">
-        <h1 className="text-xl font-semibold text-[var(--text-primary)]">
-          This launch session has expired.
-        </h1>
-        <p className="text-sm text-[var(--text-secondary)]">
-          Start again from Home to prepare a fresh OSA workspace.
-        </p>
-        <Link
-          href="/home"
-          className="inline-flex rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white"
-        >
-          Return Home
-        </Link>
-      </section>
-    );
-  }
-
-  function handleEnterWorkspace() {
-    setStep('workspace');
-  }
-
-  async function handleSubmitTask(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!taskInput.trim() || taskLoading) {
-      return;
-    }
-
+    setStep('working');
     setTaskLoading(true);
     setTaskResult(null);
     setLiveProgress(null);
-    setActiveRunId(null);
 
     let pollTimer: number | undefined;
 
     try {
       const started = await startOsaTask({
-        userPrompt: taskInput.trim(),
+        userPrompt: prompt.trim(),
         selectedAgents: team.map((agent) => ({ id: agent.id, name: agent.name })),
         businessDescription: userInput.trim(),
         sessionId: sessionId || createSessionId(),
@@ -196,8 +170,6 @@ export function OsaOnboardingFlow({
         return;
       }
 
-      setActiveRunId(started.runId);
-
       pollTimer = window.setInterval(async () => {
         const progress = await getOsaRunProgress(started.runId);
         if (progress) {
@@ -214,13 +186,12 @@ export function OsaOnboardingFlow({
       }
 
       if (result.status !== 'failed') {
-        setTaskInput('');
         router.refresh();
       }
     } catch {
       setTaskResult({
         status: 'failed',
-        message: 'Не удалось отправить задачу. Попробуйте ещё раз.',
+        message: 'Something went wrong. Please try again.',
         resultText: null,
         agentTrace: [],
         runtimeReport: null,
@@ -233,56 +204,19 @@ export function OsaOnboardingFlow({
     }
   }
 
-  if (step === 'onboarding') {
+  if (handoffError) {
     return (
-      <section className="mx-auto w-full max-w-2xl space-y-8">
-        <header className="space-y-3 text-center">
-          <p className="text-sm font-medium uppercase tracking-wide text-[var(--accent)]">OSA</p>
-          <h1 className="text-3xl font-semibold text-[var(--text-primary)] sm:text-4xl">
-            Добро пожаловать в OSA
-          </h1>
-          <p className="text-base text-[var(--text-secondary)] sm:text-lg">
-            Я соберу для вас команду AI-сотрудников.
-          </p>
-        </header>
-
-        <form onSubmit={handleSubmitOnboarding} className="space-y-4">
-          <label className="block space-y-2">
-            <span className="sr-only">Опишите ваш бизнес и задачу</span>
-            <textarea
-              value={userInput}
-              onChange={(event) => setUserInput(event.target.value)}
-              rows={5}
-              placeholder="Расскажите, чем вы занимаетесь и какую задачу хотите решить"
-              className="w-full resize-none rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-            />
-          </label>
-
-          <button
-            type="submit"
-            disabled={!userInput.trim()}
-            className="w-full rounded-xl bg-[var(--accent)] px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-          >
-            Собрать команду
-          </button>
-        </form>
-
-        <div className="space-y-3">
-          <p className="text-sm text-[var(--text-secondary)]">Примеры:</p>
-          <ul className="grid gap-2 sm:grid-cols-2">
-            {OSA_ONBOARDING_EXAMPLES.map((example) => (
-              <li key={example}>
-                <button
-                  type="button"
-                  onClick={() => setUserInput(example)}
-                  className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-1)] px-4 py-3 text-left text-sm text-[var(--text-primary)] hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-                >
-                  {example}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
+      <section className="mx-auto w-full max-w-xl space-y-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-6 text-center">
+        <h1 className="text-xl font-semibold text-[var(--text-primary)]">This session has expired</h1>
+        <p className="text-sm text-[var(--text-secondary)]">
+          Pick a goal on Today to start fresh.
+        </p>
+        <Link
+          href="/home"
+          className="inline-flex rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white"
+        >
+          Back to Today
+        </Link>
       </section>
     );
   }
@@ -290,275 +224,119 @@ export function OsaOnboardingFlow({
   if (step === 'loading') {
     return (
       <section className="mx-auto flex min-h-[320px] w-full max-w-xl flex-col items-center justify-center space-y-4 text-center">
-        {homeHandoff ? (
-          <div className="w-full max-w-xl">
-            <HomePreparedBanner goalTitle={homeHandoff.goalTitle} />
-          </div>
-        ) : null}
         <div
           aria-hidden="true"
           className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--border-subtle)] border-t-[var(--accent)]"
         />
-        <p className="text-lg font-medium text-[var(--text-primary)]">Анализирую ваш бизнес...</p>
+        <p className="text-lg font-medium text-[var(--text-primary)]" role="status">
+          {PREPARATION_MESSAGES[loadingMessageIndex]}
+        </p>
       </section>
     );
   }
 
-  if (step === 'plan' && executionPlan) {
+  if (step === 'prepared' && !taskResult) {
+    const summary = buildPreparedSummary(goalTitle, executionPlan);
+
     return (
-      <section className="mx-auto w-full max-w-3xl space-y-6">
-        <header className="space-y-2 text-center">
-          <p className="text-sm font-medium uppercase tracking-wide text-[var(--accent)]">
-            Execution Plan
-          </p>
+      <section className="mx-auto w-full max-w-2xl space-y-6">
+        <header className="space-y-2">
           <h1 className="text-2xl font-semibold text-[var(--text-primary)] sm:text-3xl">
-            План выполнения задачи
+            Here&apos;s what I&apos;ve prepared
           </h1>
-          <p className="text-sm text-[var(--text-secondary)]">
-            Общий ETA: {formatExecutionPlanEta(executionPlan.estimatedMinutes)}
-            {executionPlan.reviewRequired ? ' · Review required' : ''}
-          </p>
+          <p className="text-sm text-[var(--text-secondary)]">{summary}</p>
         </header>
 
-        <div className="space-y-4">
-          {executionPlan.stages.map((stage, index) => (
-            <article
-              key={stage.id}
-              className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-5"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="space-y-1">
-                  <p className="text-xs font-medium uppercase tracking-wide text-[var(--accent)]">
-                    Stage {index + 1}
-                  </p>
-                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-                    {stage.title}
-                  </h2>
-                </div>
-                <span className="rounded-full bg-[var(--surface-2)] px-3 py-1 text-xs text-[var(--text-secondary)]">
-                  {stage.estimatedMinutes} мин
-                </span>
-              </div>
-              <p className="mt-3 text-sm text-[var(--text-secondary)]">{stage.description}</p>
-              <p className="mt-3 text-sm text-[var(--text-primary)]">
-                Агенты: {stage.assignedAgents.map((agent) => agent.name).join(', ')}
-              </p>
-              {stage.parallel ? (
-                <p className="mt-2 text-xs text-[var(--text-secondary)]">Параллельное выполнение</p>
-              ) : null}
-            </article>
-          ))}
+        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-5">
+          <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-secondary)]">
+            Suggested next step
+          </p>
+          <p className="mt-2 text-sm text-[var(--text-primary)]">{suggestedAction}</p>
         </div>
-
-        {executionPlan.risks.length > 0 ? (
-          <div className="space-y-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
-            <h2 className="text-sm font-semibold text-[var(--text-primary)]">Risk Detection</h2>
-            <ul className="space-y-2">
-              {executionPlan.risks.map((risk) => (
-                <li key={risk.id} className="text-sm text-[var(--text-secondary)]">
-                  <span className="font-medium text-[var(--text-primary)]">
-                    [{risk.severity}] {risk.title}:
-                  </span>{' '}
-                  {risk.description} — {risk.mitigation}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
 
         <button
           type="button"
-          onClick={handleEnterWorkspace}
+          onClick={() => void runTask(suggestedAction)}
           className="w-full rounded-xl bg-[var(--accent)] px-4 py-3 text-sm font-medium text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
         >
-          Перейти в Workspace
+          Get started
         </button>
       </section>
     );
   }
 
-  if (step === 'team') {
-    const resumeHref =
-      homeHandoff?.resumeRunHref ??
-      (homeHandoff?.resumeRunId ? `/orchestrator/runs/${homeHandoff.resumeRunId}` : null);
-
-    return (
-      <section className="mx-auto w-full max-w-3xl space-y-6">
-        {homeHandoff ? <HomePreparedBanner goalTitle={homeHandoff.goalTitle} /> : null}
-
-        {homeHandoff?.needsProject && !projectPromptDismissed ? (
-          <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-4 sm:p-5">
-            <h2 className="text-lg font-semibold text-[var(--text-primary)]">Create a project?</h2>
-            <p className="mt-2 text-sm text-[var(--text-secondary)]">
-              Projects connect OSA, documents, CRM, and knowledge. Recommended type:{' '}
-              {homeHandoff.recommendedProjectType}.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <Link
-                href={`/projects?project_type=${homeHandoff.recommendedProjectType}`}
-                className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white"
-              >
-                Create project
-              </Link>
-              <button
-                type="button"
-                onClick={() => setProjectPromptDismissed(true)}
-                className="rounded-xl border border-[var(--border-subtle)] px-4 py-2 text-sm"
-              >
-                Skip
-              </button>
-            </div>
-          </div>
-        ) : null}
-
-        <header className="space-y-2 text-center">
-          <h1 className="text-2xl font-semibold text-[var(--text-primary)] sm:text-3xl">
-            Для вас я собрал команду
-          </h1>
-          <p className="text-sm text-[var(--text-secondary)]">{userInput}</p>
-          {teamRecommendation ? (
-            <div className="mx-auto max-w-2xl space-y-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] px-4 py-3 text-left text-sm">
-              <p className="text-[var(--text-primary)]">
-                Confidence: {teamRecommendation.recommendation.confidence}%
-                {teamRecommendation.recommendation.needsNavigatorReview
-                  ? ' · Navigator review recommended'
-                  : ''}
-              </p>
-              <p className="text-[var(--text-secondary)]">
-                Primary: {teamRecommendation.recommendation.primaryTeam.join(', ')}
-                {teamRecommendation.recommendation.secondaryTeam.length > 0
-                  ? ` · Secondary: ${teamRecommendation.recommendation.secondaryTeam.join(', ')}`
-                  : ''}
-              </p>
-              {teamRecommendation.recommendation.tags.length > 0 ? (
-                <p className="text-xs text-[var(--text-secondary)]">
-                  Tags: {teamRecommendation.recommendation.tags.join(', ')}
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-        </header>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          {team.map((agent) => (
-            <article
-              key={agent.id}
-              className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-5"
-            >
-              <h2 className="text-lg font-semibold text-[var(--text-primary)]">{agent.name}</h2>
-              <p className="mt-2 text-sm text-[var(--text-secondary)]">{agent.description}</p>
-            </article>
-          ))}
-        </div>
-
-        {resumeHref ? (
-          <Link
-            href={resumeHref}
-            className="flex w-full items-center justify-center rounded-xl bg-[var(--accent)] px-4 py-3 text-sm font-medium text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-          >
-            Resume: {homeHandoff?.resumeRunLabel ?? 'Continue execution'}
-          </Link>
-        ) : (
-          <button
-            type="button"
-            onClick={handleLaunchTeam}
-            className="w-full rounded-xl bg-[var(--accent)] px-4 py-3 text-sm font-medium text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-          >
-            Запустить команду
-          </button>
-        )}
-      </section>
-    );
-  }
-
   return (
-    <section className="mx-auto w-full max-w-4xl space-y-6">
+    <section className="mx-auto w-full max-w-2xl space-y-6">
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold text-[var(--text-primary)] sm:text-3xl">
-          OSA Workspace
+          {taskResult?.status === 'failed' ? 'Something went wrong' : 'Your result'}
         </h1>
-        <p className="text-sm text-[var(--text-secondary)]">Ваша команда AI-сотрудников активна</p>
+        <p className="text-sm text-[var(--text-secondary)]">
+          {taskLoading
+            ? 'Working on it...'
+            : taskResult?.status === 'failed'
+              ? 'We could not finish this request.'
+              : 'Here is what was prepared for you.'}
+        </p>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {team.map((agent) => (
-          <article
-            key={agent.id}
-            className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-4"
+      {taskLoading ? (
+        <div
+          role="status"
+          className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] px-5 py-4 text-sm text-[var(--text-primary)]"
+        >
+          {liveProgress?.currentTask
+            ? `Working on: ${liveProgress.currentTask}`
+            : 'Working on your request...'}
+        </div>
+      ) : null}
+
+      {taskResult ? (
+        <div
+          className={`space-y-4 rounded-2xl border px-5 py-4 text-sm ${
+            taskResult.status === 'failed'
+              ? 'border-red-500/30 bg-red-500/10'
+              : 'border-[var(--border-subtle)] bg-[var(--surface-1)]'
+          }`}
+        >
+          <p className="font-medium text-[var(--text-primary)]">{taskResult.message}</p>
+          {taskResult.resultText ? (
+            <p className="whitespace-pre-wrap text-[var(--text-primary)]">{taskResult.resultText}</p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {!taskLoading && taskResult?.status !== 'failed' && taskResult?.resultText ? (
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/projects"
+            className="inline-flex rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-white"
           >
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <h2 className="text-base font-semibold text-[var(--text-primary)]">{agent.name}</h2>
-              <span
-                className="inline-flex h-2 w-2 rounded-full bg-emerald-500"
-                aria-hidden="true"
-              />
-            </div>
-            <p className="text-sm text-[var(--text-secondary)]">{agent.workspaceStatus}</p>
-          </article>
-        ))}
-      </div>
-
-      <OsaControlCenter
-        runId={activeRunId}
-        progress={liveProgress}
-        loading={taskLoading}
-        onProgressChange={setLiveProgress}
-        onExecutionComplete={() => {
-          router.refresh();
-        }}
-      />
-
-      <OsaLiveProgress progress={liveProgress} loading={taskLoading} />
-
-      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-4 sm:p-5">
-        <form onSubmit={handleSubmitTask} className="space-y-3">
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-[var(--text-primary)]">
-              Что поручить команде?
-            </span>
-            <input
-              value={taskInput}
-              onChange={(event) => setTaskInput(event.target.value)}
-              placeholder="Например: подготовь план привлечения клиентов на неделю"
-              className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-0)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-            />
-          </label>
-          <button
-            type="submit"
-            disabled={!taskInput.trim() || taskLoading}
-            className="rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+            Save to project
+          </Link>
+          <Link
+            href="/home"
+            className="inline-flex rounded-xl border border-[var(--border-subtle)] px-4 py-2.5 text-sm font-medium text-[var(--text-primary)]"
           >
-            {taskLoading ? 'Отправляю задачу...' : 'Отправить задачу'}
-          </button>
-        </form>
+            Back to Today
+          </Link>
+        </div>
+      ) : null}
 
-        {taskResult ? (
-          <div
-            className={`mt-4 space-y-3 rounded-xl px-4 py-3 text-sm ${
-              taskResult.status === 'failed'
-                ? 'border border-red-500/30 bg-red-500/10 text-[var(--text-primary)]'
-                : 'bg-[var(--accent-soft)] text-[var(--text-primary)]'
-            }`}
-          >
-            <p className="font-medium">{taskResult.message}</p>
-
-            {taskResult.agentTrace.length > 0 ? (
-              <p className="text-[var(--text-secondary)]">{taskResult.agentTrace.join(' → ')}</p>
-            ) : null}
-
-            {taskResult.resultText ? <p>{taskResult.resultText}</p> : null}
-
-            {taskResult.runtimeReport ? (
-              <p className="text-xs text-[var(--text-secondary)]">
-                Runtime: {taskResult.runtimeReport.gatewayCallCount} gateway ·{' '}
-                {taskResult.runtimeReport.toolCallCount} tools ·{' '}
-                {taskResult.runtimeReport.durationMs ?? 0} ms
-                {activeRunId ? ` · Run ${activeRunId}` : ''}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
+      {!taskLoading && taskResult?.status === 'failed' ? (
+        <button
+          type="button"
+          onClick={() => {
+            setTaskResult(null);
+            setStep('prepared');
+          }}
+          className="rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-white"
+        >
+          Try again
+        </button>
+      ) : null}
     </section>
   );
 }
+
+export const OsaOnboardingFlow = InvisibleWorkspaceFlow;

@@ -41,15 +41,14 @@ export type ProfileMetric = {
 
 export const CABINET_ROUTE = '/cabinet';
 
-export const CABINET_NAVIGATION: CabinetNavItem[] = [
-  { label: 'Home', href: '/home', icon: '🏠' },
-  { label: 'Cabinet', href: '/cabinet', icon: '🧭' },
-  { label: 'OSA', href: '/osa', icon: '✨' },
-  { label: 'Workspace', href: '/workspace', icon: '🖥️' },
+export const PRIMARY_NAVIGATION: CabinetNavItem[] = [
+  { label: 'Today', href: '/home', icon: '🎯' },
   { label: 'Projects', href: '/projects', icon: '📁' },
-  { label: 'History', href: '/history', icon: '🕘' },
+  { label: 'History', href: '/history', icon: '📜' },
   { label: 'Settings', href: '/settings', icon: '⚙️' },
 ];
+
+export const CABINET_NAVIGATION: CabinetNavItem[] = PRIMARY_NAVIGATION;
 
 export const CABINET_WIDGETS: CabinetWidget[] = [
   { id: 'todays_activity', title: "Today's activity", description: 'Activity feed placeholder' },
@@ -194,7 +193,8 @@ export function isCabinetNavigationOrdered(): boolean {
   const labels = CABINET_NAVIGATION.map((item) => item.label);
 
   return (
-    labels.indexOf('Dashboard') < labels.indexOf('Cabinet') &&
-    labels.indexOf('Cabinet') < labels.indexOf('OSA')
+    labels.indexOf('Today') < labels.indexOf('Projects') &&
+    labels.indexOf('Projects') < labels.indexOf('History') &&
+    labels.indexOf('History') < labels.indexOf('Settings')
   );
 }

@@ -92,7 +92,7 @@ describe('goal handoff', () => {
   it('builds secure navigation url from handoff id', () => {
     const url = buildHandoffNavigationUrl('00000000-0000-4000-8000-000000000099');
 
-    assert.match(url, /^\/osa\?handoff=/);
+    assert.match(url, /^\/workspace\?handoff=/);
     assert.doesNotMatch(url, /goalId=/);
   });
 });

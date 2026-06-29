@@ -77,7 +77,7 @@ export async function startGoalHandoff(goalId: string): Promise<StartGoalHandoff
     );
 
     revalidatePath('/home');
-    revalidatePath('/osa');
+    revalidatePath('/workspace');
 
     return {
       status: 'ok',
@@ -113,7 +113,7 @@ export async function consumeHomeHandoff(handoffId: string): Promise<boolean> {
   const consumed = await consumeHandoffSession(supabase, handoffId, organizationId, user.id);
 
   if (consumed) {
-    revalidatePath('/osa');
+    revalidatePath('/workspace');
     revalidatePath('/home');
   }
 

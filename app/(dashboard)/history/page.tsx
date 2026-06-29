@@ -22,11 +22,9 @@ export default async function HistoryPage() {
     <section className="mx-auto w-full max-w-5xl space-y-6">
       <header className="space-y-2">
         <p className="text-sm font-medium uppercase tracking-wide text-[var(--accent)]">History</p>
-        <h1 className="text-2xl font-semibold text-[var(--text-primary)] sm:text-3xl">
-          Execution History
-        </h1>
+        <h1 className="text-2xl font-semibold text-[var(--text-primary)] sm:text-3xl">Your history</h1>
         <p className="text-sm text-[var(--text-secondary)]">
-          Latest AI runs across OSA and orchestrator
+          Everything the platform has done for you
         </p>
       </header>
 

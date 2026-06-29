@@ -161,7 +161,7 @@ describe('home loader and mappers', () => {
     const home = createEmptyHome(context);
 
     assert.equal(home.recentProjects.length, 0);
-    assert.equal(home.continueWorking.resumeLabel, 'Start with OSA');
+    assert.equal(home.continueWorking.resumeLabel, 'Go to Today');
     assert.equal(home.dailySummary.todayExecutions, 0);
   });
 
