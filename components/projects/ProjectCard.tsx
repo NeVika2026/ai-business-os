@@ -39,7 +39,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
   return (
     <Link
-      href={`/projects/${project.id}`}
+      href={`/workspace/${project.id}`}
       className="group flex min-h-[220px] flex-col rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-5 transition hover:border-[var(--accent)] hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
     >
       <div className="flex-1 space-y-4">

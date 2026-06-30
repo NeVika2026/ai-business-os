@@ -25,5 +25,5 @@ export function legacyProjectPath(
     return null;
   }
 
-  return `/projects/${encodeURIComponent(projectId)}`;
+  return `/workspace/${encodeURIComponent(projectId)}`;
 }

@@ -10,6 +10,7 @@ type NextBestStepProps = {
   subtitle?: string;
   steps?: NavigatorStep[];
   onSelect?: (step: NavigatorStep) => void;
+  compact?: boolean;
 };
 
 export function NextBestStep({
@@ -17,6 +18,7 @@ export function NextBestStep({
   subtitle = DEFAULT_NEXT_BEST_STEP.subtitle,
   steps = DEFAULT_NEXT_BEST_STEP.steps,
   onSelect,
+  compact = false,
 }: NextBestStepProps) {
   const [selectedId, setSelectedId] = useState<NavigatorStepId | null>(null);
 
@@ -27,11 +29,11 @@ export function NextBestStep({
 
   return (
     <section
-      className="mt-10"
+      className={compact ? 'mt-4' : 'mt-10'}
       aria-labelledby="next-best-step-heading"
       aria-describedby="next-best-step-subtitle"
     >
-      <div className="text-center">
+      <div className={compact ? 'text-left' : 'text-center'}>
         <h2
           id="next-best-step-heading"
           className="text-xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-2xl"
@@ -46,7 +48,7 @@ export function NextBestStep({
         </p>
       </div>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-3">
+      <div className={`mt-8 grid gap-4 ${compact ? 'grid-cols-1' : 'sm:grid-cols-3'}`}>
         {steps.map((step) => {
           const isSelected = selectedId === step.id;
 
