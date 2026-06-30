@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 
 import { logout } from '@/app/(dashboard)/actions';
+import { OrbitMark } from '@/components/brand/OrbitMark';
 import { OrganizationSwitcher } from '@/components/layout/organization-switcher';
 import { UserMenu } from '@/components/layout/user-menu';
 import { NavSection } from '@/components/navigation/nav-section';
@@ -58,16 +59,11 @@ export function Sidebar({
         }`}
         aria-label="Sidebar"
       >
-        <div className="flex h-16 items-center border-b border-[var(--border-subtle)] px-4 lg:px-5">
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-[var(--text-primary)] md:sr-only lg:not-sr-only">
+        <div className="flex h-16 items-center gap-3 border-b border-[var(--border-subtle)] px-4 lg:px-5">
+          <OrbitMark size="sm" breathe className="shrink-0 md:mx-auto lg:mx-0" />
+          <div className="min-w-0 md:sr-only lg:not-sr-only">
+            <p className="truncate text-sm font-semibold tracking-tight text-[var(--text-primary)]">
               AI Business OS
-            </p>
-            <p
-              aria-hidden="true"
-              className="hidden text-sm font-semibold text-[var(--text-primary)] md:block lg:hidden"
-            >
-              AI
             </p>
           </div>
         </div>

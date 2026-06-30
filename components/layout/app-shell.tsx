@@ -18,7 +18,7 @@ export function AppShell({ pathname, email, organizationName, header, children }
   return (
     <div
       data-theme="dark"
-      className="flex min-h-screen bg-[var(--surface-0)] text-[var(--text-primary)]"
+      className="osa-workspace-surface flex min-h-screen bg-[var(--surface-0)] text-[var(--text-primary)]"
     >
       <Sidebar
         pathname={pathname}
@@ -43,7 +43,7 @@ export function AppShell({ pathname, email, organizationName, header, children }
           <div className="min-w-0 flex-1">{header}</div>
         </div>
 
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
+        <main className="relative flex-1 overflow-y-auto p-5 lg:p-8">{children}</main>
       </div>
     </div>
   );

@@ -2,42 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { OrbitMark } from '@/components/brand/OrbitMark';
 import {
   THINKING_FIRST_MESSAGE_DELAY_MS,
   THINKING_MESSAGE_INTERVAL_MS,
   THINKING_MESSAGES,
 } from '@/utils/runtime/thinking-messages';
 import { playThinkingSceneSound } from '@/utils/runtime/thinking-sound';
-
-function OrbitMark() {
-  return (
-    <svg
-      viewBox="0 0 80 80"
-      className="orbit-breathe h-20 w-20 text-[var(--accent)]"
-      aria-hidden="true"
-    >
-      <circle
-        cx="40"
-        cy="40"
-        r="28"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeDasharray="118 58"
-        strokeLinecap="round"
-        transform="rotate(-35 40 40)"
-      />
-      <path
-        d="M 54 26 A 20 20 0 0 1 60 46"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <circle cx="40" cy="40" r="3" fill="none" stroke="currentColor" strokeWidth="2" />
-    </svg>
-  );
-}
 
 function ThinkingMessages() {
   const [visibleCount, setVisibleCount] = useState(0);
@@ -91,7 +62,7 @@ export function ThinkingScene() {
       aria-label="Готовим первый результат"
     >
       <div className="wow-fade-in">
-        <OrbitMark />
+        <OrbitMark size="lg" />
       </div>
       <ThinkingMessages />
     </div>

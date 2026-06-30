@@ -42,10 +42,10 @@ export type ProfileMetric = {
 export const CABINET_ROUTE = '/cabinet';
 
 export const PRIMARY_NAVIGATION: CabinetNavItem[] = [
-  { label: 'Today', href: '/home', icon: '🎯' },
-  { label: 'Projects', href: '/projects', icon: '📁' },
-  { label: 'History', href: '/history', icon: '📜' },
-  { label: 'Settings', href: '/settings', icon: '⚙️' },
+  { label: 'Today', href: '/home', icon: 'today' },
+  { label: 'Projects', href: '/projects', icon: 'projects' },
+  { label: 'History', href: '/history', icon: 'history' },
+  { label: 'Settings', href: '/settings', icon: 'settings' },
 ];
 
 export const CABINET_NAVIGATION: CabinetNavItem[] = PRIMARY_NAVIGATION;

@@ -12,6 +12,27 @@
     background-color: var(--surface-0);
     color: var(--text-primary);
   }
+
+  .osa-workspace-surface {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .osa-workspace-surface::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.018;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 180px 180px;
+  }
+
+  .osa-workspace-surface > * {
+    position: relative;
+    z-index: 1;
+  }
 }
 
 @layer utilities {
@@ -68,8 +89,39 @@
     animation: orbit-breathe 3.5s ease-in-out infinite;
   }
 
+  .orbit-breathe-slow {
+    animation: orbit-breathe 4.5s ease-in-out infinite;
+  }
+
+  .osa-seq-orbit {
+    animation: wow-fade-in 0.55s ease-out both;
+  }
+
+  .osa-seq-greeting {
+    animation: wow-fade-in 0.55s ease-out both;
+    animation-delay: 0.4s;
+  }
+
+  .osa-seq-workspace {
+    animation: wow-fade-in 0.55s ease-out both;
+    animation-delay: 0.85s;
+  }
+
+  .osa-seq-navigator {
+    animation: wow-fade-in 0.55s ease-out both;
+    animation-delay: 1.3s;
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .orbit-breathe {
+    .orbit-breathe,
+    .orbit-breathe-slow {
+      animation: none;
+    }
+
+    .osa-seq-orbit,
+    .osa-seq-greeting,
+    .osa-seq-workspace,
+    .osa-seq-navigator {
       animation: none;
     }
   }

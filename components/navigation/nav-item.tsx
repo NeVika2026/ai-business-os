@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { isNavIconName, NavIcon } from '@/components/navigation/nav-icons';
+
 type NavItemProps = {
   label: string;
   href: string;
@@ -20,9 +22,13 @@ export function NavItem({ label, href, icon, isActive }: NavItemProps) {
           : 'text-[var(--text-secondary)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]'
       }`}
     >
-      <span aria-hidden="true" className="shrink-0 text-base leading-none">
-        {icon}
-      </span>
+      {isNavIconName(icon) ? (
+        <NavIcon name={icon} className="h-[18px] w-[18px] shrink-0" />
+      ) : (
+        <span aria-hidden="true" className="shrink-0 text-base leading-none">
+          {icon}
+        </span>
+      )}
       <span className="truncate md:sr-only lg:not-sr-only lg:inline">{label}</span>
     </Link>
   );

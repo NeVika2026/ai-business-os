@@ -15,15 +15,15 @@ export function ProjectList({ data }: ProjectListProps) {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-2">
-          <p className="text-sm font-medium uppercase tracking-wide text-[var(--accent)]">
+      <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-3">
+          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--text-secondary)]">
             Projects
           </p>
-          <h1 className="text-2xl font-semibold text-[var(--text-primary)] sm:text-3xl">
+          <h1 className="text-3xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-4xl">
             Project workspace
           </h1>
-          <p className="max-w-2xl text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="max-w-2xl text-sm leading-relaxed text-[var(--text-secondary)] sm:text-base">
             Everything in AI Business OS revolves around projects. OSA, documents, CRM, knowledge,
             and automation attach here.
           </p>
@@ -53,7 +53,7 @@ export function ProjectList({ data }: ProjectListProps) {
           </button>
         </section>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {data.projects.map((project) => (
             <ProjectCard key={project.id} project={project} />
           ))}

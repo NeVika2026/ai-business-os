@@ -39,7 +39,7 @@ export function ConversationStarter({ chips }: ConversationStarterProps) {
   return (
     <section className="space-y-5">
       <div>
-        <h2 className="text-xl font-semibold text-[var(--text-primary)] sm:text-2xl">
+        <h2 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-3xl">
           What would you like to achieve today?
         </h2>
       </div>

@@ -8,21 +8,25 @@ type SmartGreetingProps = {
 
 export function SmartGreeting({ greeting }: SmartGreetingProps) {
   return (
-    <header className="wow-fade-in space-y-3" aria-labelledby="today-briefing-heading">
-      <p className="text-sm font-medium uppercase tracking-wide text-[var(--accent)]">Today</p>
+    <header className="space-y-4" aria-labelledby="today-briefing-heading">
+      <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--text-secondary)]">
+        Today
+      </p>
 
-      <p className="text-base font-medium text-[var(--text-primary)] sm:text-lg">
+      <p className="text-base font-normal text-[var(--text-secondary)] sm:text-lg">
         {greeting.salutation}, {greeting.userName}.
       </p>
 
       <h1
         id="today-briefing-heading"
-        className="text-2xl font-semibold leading-snug text-[var(--text-primary)] sm:text-3xl"
+        className="max-w-2xl text-3xl font-semibold leading-[1.15] tracking-tight text-[var(--text-primary)] sm:text-4xl"
       >
         {greeting.headline}
       </h1>
 
-      <p className="text-sm text-[var(--text-secondary)]">{TODAY_PRIORITY_LINE}</p>
+      <p className="max-w-xl text-sm leading-relaxed text-[var(--text-secondary)] sm:text-base">
+        {TODAY_PRIORITY_LINE}
+      </p>
     </header>
   );
 }
