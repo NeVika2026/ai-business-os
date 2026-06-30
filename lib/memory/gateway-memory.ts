@@ -1,4 +1,14 @@
 import { captureGatewayMemory } from '@/lib/memory/memory-engine';
+import { ensureProject, findProject } from '@/lib/memory/memory-projects';
+import {
+  isDefaultWorkspace,
+  resolveGatewayActiveProject,
+  resolveGatewayProjectId,
+} from '@/lib/project-runtime/active-project';
+import {
+  recordProjectRuntimeFromGateway,
+  syncProjectMemoryState,
+} from '@/lib/project-runtime/project-runtime-memory';
 import type { GatewayRequest, GatewayResponse, PromptMessage } from '@/types/runtime/dto';
 import type { MemoryEntry } from '@/types/memory';
 
@@ -26,10 +36,32 @@ export function applyGatewayMemoryInjection(request: GatewayRequest): GatewayReq
     return request;
   }
 
-  const context = buildGatewayMemoryContext({
+  const scope = {
     organizationId: request.scope.organizationId,
-    userId: request.scope.userId,
-    projectId: request.scope.projectId,
+    userId: request.scope.userId ?? null,
+  };
+
+  const requestedProjectId = request.scope.projectId ?? null;
+  const activeProject = resolveGatewayActiveProject(scope, requestedProjectId);
+  syncProjectMemoryState(activeProject);
+
+  const memoryProjectId =
+    (requestedProjectId && findProject({ id: requestedProjectId })?.id) ||
+    (!isDefaultWorkspace(activeProject) && activeProject.title.trim()
+      ? ensureProject({
+          organizationId: scope.organizationId,
+          name: activeProject.title,
+          userId: scope.userId,
+        }).id
+      : null);
+
+  const resolvedProjectId = resolveGatewayProjectId(scope) ?? requestedProjectId ?? null;
+
+  const context = buildGatewayMemoryContext({
+    organizationId: scope.organizationId,
+    userId: scope.userId,
+    projectId: memoryProjectId ?? resolvedProjectId,
+    projectRuntime: activeProject,
   });
 
   if (!context.hasMemory) {
@@ -38,6 +70,10 @@ export function applyGatewayMemoryInjection(request: GatewayRequest): GatewayReq
 
   return {
     ...request,
+    scope: {
+      ...request.scope,
+      projectId: resolvedProjectId ?? request.scope.projectId,
+    },
     messages: [{ role: 'system', content: context.content }, ...request.messages],
   };
 }
@@ -58,17 +94,49 @@ export function captureGatewayMemoryFromResponse(
     return null;
   }
 
-  return captureGatewayMemory({
+  const scope = {
+    organizationId: request.scope.organizationId,
+    userId: request.scope.userId ?? null,
+  };
+
+  const activeProject = resolveGatewayActiveProject(scope, request.scope.projectId ?? null);
+  const memoryProject =
+    !isDefaultWorkspace(activeProject) && activeProject.title.trim()
+      ? ensureProject({
+          organizationId: scope.organizationId,
+          name: activeProject.title,
+          userId: scope.userId,
+        })
+      : null;
+  const projectId = memoryProject?.id ?? request.scope.projectId ?? null;
+
+  const entry = captureGatewayMemory({
     task,
     result,
     intent: request.routing?.intent ?? 'gateway_run',
     routingCategory: request.routing?.taskCategory ?? 'unknown',
-    organizationId: request.scope.organizationId,
-    userId: request.scope.userId,
+    organizationId: scope.organizationId,
+    userId: scope.userId,
     sessionId: null,
-    projectId: request.scope.projectId ?? null,
+    projectId,
     runId: request.trace.runId,
     correlationId: request.trace.correlationId,
     occurredAt: new Date().toISOString(),
   });
+
+  recordProjectRuntimeFromGateway({
+    organizationId: scope.organizationId,
+    userId: scope.userId,
+    projectRuntimeId: activeProject.id,
+    task,
+    result,
+  });
+
+  syncProjectMemoryState(activeProject);
+
+  if (!isDefaultWorkspace(activeProject) && projectId) {
+    return entry;
+  }
+
+  return entry;
 }

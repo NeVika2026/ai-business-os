@@ -1,4 +1,6 @@
 import type { NextBestStepContent } from '@/types/navigator';
+import type { ProjectRuntimeScope } from '@/types/project-runtime';
+import { resolveNextBestStepContent } from '@/lib/project-runtime/navigator-steps';
 
 export const NEXT_BEST_STEP_TITLE = 'Следующий лучший шаг';
 
@@ -32,3 +34,11 @@ export const DEFAULT_NEXT_BEST_STEP: NextBestStepContent = {
     },
   ],
 };
+
+export function getNextBestStepContent(scope?: ProjectRuntimeScope): NextBestStepContent {
+  if (!scope?.organizationId) {
+    return DEFAULT_NEXT_BEST_STEP;
+  }
+
+  return resolveNextBestStepContent(scope);
+}

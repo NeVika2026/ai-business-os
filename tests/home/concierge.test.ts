@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { beforeEach, describe, it } from 'node:test';
 
 import type { OrchestratorRun } from '@/types/orchestrator';
+import { resetMemoryStore } from '@/lib/memory/memory-engine';
+import { resetProjectRuntimeStore } from '@/lib/project-runtime/project-runtime-store';
 import type { CabinetRawSnapshot } from '@/utils/cabinet/dashboard-mappers';
 import {
   buildConciergeFromSnapshot,
@@ -103,6 +105,11 @@ const context = {
 };
 
 describe('concierge loader and mappers', () => {
+  beforeEach(() => {
+    resetMemoryStore();
+    resetProjectRuntimeStore();
+  });
+
   it('maps conversation chips to goal ids', () => {
     assert.equal(CONVERSATION_CHIPS.length, 6);
     assert.equal(getConversationChipGoalId('revenue'), 'increase_revenue');
@@ -156,6 +163,8 @@ describe('concierge loader and mappers', () => {
     assert.equal(concierge.insights.length >= 1, true);
     assert.ok(concierge.dailyMission.title.length > 0);
     assert.ok(concierge.continueJourney.resumeHref);
+    assert.match(concierge.projectBriefing.headline, /Marketing Launch|работаете над/);
+    assert.ok(concierge.projectBriefing.progressPercent >= 0);
   });
 
   it('creates empty concierge fallback', () => {

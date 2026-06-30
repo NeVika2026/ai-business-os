@@ -1,4 +1,7 @@
+import { getRecentDecisions } from '@/lib/project-runtime/project-runtime-memory';
+import { isDefaultWorkspaceId } from '@/lib/project-runtime/constants';
 import type { MemoryEntry } from '@/types/memory';
+import type { ProjectRuntime } from '@/types/project-runtime';
 
 import { findProject } from './memory-projects';
 import { getRecentMemory } from './memory-search';
@@ -12,6 +15,7 @@ export type GatewayMemoryContextInput = {
   organizationId: string;
   userId?: string | null;
   projectId?: string | null;
+  projectRuntime?: ProjectRuntime | null;
   limit?: number;
 };
 
@@ -37,9 +41,13 @@ function formatBulletLine(summary: string): string {
 }
 
 export function buildProjectContext(
-  input: Pick<GatewayMemoryContextInput, 'organizationId' | 'projectId'>,
+  input: Pick<GatewayMemoryContextInput, 'organizationId' | 'projectId' | 'projectRuntime'>,
   store?: MemoryStoreState,
 ): string | null {
+  if (input.projectRuntime) {
+    return `Current Project:\n${input.projectRuntime.title}`;
+  }
+
   if (!input.projectId) {
     return null;
   }
@@ -51,6 +59,30 @@ export function buildProjectContext(
   }
 
   return `Current Project:\n${project.name}`;
+}
+
+export function buildProjectRuntimeSections(runtime: ProjectRuntime): string[] {
+  const sections: string[] = [];
+
+  if (runtime.mission.trim()) {
+    sections.push('', 'Mission:', runtime.mission.trim());
+  }
+
+  if (runtime.summary.trim()) {
+    sections.push('', 'Summary:', runtime.summary.trim());
+  }
+
+  const decisions = getRecentDecisions(runtime);
+
+  if (decisions.length > 0) {
+    sections.push('', 'Recent Decisions:', ...decisions.map((line) => formatBulletLine(line)));
+  }
+
+  if (runtime.nextStep.trim()) {
+    sections.push('', 'Next Step:', runtime.nextStep.trim());
+  }
+
+  return sections;
 }
 
 export function buildRecentContext(
@@ -70,12 +102,12 @@ export function buildRecentContext(
   );
 
   const lines = entries.map((entry) => formatBulletLine(entry.summary));
-  const currentObjective = entries[0]?.task.trim() || null;
+  const currentObjective = entries[0]?.task.trim() || input.projectRuntime?.nextStep.trim() || null;
 
   return { lines, entries, currentObjective };
 }
 
-function buildKnownGoals(entries: MemoryEntry[]): string[] {
+function buildKnownGoals(entries: MemoryEntry[], runtime?: ProjectRuntime | null): string[] {
   const goals = new Set<string>();
 
   for (const entry of entries) {
@@ -86,6 +118,10 @@ function buildKnownGoals(entries: MemoryEntry[]): string[] {
     }
   }
 
+  if (runtime?.mission.trim()) {
+    goals.add(runtime.mission.trim());
+  }
+
   return [...goals].slice(0, 4);
 }
 
@@ -93,9 +129,12 @@ export function buildGatewayMemoryContext(
   input: GatewayMemoryContextInput,
   store?: MemoryStoreState,
 ): GatewayMemoryContext {
+  const runtime = input.projectRuntime ?? null;
   const { lines, entries, currentObjective } = buildRecentContext(input, store);
+  const hasRuntimeContext = Boolean(runtime && !isDefaultWorkspaceId(runtime.id));
+  const hasEntryContext = entries.length > 0;
 
-  if (entries.length === 0) {
+  if (!hasRuntimeContext && !hasEntryContext) {
     return {
       content: '',
       entryCount: 0,
@@ -111,9 +150,15 @@ export function buildGatewayMemoryContext(
     sections.push('', projectSection);
   }
 
-  sections.push('', 'Recent Progress:', ...lines);
+  if (runtime && !isDefaultWorkspaceId(runtime.id)) {
+    sections.push(...buildProjectRuntimeSections(runtime));
+  }
 
-  const knownGoals = buildKnownGoals(entries);
+  if (lines.length > 0) {
+    sections.push('', 'Recent Progress:', ...lines);
+  }
+
+  const knownGoals = buildKnownGoals(entries, runtime);
 
   if (knownGoals.length > 0) {
     sections.push('', 'Known Goals:', ...knownGoals.map((goal) => `• ${goal}`));
