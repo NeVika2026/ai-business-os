@@ -1,4 +1,8 @@
 import { completeWithModelRouter, streamWithModelRouter } from '@/lib/ai/model-router';
+import {
+  applyGatewayMemoryInjection,
+  captureGatewayMemoryFromResponse,
+} from '@/lib/memory/gateway-memory';
 import { isGatewayMockMode } from '@/services/runtime/gateway/adapter-factory';
 import { cancelStream } from '@/services/runtime/gateway/stream-cancellation';
 import { checkGatewayRateLimit } from '@/services/runtime/gateway/gateway-rate-limiter';
@@ -180,7 +184,16 @@ async function executeCompleteOnce(request: GatewayRequestDto): Promise<GatewayR
 }
 
 export async function complete(request: GatewayRequestDto): Promise<GatewayResponse> {
-  return completeWithModelRouter(request, executeCompleteOnce);
+  const requestWithMemory = applyGatewayMemoryInjection(request);
+  const response = await completeWithModelRouter(requestWithMemory, executeCompleteOnce);
+
+  try {
+    captureGatewayMemoryFromResponse(requestWithMemory, response);
+  } catch {
+    // Operational memory must not block gateway responses.
+  }
+
+  return response;
 }
 
 async function* executeStreamOnce(request: GatewayRequestDto): AsyncGenerator<StreamChunk> {
@@ -203,7 +216,8 @@ async function* executeStreamOnce(request: GatewayRequestDto): AsyncGenerator<St
 }
 
 export async function* stream(request: GatewayRequestDto): AsyncGenerator<StreamChunk> {
-  yield* streamWithModelRouter(request, executeStreamOnce);
+  const requestWithMemory = applyGatewayMemoryInjection(request);
+  yield* streamWithModelRouter(requestWithMemory, executeStreamOnce);
 }
 
 export const aiGateway = {
