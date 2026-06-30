@@ -8,6 +8,7 @@ import {
   GATEWAY_MEMORY_CONTEXT_MAX_CHARS,
 } from '@/lib/memory/context-builder';
 import { captureGatewayMemory, createMemoryStore, resetMemoryStore } from '@/lib/memory/memory-engine';
+import { resetExecutiveState } from '@/lib/executive/executive-state';
 import { resetProjectRuntimeStore } from '@/lib/project-runtime/project-runtime-store';
 import { ensureProject } from '@/lib/memory/memory-projects';
 
@@ -15,6 +16,7 @@ describe('OSA Memory Context Builder', () => {
   beforeEach(() => {
     resetMemoryStore();
     resetProjectRuntimeStore();
+    resetExecutiveState();
   });
 
   it('returns empty context when memory is empty', () => {

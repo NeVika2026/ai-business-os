@@ -1,6 +1,7 @@
 import { getRecentDecisions } from '@/lib/project-runtime/project-runtime-memory';
 import { isDefaultWorkspaceId } from '@/lib/project-runtime/constants';
 import type { MemoryEntry } from '@/types/memory';
+import type { ExecutiveMemoryMode } from '@/types/executive';
 import type { ProjectRuntime } from '@/types/project-runtime';
 
 import { findProject } from './memory-projects';
@@ -17,6 +18,7 @@ export type GatewayMemoryContextInput = {
   projectId?: string | null;
   projectRuntime?: ProjectRuntime | null;
   limit?: number;
+  memoryMode?: ExecutiveMemoryMode;
 };
 
 export type GatewayMemoryContext = {
@@ -91,15 +93,27 @@ export function buildRecentContext(
 ): { lines: string[]; entries: MemoryEntry[]; currentObjective: string | null } {
   const limit = input.limit ?? GATEWAY_MEMORY_RECENT_LIMIT;
 
-  const entries = getRecentMemory(
-    {
-      organizationId: input.organizationId,
-      userId: input.userId ?? undefined,
-      projectId: input.projectId ?? undefined,
-      limit,
-    },
-    store,
-  );
+  const query =
+    input.memoryMode === 'organization'
+      ? {
+          organizationId: input.organizationId,
+          scope: 'business' as const,
+          limit,
+        }
+      : input.memoryMode === 'recent'
+        ? {
+            organizationId: input.organizationId,
+            userId: input.userId ?? undefined,
+            limit,
+          }
+        : {
+            organizationId: input.organizationId,
+            userId: input.userId ?? undefined,
+            projectId: input.projectId ?? undefined,
+            limit,
+          };
+
+  const entries = getRecentMemory(query, store);
 
   const lines = entries.map((entry) => formatBulletLine(entry.summary));
   const currentObjective = entries[0]?.task.trim() || input.projectRuntime?.nextStep.trim() || null;
@@ -131,7 +145,8 @@ export function buildGatewayMemoryContext(
 ): GatewayMemoryContext {
   const runtime = input.projectRuntime ?? null;
   const { lines, entries, currentObjective } = buildRecentContext(input, store);
-  const hasRuntimeContext = Boolean(runtime && !isDefaultWorkspaceId(runtime.id));
+  const hasRuntimeContext =
+    Boolean(runtime && !isDefaultWorkspaceId(runtime.id)) && input.memoryMode !== 'organization';
   const hasEntryContext = entries.length > 0;
 
   if (!hasRuntimeContext && !hasEntryContext) {

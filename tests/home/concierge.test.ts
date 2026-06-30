@@ -3,6 +3,7 @@ import { beforeEach, describe, it } from 'node:test';
 
 import type { OrchestratorRun } from '@/types/orchestrator';
 import { resetMemoryStore } from '@/lib/memory/memory-engine';
+import { resetExecutiveState } from '@/lib/executive/executive-state';
 import { resetProjectRuntimeStore } from '@/lib/project-runtime/project-runtime-store';
 import type { CabinetRawSnapshot } from '@/utils/cabinet/dashboard-mappers';
 import {
@@ -108,6 +109,7 @@ describe('concierge loader and mappers', () => {
   beforeEach(() => {
     resetMemoryStore();
     resetProjectRuntimeStore();
+    resetExecutiveState();
   });
 
   it('maps conversation chips to goal ids', () => {

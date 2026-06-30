@@ -1,4 +1,5 @@
 import { completeWithModelRouter, streamWithModelRouter } from '@/lib/ai/model-router';
+import { applyExecutiveBrain } from '@/lib/executive/executive-engine';
 import {
   applyGatewayMemoryInjection,
   captureGatewayMemoryFromResponse,
@@ -184,11 +185,12 @@ async function executeCompleteOnce(request: GatewayRequestDto): Promise<GatewayR
 }
 
 export async function complete(request: GatewayRequestDto): Promise<GatewayResponse> {
-  const requestWithMemory = applyGatewayMemoryInjection(request);
+  const { request: executiveRequest, decision } = applyExecutiveBrain(request);
+  const requestWithMemory = applyGatewayMemoryInjection(executiveRequest, decision);
   const response = await completeWithModelRouter(requestWithMemory, executeCompleteOnce);
 
   try {
-    captureGatewayMemoryFromResponse(requestWithMemory, response);
+    captureGatewayMemoryFromResponse(requestWithMemory, response, decision);
   } catch {
     // Operational memory must not block gateway responses.
   }
@@ -216,7 +218,8 @@ async function* executeStreamOnce(request: GatewayRequestDto): AsyncGenerator<St
 }
 
 export async function* stream(request: GatewayRequestDto): AsyncGenerator<StreamChunk> {
-  const requestWithMemory = applyGatewayMemoryInjection(request);
+  const { request: executiveRequest, decision } = applyExecutiveBrain(request);
+  const requestWithMemory = applyGatewayMemoryInjection(executiveRequest, decision);
   yield* streamWithModelRouter(requestWithMemory, executeStreamOnce);
 }
 

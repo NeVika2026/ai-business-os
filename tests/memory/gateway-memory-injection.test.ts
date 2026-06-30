@@ -6,6 +6,7 @@ import {
   captureGatewayMemoryFromResponse,
 } from '@/lib/memory/gateway-memory';
 import { captureGatewayMemory, findMemory, resetMemoryStore } from '@/lib/memory/memory-engine';
+import { resetExecutiveState } from '@/lib/executive/executive-state';
 import { resetProjectRuntimeStore } from '@/lib/project-runtime/project-runtime-store';
 import { ensureProject } from '@/lib/memory/memory-projects';
 import { setGatewayMockMode } from '@/services/runtime/gateway/registry';
@@ -58,6 +59,7 @@ describe('OSA Gateway Memory Injection', () => {
   beforeEach(() => {
     resetMemoryStore();
     resetProjectRuntimeStore();
+    resetExecutiveState();
     resetGatewayRateLimits();
     setGatewayMockMode(true);
   });

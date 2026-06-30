@@ -1,5 +1,7 @@
+import { recordExecutivePostCapture } from '@/lib/executive/executive-engine';
 import { captureGatewayMemory } from '@/lib/memory/memory-engine';
 import { ensureProject, findProject } from '@/lib/memory/memory-projects';
+import type { ExecutiveDecision } from '@/types/executive';
 import {
   isDefaultWorkspace,
   resolveGatewayActiveProject,
@@ -31,7 +33,14 @@ function extractUserTask(messages: PromptMessage[]): string | null {
   return content || null;
 }
 
-export function applyGatewayMemoryInjection(request: GatewayRequest): GatewayRequest {
+export function applyGatewayMemoryInjection(
+  request: GatewayRequest,
+  decision?: ExecutiveDecision | null,
+): GatewayRequest {
+  if (decision?.memoryMode === 'none') {
+    return request;
+  }
+
   if (request.messages.some(isMemoryContextMessage)) {
     return request;
   }
@@ -62,6 +71,7 @@ export function applyGatewayMemoryInjection(request: GatewayRequest): GatewayReq
     userId: scope.userId,
     projectId: memoryProjectId ?? resolvedProjectId,
     projectRuntime: activeProject,
+    memoryMode: decision?.memoryMode,
   });
 
   if (!context.hasMemory) {
@@ -81,6 +91,7 @@ export function applyGatewayMemoryInjection(request: GatewayRequest): GatewayReq
 export function captureGatewayMemoryFromResponse(
   request: GatewayRequest,
   response: GatewayResponse,
+  decision?: ExecutiveDecision | null,
 ): MemoryEntry | null {
   const result = response.content?.trim();
 
@@ -133,6 +144,8 @@ export function captureGatewayMemoryFromResponse(
   });
 
   syncProjectMemoryState(activeProject);
+
+  recordExecutivePostCapture(scope, decision?.navigatorMode);
 
   if (!isDefaultWorkspace(activeProject) && projectId) {
     return entry;

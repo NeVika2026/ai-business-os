@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
 
+import { resetExecutiveState } from '@/lib/executive/executive-state';
 import { resetMemoryStore } from '@/lib/memory/memory-engine';
 import { captureGatewayMemory } from '@/lib/memory/memory-engine';
 import {
@@ -56,6 +57,7 @@ describe('OSA Project Runtime', () => {
   beforeEach(() => {
     resetProjectRuntimeStore();
     resetMemoryStore();
+    resetExecutiveState();
   });
 
   it('creates project runtime entities', () => {
