@@ -50,4 +50,27 @@
   .wow-delay-1 {
     animation-delay: 0.15s;
   }
+
+  @keyframes orbit-breathe {
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    50% {
+      opacity: 0.9;
+      transform: scale(0.97);
+    }
+  }
+
+  .orbit-breathe {
+    animation: orbit-breathe 3.5s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .orbit-breathe {
+      animation: none;
+    }
+  }
 }
