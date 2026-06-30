@@ -1,6 +1,9 @@
 import { isGatewayMockMode } from '@/services/runtime/gateway/adapter-factory';
 import { hasModel } from '@/services/runtime/gateway/capabilities';
 import { hasProviderCredentials } from '@/services/runtime/gateway/credential-resolver';
+import { NoAllowedModelProviderError } from '@/services/runtime/gateway/errors';
+import { filterRoutesByOrgPolicy } from '@/services/runtime/gateway/policy/filter-routes';
+import type { OrganizationModelPolicy } from '@/services/runtime/gateway/policy/types';
 
 import {
   getConfiguredRoutes,
@@ -30,11 +33,18 @@ function scoreRoute(route: ProviderRoute, input: RouterInput, index: number): nu
     score += 20;
   }
 
-  if (input.latencyTarget === 'quality' && !route.modelCode.includes('mini') && !route.modelCode.includes('haiku')) {
+  if (
+    input.latencyTarget === 'quality' &&
+    !route.modelCode.includes('mini') &&
+    !route.modelCode.includes('haiku')
+  ) {
     score += 15;
   }
 
-  if (input.costTarget === 'low' && (route.modelCode.includes('mini') || route.modelCode.includes('haiku'))) {
+  if (
+    input.costTarget === 'low' &&
+    (route.modelCode.includes('mini') || route.modelCode.includes('haiku'))
+  ) {
     score += 15;
   }
 
@@ -69,12 +79,41 @@ function scoreAndSortRoutes(routes: ProviderRoute[], input: RouterInput): Provid
     .map((entry) => entry.route);
 }
 
-export function rankProviderRoutes(input: RouterInput): RoutingPlan {
+export function collectMergedRoutes(input: RouterInput): {
+  profile: RoutingProfile;
+  routes: ProviderRoute[];
+} {
   const profile = resolveRoutingProfile(input);
   const configured = getConfiguredRoutes(profile);
-  const merged = mergeRoutes(configured, getGlobalFallbackRoutes());
-  const available = merged.filter(isRouteAvailable);
-  const routes = scoreAndSortRoutes(available.length > 0 ? available : merged.filter(isRouteAvailable), input);
+  const routes = mergeRoutes(configured, getGlobalFallbackRoutes());
+
+  return { profile, routes };
+}
+
+export function applyOrganizationPolicyToRoutes(
+  routes: ProviderRoute[],
+  policy: OrganizationModelPolicy,
+): ProviderRoute[] {
+  const filtered = filterRoutesByOrgPolicy(routes, policy) as ProviderRoute[];
+
+  if (filtered.length === 0) {
+    throw new NoAllowedModelProviderError();
+  }
+
+  return filtered;
+}
+
+export function rankProviderRoutes(
+  input: RouterInput,
+  policy: OrganizationModelPolicy,
+): RoutingPlan {
+  const { profile, routes: merged } = collectMergedRoutes(input);
+  const policyFiltered = applyOrganizationPolicyToRoutes(merged, policy);
+  const available = policyFiltered.filter(isRouteAvailable);
+  const routes = scoreAndSortRoutes(
+    available.length > 0 ? available : policyFiltered.filter(isRouteAvailable),
+    input,
+  );
 
   return {
     input,

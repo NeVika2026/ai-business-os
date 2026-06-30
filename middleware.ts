@@ -36,6 +36,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(dashboardUrl);
   }
 
+  if (pathname === '/login/sign-in' && user) {
+    const dashboardUrl = request.nextUrl.clone();
+    dashboardUrl.pathname = '/home';
+    dashboardUrl.search = '';
+    return NextResponse.redirect(dashboardUrl);
+  }
+
   return supabaseResponse;
 }
 

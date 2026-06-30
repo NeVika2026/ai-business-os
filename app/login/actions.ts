@@ -20,7 +20,7 @@ export async function sendMagicLink(formData: FormData) {
   const email = formData.get('email');
 
   if (typeof email !== 'string' || !email.trim()) {
-    redirect('/login?error=invalid_email');
+    redirect('/login/sign-in?error=invalid_email');
   }
 
   const headersList = await headers();
@@ -35,8 +35,8 @@ export async function sendMagicLink(formData: FormData) {
   });
 
   if (error) {
-    redirect('/login?error=send_failed');
+    redirect('/login/sign-in?error=send_failed');
   }
 
-  redirect('/login?sent=1');
+  redirect('/login/sign-in?sent=1');
 }

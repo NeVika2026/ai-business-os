@@ -47,3 +47,10 @@ export class InvalidGatewayRequestError extends GatewayError {
     this.name = 'InvalidGatewayRequestError';
   }
 }
+
+export class NoAllowedModelProviderError extends GatewayError {
+  constructor() {
+    super('Не удалось подготовить результат. Попробуйте позже.', 'NoAllowedModelProvider');
+    this.name = 'NoAllowedModelProviderError';
+  }
+}

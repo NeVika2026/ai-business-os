@@ -1,16 +1,23 @@
 import { FUGU_PROVIDER_CODE } from '@/lib/ai/providers/fugu';
+import { USER_FACING_EXECUTION_ERROR } from '@/lib/ai/router-messages';
 import { buildRouterInputFromGatewayRequest } from '@/lib/ai/routing-context';
 import { loadRoutingTableFromEnv, mergeRoutes } from '@/lib/ai/routing-config';
 import type { ProviderRoute, RoutingPlan } from '@/lib/ai/routing-types';
 import { estimateRouterCost, recordRouterMetric } from '@/lib/ai/router-metrics';
-import { filterAvailableRoutes, rankProviderRoutes } from '@/lib/ai/router-scoring';
+import {
+  applyOrganizationPolicyToRoutes,
+  filterAvailableRoutes,
+  rankProviderRoutes,
+} from '@/lib/ai/router-scoring';
 import { recordRouterOutcome } from '@/lib/ai/router-stats';
 import { isRetryableProviderError } from '@/services/runtime/gateway/provider-errors';
 import {
   InvalidGatewayRequestError,
   ModelNotSupportedError,
+  NoAllowedModelProviderError,
   ProviderUnavailableError,
 } from '@/services/runtime/gateway/errors';
+import { loadOrganizationModelPolicy } from '@/services/runtime/gateway/policy/load-policy';
 import type { ProviderCode, StreamChunk } from '@/services/runtime/gateway/types';
 import type { GatewayRequest as GatewayRequestDto, GatewayResponse } from '@/types/runtime/dto';
 
@@ -25,7 +32,7 @@ const LEGACY_FUGU_FALLBACKS: ProviderRoute[] = [
 
 export class ExecutionUnavailableError extends Error {
   constructor() {
-    super('Unable to complete your request at this time.');
+    super(USER_FACING_EXECUTION_ERROR);
     this.name = 'ExecutionUnavailableError';
   }
 }
@@ -35,9 +42,11 @@ function usesIntelligentRouting(request: GatewayRequestDto): boolean {
 }
 
 export function resolveRoutingPlan(request: GatewayRequestDto): RoutingPlan {
+  const input = buildRouterInputFromGatewayRequest(request);
+  const policy = loadOrganizationModelPolicy(input.organizationId);
+
   if (!usesIntelligentRouting(request)) {
-    const routes = buildLegacyProviderRoutes(request);
-    const input = buildRouterInputFromGatewayRequest(request);
+    const routes = applyOrganizationPolicyToRoutes(buildLegacyProviderRoutes(request), policy);
 
     return {
       input,
@@ -46,8 +55,7 @@ export function resolveRoutingPlan(request: GatewayRequestDto): RoutingPlan {
     };
   }
 
-  const input = buildRouterInputFromGatewayRequest(request);
-  return rankProviderRoutes(input);
+  return rankProviderRoutes(input, policy);
 }
 
 export function buildProviderRoutes(request: GatewayRequestDto): ProviderRoute[] {
@@ -68,6 +76,10 @@ function buildLegacyProviderRoutes(request: GatewayRequestDto): ProviderRoute[] 
 }
 
 function isFallbackEligibleError(error: unknown): boolean {
+  if (error instanceof NoAllowedModelProviderError) {
+    return false;
+  }
+
   if (error instanceof InvalidGatewayRequestError) {
     return false;
   }
@@ -289,7 +301,12 @@ export {
   buildRouterInputFromGatewayRequest,
   buildRoutingHintsFromContext,
 } from '@/lib/ai/routing-context';
-export { rankProviderRoutes, resolveRoutingProfileForInput } from '@/lib/ai/router-scoring';
+export {
+  rankProviderRoutes,
+  resolveRoutingProfileForInput,
+  collectMergedRoutes,
+  applyOrganizationPolicyToRoutes,
+} from '@/lib/ai/router-scoring';
 export {
   getRoutingTable,
   resetRoutingTable,
@@ -298,3 +315,8 @@ export {
 } from '@/lib/ai/routing-config';
 export { getRouterMetrics, resetRouterMetrics } from '@/lib/ai/router-metrics';
 export { listRouterPerformanceSnapshots, resetRouterStats } from '@/lib/ai/router-stats';
+export {
+  loadOrganizationModelPolicy,
+  resetOrganizationModelPolicies,
+  setOrganizationModelPolicy,
+} from '@/services/runtime/gateway/policy/load-policy';

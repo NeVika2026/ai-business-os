@@ -2,7 +2,8 @@
 
 > **Module:** `services/runtime/gateway/`  
 > **Sprint:** C1  
-> **Visibility:** Internal server-only. Not exposed as public HTTP API in EPIC C.
+> **Visibility:** Internal server-only. Not exposed as public HTTP API in EPIC C.  
+> **Architecture:** [UNIVERSAL_AI_GATEWAY.md](../architecture/UNIVERSAL_AI_GATEWAY.md) — vendor-independent gateway, org policies, adapter playbook.
 
 ---
 

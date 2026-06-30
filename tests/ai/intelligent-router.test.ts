@@ -5,10 +5,13 @@ import {
   buildProviderRoutes,
   classifyTaskCategory,
   getRouterMetrics,
+  loadOrganizationModelPolicy,
   rankProviderRoutes,
+  resetOrganizationModelPolicies,
   resetRouterMetrics,
   resetRouterStats,
   resetRoutingTable,
+  resolveRoutingPlan,
   resolveRoutingProfileForInput,
   setRoutingTable,
 } from '@/lib/ai/model-router';
@@ -62,18 +65,21 @@ describe('Intelligent model router', () => {
 
   it('routes coding tasks to anthropic by default', () => {
     resetRoutingTable();
+    resetOrganizationModelPolicies();
 
-    const plan = rankProviderRoutes({
+    const input = {
       intent: 'implement_api',
-      taskCategory: 'coding',
+      taskCategory: 'coding' as const,
       estimatedContextLength: 1200,
-      reasoningComplexity: 'medium',
-      latencyTarget: 'balanced',
-      costTarget: 'balanced',
+      reasoningComplexity: 'medium' as const,
+      latencyTarget: 'balanced' as const,
+      costTarget: 'balanced' as const,
       toolUsage: false,
       organizationId: 'org-router',
       runId: 'run-router',
-    });
+    };
+
+    const plan = rankProviderRoutes(input, loadOrganizationModelPolicy(input.organizationId));
 
     assert.equal(plan.profile, 'coding');
     assert.equal(plan.routes[0]?.providerCode, 'anthropic');
@@ -82,32 +88,25 @@ describe('Intelligent model router', () => {
 
   it('routes long documents to gemini', () => {
     resetRoutingTable();
+    resetOrganizationModelPolicies();
 
-    const profile = resolveRoutingProfileForInput({
+    const input = {
       intent: 'summarize_report',
-      taskCategory: 'summarization',
+      taskCategory: 'summarization' as const,
       estimatedContextLength: 40_000,
-      reasoningComplexity: 'low',
-      latencyTarget: 'balanced',
-      costTarget: 'balanced',
+      reasoningComplexity: 'low' as const,
+      latencyTarget: 'balanced' as const,
+      costTarget: 'balanced' as const,
       toolUsage: false,
       organizationId: 'org-router',
       runId: 'run-router',
-    });
+    };
+
+    const profile = resolveRoutingProfileForInput(input);
 
     assert.equal(profile, 'long_document');
 
-    const plan = rankProviderRoutes({
-      intent: 'summarize_report',
-      taskCategory: 'summarization',
-      estimatedContextLength: 40_000,
-      reasoningComplexity: 'low',
-      latencyTarget: 'balanced',
-      costTarget: 'balanced',
-      toolUsage: false,
-      organizationId: 'org-router',
-      runId: 'run-router',
-    });
+    const plan = rankProviderRoutes(input, loadOrganizationModelPolicy(input.organizationId));
 
     assert.equal(plan.routes[0]?.providerCode, 'gemini');
   });

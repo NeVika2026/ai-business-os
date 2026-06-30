@@ -9,20 +9,20 @@ export async function GET(request: Request) {
   const next = searchParams.get('next') ?? '/dashboard';
 
   if (!code) {
-    return NextResponse.redirect(`${origin}/login?error=auth`);
+    return NextResponse.redirect(`${origin}/login/sign-in?error=auth`);
   }
 
   const supabase = await createClient();
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
-    return NextResponse.redirect(`${origin}/login?error=auth`);
+    return NextResponse.redirect(`${origin}/login/sign-in?error=auth`);
   }
 
   try {
     await ensureUserOnboarding(supabase);
   } catch {
-    return NextResponse.redirect(`${origin}/login?error=auth`);
+    return NextResponse.redirect(`${origin}/login/sign-in?error=auth`);
   }
 
   return NextResponse.redirect(`${origin}${next}`);
