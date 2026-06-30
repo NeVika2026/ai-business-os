@@ -1,30 +1,25 @@
-import type { MemoryEntry, MemoryProject } from '@/types/memory';
+import type { RuntimeStorage } from '@/lib/storage/runtime-storage';
+import { clearMemoryNamespaces } from '@/lib/storage/memory-storage';
+import {
+  createRuntimeStorage,
+  getRuntimeStorage,
+  resetRuntimeStorage,
+} from '@/lib/storage/storage-factory';
 
-export type MemoryStoreState = {
-  entries: Map<string, MemoryEntry>;
-  projects: Map<string, MemoryProject>;
-};
+export type MemoryStoreState = RuntimeStorage;
 
 export function createMemoryStore(): MemoryStoreState {
-  return {
-    entries: new Map(),
-    projects: new Map(),
-  };
+  return createRuntimeStorage({ isolated: true, persistent: false });
 }
-
-let defaultStore: MemoryStoreState | null = null;
 
 export function getMemoryStore(): MemoryStoreState {
-  if (!defaultStore) {
-    defaultStore = createMemoryStore();
-  }
-
-  return defaultStore;
+  return getRuntimeStorage();
 }
 
-/** Test isolation — resets the process-wide in-memory store. */
+/** Test isolation — resets the process-wide runtime storage for memory namespaces. */
 export function resetMemoryStore(): void {
-  defaultStore = createMemoryStore();
+  clearMemoryNamespaces(getRuntimeStorage());
+  resetRuntimeStorage();
 }
 
 export function resolveStore(store?: MemoryStoreState): MemoryStoreState {

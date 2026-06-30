@@ -1,6 +1,11 @@
 import type { ProjectRuntime, ProjectRuntimeScope } from '@/types/project-runtime';
 
 import { findProject } from '@/lib/memory/memory-projects';
+import {
+  listProjectRuntimesFromStorage,
+  loadProjectRuntime,
+  saveProjectRuntime,
+} from '@/lib/storage/project-storage';
 
 import {
   buildDefaultWorkspaceId,
@@ -56,7 +61,7 @@ export function setActiveProject(
   store?: ProjectRuntimeStoreState,
 ): ProjectRuntime {
   const state = resolveProjectRuntimeStore(store);
-  const runtime = state.runtimes.get(projectRuntimeId);
+  const runtime = loadProjectRuntime(state, projectRuntimeId);
 
   if (!runtime) {
     throw new Error(`project runtime not found: ${projectRuntimeId}`);
@@ -66,21 +71,20 @@ export function setActiveProject(
     throw new Error('project runtime organization mismatch');
   }
 
-  for (const candidate of state.runtimes.values()) {
+  for (const candidate of listProjectRuntimesFromStorage(state)) {
     if (
       candidate.organizationId === scope.organizationId &&
       candidate.userId === (scope.userId ?? null)
     ) {
-      candidate.active = false;
-      state.runtimes.set(candidate.id, candidate);
+      saveProjectRuntime(state, { ...candidate, active: false });
     }
   }
 
-  runtime.active = true;
-  state.runtimes.set(runtime.id, runtime);
-  writeActiveProjectId(scope.organizationId, scope.userId, runtime.id, state);
+  const activeRuntime = { ...runtime, active: true };
+  saveProjectRuntime(state, activeRuntime);
+  writeActiveProjectId(scope.organizationId, scope.userId, activeRuntime.id, state);
 
-  return runtime;
+  return activeRuntime;
 }
 
 export function getActiveProject(
@@ -94,7 +98,7 @@ export function getActiveProject(
     return null;
   }
 
-  return state.runtimes.get(activeId) ?? null;
+  return loadProjectRuntime(state, activeId);
 }
 
 export function resolveActiveProject(

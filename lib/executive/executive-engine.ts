@@ -21,6 +21,9 @@ import {
   decideWorkingMode,
 } from './executive-next-action';
 import { readExecutiveDecision, writeExecutiveDecision } from './executive-state';
+import { saveNavigatorState } from '@/lib/storage/navigator-storage';
+import { getRuntimeStorage } from '@/lib/storage/storage-factory';
+
 import { buildExecutiveSummary } from './executive-summary';
 
 function deriveProjectTitle(goal: ExecutiveDecision['goal'], userTask: string | null): string {
@@ -124,16 +127,14 @@ function enrichRouting(request: GatewayRequest, decision: ExecutiveDecision): Ga
 
   const routing = {
     intent,
-    taskCategory:
-      request.routing?.taskCategory ?? classifyTaskCategory(intent, userTask),
-    estimatedContextLength:
-      request.routing?.estimatedContextLength ??
-      request.messages.reduce((total, message) => total + message.content.length, 0),
-    reasoningComplexity:
-      request.routing?.reasoningComplexity ??
-      estimateReasoningComplexity(intent, userTask, toolUsage),
-    latencyTarget: request.routing?.latencyTarget ?? 'balanced',
-    costTarget: request.routing?.costTarget ?? 'balanced',
+    taskCategory: classifyTaskCategory(intent, userTask),
+    estimatedContextLength: request.messages.reduce(
+      (total, message) => total + message.content.length,
+      0,
+    ),
+    reasoningComplexity: estimateReasoningComplexity(intent, userTask, toolUsage),
+    latencyTarget: 'balanced' as const,
+    costTarget: 'balanced' as const,
     toolUsage,
   };
 
@@ -225,5 +226,19 @@ export function recordExecutivePostCapture(
   writeExecutiveDecision(scope, {
     ...existing,
     navigatorMode,
+  });
+
+  saveNavigatorState(getRuntimeStorage(), {
+    organizationId: scope.organizationId,
+    userId: scope.userId ?? null,
+    navigatorMode,
+    lastSuggestedStepId:
+      navigatorMode === 'scale'
+        ? 'scale'
+        : navigatorMode === 'new_project'
+          ? 'build_system'
+          : navigatorMode === 'next_step'
+            ? 'quick_result'
+            : null,
   });
 }

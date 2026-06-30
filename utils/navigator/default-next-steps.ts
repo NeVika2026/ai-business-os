@@ -1,6 +1,8 @@
 import type { NextBestStepContent, NavigatorStepId } from '@/types/navigator';
 import type { ProjectRuntimeScope } from '@/types/project-runtime';
 import { getLastExecutiveDecision } from '@/lib/executive/executive-engine';
+import { loadNavigatorState } from '@/lib/storage/navigator-storage';
+import { getRuntimeStorage } from '@/lib/storage/storage-factory';
 import { resolveNextBestStepContent } from '@/lib/project-runtime/navigator-steps';
 
 export const NEXT_BEST_STEP_TITLE = 'Следующий лучший шаг';
@@ -58,19 +60,29 @@ export function getNextBestStepContent(scope?: ProjectRuntimeScope): NextBestSte
   }
 
   const decision = getLastExecutiveDecision(scope);
+  const navigatorState = loadNavigatorState(
+    getRuntimeStorage(),
+    scope.organizationId,
+    scope.userId,
+  );
+  const navigatorMode = decision?.navigatorMode ?? navigatorState?.navigatorMode ?? null;
 
-  if (decision?.navigatorMode === 'none') {
+  if (navigatorMode === 'none') {
     return DEFAULT_NEXT_BEST_STEP;
   }
 
   const content = resolveNextBestStepContent(scope);
 
-  if (decision?.navigatorMode === 'scale') {
+  if (navigatorMode === 'scale') {
     return prioritizeNavigatorStep(content, 'scale');
   }
 
-  if (decision?.navigatorMode === 'new_project') {
+  if (navigatorMode === 'new_project') {
     return prioritizeNavigatorStep(content, 'build_system');
+  }
+
+  if (navigatorState?.lastSuggestedStepId) {
+    return prioritizeNavigatorStep(content, navigatorState.lastSuggestedStepId);
   }
 
   return content;

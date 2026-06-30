@@ -11,6 +11,12 @@ import type {
 
 import { isDefaultWorkspaceId } from './constants';
 import {
+  listProjectRuntimesFromStorage,
+  loadProjectRuntime,
+  projectRuntimeExists,
+  saveProjectRuntime,
+} from '@/lib/storage/project-storage';
+import {
   resolveProjectRuntimeStore,
   type ProjectRuntimeStoreState,
 } from './project-runtime-store';
@@ -47,7 +53,7 @@ export function createProjectRuntime(
   const timestamp = nowIso();
   const id = input.id ?? randomUUID();
 
-  if (state.runtimes.has(id)) {
+  if (projectRuntimeExists(state, id)) {
     throw new Error(`project runtime already exists: ${id}`);
   }
 
@@ -70,7 +76,7 @@ export function createProjectRuntime(
     sourceProjectId: input.sourceProjectId ?? null,
   };
 
-  state.runtimes.set(id, runtime);
+  saveProjectRuntime(state, runtime);
   return runtime;
 }
 
@@ -80,7 +86,7 @@ export function ensureProjectRuntime(
 ): ProjectRuntime {
   const state = resolveProjectRuntimeStore(store);
 
-  if (input.id && state.runtimes.has(input.id)) {
+  if (input.id && projectRuntimeExists(state, input.id)) {
     return updateProjectRuntime(
       input.id,
       {
@@ -96,7 +102,7 @@ export function ensureProjectRuntime(
   }
 
   if (input.sourceProjectId) {
-    const existing = [...state.runtimes.values()].find(
+    const existing = listProjectRuntimesFromStorage(state).find(
       (runtime) => runtime.sourceProjectId === input.sourceProjectId,
     );
 
@@ -121,7 +127,7 @@ export function findProjectRuntime(
   store?: ProjectRuntimeStoreState,
 ): ProjectRuntime | null {
   const state = resolveProjectRuntimeStore(store);
-  return state.runtimes.get(id) ?? null;
+  return loadProjectRuntime(resolveProjectRuntimeStore(store), id);
 }
 
 export function listProjectRuntimes(
@@ -130,7 +136,7 @@ export function listProjectRuntimes(
 ): ProjectRuntime[] {
   const state = resolveProjectRuntimeStore(store);
 
-  return [...state.runtimes.values()]
+  return listProjectRuntimesFromStorage(state)
     .filter((runtime) => {
       if (scope.organizationId && runtime.organizationId !== scope.organizationId) {
         return false;
@@ -155,7 +161,7 @@ export function updateProjectRuntime(
   store?: ProjectRuntimeStoreState,
 ): ProjectRuntime {
   const state = resolveProjectRuntimeStore(store);
-  const existing = state.runtimes.get(id);
+  const existing = loadProjectRuntime(state, id);
 
   if (!existing) {
     throw new Error(`project runtime not found: ${id}`);
@@ -182,7 +188,7 @@ export function updateProjectRuntime(
     updatedAt: nowIso(),
   };
 
-  state.runtimes.set(id, updated);
+  saveProjectRuntime(state, updated);
   return updated;
 }
 

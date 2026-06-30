@@ -1,5 +1,6 @@
 import type { FindMemoryQuery, MemoryEntry } from '@/types/memory';
 
+import { listMemoryEntries } from '@/lib/storage/memory-storage';
 import { resolveStore, type MemoryStoreState } from './memory-store';
 
 function matchesText(entry: MemoryEntry, text: string): boolean {
@@ -27,7 +28,7 @@ export function findMemory(query: FindMemoryQuery = {}, store?: MemoryStoreState
   const includeArchived = query.includeArchived ?? false;
   const limit = query.limit ?? Number.POSITIVE_INFINITY;
 
-  const results = [...state.entries.values()]
+  const results = listMemoryEntries(state)
     .filter((entry) => {
       if (!includeArchived && entry.archived) {
         return false;

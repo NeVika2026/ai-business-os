@@ -10,6 +10,13 @@ import type {
 import { ensureProject, findProject, linkEntryToProject } from './memory-projects';
 import { findMemory, getRecentMemory } from './memory-search';
 import { buildMemorySummaryText, summarizeMemory } from './memory-summary';
+import {
+  deleteMemoryEntry,
+  listMemoryProjects,
+  loadMemoryEntry,
+  saveMemoryEntry,
+  saveMemoryProject,
+} from '@/lib/storage/memory-storage';
 import { resolveStore, type MemoryStoreState } from './memory-store';
 
 export { createMemoryStore, getMemoryStore, resetMemoryStore } from './memory-store';
@@ -80,7 +87,7 @@ export function createMemory(input: CreateMemoryInput, store?: MemoryStoreState)
     updatedAt: timestamp,
   };
 
-  state.entries.set(entry.id, entry);
+  saveMemoryEntry(state, entry);
 
   if (projectId) {
     linkEntryToProject(projectId, entry.id, state);
@@ -130,7 +137,7 @@ export function updateMemory(
   store?: MemoryStoreState,
 ): MemoryEntry {
   const state = resolveStore(store);
-  const existing = state.entries.get(id);
+  const existing = loadMemoryEntry(state, id);
 
   if (!existing) {
     throw new Error(`memory entry not found: ${id}`);
@@ -161,7 +168,7 @@ export function updateMemory(
     updatedAt: nowIso(),
   };
 
-  state.entries.set(id, updated);
+  saveMemoryEntry(state, updated);
 
   if (updated.projectId) {
     linkEntryToProject(updated.projectId, updated.id, state);
@@ -172,7 +179,7 @@ export function updateMemory(
 
 export function archiveMemory(id: string, store?: MemoryStoreState): MemoryEntry {
   const state = resolveStore(store);
-  const existing = state.entries.get(id);
+  const existing = loadMemoryEntry(state, id);
 
   if (!existing) {
     throw new Error(`memory entry not found: ${id}`);
@@ -184,25 +191,25 @@ export function archiveMemory(id: string, store?: MemoryStoreState): MemoryEntry
     updatedAt: nowIso(),
   };
 
-  state.entries.set(id, archived);
+  saveMemoryEntry(state, archived);
   return archived;
 }
 
 export function deleteMemory(id: string, store?: MemoryStoreState): MemoryEntry {
   const state = resolveStore(store);
-  const existing = state.entries.get(id);
+  const existing = loadMemoryEntry(state, id);
 
   if (!existing) {
     throw new Error(`memory entry not found: ${id}`);
   }
 
-  state.entries.delete(id);
+  deleteMemoryEntry(state, id);
 
-  for (const project of state.projects.values()) {
+  for (const project of listMemoryProjects(state)) {
     const nextEntryIds = project.entryIds.filter((entryId) => entryId !== id);
 
     if (nextEntryIds.length !== project.entryIds.length) {
-      state.projects.set(project.id, {
+      saveMemoryProject(state, {
         ...project,
         entryIds: nextEntryIds,
         updatedAt: nowIso(),

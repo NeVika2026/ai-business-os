@@ -1,19 +1,17 @@
 import type { ExecutiveDecision, ExecutiveScope } from '@/types/executive';
 
-export type ExecutiveStoreState = {
-  decisions: Map<string, ExecutiveDecision>;
-};
+import {
+  clearExecutiveNamespace,
+  loadExecutiveDecision,
+  saveExecutiveDecision,
+} from '@/lib/storage/executive-storage';
+import type { RuntimeStorage } from '@/lib/storage/runtime-storage';
+import { getRuntimeStorage, resetRuntimeStorage } from '@/lib/storage/storage-factory';
 
-const globalState: ExecutiveStoreState = {
-  decisions: new Map(),
-};
-
-function buildScopeKey(scope: ExecutiveScope): string {
-  return `${scope.organizationId}:${scope.userId ?? 'anonymous'}`;
-}
+export type ExecutiveStoreState = RuntimeStorage;
 
 export function resolveExecutiveStore(store?: ExecutiveStoreState): ExecutiveStoreState {
-  return store ?? globalState;
+  return store ?? getRuntimeStorage();
 }
 
 export function writeExecutiveDecision(
@@ -21,25 +19,22 @@ export function writeExecutiveDecision(
   decision: ExecutiveDecision,
   store?: ExecutiveStoreState,
 ): void {
-  const state = resolveExecutiveStore(store);
-  state.decisions.set(buildScopeKey(scope), decision);
+  saveExecutiveDecision(resolveExecutiveStore(store), scope, decision);
 }
 
 export function readExecutiveDecision(
   scope: ExecutiveScope,
   store?: ExecutiveStoreState,
 ): ExecutiveDecision | null {
-  const state = resolveExecutiveStore(store);
-  return state.decisions.get(buildScopeKey(scope)) ?? null;
+  return loadExecutiveDecision(resolveExecutiveStore(store), scope);
 }
 
 export function resetExecutiveState(store?: ExecutiveStoreState): void {
-  const state = resolveExecutiveStore(store);
-
   if (store) {
-    state.decisions.clear();
+    clearExecutiveNamespace(store);
     return;
   }
 
-  globalState.decisions.clear();
+  clearExecutiveNamespace(getRuntimeStorage());
+  resetRuntimeStorage();
 }

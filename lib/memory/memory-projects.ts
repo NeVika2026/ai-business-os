@@ -2,6 +2,11 @@ import { createHash } from 'node:crypto';
 
 import type { MemoryProject } from '@/types/memory';
 
+import {
+  listMemoryProjects,
+  loadMemoryProject,
+  saveMemoryProject,
+} from '@/lib/storage/memory-storage';
 import { resolveStore, type MemoryStoreState } from './memory-store';
 
 function nowIso(): string {
@@ -35,7 +40,7 @@ export function ensureProject(
   }
 
   const id = createProjectId(input.organizationId, trimmedName);
-  const existing = state.projects.get(id);
+  const existing = loadMemoryProject(state, id);
 
   if (existing) {
     return existing;
@@ -52,7 +57,7 @@ export function ensureProject(
     updatedAt: timestamp,
   };
 
-  state.projects.set(id, project);
+  saveMemoryProject(state, project);
   return project;
 }
 
@@ -62,7 +67,7 @@ export function linkEntryToProject(
   store?: MemoryStoreState,
 ): MemoryProject {
   const state = resolveStore(store);
-  const project = state.projects.get(projectId);
+  const project = loadMemoryProject(state, projectId);
 
   if (!project) {
     throw new Error(`project not found: ${projectId}`);
@@ -71,7 +76,7 @@ export function linkEntryToProject(
   if (!project.entryIds.includes(entryId)) {
     project.entryIds.push(entryId);
     project.updatedAt = nowIso();
-    state.projects.set(projectId, project);
+    saveMemoryProject(state, project);
   }
 
   return project;
@@ -84,12 +89,12 @@ export function findProject(
   const state = resolveStore(store);
 
   if (query.id) {
-    return state.projects.get(query.id) ?? null;
+    return loadMemoryProject(state, query.id);
   }
 
   if (query.name && query.organizationId) {
     const id = createProjectId(query.organizationId, query.name);
-    return state.projects.get(id) ?? null;
+    return loadMemoryProject(state, id);
   }
 
   return null;
@@ -101,7 +106,7 @@ export function listProjects(
 ): MemoryProject[] {
   const state = resolveStore(store);
 
-  return [...state.projects.values()]
+  return listMemoryProjects(state)
     .filter((project) => {
       if (query.organizationId && project.organizationId !== query.organizationId) {
         return false;

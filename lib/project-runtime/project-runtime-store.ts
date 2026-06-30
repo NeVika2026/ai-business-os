@@ -1,33 +1,30 @@
-import type { ProjectRuntime } from '@/types/project-runtime';
+import type { ProjectRuntimeScope } from '@/types/project-runtime';
 
-export type ProjectRuntimeStoreState = {
-  runtimes: Map<string, ProjectRuntime>;
-  activeByScope: Map<string, string>;
-};
+import type { RuntimeStorage } from '@/lib/storage/runtime-storage';
+import {
+  clearProjectNamespaces,
+  readActiveProjectId as readActiveProjectIdFromStorage,
+  writeActiveProjectId as writeActiveProjectIdToStorage,
+} from '@/lib/storage/project-storage';
+import {
+  createRuntimeStorage,
+  getRuntimeStorage,
+  resetRuntimeStorage,
+} from '@/lib/storage/storage-factory';
 
-function scopeKey(organizationId: string, userId: string | null | undefined): string {
-  return `${organizationId}:${userId ?? 'anonymous'}`;
-}
+export type ProjectRuntimeStoreState = RuntimeStorage;
 
 export function createProjectRuntimeStore(): ProjectRuntimeStoreState {
-  return {
-    runtimes: new Map(),
-    activeByScope: new Map(),
-  };
+  return createRuntimeStorage({ isolated: true, persistent: false });
 }
 
-let defaultStore: ProjectRuntimeStoreState | null = null;
-
 export function getProjectRuntimeStore(): ProjectRuntimeStoreState {
-  if (!defaultStore) {
-    defaultStore = createProjectRuntimeStore();
-  }
-
-  return defaultStore;
+  return getRuntimeStorage();
 }
 
 export function resetProjectRuntimeStore(): void {
-  defaultStore = createProjectRuntimeStore();
+  clearProjectNamespaces(getRuntimeStorage());
+  resetRuntimeStorage();
 }
 
 export function resolveProjectRuntimeStore(store?: ProjectRuntimeStoreState): ProjectRuntimeStoreState {
@@ -39,8 +36,7 @@ export function readActiveProjectId(
   userId: string | null | undefined,
   store?: ProjectRuntimeStoreState,
 ): string | null {
-  const state = resolveProjectRuntimeStore(store);
-  return state.activeByScope.get(scopeKey(organizationId, userId)) ?? null;
+  return readActiveProjectIdFromStorage(resolveProjectRuntimeStore(store), organizationId, userId);
 }
 
 export function writeActiveProjectId(
@@ -49,6 +45,10 @@ export function writeActiveProjectId(
   projectRuntimeId: string,
   store?: ProjectRuntimeStoreState,
 ): void {
-  const state = resolveProjectRuntimeStore(store);
-  state.activeByScope.set(scopeKey(organizationId, userId), projectRuntimeId);
+  writeActiveProjectIdToStorage(
+    resolveProjectRuntimeStore(store),
+    organizationId,
+    userId,
+    projectRuntimeId,
+  );
 }
