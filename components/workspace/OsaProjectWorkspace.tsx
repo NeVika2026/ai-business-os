@@ -5,9 +5,14 @@ import { useMemo, useState, useTransition } from 'react';
 
 import { submitWorkspacePrompt } from '@/app/(dashboard)/workspace/[projectId]/actions';
 import { OrbitMark } from '@/components/brand/OrbitMark';
-import { NextBestStep } from '@/components/navigator/NextBestStep';
-import type { NavigatorStep, NavigatorStepId } from '@/types/navigator';
+import { MorningBriefingPanel } from '@/components/workspace/MorningBriefingPanel';
 import type { OsaWorkspacePageData } from '@/utils/workspace/workspace-types';
+import { buildExecutiveWorkspaceView } from '@/utils/workspace/executive-workspace-view';
+import {
+  buildMorningBriefing,
+  dismissMorningBriefing,
+  hasDismissedMorningBriefing,
+} from '@/utils/workspace/morning-briefing';
 
 type ConversationMessage = {
   id: string;
@@ -19,44 +24,20 @@ type OsaProjectWorkspaceProps = {
   data: OsaWorkspacePageData;
 };
 
-function formatActivity(value: string | null): string {
-  if (!value) {
-    return 'Пока без активности';
-  }
-
-  return new Date(value).toLocaleString('ru-RU', {
-    day: 'numeric',
-    month: 'long',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-function navigatorPrompt(stepId: NavigatorStepId, projectTitle: string): string {
-  switch (stepId) {
-    case 'quick_result':
-      return `Помоги быстро получить результат в проекте «${projectTitle}».`;
-    case 'build_system':
-      return `Разложи проект «${projectTitle}» на этапы и собери рабочий план.`;
-    case 'scale':
-      return `Подготовь проект «${projectTitle}» к масштабированию.`;
-    default:
-      return `Продолжи работу над проектом «${projectTitle}».`;
-  }
-}
-
 export function OsaProjectWorkspace({ data }: OsaProjectWorkspaceProps) {
   const router = useRouter();
-  const [prompt, setPrompt] = useState(data.today.nextStep);
+  const view = useMemo(() => buildExecutiveWorkspaceView(data), [data]);
+  const morningBriefing = useMemo(
+    () => buildMorningBriefing(data, data.userName),
+    [data],
+  );
+  const [briefingDismissed, setBriefingDismissed] = useState(() =>
+    hasDismissedMorningBriefing(data.projectId),
+  );
+  const [prompt, setPrompt] = useState('');
   const [messages, setMessages] = useState<ConversationMessage[]>(() => {
     if (data.today.lastResult) {
-      return [
-        {
-          id: 'seed-assistant',
-          role: 'assistant',
-          content: data.today.lastResult,
-        },
-      ];
+      return [{ id: 'seed-assistant', role: 'assistant', content: data.today.lastResult }];
     }
 
     return [];
@@ -64,7 +45,7 @@ export function OsaProjectWorkspace({ data }: OsaProjectWorkspaceProps) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const timeline = useMemo(() => data.timeline, [data.timeline]);
+  const latestMessage = messages.at(-1) ?? null;
 
   const handleSubmit = (value?: string) => {
     const nextPrompt = (value ?? prompt).trim();
@@ -75,6 +56,7 @@ export function OsaProjectWorkspace({ data }: OsaProjectWorkspaceProps) {
 
     setError(null);
     setPrompt('');
+
     const userMessage: ConversationMessage = {
       id: crypto.randomUUID(),
       role: 'user',
@@ -93,202 +75,196 @@ export function OsaProjectWorkspace({ data }: OsaProjectWorkspaceProps) {
 
       setMessages((current) => [
         ...current,
-        {
-          id: crypto.randomUUID(),
-          role: 'assistant',
-          content: result.content,
-        },
+        { id: crypto.randomUUID(), role: 'assistant', content: result.content },
       ]);
       router.refresh();
     });
   };
 
-  const handleNavigatorSelect = (step: NavigatorStep) => {
-    const nextPrompt = navigatorPrompt(step.id, data.header.title);
-    setPrompt(nextPrompt);
-    handleSubmit(nextPrompt);
+  const handleStartWork = () => {
+    dismissMorningBriefing(data.projectId);
+    setBriefingDismissed(true);
+    handleSubmit(morningBriefing.primaryPrompt);
   };
 
-  return (
-    <div className="mx-auto w-full max-w-6xl">
-      <div className="flex justify-center">
-        <OrbitMark size="md" breathe />
+  if (!briefingDismissed) {
+    return (
+      <div className="osa-workspace-surface osa-executive-workspace min-h-[calc(100vh-8rem)]">
+        <MorningBriefingPanel briefing={morningBriefing} isPending={isPending} onStart={handleStartWork} />
       </div>
+    );
+  }
 
-      <header className="mt-8 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-0)] px-6 py-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
-              Workspace
-            </p>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
-              {data.header.title}
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--text-secondary)]">
-              {data.header.description}
-            </p>
-          </div>
-          <div className="text-right text-sm text-[var(--text-secondary)]">
-            <p>
-              Статус: <span className="text-[var(--text-primary)]">{data.header.status}</span>
-            </p>
-            <p className="mt-1">
-              Последняя активность:{' '}
-              <span className="text-[var(--text-primary)]">
-                {formatActivity(data.header.lastActivity)}
-              </span>
-            </p>
-          </div>
+  return (
+    <div className="osa-workspace-surface osa-executive-workspace mx-auto w-full max-w-[1120px] px-2 pb-16 pt-4 sm:px-4">
+      <header className="osa-exec-fade flex items-start justify-between gap-6">
+        <div>
+          <p className="text-[13px] tracking-[0.04em] text-[var(--text-secondary)]">{view.projectTitle}</p>
+          <h1 className="mt-2 max-w-2xl text-[clamp(1.75rem,3vw,2.5rem)] font-medium leading-[1.15] tracking-[-0.03em] text-[var(--text-primary)]">
+            {view.todayHeadline}
+          </h1>
         </div>
+        <p className="hidden max-w-[12rem] text-right text-[12px] leading-relaxed text-[var(--text-tertiary)] sm:block">
+          {view.lastActivityLabel}
+        </p>
       </header>
 
-      <div className="mt-8 grid gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(280px,320px)] xl:gap-10">
-        <div className="space-y-8">
-          <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-0)] px-6 py-5">
-            <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
-              Today
+      <div className="osa-exec-fade osa-exec-delay-1 mt-14 flex flex-col items-center">
+        <div className="osa-orbit-presence">
+          <OrbitMark size="lg" breathe className="text-[var(--accent)]" />
+        </div>
+        <p className="mt-6 max-w-md text-center text-[15px] leading-relaxed text-[var(--text-secondary)]">
+          {view.contextLine}
+        </p>
+      </div>
+
+      <div className="osa-exec-fade osa-exec-delay-2 mt-12 grid gap-10 xl:grid-cols-[minmax(0,1fr)_280px] xl:gap-16">
+        <div className="min-w-0">
+          <section className="rounded-[28px] bg-[var(--surface-1)] px-8 py-10 sm:px-10 sm:py-12">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+              {view.focus.label}
             </p>
-            <h2 className="mt-3 text-lg font-semibold text-[var(--text-primary)]">
-              {data.today.headline}
+            <h2 className="mt-5 max-w-2xl text-[clamp(1.5rem,2.4vw,2rem)] font-medium leading-[1.25] tracking-[-0.02em] text-[var(--text-primary)]">
+              {view.focus.title}
             </h2>
-            <div className="mt-4 grid gap-4 sm:grid-cols-3">
-              <div>
-                <p className="text-xs text-[var(--text-tertiary)]">Миссия дня</p>
-                <p className="mt-1 text-sm text-[var(--text-primary)]">{data.today.mission}</p>
-              </div>
-              <div>
-                <p className="text-xs text-[var(--text-tertiary)]">Следующий лучший шаг</p>
-                <p className="mt-1 text-sm text-[var(--text-primary)]">{data.today.nextStep}</p>
-              </div>
-              <div>
-                <p className="text-xs text-[var(--text-tertiary)]">Приоритет дня</p>
-                <p className="mt-1 text-sm text-[var(--text-primary)]">{data.today.priority}</p>
-              </div>
+            <div className="mt-8 max-w-xl">
+              <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
+                Почему это важно
+              </p>
+              <p className="mt-3 text-[15px] leading-[1.65] text-[var(--text-secondary)]">{view.focus.reason}</p>
             </div>
-            <p className="mt-4 text-xs text-[var(--text-tertiary)]">
-              Прогресс: {data.today.progressPercent}%
-            </p>
+            <button
+              type="button"
+              disabled={isPending}
+              onClick={() => handleSubmit(view.focus.prompt)}
+              className="mt-10 inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-7 py-3.5 text-[15px] font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isPending ? 'OSA работает…' : view.focus.ctaLabel}
+            </button>
           </section>
 
-          <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-0)] px-6 py-5">
-            <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
-              Conversation
+          <section className="mt-10">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+              AI-команда
             </p>
-            <p className="mt-2 text-sm text-[var(--text-secondary)]">
-              Рабочий диалог проекта. OSA учитывает Executive Brain, память и контекст проекта.
-            </p>
-
-            <div className="mt-6 space-y-4">
-              {messages.length === 0 ? (
-                <p className="text-sm text-[var(--text-secondary)]">
-                  Опишите задачу — OSA продолжит работу в контексте проекта.
-                </p>
-              ) : null}
-
-              {messages.map((message) => (
-                <article
-                  key={message.id}
-                  className={`rounded-xl border px-4 py-3 ${
-                    message.role === 'user'
-                      ? 'border-[var(--border-subtle)] bg-[var(--surface-1)]'
-                      : 'border-[var(--accent)]/20 bg-[var(--accent-soft)]'
-                  }`}
-                >
-                  <p className="text-xs font-medium uppercase tracking-[0.12em] text-[var(--text-tertiary)]">
-                    {message.role === 'user' ? 'Вы' : 'OSA'}
-                  </p>
-                  <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[var(--text-primary)]">
-                    {message.content}
-                  </p>
-                </article>
+            <ul className="mt-5 divide-y divide-[var(--border-subtle)]/70">
+              {view.team.map((member) => (
+                <li key={member.role} className="flex items-baseline justify-between gap-6 py-4 first:pt-0">
+                  <div>
+                    <p className="text-[15px] font-medium text-[var(--text-primary)]">{member.role}</p>
+                    <p
+                      className={`mt-1 text-[14px] ${
+                        member.state === 'active'
+                          ? 'text-[var(--text-secondary)]'
+                          : member.state === 'waiting'
+                            ? 'text-[var(--accent)]'
+                            : 'text-[var(--text-tertiary)]'
+                      }`}
+                    >
+                      {member.status}
+                    </p>
+                  </div>
+                  <span
+                    className={`osa-team-pulse h-2 w-2 shrink-0 rounded-full ${
+                      member.state === 'active'
+                        ? 'bg-[var(--accent)]'
+                        : member.state === 'waiting'
+                          ? 'bg-[var(--accent)]/50'
+                          : 'bg-[var(--border-subtle)]'
+                    }`}
+                    aria-hidden="true"
+                  />
+                </li>
               ))}
+            </ul>
+          </section>
 
-              {isPending ? (
-                <p className="text-sm text-[var(--text-secondary)]" role="status" aria-live="polite">
-                  OSA думает над ответом…
+          <section className="mt-12 border-t border-[var(--border-subtle)]/60 pt-8">
+            {latestMessage ? (
+              <div className="mb-6">
+                <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
+                  {latestMessage.role === 'user' ? 'Вы' : 'OSA'}
                 </p>
-              ) : null}
-            </div>
+                <p className="mt-3 max-w-2xl whitespace-pre-wrap text-[15px] leading-[1.65] text-[var(--text-primary)]">
+                  {latestMessage.content}
+                </p>
+              </div>
+            ) : null}
 
             <form
-              className="mt-6 space-y-3"
               onSubmit={(event) => {
                 event.preventDefault();
                 handleSubmit();
               }}
+              className="flex flex-col gap-3 sm:flex-row sm:items-end"
             >
-              <label className="block text-sm font-medium text-[var(--text-primary)]" htmlFor="workspace-prompt">
-                Ваша задача
+              <label className="sr-only" htmlFor="workspace-prompt">
+                Задача для OSA
               </label>
               <textarea
                 id="workspace-prompt"
                 value={prompt}
                 onChange={(event) => setPrompt(event.target.value)}
-                rows={4}
+                rows={2}
                 disabled={isPending}
-                className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-1)] px-4 py-3 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)]"
-                placeholder="Что нужно сделать в этом проекте сейчас?"
+                placeholder="Или опишите задачу своими словами…"
+                className="min-h-[52px] flex-1 resize-none rounded-2xl border border-transparent bg-[var(--surface-1)] px-4 py-3 text-[15px] text-[var(--text-primary)] outline-none transition placeholder:text-[var(--text-tertiary)] focus:border-[var(--border-subtle)]"
               />
-              {error ? <p className="text-sm text-red-500">{error}</p> : null}
-              <button
-                type="submit"
-                disabled={isPending || !prompt.trim()}
-                className="rounded-xl bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isPending ? 'OSA работает…' : 'Отправить в OSA'}
-              </button>
+              {error ? (
+                <p className="text-sm text-red-500 sm:order-last sm:w-full">{error}</p>
+              ) : null}
             </form>
-          </section>
-
-          <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-0)] px-6 py-5">
-            <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
-              Timeline
-            </p>
-            <p className="mt-2 text-sm text-[var(--text-secondary)]">
-              История решений проекта из Memory Engine.
-            </p>
-
-            {timeline.length === 0 ? (
-              <p className="mt-6 text-sm text-[var(--text-secondary)]">
-                Пока нет зафиксированных решений. Первый ответ OSA появится здесь.
-              </p>
-            ) : (
-              <ol className="mt-6 space-y-4">
-                {timeline.map((entry) => (
-                  <li
-                    key={entry.id}
-                    className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-1)] px-4 py-3"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-sm font-medium text-[var(--text-primary)]">{entry.task}</p>
-                      <time className="text-xs text-[var(--text-tertiary)]">
-                        {formatActivity(entry.occurredAt)}
-                      </time>
-                    </div>
-                    <p className="mt-2 text-sm text-[var(--text-secondary)]">{entry.result}</p>
-                    <p className="mt-2 text-xs text-[var(--text-tertiary)]">
-                      Решение: {entry.decision}
-                    </p>
-                  </li>
-                ))}
-              </ol>
-            )}
           </section>
         </div>
 
-        <aside className="xl:pt-1">
-          <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-0)] px-4 py-4">
-            <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
-              Navigator
+        <aside className="xl:pt-2">
+          <section className="rounded-[24px] bg-[var(--surface-1)] px-6 py-7">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+              Executive Brain
             </p>
-            <NextBestStep
-              compact
-              title={data.navigator.title}
-              subtitle={data.navigator.subtitle}
-              steps={data.navigator.steps}
-              onSelect={handleNavigatorSelect}
-            />
-          </div>
+            <p className="mt-3 text-[13px] leading-relaxed text-[var(--text-secondary)]">
+              Личный помощник CEO. Рекомендации, не журнал.
+            </p>
+
+            <ul className="mt-7 space-y-5">
+              {view.brief.map((item) => (
+                <li key={`${item.tone}-${item.text}`}>
+                  {item.tone === 'risk' ? (
+                    <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                      Следующий риск
+                    </p>
+                  ) : null}
+                  <div className="mt-1 flex gap-3 text-[14px] leading-relaxed">
+                    <span
+                      className={`mt-0.5 shrink-0 ${
+                        item.tone === 'done'
+                          ? 'text-[var(--text-secondary)]'
+                          : item.tone === 'waiting'
+                            ? 'text-[var(--text-primary)]'
+                            : 'text-[var(--accent)]'
+                      }`}
+                      aria-hidden="true"
+                    >
+                      {item.tone === 'done' ? '✔' : item.tone === 'waiting' ? '◦' : '!'}
+                    </span>
+                    <span
+                      className={
+                        item.tone === 'risk' ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'
+                      }
+                    >
+                      {item.text}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            {view.memoryLine ? (
+              <p className="mt-8 border-t border-[var(--border-subtle)]/60 pt-6 text-[13px] text-[var(--text-tertiary)]">
+                {view.memoryLine}
+              </p>
+            ) : null}
+          </section>
         </aside>
       </div>
     </div>

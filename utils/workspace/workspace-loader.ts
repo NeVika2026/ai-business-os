@@ -61,6 +61,7 @@ export async function loadOsaWorkspacePageData(
 
   return {
     projectId,
+    userName: context.userName,
     header: {
       title: runtime.title,
       description: runtime.description || workspace.project.description || '',

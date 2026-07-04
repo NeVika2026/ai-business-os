@@ -11,6 +11,7 @@ export type WorkspaceTimelineEntry = {
 
 export type OsaWorkspacePageData = {
   projectId: string;
+  userName: string | null;
   header: {
     title: string;
     description: string;
