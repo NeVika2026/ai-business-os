@@ -6,6 +6,7 @@ import { createProjectRuntime } from '@/lib/project-runtime/project-runtime-engi
 import { resetProjectRuntimeStore } from '@/lib/project-runtime/project-runtime-store';
 import { buildExecutiveWorkspaceView } from '@/utils/workspace/executive-workspace-view';
 import { buildProjectReplay } from '@/utils/workspace/project-replay';
+import { buildExecutiveMemory } from '@/utils/workspace/executive-memory';
 import type { OsaWorkspacePageData } from '@/utils/workspace/workspace-types';
 
 const scope = {
@@ -48,6 +49,25 @@ function baseData(overrides: Partial<OsaWorkspacePageData> = {}): OsaWorkspacePa
     lifecycle: null,
     orchestra: null,
     replay: buildProjectReplay([], 'AI Business OS'),
+    executiveMemory: buildExecutiveMemory([], {
+      header: {
+        title: 'AI Business OS',
+        description: 'Executive Workspace для OSA',
+        status: 'В работе',
+        lastActivity: '2026-03-30T09:00:00.000Z',
+      },
+      today: {
+        headline: 'Сегодня — Executive Workspace',
+        mission: 'После этого команда сможет начать разработку Executive Workspace.',
+        nextStep: 'Подтвердить архитектуру Navigator',
+        priority: 'проектирование',
+        progressPercent: 24,
+        lastResult: null,
+      },
+      lifecycle: null,
+      orchestra: null,
+      executiveSummary: null,
+    }),
     scope,
     ...overrides,
   };

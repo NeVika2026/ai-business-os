@@ -12,6 +12,7 @@ import {
   morningBriefingStorageKey,
 } from '@/utils/workspace/morning-briefing';
 import { buildProjectReplay } from '@/utils/workspace/project-replay';
+import { buildExecutiveMemory } from '@/utils/workspace/executive-memory';
 import type { OsaWorkspacePageData } from '@/utils/workspace/workspace-types';
 
 const scope = {
@@ -68,6 +69,25 @@ function baseData(overrides: Partial<OsaWorkspacePageData> = {}): OsaWorkspacePa
     lifecycle: null,
     orchestra: null,
     replay: buildProjectReplay([], 'Private Alpha'),
+    executiveMemory: buildExecutiveMemory([], {
+      header: {
+        title: 'Private Alpha',
+        description: 'Закрытый запуск OSA',
+        status: 'В работе',
+        lastActivity: '2026-03-30T09:00:00.000Z',
+      },
+      today: {
+        headline: 'Сегодня — Private Alpha',
+        mission: 'Подготовить Investor Demo',
+        nextStep: 'Закончить Navigator',
+        priority: 'проектирование',
+        progressPercent: 92,
+        lastResult: null,
+      },
+      lifecycle: null,
+      orchestra: null,
+      executiveSummary: null,
+    }),
     scope,
     ...overrides,
   };

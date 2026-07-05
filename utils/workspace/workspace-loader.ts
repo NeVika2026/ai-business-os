@@ -21,6 +21,7 @@ import type { OsaWorkspacePageData } from './workspace-types';
 import { findProjectRuntimeEvents, publishRuntimeEvent } from '@/lib/events/event-runtime';
 import { RUNTIME_EVENT_TYPES } from '@/types/event-runtime';
 import { buildProjectReplay } from './project-replay';
+import { buildExecutiveMemory } from './executive-memory';
 
 export async function loadOsaWorkspacePageData(
   supabase: SupabaseClient,
@@ -66,31 +67,41 @@ export async function loadOsaWorkspacePageData(
     userId: context.email,
   };
 
+  const lifecycle = loadProjectLifecycleSnapshot(getRuntimeStorage(), projectId);
+  const orchestra = loadAiOrchestraState(getRuntimeStorage(), projectId);
+  const runtimeEvents = findProjectRuntimeEvents(projectId, getRuntimeStorage());
+  const header = {
+    title: runtime.title,
+    description: runtime.description || workspace.project.description || '',
+    status: PROJECT_STATUS_LABELS[workspace.project.status] ?? workspace.project.status,
+    lastActivity: runtime.lastActivity,
+  };
+  const today = {
+    headline: briefing.headline,
+    mission: runtime.mission,
+    nextStep: briefing.nextStep,
+    priority: executive ? goalLabel(executive.goal) : briefing.nextStep,
+    progressPercent: briefing.progressPercent,
+    lastResult: briefing.lastResult,
+  };
+
   const data: OsaWorkspacePageData = {
     projectId,
     userName: context.userName,
-    header: {
-      title: runtime.title,
-      description: runtime.description || workspace.project.description || '',
-      status: PROJECT_STATUS_LABELS[workspace.project.status] ?? workspace.project.status,
-      lastActivity: runtime.lastActivity,
-    },
-    today: {
-      headline: briefing.headline,
-      mission: runtime.mission,
-      nextStep: briefing.nextStep,
-      priority: executive ? goalLabel(executive.goal) : briefing.nextStep,
-      progressPercent: briefing.progressPercent,
-      lastResult: briefing.lastResult,
-    },
+    header,
+    today,
     navigator: getNextBestStepContent(scope),
     timeline: buildWorkspaceTimeline(runtime),
-    lifecycle: loadProjectLifecycleSnapshot(getRuntimeStorage(), projectId),
-    orchestra: loadAiOrchestraState(getRuntimeStorage(), projectId),
-    replay: buildProjectReplay(
-      findProjectRuntimeEvents(projectId, getRuntimeStorage()),
-      runtime.title,
-    ),
+    lifecycle,
+    orchestra,
+    replay: buildProjectReplay(runtimeEvents, runtime.title),
+    executiveMemory: buildExecutiveMemory(runtimeEvents, {
+      header,
+      today,
+      lifecycle,
+      orchestra,
+      executiveSummary: executive?.summary ?? null,
+    }),
     scope,
   };
 

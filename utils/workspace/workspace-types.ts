@@ -4,6 +4,7 @@ import type { ProjectLifecycleSnapshot } from '@/types/project-lifecycle';
 import type { ProjectRuntimeScope } from '@/types/project-runtime';
 
 import type { ProjectReplay } from './project-replay';
+import type { ExecutiveMemory } from './executive-memory';
 
 export type WorkspaceTimelineEntry = {
   id: string;
@@ -35,5 +36,6 @@ export type OsaWorkspacePageData = {
   lifecycle: ProjectLifecycleSnapshot | null;
   orchestra: AiOrchestraState | null;
   replay: ProjectReplay;
+  executiveMemory: ExecutiveMemory;
   scope: ProjectRuntimeScope;
 };
