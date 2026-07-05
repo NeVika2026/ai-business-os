@@ -8,7 +8,7 @@ export type BreadcrumbItem = {
 const NAV_BY_HREF = new Map(MAIN_NAVIGATION.map((item) => [item.href, item.label]));
 
 const BREADCRUMB_LABEL_OVERRIDES: Record<string, string> = {
-  '/home': 'Today',
+  '/home': 'Mission Control',
   '/workspace': 'Workspace',
 };
 

@@ -1,10 +1,10 @@
 import { redirect } from 'next/navigation';
 
-import { OsaHomeLanding } from '@/components/home/OsaHomeLanding';
+import { MissionControlPage } from '@/components/mission-control/MissionControlPage';
 import { TodayFallback } from '@/components/home/TodayFallback';
 import { createClient } from '@/services/supabase/server';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
-import { loadHomePageConcierge } from '@/utils/home/concierge-loader';
+import { loadMissionControlPageData } from '@/utils/mission-control/mission-control-loader';
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -14,7 +14,7 @@ export default async function HomePage() {
     redirect('/login');
   }
 
-  const result = await loadHomePageConcierge(supabase, organizationId);
+  const result = await loadMissionControlPageData(supabase, organizationId);
 
   if (result.status === 'unauthorized') {
     redirect('/login');
@@ -24,5 +24,5 @@ export default async function HomePage() {
     return <TodayFallback />;
   }
 
-  return <OsaHomeLanding data={result.data} />;
+  return <MissionControlPage data={result.data} />;
 }

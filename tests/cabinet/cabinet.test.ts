@@ -20,7 +20,7 @@ const REPO_ROOT = join(import.meta.dirname, '..', '..');
 describe('Personal Cabinet v1.0', () => {
   it('registers primary navigation in product order', () => {
     assert.equal(isCabinetNavigationOrdered(), true);
-    assert.equal(getCabinetNavIndex('Today'), 0);
+    assert.equal(getCabinetNavIndex('Mission Control'), 0);
     assert.equal(getCabinetNavIndex('Projects'), 1);
     assert.equal(MAIN_NAVIGATION[0]?.href, '/home');
     assert.equal(NAVIGATION_HREF_SET.has('/projects'), true);
@@ -31,7 +31,7 @@ describe('Personal Cabinet v1.0', () => {
   it('defines sidebar navigation items in required order', () => {
     assert.deepEqual(
       MAIN_NAVIGATION.map((item) => item.label),
-      ['Today', 'Projects', 'History', 'Settings'],
+      ['Mission Control', 'Projects', 'History', 'Settings'],
     );
   });
 
@@ -61,7 +61,7 @@ describe('Personal Cabinet v1.0', () => {
     ]);
   });
 
-  it('defines modular platform modules with Today pinned', () => {
+  it('defines modular platform modules with Mission Control pinned', () => {
     const moduleLabels = CABINET_MODULES.map((module) => module.label);
 
     assert.ok(moduleLabels.includes('Today'));
