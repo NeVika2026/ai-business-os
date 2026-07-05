@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { runProjectLifecycle } from '@/lib/project-lifecycle/run-project-lifecycle';
+import { trackProductTelemetry } from '@/lib/telemetry/product-telemetry';
 import { createClient } from '@/services/supabase/server';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
 import { loadHomeUserContext } from '@/utils/home/home-loader';
@@ -83,6 +84,15 @@ export async function createProject(formData: FormData): Promise<CreateProjectRe
       declaredType: projectType,
       organizationId,
       userId: context.email,
+    });
+
+    trackProductTelemetry({
+      projectId: project.id,
+      event: 'PROJECT_CREATED',
+      actor: `user:${context.email}`,
+      payload: {
+        projectType,
+      },
     });
   }
 

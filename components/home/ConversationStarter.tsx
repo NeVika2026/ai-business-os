@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { startGoalHandoff } from '@/app/(dashboard)/home/actions';
+import { OsaErrorState } from '@/components/osa/OsaErrorState';
 import type { ConversationChip } from '@/utils/home/concierge-mappers';
 import { isHomeGoalId } from '@/utils/home/home-mappers';
 import type { HomeGoalId } from '@/utils/home/home-types';
@@ -53,11 +54,7 @@ export function ConversationStarter({ chips }: ConversationStarterProps) {
         </div>
       ) : null}
 
-      {errorMessage ? (
-        <p className="text-sm text-red-500" role="alert">
-          {errorMessage}
-        </p>
-      ) : null}
+      {errorMessage ? <OsaErrorState message={errorMessage} /> : null}
 
       <div className="grid gap-3 sm:grid-cols-2">
         {chips.map((chip) => (

@@ -4,12 +4,18 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
 import { improveDeliverableResult } from '@/app/(dashboard)/workspace/[projectId]/actions';
+import { trackProductEvent } from '@/app/(dashboard)/telemetry/actions';
+import { OsaEmptyState } from '@/components/osa/OsaEmptyState';
+import { OsaErrorState } from '@/components/osa/OsaErrorState';
+import { OsaOrbitLoading } from '@/components/osa/OsaOrbitLoading';
 import { confidenceLabel } from '@/lib/deliverables/executive-review';
+import { OSA_EMPTY_STATES } from '@/utils/osa/empty-states';
+import { OSA_LOADING_MESSAGES } from '@/utils/osa/loading-messages';
 import type { ProjectDeliverable, ProjectDeliverablesPackage } from '@/types/deliverables';
 
 type ProjectResultsSectionProps = {
   projectId: string;
-  deliverables: ProjectDeliverablesPackage;
+  deliverables: ProjectDeliverablesPackage | null;
 };
 
 function ExecutiveReviewPanel({ item }: { item: ProjectDeliverable }) {
@@ -138,6 +144,12 @@ function ResultItem({
               setError(null);
 
               startTransition(async () => {
+                void trackProductEvent({
+                  event: 'DELIVERABLE_IMPROVE_CLICKED',
+                  projectId,
+                  payload: { deliverableId: item.id, deliverableType: item.type },
+                });
+
                 const result = await improveDeliverableResult(projectId, item.id);
 
                 if (result.status === 'failed') {
@@ -148,9 +160,9 @@ function ResultItem({
                 router.refresh();
               });
             }}
-            className="rounded-full border border-[var(--border-subtle)] px-5 py-2.5 text-[14px] font-medium text-[var(--text-primary)] transition hover:border-[var(--text-tertiary)] disabled:opacity-50"
+            className="rounded-full border border-[var(--border-subtle)] px-5 py-2.5 text-[14px] font-medium text-[var(--text-primary)] transition hover:border-[var(--text-tertiary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] disabled:opacity-50"
           >
-            {isPending ? 'Executive Brain улучшает…' : 'Improve'}
+            Improve
           </button>
         ) : null}
         <button
@@ -162,7 +174,17 @@ function ResultItem({
         </button>
       </div>
 
-      {error ? <p className="mt-3 text-sm text-red-500">{error}</p> : null}
+      {isPending ? (
+        <div className="mt-4">
+          <OsaOrbitLoading message={OSA_LOADING_MESSAGES.improve} compact />
+        </div>
+      ) : null}
+
+      {error ? (
+        <div className="mt-3">
+          <OsaErrorState message={error} />
+        </div>
+      ) : null}
 
       {open ? (
         <div className="mt-5">
@@ -177,10 +199,14 @@ function ResultItem({
 }
 
 export function ProjectResultsSection({ projectId, deliverables }: ProjectResultsSectionProps) {
-  const readyItems = deliverables.deliverables.filter((item) => item.phase === 'ready');
+  const readyItems = deliverables?.deliverables.filter((item) => item.phase === 'ready') ?? [];
 
-  if (readyItems.length === 0) {
-    return null;
+  if (!deliverables || readyItems.length === 0) {
+    return (
+      <section className="mt-16">
+        <OsaEmptyState {...OSA_EMPTY_STATES.results} compact />
+      </section>
+    );
   }
 
   return (

@@ -1,5 +1,12 @@
+'use client';
+
+import { useEffect } from 'react';
+
+import { trackProductEvent } from '@/app/(dashboard)/telemetry/actions';
+
 type DemoCompleteScreenProps = {
   projectTitle: string;
+  projectId?: string;
   onClose: () => void;
 };
 
@@ -11,7 +18,14 @@ const COMPLETED_ITEMS = [
   'История сохранена',
 ] as const;
 
-export function DemoCompleteScreen({ projectTitle, onClose }: DemoCompleteScreenProps) {
+export function DemoCompleteScreen({ projectTitle, projectId, onClose }: DemoCompleteScreenProps) {
+  useEffect(() => {
+    void trackProductEvent({
+      event: 'INVESTOR_DEMO_COMPLETED',
+      projectId,
+    });
+  }, [projectId]);
+
   return (
     <div className="osa-demo-complete min-h-[calc(100vh-8rem)] bg-white px-4 pb-24 pt-10 sm:px-8">
       <div className="mx-auto max-w-[680px]">

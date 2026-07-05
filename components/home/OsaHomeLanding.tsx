@@ -2,8 +2,10 @@ import Link from 'next/link';
 
 import { OrbitMark } from '@/components/brand/OrbitMark';
 import { HomeInvestorDemoAction } from '@/components/home/HomeInvestorDemoAction';
+import { OsaEmptyState } from '@/components/osa/OsaEmptyState';
 import type { ConciergeData } from '@/utils/home/concierge-mappers';
 import { formatLandingStatLines } from '@/utils/home/home-landing-view';
+import { OSA_EMPTY_STATES } from '@/utils/osa/empty-states';
 
 type OsaHomeLandingProps = {
   data: ConciergeData;
@@ -89,25 +91,33 @@ export function OsaHomeLanding({ data }: OsaHomeLandingProps) {
           Последняя активность
         </p>
 
-        <ul className="space-y-5">
-          {data.landing.recentActivity.map((item) => (
-            <li key={item.id}>
-              {item.href ? (
-                <Link href={item.href} className="group block space-y-1">
-                  <p className="text-[15px] font-medium text-[var(--text-primary)] transition group-hover:text-[var(--accent)]">
-                    {item.label}
-                  </p>
-                  <p className="text-[14px] leading-relaxed text-[var(--text-secondary)]">{item.detail}</p>
-                </Link>
-              ) : (
-                <div className="space-y-1">
-                  <p className="text-[15px] font-medium text-[var(--text-primary)]">{item.label}</p>
-                  <p className="text-[14px] leading-relaxed text-[var(--text-secondary)]">{item.detail}</p>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
+        {data.landing.recentActivity.length === 1 &&
+        data.landing.recentActivity[0]?.id === 'empty' ? (
+          <OsaEmptyState {...OSA_EMPTY_STATES.homeActivity} compact />
+        ) : (
+          <ul className="space-y-5">
+            {data.landing.recentActivity.map((item) => (
+              <li key={item.id}>
+                {item.href ? (
+                  <Link
+                    href={item.href}
+                    className="group block space-y-1 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                  >
+                    <p className="text-[15px] font-medium text-[var(--text-primary)] transition group-hover:text-[var(--accent)]">
+                      {item.label}
+                    </p>
+                    <p className="text-[14px] leading-relaxed text-[var(--text-secondary)]">{item.detail}</p>
+                  </Link>
+                ) : (
+                  <div className="space-y-1">
+                    <p className="text-[15px] font-medium text-[var(--text-primary)]">{item.label}</p>
+                    <p className="text-[14px] leading-relaxed text-[var(--text-secondary)]">{item.detail}</p>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </div>
   );

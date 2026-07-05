@@ -1,3 +1,5 @@
+import { OsaEmptyState } from '@/components/osa/OsaEmptyState';
+import { OSA_EMPTY_STATES } from '@/utils/osa/empty-states';
 import type { ProjectReplay } from '@/utils/workspace/project-replay';
 
 type ProjectReplayPanelProps = {
@@ -23,7 +25,7 @@ export function ProjectReplayPanel({ replay, onClose }: ProjectReplayPanelProps)
         <button
           type="button"
           onClick={onClose}
-          className="shrink-0 rounded-full px-4 py-2 text-[14px] text-[var(--text-secondary)] transition hover:text-[var(--text-primary)]"
+          className="shrink-0 rounded-full px-4 py-2 text-[14px] text-[var(--text-secondary)] transition hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
         >
           Закрыть
         </button>
@@ -31,9 +33,7 @@ export function ProjectReplayPanel({ replay, onClose }: ProjectReplayPanelProps)
 
       <div className="osa-project-replay-story mx-auto mt-16 max-w-[640px]">
         {replay.isEmpty ? (
-          <p className="text-[15px] leading-relaxed text-[var(--text-secondary)]">
-            История проекта пока пуста. События появятся по мере работы OSA.
-          </p>
+          <OsaEmptyState {...OSA_EMPTY_STATES.replay} />
         ) : (
           <ol className="space-y-0">
             {replay.scenes.map((scene, index) => (

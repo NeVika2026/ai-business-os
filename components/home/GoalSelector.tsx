@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { startGoalHandoff } from '@/app/(dashboard)/home/actions';
+import { OsaErrorState } from '@/components/osa/OsaErrorState';
 import { HOME_GOALS, isHomeGoalId } from '@/utils/home/home-mappers';
 import type { HomeGoalId } from '@/utils/home/home-types';
 
@@ -52,9 +53,9 @@ export function GoalSelector() {
       ) : null}
 
       {errorMessage ? (
-        <p className="mt-4 text-sm text-red-500" role="alert">
-          {errorMessage}
-        </p>
+        <div className="mt-4">
+          <OsaErrorState message={errorMessage} />
+        </div>
       ) : null}
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

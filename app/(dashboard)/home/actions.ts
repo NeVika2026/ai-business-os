@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 
+import { mapCaughtErrorToUserMessage } from '@/lib/ai/user-facing-errors';
 import { createClient } from '@/services/supabase/server';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
 import { mapRunsToHistory } from '@/utils/cabinet/dashboard-mappers';
@@ -101,8 +102,7 @@ export async function startGoalHandoff(goalId: string): Promise<StartGoalHandoff
       url: persisted.url,
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to start goal handoff';
-    return { status: 'failed', message };
+    return { status: 'failed', message: mapCaughtErrorToUserMessage(error, 'generic') };
   }
 }
 

@@ -1,8 +1,10 @@
+import { OsaEmptyState } from '@/components/osa/OsaEmptyState';
 import { deliverablePhaseLabel } from '@/lib/deliverables/deliverable-catalog';
+import { OSA_EMPTY_STATES } from '@/utils/osa/empty-states';
 import type { ProjectDeliverablesPackage } from '@/types/deliverables';
 
 type ProjectDeliverablesProgressProps = {
-  deliverables: ProjectDeliverablesPackage;
+  deliverables: ProjectDeliverablesPackage | null;
 };
 
 function phaseTone(phase: ProjectDeliverablesPackage['deliverables'][number]['phase']): string {
@@ -17,8 +19,12 @@ function phaseTone(phase: ProjectDeliverablesPackage['deliverables'][number]['ph
 }
 
 export function ProjectDeliverablesProgress({ deliverables }: ProjectDeliverablesProgressProps) {
-  if (deliverables.deliverables.length === 0) {
-    return null;
+  if (!deliverables || deliverables.deliverables.length === 0) {
+    return (
+      <section className="mt-10">
+        <OsaEmptyState {...OSA_EMPTY_STATES.deliverables} compact />
+      </section>
+    );
   }
 
   return (

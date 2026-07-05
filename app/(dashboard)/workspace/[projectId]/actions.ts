@@ -3,6 +3,11 @@
 import { revalidatePath } from 'next/cache';
 
 import { aiGateway } from '@/services/runtime/gateway/ai-gateway';
+import {
+  mapCaughtErrorToUserMessage,
+  USER_FACING_RUNTIME_ERROR,
+  userFacingErrorMessage,
+} from '@/lib/ai/user-facing-errors';
 import { USER_FACING_EXECUTION_ERROR } from '@/lib/ai/router-messages';
 import { getLastExecutiveDecision } from '@/lib/executive/executive-engine';
 import { advanceAiOrchestraForProject, resolveOrchestraBlocked } from '@/lib/project-lifecycle/ai-orchestra-engine';
@@ -67,7 +72,7 @@ export async function submitWorkspacePrompt(
   const runtime = findProjectRuntime(projectId);
 
   if (!runtime) {
-    return { status: 'failed', message: 'Проект не найден в Runtime.' };
+    return { status: 'failed', message: USER_FACING_RUNTIME_ERROR };
   }
 
   const runId = crypto.randomUUID();
@@ -169,7 +174,7 @@ export async function submitWorkspacePrompt(
     revalidatePath(`/workspace/${projectId}`);
 
     return { status: 'ok', content };
-  } catch {
+  } catch (error) {
     publishRuntimeEvent({
       projectId,
       type: RUNTIME_EVENT_TYPES.WORKSPACE_PROMPT_FAILED,
@@ -182,7 +187,7 @@ export async function submitWorkspacePrompt(
       },
     });
 
-    return { status: 'failed', message: USER_FACING_EXECUTION_ERROR };
+    return { status: 'failed', message: mapCaughtErrorToUserMessage(error, 'gateway') };
   }
 }
 
@@ -218,7 +223,7 @@ export async function resolveOrchestraDecision(projectId: string): Promise<Orche
   });
 
   if (!next) {
-    return { status: 'failed', message: 'Orchestra не найдена для этого проекта.' };
+    return { status: 'failed', message: userFacingErrorMessage('runtime') };
   }
 
   await enrichLatestReadyDeliverable({
@@ -272,7 +277,7 @@ export async function continueInvestorDemoOrchestra(projectId: string): Promise<
   const runtime = findProjectRuntime(projectId);
 
   if (!runtime) {
-    return { status: 'failed', message: 'Проект не найден в Runtime.' };
+    return { status: 'failed', message: USER_FACING_RUNTIME_ERROR };
   }
 
   const executive = getLastExecutiveDecision(scope);
@@ -319,7 +324,7 @@ export async function improveDeliverableResult(
   const runtime = findProjectRuntime(projectId);
 
   if (!runtime) {
-    return { status: 'failed', message: 'Проект не найден в Runtime.' };
+    return { status: 'failed', message: USER_FACING_RUNTIME_ERROR };
   }
 
   const executive = getLastExecutiveDecision(scope);

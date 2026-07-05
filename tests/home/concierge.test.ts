@@ -140,7 +140,32 @@ describe('concierge loader and mappers', () => {
   });
 
   it('maps personal insights from history', () => {
-    const insights = mapPersonalInsights(createSnapshot());
+    const recent = new Date().toISOString();
+    const insights = mapPersonalInsights(
+      createSnapshot({
+        runs: [
+          createRun({
+            id: 'run-active',
+            status: 'running',
+            completed_at: null,
+            created_at: recent,
+            started_at: recent,
+          }),
+          createRun({ id: 'run-marketing', status: 'completed', created_at: recent, completed_at: recent }),
+          createRun({
+            id: 'run-auto',
+            status: 'completed',
+            created_at: recent,
+            completed_at: recent,
+            input: {
+              action: 'automation_workflow',
+              source: 'osa_workspace',
+              user_prompt: 'Automate routine reporting',
+            },
+          }),
+        ],
+      }),
+    );
 
     assert.ok(insights.some((insight) => insight.message.includes('AI run')));
     assert.ok(insights.some((insight) => insight.message.includes('Marketing tasks succeed')));

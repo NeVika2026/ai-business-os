@@ -8,9 +8,12 @@ import {
   resolveOrchestraDecision,
   submitWorkspacePrompt,
 } from '@/app/(dashboard)/workspace/[projectId]/actions';
+import { trackProductEvent } from '@/app/(dashboard)/telemetry/actions';
 import { OrbitMark } from '@/components/brand/OrbitMark';
 import { OsaFirstContact } from '@/components/first-contact/OsaFirstContact';
 import { DemoCompleteScreen } from '@/components/demo/DemoCompleteScreen';
+import { OsaErrorState } from '@/components/osa/OsaErrorState';
+import { OsaOrbitLoading } from '@/components/osa/OsaOrbitLoading';
 import { ProjectDeliverablesProgress } from '@/components/workspace/ProjectDeliverablesProgress';
 import { ProjectResultsSection } from '@/components/workspace/ProjectResultsSection';
 import { AiOrchestraPanel } from '@/components/workspace/AiOrchestraPanel';
@@ -36,6 +39,7 @@ import {
   dismissMorningBriefing,
   hasDismissedMorningBriefing,
 } from '@/utils/workspace/morning-briefing';
+import { OSA_LOADING_MESSAGES } from '@/utils/osa/loading-messages';
 
 function subscribeToClientMount() {
   return () => {};
@@ -170,6 +174,20 @@ export function OsaProjectWorkspace({
     };
   }, [data.projectId, demoStep, isDemoFlow, router]);
 
+  useEffect(() => {
+    if (!isDemoFlow) {
+      return;
+    }
+
+    if (demoStep === 'replay') {
+      void trackProductEvent({ event: 'REPLAY_OPENED', projectId: data.projectId });
+    }
+
+    if (demoStep === 'memory') {
+      void trackProductEvent({ event: 'EXECUTIVE_MEMORY_OPENED', projectId: data.projectId });
+    }
+  }, [data.projectId, demoStep, isDemoFlow]);
+
   const handleSubmit = (value?: string) => {
     const nextPrompt = (value ?? prompt).trim();
 
@@ -240,6 +258,7 @@ export function OsaProjectWorkspace({
       <div className="osa-workspace-surface">
         <DemoCompleteScreen
           projectTitle={data.header.title}
+          projectId={data.projectId}
           onClose={() => {
             router.replace(`/workspace/${data.projectId}`);
           }}
@@ -304,15 +323,21 @@ export function OsaProjectWorkspace({
           <div className="flex flex-wrap justify-end gap-2">
             <button
               type="button"
-              onClick={() => setShowExecutiveMemory(true)}
-              className="rounded-full border border-[var(--border-subtle)] px-4 py-2 text-[13px] font-medium text-[var(--text-secondary)] transition hover:border-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+              onClick={() => {
+                void trackProductEvent({ event: 'EXECUTIVE_MEMORY_OPENED', projectId: data.projectId });
+                setShowExecutiveMemory(true);
+              }}
+              className="rounded-full border border-[var(--border-subtle)] px-4 py-2 text-[13px] font-medium text-[var(--text-secondary)] transition hover:border-[var(--text-tertiary)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
             >
               Executive Memory
             </button>
             <button
               type="button"
-              onClick={() => setShowReplay(true)}
-              className="rounded-full border border-[var(--border-subtle)] px-4 py-2 text-[13px] font-medium text-[var(--text-secondary)] transition hover:border-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+              onClick={() => {
+                void trackProductEvent({ event: 'REPLAY_OPENED', projectId: data.projectId });
+                setShowReplay(true);
+              }}
+              className="rounded-full border border-[var(--border-subtle)] px-4 py-2 text-[13px] font-medium text-[var(--text-secondary)] transition hover:border-[var(--text-tertiary)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
             >
               Replay Project
             </button>
@@ -351,10 +376,15 @@ export function OsaProjectWorkspace({
               type="button"
               disabled={isPending}
               onClick={() => handleSubmit(view.focus.prompt)}
-              className="mt-10 inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-7 py-3.5 text-[15px] font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-10 inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-7 py-3.5 text-[15px] font-medium text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isPending ? 'OSA работает…' : view.focus.ctaLabel}
+              {view.focus.ctaLabel}
             </button>
+            {isPending ? (
+              <div className="mt-8">
+                <OsaOrbitLoading message={OSA_LOADING_MESSAGES.executiveBrain} compact />
+              </div>
+            ) : null}
           </section>
 
           <section className="mt-10">
@@ -414,13 +444,9 @@ export function OsaProjectWorkspace({
             )}
           </section>
 
-          {data.deliverables ? (
-            <ProjectDeliverablesProgress deliverables={data.deliverables} />
-          ) : null}
+          <ProjectDeliverablesProgress deliverables={data.deliverables} />
 
-          {data.deliverables ? (
-            <ProjectResultsSection projectId={data.projectId} deliverables={data.deliverables} />
-          ) : null}
+          <ProjectResultsSection projectId={data.projectId} deliverables={data.deliverables} />
 
           <section className="mt-12 border-t border-[var(--border-subtle)]/60 pt-8">
             {latestMessage ? (
@@ -454,7 +480,9 @@ export function OsaProjectWorkspace({
                 className="min-h-[52px] flex-1 resize-none rounded-2xl border border-transparent bg-[var(--surface-1)] px-4 py-3 text-[15px] text-[var(--text-primary)] outline-none transition placeholder:text-[var(--text-tertiary)] focus:border-[var(--border-subtle)]"
               />
               {error ? (
-                <p className="text-sm text-red-500 sm:order-last sm:w-full">{error}</p>
+                <div className="sm:order-last sm:w-full">
+                  <OsaErrorState message={error} />
+                </div>
               ) : null}
             </form>
           </section>

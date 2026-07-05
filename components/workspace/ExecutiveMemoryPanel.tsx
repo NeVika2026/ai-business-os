@@ -1,3 +1,5 @@
+import { OsaEmptyState } from '@/components/osa/OsaEmptyState';
+import { OSA_EMPTY_STATES } from '@/utils/osa/empty-states';
 import type { ExecutiveMemory } from '@/utils/workspace/executive-memory';
 
 type ExecutiveMemoryPanelProps = {
@@ -23,7 +25,7 @@ export function ExecutiveMemoryPanel({ memory, onClose }: ExecutiveMemoryPanelPr
         <button
           type="button"
           onClick={onClose}
-          className="shrink-0 rounded-full px-4 py-2 text-[14px] text-[var(--text-secondary)] transition hover:text-[var(--text-primary)]"
+          className="shrink-0 rounded-full px-4 py-2 text-[14px] text-[var(--text-secondary)] transition hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
         >
           Закрыть
         </button>
@@ -31,9 +33,7 @@ export function ExecutiveMemoryPanel({ memory, onClose }: ExecutiveMemoryPanelPr
 
       <div className="osa-executive-memory-story mx-auto mt-20 max-w-[680px]">
         {memory.isEmpty ? (
-          <p className="text-[16px] leading-relaxed text-[var(--text-secondary)]">
-            Решения проекта появятся здесь автоматически по мере работы OSA.
-          </p>
+          <OsaEmptyState {...OSA_EMPTY_STATES.executiveMemory} />
         ) : (
           <div className="space-y-20">
             {memory.entries.map((entry) => (

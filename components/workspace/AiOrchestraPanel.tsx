@@ -1,5 +1,9 @@
 import type { AiOrchestraState, OrchestraAgentStatus } from '@/types/ai-orchestra';
+import { OsaEmptyState } from '@/components/osa/OsaEmptyState';
+import { OsaOrbitLoading } from '@/components/osa/OsaOrbitLoading';
 import { orchestraStatusLabel } from '@/lib/project-lifecycle/build-ai-orchestra';
+import { OSA_EMPTY_STATES } from '@/utils/osa/empty-states';
+import { OSA_LOADING_MESSAGES } from '@/utils/osa/loading-messages';
 
 type AiOrchestraPanelProps = {
   orchestra: AiOrchestraState;
@@ -78,8 +82,16 @@ export function AiOrchestraPanel({ orchestra, isPending = false, onResolveBlocke
   const blockedAgent = orchestra.queue.find((agent) => agent.status === 'blocked');
   const activeAgent = orchestra.queue.find((agent) => agent.id === orchestra.activeAgentId);
 
+  if (orchestra.queue.length === 0) {
+    return (
+      <section className="osa-ai-orchestra">
+        <OsaEmptyState {...OSA_EMPTY_STATES.orchestra} compact />
+      </section>
+    );
+  }
+
   return (
-    <section className="osa-ai-orchestra">
+    <section className="osa-ai-orchestra" aria-busy={isPending}>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
@@ -107,10 +119,16 @@ export function AiOrchestraPanel({ orchestra, isPending = false, onResolveBlocke
           type="button"
           disabled={isPending}
           onClick={onResolveBlocked}
-          className="mt-6 inline-flex items-center rounded-full border border-[var(--border-subtle)] px-5 py-2.5 text-[14px] font-medium text-[var(--text-primary)] transition hover:bg-[var(--surface-1)] disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-6 inline-flex items-center rounded-full border border-[var(--border-subtle)] px-5 py-2.5 text-[14px] font-medium text-[var(--text-primary)] transition hover:bg-[var(--surface-1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isPending ? 'OSA принимает решение…' : 'Подтвердить и продолжить →'}
         </button>
+      ) : null}
+
+      {isPending ? (
+        <div className="mt-6">
+          <OsaOrbitLoading message={OSA_LOADING_MESSAGES.decision} compact />
+        </div>
       ) : null}
     </section>
   );
