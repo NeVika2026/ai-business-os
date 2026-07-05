@@ -17,6 +17,8 @@ import {
   saveMemoryEntry,
   saveMemoryProject,
 } from '@/lib/storage/memory-storage';
+import { publishRuntimeEvent } from '@/lib/events/event-runtime';
+import { RUNTIME_EVENT_TYPES } from '@/types/event-runtime';
 import { resolveStore, type MemoryStoreState } from './memory-store';
 
 export { createMemoryStore, getMemoryStore, resetMemoryStore } from './memory-store';
@@ -88,6 +90,23 @@ export function createMemory(input: CreateMemoryInput, store?: MemoryStoreState)
   };
 
   saveMemoryEntry(state, entry);
+
+  publishRuntimeEvent(
+    {
+      projectId: entry.projectId,
+      type: RUNTIME_EVENT_TYPES.MEMORY_ENTRY_CREATED,
+      actor: entry.userId ? `user:${entry.userId}` : 'system:memory',
+      source: 'memory',
+      payload: {
+        entryId: entry.id,
+        task: entry.task,
+        intent: entry.intent,
+        scope: entry.scope,
+        importance: entry.importance,
+      },
+    },
+    state,
+  );
 
   if (projectId) {
     linkEntryToProject(projectId, entry.id, state);
@@ -170,6 +189,21 @@ export function updateMemory(
 
   saveMemoryEntry(state, updated);
 
+  publishRuntimeEvent(
+    {
+      projectId: updated.projectId,
+      type: RUNTIME_EVENT_TYPES.MEMORY_ENTRY_UPDATED,
+      actor: updated.userId ? `user:${updated.userId}` : 'system:memory',
+      source: 'memory',
+      payload: {
+        entryId: updated.id,
+        task: updated.task,
+        intent: updated.intent,
+      },
+    },
+    state,
+  );
+
   if (updated.projectId) {
     linkEntryToProject(updated.projectId, updated.id, state);
   }
@@ -192,6 +226,21 @@ export function archiveMemory(id: string, store?: MemoryStoreState): MemoryEntry
   };
 
   saveMemoryEntry(state, archived);
+
+  publishRuntimeEvent(
+    {
+      projectId: archived.projectId,
+      type: RUNTIME_EVENT_TYPES.MEMORY_ENTRY_ARCHIVED,
+      actor: archived.userId ? `user:${archived.userId}` : 'system:memory',
+      source: 'memory',
+      payload: {
+        entryId: archived.id,
+        task: archived.task,
+      },
+    },
+    state,
+  );
+
   return archived;
 }
 
@@ -204,6 +253,20 @@ export function deleteMemory(id: string, store?: MemoryStoreState): MemoryEntry 
   }
 
   deleteMemoryEntry(state, id);
+
+  publishRuntimeEvent(
+    {
+      projectId: existing.projectId,
+      type: RUNTIME_EVENT_TYPES.MEMORY_ENTRY_DELETED,
+      actor: existing.userId ? `user:${existing.userId}` : 'system:memory',
+      source: 'memory',
+      payload: {
+        entryId: existing.id,
+        task: existing.task,
+      },
+    },
+    state,
+  );
 
   for (const project of listMemoryProjects(state)) {
     const nextEntryIds = project.entryIds.filter((entryId) => entryId !== id);

@@ -16,7 +16,10 @@ import { loadProjectWorkspace } from '@/utils/projects/project-loader';
 import { PROJECT_STATUS_LABELS } from '@/utils/projects/project-types';
 
 import { buildWorkspaceTimeline } from './workspace-timeline';
+import { buildMorningBriefing } from './morning-briefing';
 import type { OsaWorkspacePageData } from './workspace-types';
+import { publishRuntimeEvent } from '@/lib/events/event-runtime';
+import { RUNTIME_EVENT_TYPES } from '@/types/event-runtime';
 
 export async function loadOsaWorkspacePageData(
   supabase: SupabaseClient,
@@ -62,7 +65,7 @@ export async function loadOsaWorkspacePageData(
     userId: context.email,
   };
 
-  return {
+  const data: OsaWorkspacePageData = {
     projectId,
     userName: context.userName,
     header: {
@@ -85,4 +88,50 @@ export async function loadOsaWorkspacePageData(
     orchestra: loadAiOrchestraState(getRuntimeStorage(), projectId),
     scope,
   };
+
+  publishWorkspaceRuntimeEvents(projectId, data, context.email, context.userName);
+
+  return data;
+}
+
+function publishWorkspaceRuntimeEvents(
+  projectId: string,
+  data: OsaWorkspacePageData,
+  userEmail: string,
+  userName: string | null,
+): void {
+  const storage = getRuntimeStorage();
+
+  publishRuntimeEvent(
+    {
+      projectId,
+      type: RUNTIME_EVENT_TYPES.WORKSPACE_LOADED,
+      actor: `user:${userEmail}`,
+      source: 'workspace',
+      payload: {
+        projectTitle: data.header.title,
+        progressPercent: data.today.progressPercent,
+        hasOrchestra: Boolean(data.orchestra),
+        hasLifecycle: Boolean(data.lifecycle),
+      },
+    },
+    storage,
+  );
+
+  const briefing = buildMorningBriefing(data, userName);
+
+  publishRuntimeEvent(
+    {
+      projectId,
+      type: RUNTIME_EVENT_TYPES.MORNING_BRIEFING_PREPARED,
+      actor: `user:${userEmail}`,
+      source: 'morning_briefing',
+      payload: {
+        actionCount: briefing.actions.length,
+        primaryAction: briefing.actions[0]?.title ?? null,
+        progressPercent: data.today.progressPercent,
+      },
+    },
+    storage,
+  );
 }

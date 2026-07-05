@@ -6,6 +6,8 @@ import { aiGateway } from '@/services/runtime/gateway/ai-gateway';
 import { USER_FACING_EXECUTION_ERROR } from '@/lib/ai/router-messages';
 import { getLastExecutiveDecision } from '@/lib/executive/executive-engine';
 import { advanceAiOrchestraForProject, resolveOrchestraBlocked } from '@/lib/project-lifecycle/ai-orchestra-engine';
+import { publishRuntimeEvent } from '@/lib/events/event-runtime';
+import { RUNTIME_EVENT_TYPES } from '@/types/event-runtime';
 import { setActiveProject, resolveGatewayProjectId } from '@/lib/project-runtime/active-project';
 import { findProjectRuntime } from '@/lib/project-runtime/project-runtime-engine';
 import { syncProjectRuntimesFromSnapshot } from '@/lib/project-runtime/project-runtime-sync';
@@ -67,6 +69,18 @@ export async function submitWorkspacePrompt(
   const traceId = crypto.randomUUID();
   const gatewayProjectId = resolveGatewayProjectId(scope) ?? projectId;
 
+  publishRuntimeEvent({
+    projectId,
+    type: RUNTIME_EVENT_TYPES.WORKSPACE_PROMPT_SUBMITTED,
+    actor: `user:${context.email}`,
+    source: 'workspace',
+    status: 'pending',
+    payload: {
+      promptLength: trimmed.length,
+      runId,
+    },
+  });
+
   const request: GatewayRequest = {
     scope: {
       organizationId,
@@ -103,6 +117,18 @@ export async function submitWorkspacePrompt(
     const content = response.content?.trim();
 
     if (!content) {
+      publishRuntimeEvent({
+        projectId,
+        type: RUNTIME_EVENT_TYPES.WORKSPACE_PROMPT_FAILED,
+        actor: `user:${context.email}`,
+        source: 'workspace',
+        status: 'failed',
+        payload: {
+          runId,
+          reason: 'empty_response',
+        },
+      });
+
       return { status: 'failed', message: USER_FACING_EXECUTION_ERROR };
     }
 
@@ -115,10 +141,33 @@ export async function submitWorkspacePrompt(
       goal: executive?.goal,
     });
 
+    publishRuntimeEvent({
+      projectId,
+      type: RUNTIME_EVENT_TYPES.WORKSPACE_PROMPT_COMPLETED,
+      actor: `user:${context.email}`,
+      source: 'workspace',
+      payload: {
+        runId,
+        responseLength: content.length,
+      },
+    });
+
     revalidatePath(`/workspace/${projectId}`);
 
     return { status: 'ok', content };
   } catch {
+    publishRuntimeEvent({
+      projectId,
+      type: RUNTIME_EVENT_TYPES.WORKSPACE_PROMPT_FAILED,
+      actor: `user:${context.email}`,
+      source: 'workspace',
+      status: 'failed',
+      payload: {
+        runId,
+        reason: 'gateway_error',
+      },
+    });
+
     return { status: 'failed', message: USER_FACING_EXECUTION_ERROR };
   }
 }
@@ -157,6 +206,17 @@ export async function resolveOrchestraDecision(projectId: string): Promise<Orche
   if (!next) {
     return { status: 'failed', message: 'Orchestra не найдена для этого проекта.' };
   }
+
+  publishRuntimeEvent({
+    projectId,
+    type: RUNTIME_EVENT_TYPES.WORKSPACE_ORCHESTRA_RESOLVED,
+    actor: `user:${context.email}`,
+    source: 'workspace',
+    payload: {
+      overallProgress: next.overallProgress,
+      activeAgentId: next.activeAgentId,
+    },
+  });
 
   revalidatePath(`/workspace/${projectId}`);
 

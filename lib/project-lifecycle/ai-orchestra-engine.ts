@@ -3,6 +3,8 @@ import { writeExecutiveDecision } from '@/lib/executive/executive-state';
 import { captureGatewayMemory } from '@/lib/memory/memory-engine';
 import { loadAiOrchestraState, saveAiOrchestraState } from '@/lib/storage/ai-orchestra-storage';
 import { getRuntimeStorage } from '@/lib/storage/storage-factory';
+import { publishRuntimeEvent } from '@/lib/events/event-runtime';
+import { RUNTIME_EVENT_TYPES } from '@/types/event-runtime';
 import type { AiOrchestraState, OrchestraAgent } from '@/types/ai-orchestra';
 import type { ExecutiveGoal, ExecutiveScope } from '@/types/executive';
 import { getOsaAgentById } from '@/utils/osa/agent-registry';
@@ -212,6 +214,25 @@ export function advanceAiOrchestraForProject(
   syncExecutiveWithOrchestra(scope, next, storage);
 
   const completedAgent = state.queue.find((agent) => agent.id === state.activeAgentId);
+
+  publishRuntimeEvent(
+    {
+      projectId,
+      type: options?.unblock
+        ? RUNTIME_EVENT_TYPES.ORCHESTRA_BLOCKED_RESOLVED
+        : RUNTIME_EVENT_TYPES.ORCHESTRA_AGENT_ADVANCED,
+      actor: options?.userId ? `user:${options.userId}` : 'system:ai-orchestra',
+      source: 'ai_orchestra',
+      payload: {
+        completedAgentId: completedAgent?.id ?? null,
+        completedAgentRole: completedAgent?.role ?? null,
+        activeAgentId: next.activeAgentId,
+        overallProgress: next.overallProgress,
+        completedCount: next.queue.filter((agent) => agent.status === 'completed').length,
+      },
+    },
+    storage,
+  );
 
   if (options?.organizationId && options.userId) {
     captureGatewayMemory({

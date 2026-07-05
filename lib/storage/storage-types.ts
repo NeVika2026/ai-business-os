@@ -5,6 +5,7 @@ export const STORAGE_NAMESPACES = {
   PROJECT_ACTIVE: 'project:active',
   EXECUTIVE_DECISIONS: 'executive:decisions',
   NAVIGATOR_STATE: 'navigator:state',
+  EVENTS_RUNTIME: 'events:runtime',
 } as const;
 
 export type StorageNamespace = (typeof STORAGE_NAMESPACES)[keyof typeof STORAGE_NAMESPACES];

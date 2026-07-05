@@ -23,6 +23,8 @@ import {
 import { readExecutiveDecision, writeExecutiveDecision } from './executive-state';
 import { saveNavigatorState } from '@/lib/storage/navigator-storage';
 import { getRuntimeStorage } from '@/lib/storage/storage-factory';
+import { publishRuntimeEvent } from '@/lib/events/event-runtime';
+import { RUNTIME_EVENT_TYPES } from '@/types/event-runtime';
 
 import { buildExecutiveSummary } from './executive-summary';
 
@@ -240,5 +242,16 @@ export function recordExecutivePostCapture(
           : navigatorMode === 'next_step'
             ? 'quick_result'
             : null,
+  });
+
+  publishRuntimeEvent({
+    projectId: existing.projectId,
+    type: RUNTIME_EVENT_TYPES.EXECUTIVE_POST_CAPTURE_RECORDED,
+    actor: scope.userId ? `user:${scope.userId}` : 'system:executive-brain',
+    source: 'executive_brain',
+    payload: {
+      navigatorMode,
+      goal: existing.goal,
+    },
   });
 }

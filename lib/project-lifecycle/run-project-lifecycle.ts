@@ -7,6 +7,8 @@ import { saveProjectLifecycleSnapshot } from '@/lib/storage/project-lifecycle-st
 import { saveAiOrchestraState } from '@/lib/storage/ai-orchestra-storage';
 import { saveNavigatorState } from '@/lib/storage/navigator-storage';
 import { getRuntimeStorage } from '@/lib/storage/storage-factory';
+import { publishRuntimeEvent } from '@/lib/events/event-runtime';
+import { RUNTIME_EVENT_TYPES } from '@/types/event-runtime';
 import type { ExecutiveDecision, ExecutiveGoal } from '@/types/executive';
 import type { ProjectLifecycleSnapshot } from '@/types/project-lifecycle';
 import type { ProjectType } from '@/utils/projects/project-types';
@@ -83,6 +85,21 @@ export function runProjectLifecycle(input: RunProjectLifecycleInput): RunProject
     organizationId: input.organizationId,
     userId: input.userId,
   };
+
+  publishRuntimeEvent(
+    {
+      projectId: input.projectId,
+      type: RUNTIME_EVENT_TYPES.PROJECT_LIFECYCLE_STARTED,
+      actor: `user:${input.userId}`,
+      source: 'project_lifecycle',
+      status: 'pending',
+      payload: {
+        projectName: input.name,
+        declaredType: input.declaredType,
+      },
+    },
+    storage,
+  );
 
   const detectedType = detectProjectType({
     declaredType: input.declaredType,
@@ -193,6 +210,22 @@ export function runProjectLifecycle(input: RunProjectLifecycleInput): RunProject
 
   saveAiOrchestraState(storage, orchestra);
 
+  publishRuntimeEvent(
+    {
+      projectId: input.projectId,
+      type: RUNTIME_EVENT_TYPES.ORCHESTRA_INITIALIZED,
+      actor: 'system:ai-orchestra',
+      source: 'ai_orchestra',
+      payload: {
+        projectName: input.name,
+        agentCount: orchestra.queue.length,
+        executionMode: orchestra.executionMode,
+        activeAgentId: orchestra.activeAgentId,
+      },
+    },
+    storage,
+  );
+
   captureGatewayMemory({
     task: 'AI Orchestra запущена',
     result: orchestra.queue
@@ -206,6 +239,23 @@ export function runProjectLifecycle(input: RunProjectLifecycleInput): RunProject
     scope: 'project',
     importance: 'high',
   });
+
+  publishRuntimeEvent(
+    {
+      projectId: input.projectId,
+      type: RUNTIME_EVENT_TYPES.PROJECT_LIFECYCLE_COMPLETED,
+      actor: 'system:project-lifecycle',
+      source: 'project_lifecycle',
+      payload: {
+        projectName: input.name,
+        detectedType,
+        specialistCount: specialists.length,
+        workPlanSteps: workPlan.length,
+        orchestraProgress: orchestra.overallProgress,
+      },
+    },
+    storage,
+  );
 
   return {
     snapshot,
