@@ -6,6 +6,9 @@ import { setActiveProject } from '@/lib/project-runtime/active-project';
 import { findProjectRuntime } from '@/lib/project-runtime/project-runtime-engine';
 import { syncProjectRuntimesFromSnapshot } from '@/lib/project-runtime/project-runtime-sync';
 import { buildProjectTodayBriefing } from '@/lib/project-runtime/today-briefing';
+import { loadProjectLifecycleSnapshot } from '@/lib/storage/project-lifecycle-storage';
+import { loadAiOrchestraState } from '@/lib/storage/ai-orchestra-storage';
+import { getRuntimeStorage } from '@/lib/storage/storage-factory';
 import { loadCabinetRawSnapshot } from '@/utils/cabinet/load-dashboard';
 import { loadHomeUserContext } from '@/utils/home/home-loader';
 import { getNextBestStepContent } from '@/utils/navigator/default-next-steps';
@@ -78,6 +81,8 @@ export async function loadOsaWorkspacePageData(
     },
     navigator: getNextBestStepContent(scope),
     timeline: buildWorkspaceTimeline(runtime),
+    lifecycle: loadProjectLifecycleSnapshot(getRuntimeStorage(), projectId),
+    orchestra: loadAiOrchestraState(getRuntimeStorage(), projectId),
     scope,
   };
 }

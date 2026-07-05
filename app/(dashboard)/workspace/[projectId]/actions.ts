@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache';
 
 import { aiGateway } from '@/services/runtime/gateway/ai-gateway';
 import { USER_FACING_EXECUTION_ERROR } from '@/lib/ai/router-messages';
+import { getLastExecutiveDecision } from '@/lib/executive/executive-engine';
+import { advanceAiOrchestraForProject, resolveOrchestraBlocked } from '@/lib/project-lifecycle/ai-orchestra-engine';
 import { setActiveProject, resolveGatewayProjectId } from '@/lib/project-runtime/active-project';
 import { findProjectRuntime } from '@/lib/project-runtime/project-runtime-engine';
 import { syncProjectRuntimesFromSnapshot } from '@/lib/project-runtime/project-runtime-sync';
@@ -15,6 +17,10 @@ import { loadHomeUserContext } from '@/utils/home/home-loader';
 
 export type WorkspacePromptResult =
   | { status: 'ok'; content: string }
+  | { status: 'failed'; message: string };
+
+export type OrchestraActionResult =
+  | { status: 'ok' }
   | { status: 'failed'; message: string };
 
 export async function submitWorkspacePrompt(
@@ -100,10 +106,59 @@ export async function submitWorkspacePrompt(
       return { status: 'failed', message: USER_FACING_EXECUTION_ERROR };
     }
 
+    const executive = getLastExecutiveDecision(scope);
+
+    advanceAiOrchestraForProject(projectId, scope, {
+      organizationId,
+      userId: context.email,
+      projectName: runtime.title,
+      goal: executive?.goal,
+    });
+
     revalidatePath(`/workspace/${projectId}`);
 
     return { status: 'ok', content };
   } catch {
     return { status: 'failed', message: USER_FACING_EXECUTION_ERROR };
   }
+}
+
+export async function resolveOrchestraDecision(projectId: string): Promise<OrchestraActionResult> {
+  const supabase = await createClient();
+  const organizationId = await getCurrentOrganizationId(supabase);
+
+  if (!organizationId) {
+    return { status: 'failed', message: 'Требуется авторизация.' };
+  }
+
+  const context = await loadHomeUserContext(supabase);
+
+  if (!context) {
+    return { status: 'failed', message: 'Не удалось определить пользователя.' };
+  }
+
+  const snapshot = await loadCabinetRawSnapshot(supabase, organizationId, context.email);
+  syncProjectRuntimesFromSnapshot(snapshot, context);
+
+  const scope = {
+    organizationId,
+    userId: context.email,
+  };
+
+  setActiveProject(scope, projectId);
+
+  const executive = getLastExecutiveDecision(scope);
+  const next = resolveOrchestraBlocked(projectId, scope, {
+    organizationId,
+    userId: context.email,
+    goal: executive?.goal,
+  });
+
+  if (!next) {
+    return { status: 'failed', message: 'Orchestra не найдена для этого проекта.' };
+  }
+
+  revalidatePath(`/workspace/${projectId}`);
+
+  return { status: 'ok' };
 }

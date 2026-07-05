@@ -64,6 +64,8 @@ function baseData(overrides: Partial<OsaWorkspacePageData> = {}): OsaWorkspacePa
       ],
     },
     timeline: [],
+    lifecycle: null,
+    orchestra: null,
     scope,
     ...overrides,
   };

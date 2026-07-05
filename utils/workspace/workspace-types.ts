@@ -1,4 +1,6 @@
 import type { NextBestStepContent } from '@/types/navigator';
+import type { AiOrchestraState } from '@/types/ai-orchestra';
+import type { ProjectLifecycleSnapshot } from '@/types/project-lifecycle';
 import type { ProjectRuntimeScope } from '@/types/project-runtime';
 
 export type WorkspaceTimelineEntry = {
@@ -28,5 +30,7 @@ export type OsaWorkspacePageData = {
   };
   navigator: NextBestStepContent;
   timeline: WorkspaceTimelineEntry[];
+  lifecycle: ProjectLifecycleSnapshot | null;
+  orchestra: AiOrchestraState | null;
   scope: ProjectRuntimeScope;
 };

@@ -3,9 +3,11 @@
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, useTransition } from 'react';
 
-import { submitWorkspacePrompt } from '@/app/(dashboard)/workspace/[projectId]/actions';
+import { submitWorkspacePrompt, resolveOrchestraDecision } from '@/app/(dashboard)/workspace/[projectId]/actions';
 import { OrbitMark } from '@/components/brand/OrbitMark';
+import { AiOrchestraPanel } from '@/components/workspace/AiOrchestraPanel';
 import { MorningBriefingPanel } from '@/components/workspace/MorningBriefingPanel';
+import { ProjectLifecycleReveal } from '@/components/workspace/ProjectLifecycleReveal';
 import type { OsaWorkspacePageData } from '@/utils/workspace/workspace-types';
 import { buildExecutiveWorkspaceView } from '@/utils/workspace/executive-workspace-view';
 import {
@@ -22,9 +24,10 @@ type ConversationMessage = {
 
 type OsaProjectWorkspaceProps = {
   data: OsaWorkspacePageData;
+  showLifecycleReveal?: boolean;
 };
 
-export function OsaProjectWorkspace({ data }: OsaProjectWorkspaceProps) {
+export function OsaProjectWorkspace({ data, showLifecycleReveal = false }: OsaProjectWorkspaceProps) {
   const router = useRouter();
   const view = useMemo(() => buildExecutiveWorkspaceView(data), [data]);
   const morningBriefing = useMemo(
@@ -34,6 +37,7 @@ export function OsaProjectWorkspace({ data }: OsaProjectWorkspaceProps) {
   const [briefingDismissed, setBriefingDismissed] = useState(() =>
     hasDismissedMorningBriefing(data.projectId),
   );
+  const [lifecycleDismissed, setLifecycleDismissed] = useState(!showLifecycleReveal || !data.lifecycle);
   const [prompt, setPrompt] = useState('');
   const [messages, setMessages] = useState<ConversationMessage[]>(() => {
     if (data.today.lastResult) {
@@ -86,6 +90,32 @@ export function OsaProjectWorkspace({ data }: OsaProjectWorkspaceProps) {
     setBriefingDismissed(true);
     handleSubmit(morningBriefing.primaryPrompt);
   };
+
+  const handleLifecycleContinue = () => {
+    if (!data.lifecycle) {
+      setLifecycleDismissed(true);
+      router.replace(`/workspace/${data.projectId}`);
+      return;
+    }
+
+    setLifecycleDismissed(true);
+    dismissMorningBriefing(data.projectId);
+    setBriefingDismissed(true);
+    router.replace(`/workspace/${data.projectId}`);
+    handleSubmit(data.lifecycle.firstStepPrompt);
+  };
+
+  if (!lifecycleDismissed && data.lifecycle) {
+    return (
+      <div className="osa-workspace-surface osa-executive-workspace min-h-[calc(100vh-8rem)]">
+        <ProjectLifecycleReveal
+          lifecycle={data.lifecycle}
+          isPending={isPending}
+          onContinue={handleLifecycleContinue}
+        />
+      </div>
+    );
+  }
 
   if (!briefingDismissed) {
     return (
@@ -144,39 +174,60 @@ export function OsaProjectWorkspace({ data }: OsaProjectWorkspaceProps) {
           </section>
 
           <section className="mt-10">
-            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-              AI-команда
-            </p>
-            <ul className="mt-5 divide-y divide-[var(--border-subtle)]/70">
-              {view.team.map((member) => (
-                <li key={member.role} className="flex items-baseline justify-between gap-6 py-4 first:pt-0">
-                  <div>
-                    <p className="text-[15px] font-medium text-[var(--text-primary)]">{member.role}</p>
-                    <p
-                      className={`mt-1 text-[14px] ${
-                        member.state === 'active'
-                          ? 'text-[var(--text-secondary)]'
-                          : member.state === 'waiting'
-                            ? 'text-[var(--accent)]'
-                            : 'text-[var(--text-tertiary)]'
-                      }`}
-                    >
-                      {member.status}
-                    </p>
-                  </div>
-                  <span
-                    className={`osa-team-pulse h-2 w-2 shrink-0 rounded-full ${
-                      member.state === 'active'
-                        ? 'bg-[var(--accent)]'
-                        : member.state === 'waiting'
-                          ? 'bg-[var(--accent)]/50'
-                          : 'bg-[var(--border-subtle)]'
-                    }`}
-                    aria-hidden="true"
-                  />
-                </li>
-              ))}
-            </ul>
+            {data.orchestra ? (
+              <AiOrchestraPanel
+                orchestra={data.orchestra}
+                isPending={isPending}
+                onResolveBlocked={() => {
+                  startTransition(async () => {
+                    const result = await resolveOrchestraDecision(data.projectId);
+
+                    if (result.status === 'failed') {
+                      setError(result.message);
+                      return;
+                    }
+
+                    router.refresh();
+                  });
+                }}
+              />
+            ) : (
+              <>
+                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+                  AI-команда
+                </p>
+                <ul className="mt-5 divide-y divide-[var(--border-subtle)]/70">
+                  {view.team.map((member) => (
+                    <li key={member.role} className="flex items-baseline justify-between gap-6 py-4 first:pt-0">
+                      <div>
+                        <p className="text-[15px] font-medium text-[var(--text-primary)]">{member.role}</p>
+                        <p
+                          className={`mt-1 text-[14px] ${
+                            member.state === 'active'
+                              ? 'text-[var(--text-secondary)]'
+                              : member.state === 'waiting'
+                                ? 'text-[var(--accent)]'
+                                : 'text-[var(--text-tertiary)]'
+                          }`}
+                        >
+                          {member.status}
+                        </p>
+                      </div>
+                      <span
+                        className={`osa-team-pulse h-2 w-2 shrink-0 rounded-full ${
+                          member.state === 'active'
+                            ? 'bg-[var(--accent)]'
+                            : member.state === 'waiting'
+                              ? 'bg-[var(--accent)]/50'
+                              : 'bg-[var(--border-subtle)]'
+                        }`}
+                        aria-hidden="true"
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </section>
 
           <section className="mt-12 border-t border-[var(--border-subtle)]/60 pt-8">
