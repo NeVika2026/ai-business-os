@@ -1,10 +1,16 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore, useTransition } from 'react';
 
-import { submitWorkspacePrompt, resolveOrchestraDecision } from '@/app/(dashboard)/workspace/[projectId]/actions';
+import {
+  continueInvestorDemoOrchestra,
+  resolveOrchestraDecision,
+  submitWorkspacePrompt,
+} from '@/app/(dashboard)/workspace/[projectId]/actions';
 import { OrbitMark } from '@/components/brand/OrbitMark';
+import { OsaFirstContact } from '@/components/first-contact/OsaFirstContact';
+import { DemoCompleteScreen } from '@/components/demo/DemoCompleteScreen';
 import { AiOrchestraPanel } from '@/components/workspace/AiOrchestraPanel';
 import { MorningBriefingPanel } from '@/components/workspace/MorningBriefingPanel';
 import { ProjectLifecycleReveal } from '@/components/workspace/ProjectLifecycleReveal';
@@ -13,10 +19,25 @@ import { ExecutiveMemoryPanel } from '@/components/workspace/ExecutiveMemoryPane
 import type { OsaWorkspacePageData } from '@/utils/workspace/workspace-types';
 import { buildExecutiveWorkspaceView } from '@/utils/workspace/executive-workspace-view';
 import {
+  investorDemoStepDuration,
+  nextInvestorDemoStep,
+  type InvestorDemoStep,
+} from '@/utils/demo/demo-orchestrator';
+import {
+  clearDemoSession,
+  isActiveDemoProject,
+  isDemoFirstContactPending,
+  markDemoFirstContactComplete,
+} from '@/utils/demo/osa-demo-mode';
+import {
   buildMorningBriefing,
   dismissMorningBriefing,
   hasDismissedMorningBriefing,
 } from '@/utils/workspace/morning-briefing';
+
+function subscribeToClientMount() {
+  return () => {};
+}
 
 type ConversationMessage = {
   id: string;
@@ -27,19 +48,29 @@ type ConversationMessage = {
 type OsaProjectWorkspaceProps = {
   data: OsaWorkspacePageData;
   showLifecycleReveal?: boolean;
+  demoMode?: boolean;
 };
 
-export function OsaProjectWorkspace({ data, showLifecycleReveal = false }: OsaProjectWorkspaceProps) {
+export function OsaProjectWorkspace({
+  data,
+  showLifecycleReveal = false,
+  demoMode = false,
+}: OsaProjectWorkspaceProps) {
   const router = useRouter();
+  const mounted = useSyncExternalStore(subscribeToClientMount, () => true, () => false);
+  const isDemoFlow = mounted && demoMode && isActiveDemoProject(data.projectId);
   const view = useMemo(() => buildExecutiveWorkspaceView(data), [data]);
   const morningBriefing = useMemo(
     () => buildMorningBriefing(data, data.userName),
     [data],
   );
+  const [demoStep, setDemoStep] = useState<InvestorDemoStep>('first_contact');
   const [briefingDismissed, setBriefingDismissed] = useState(() =>
-    hasDismissedMorningBriefing(data.projectId),
+    demoMode ? false : hasDismissedMorningBriefing(data.projectId),
   );
-  const [lifecycleDismissed, setLifecycleDismissed] = useState(!showLifecycleReveal || !data.lifecycle);
+  const [lifecycleDismissed, setLifecycleDismissed] = useState(
+    () => demoMode || !showLifecycleReveal || !data.lifecycle,
+  );
   const [prompt, setPrompt] = useState('');
   const [messages, setMessages] = useState<ConversationMessage[]>(() => {
     if (data.today.lastResult) {
@@ -54,6 +85,88 @@ export function OsaProjectWorkspace({ data, showLifecycleReveal = false }: OsaPr
   const [isPending, startTransition] = useTransition();
 
   const latestMessage = messages.at(-1) ?? null;
+
+  useEffect(() => {
+    if (!isDemoFlow || demoStep !== 'first_contact' || isDemoFirstContactPending()) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setDemoStep('briefing');
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [demoStep, isDemoFlow]);
+
+  useEffect(() => {
+    if (!isDemoFlow) {
+      return;
+    }
+
+    if (
+      demoStep === 'workspace' ||
+      demoStep === 'decision' ||
+      demoStep === 'orchestra_continue' ||
+      demoStep === 'memory' ||
+      demoStep === 'replay' ||
+      demoStep === 'complete'
+    ) {
+      dismissMorningBriefing(data.projectId);
+    }
+
+    if (demoStep === 'complete') {
+      clearDemoSession();
+    }
+  }, [data.projectId, demoStep, isDemoFlow]);
+
+  useEffect(() => {
+    if (!isDemoFlow || demoStep === 'decision') {
+      return;
+    }
+
+    const duration = investorDemoStepDuration(demoStep);
+
+    if (!duration) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      const next = nextInvestorDemoStep(demoStep);
+
+      if (next) {
+        setDemoStep(next);
+      }
+    }, duration);
+
+    return () => window.clearTimeout(timer);
+  }, [demoStep, isDemoFlow]);
+
+  useEffect(() => {
+    if (!isDemoFlow || demoStep !== 'decision') {
+      return;
+    }
+
+    let cancelled = false;
+
+    const timer = window.setTimeout(() => {
+      startTransition(async () => {
+        await resolveOrchestraDecision(data.projectId);
+        await continueInvestorDemoOrchestra(data.projectId);
+
+        if (cancelled) {
+          return;
+        }
+
+        router.refresh();
+        setDemoStep('orchestra_continue');
+      });
+    }, investorDemoStepDuration('decision') ?? 0);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [data.projectId, demoStep, isDemoFlow, router]);
 
   const handleSubmit = (value?: string) => {
     const nextPrompt = (value ?? prompt).trim();
@@ -109,7 +222,31 @@ export function OsaProjectWorkspace({ data, showLifecycleReveal = false }: OsaPr
     handleSubmit(data.lifecycle.firstStepPrompt);
   };
 
-  if (!lifecycleDismissed && data.lifecycle) {
+  if (isDemoFlow && demoStep === 'first_contact' && isDemoFirstContactPending()) {
+    return (
+      <OsaFirstContact
+        onComplete={() => {
+          markDemoFirstContactComplete();
+          setDemoStep('briefing');
+        }}
+      />
+    );
+  }
+
+  if (isDemoFlow && demoStep === 'complete') {
+    return (
+      <div className="osa-workspace-surface">
+        <DemoCompleteScreen
+          projectTitle={data.header.title}
+          onClose={() => {
+            router.replace(`/workspace/${data.projectId}`);
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (!lifecycleDismissed && data.lifecycle && !isDemoFlow) {
     return (
       <div className="osa-workspace-surface osa-executive-workspace min-h-[calc(100vh-8rem)]">
         <ProjectLifecycleReveal
@@ -121,7 +258,11 @@ export function OsaProjectWorkspace({ data, showLifecycleReveal = false }: OsaPr
     );
   }
 
-  if (!briefingDismissed) {
+  const showsMorningBriefing = isDemoFlow ? demoStep === 'briefing' : !briefingDismissed;
+  const showsReplayPanel = isDemoFlow ? demoStep === 'replay' : showReplay;
+  const showsExecutiveMemoryPanel = isDemoFlow ? demoStep === 'memory' : showExecutiveMemory;
+
+  if (showsMorningBriefing) {
     return (
       <div className="osa-workspace-surface osa-executive-workspace min-h-[calc(100vh-8rem)]">
         <MorningBriefingPanel briefing={morningBriefing} isPending={isPending} onStart={handleStartWork} />
@@ -129,7 +270,7 @@ export function OsaProjectWorkspace({ data, showLifecycleReveal = false }: OsaPr
     );
   }
 
-  if (showReplay) {
+  if (showsReplayPanel) {
     return (
       <div className="osa-workspace-surface">
         <ProjectReplayPanel replay={data.replay} onClose={() => setShowReplay(false)} />
@@ -137,7 +278,7 @@ export function OsaProjectWorkspace({ data, showLifecycleReveal = false }: OsaPr
     );
   }
 
-  if (showExecutiveMemory) {
+  if (showsExecutiveMemoryPanel) {
     return (
       <div className="osa-workspace-surface">
         <ExecutiveMemoryPanel

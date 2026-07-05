@@ -33,9 +33,9 @@ export function CreateProjectDialog({ open, onClose }: CreateProjectDialogProps)
   }, [open]);
 
   async function handleSubmit(formData: FormData) {
-    await createProject(formData);
+    const result = await createProject(formData);
     onClose();
-    router.refresh();
+    router.push(`/workspace/${result.projectId}?lifecycle=1`);
   }
 
   if (!open) {

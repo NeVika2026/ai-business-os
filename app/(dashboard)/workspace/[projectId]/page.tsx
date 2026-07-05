@@ -7,10 +7,15 @@ import { loadOsaWorkspacePageData } from '@/utils/workspace/workspace-loader';
 
 type ProjectWorkspacePageProps = {
   params: Promise<{ projectId: string }>;
+  searchParams: Promise<{ lifecycle?: string; demo?: string }>;
 };
 
-export default async function ProjectWorkspacePage({ params }: ProjectWorkspacePageProps) {
+export default async function ProjectWorkspacePage({
+  params,
+  searchParams,
+}: ProjectWorkspacePageProps) {
   const { projectId } = await params;
+  const { lifecycle, demo } = await searchParams;
   const supabase = await createClient();
   const organizationId = await getCurrentOrganizationId(supabase);
 
@@ -24,5 +29,11 @@ export default async function ProjectWorkspacePage({ params }: ProjectWorkspaceP
     notFound();
   }
 
-  return <OsaProjectWorkspace data={data} />;
+  return (
+    <OsaProjectWorkspace
+      data={data}
+      showLifecycleReveal={lifecycle === '1'}
+      demoMode={demo === '1'}
+    />
+  );
 }

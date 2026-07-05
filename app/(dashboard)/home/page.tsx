@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
-import { AIConcierge } from '@/components/home/AIConcierge';
+import { OsaHomeLanding } from '@/components/home/OsaHomeLanding';
 import { TodayFallback } from '@/components/home/TodayFallback';
 import { createClient } from '@/services/supabase/server';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
@@ -24,5 +24,5 @@ export default async function HomePage() {
     return <TodayFallback />;
   }
 
-  return <AIConcierge data={result.data} />;
+  return <OsaHomeLanding data={result.data} />;
 }

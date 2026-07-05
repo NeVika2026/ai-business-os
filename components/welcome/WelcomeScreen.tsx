@@ -1,7 +1,5 @@
 import Link from 'next/link';
 
-import { LoginVoiceWelcome } from '@/components/welcome/LoginVoiceWelcome';
-
 export function WelcomeScreen() {
   return (
     <main className="flex min-h-full flex-1 flex-col items-center justify-center px-6 py-20 sm:py-28">
@@ -15,8 +13,6 @@ export function WelcomeScreen() {
           <br />
           Одна система для всех ваших направлений, проектов и задач.
         </p>
-
-        <LoginVoiceWelcome />
 
         <div className="mt-8 flex flex-col items-center gap-4">
           <Link

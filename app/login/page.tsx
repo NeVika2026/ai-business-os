@@ -1,5 +1,5 @@
-import { WelcomeScreen } from '@/components/welcome/WelcomeScreen';
+import { LoginEntry } from '@/components/welcome/LoginEntry';
 
 export default function LoginPage() {
-  return <WelcomeScreen />;
+  return <LoginEntry />;
 }

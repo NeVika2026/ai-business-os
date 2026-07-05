@@ -13,6 +13,7 @@ import {
   type PersonalWelcomeData,
   type SmartGreetingData,
 } from '@/utils/home/wow-engine';
+import { mapHomeLandingView, type HomeLandingView } from '@/utils/home/home-landing-view';
 
 export type ConciergeGreeting = {
   salutation: string;
@@ -71,6 +72,7 @@ export type ConciergeData = {
   dailyMission: DailyMission;
   continueJourney: ContinueJourney;
   projectBriefing: ProjectTodayBriefing;
+  landing: HomeLandingView;
 };
 
 export const FTU_GOAL_CARDS: ConversationChip[] = [
@@ -373,6 +375,22 @@ export function getJourneyGoalId(
   return journeys.find((journey) => journey.id === journeyId)?.goalId ?? null;
 }
 
+function withLandingView(
+  data: ConciergeData,
+  home: HomeData,
+  snapshot: CabinetRawSnapshot,
+): ConciergeData {
+  return {
+    ...data,
+    landing: mapHomeLandingView(home, snapshot, {
+      continueJourney: data.continueJourney,
+      projectBriefing: data.projectBriefing,
+      greeting: data.greeting,
+      dailyMission: data.dailyMission,
+    }),
+  };
+}
+
 export function buildConciergeFromHomeData(
   home: HomeData,
   snapshot: CabinetRawSnapshot,
@@ -383,6 +401,19 @@ export function buildConciergeFromHomeData(
 
   const scope = resolveProjectRuntimeScope(snapshot, context);
 
+  const baseProjectBriefing = {
+    activeProjectTitle: 'Default Workspace',
+    headline: 'Сегодня вы в Default Workspace',
+    lastResult: null,
+    nextStep: 'Выберите направление на Today или откройте проект.',
+    progressPercent: 0,
+    isDefaultWorkspace: true,
+    projectRuntimeId: `default-workspace:${scope.organizationId}:${scope.userId ?? 'anonymous'}`,
+  };
+
+  const baseDailyMission = mapDailyMission(home, snapshot);
+  const baseContinueJourney = mapContinueJourney(home);
+
   const base: ConciergeData = {
     greeting: mapConciergeGreeting(home, now),
     smartGreeting: wow.smartGreeting,
@@ -390,17 +421,15 @@ export function buildConciergeFromHomeData(
     conversationChips: CONVERSATION_CHIPS,
     suggestedJourneys: mapSuggestedJourneys(home),
     insights: mapPersonalInsights(snapshot),
-    dailyMission: mapDailyMission(home, snapshot),
-    continueJourney: mapContinueJourney(home),
-    projectBriefing: {
-      activeProjectTitle: 'Default Workspace',
-      headline: 'Сегодня вы в Default Workspace',
-      lastResult: null,
-      nextStep: 'Выберите направление на Today или откройте проект.',
-      progressPercent: 0,
-      isDefaultWorkspace: true,
-      projectRuntimeId: `default-workspace:${scope.organizationId}:${scope.userId ?? 'anonymous'}`,
-    },
+    dailyMission: baseDailyMission,
+    continueJourney: baseContinueJourney,
+    projectBriefing: baseProjectBriefing,
+    landing: mapHomeLandingView(home, snapshot, {
+      continueJourney: baseContinueJourney,
+      projectBriefing: baseProjectBriefing,
+      greeting: mapConciergeGreeting(home, now),
+      dailyMission: baseDailyMission,
+    }),
   };
 
   const isFreshWorkspace = snapshot.projects.length === 0 && snapshot.runs.length === 0;
@@ -409,31 +438,35 @@ export function buildConciergeFromHomeData(
     const defaultWorkspace = ensureDefaultWorkspace(scope);
     const projectBriefing = buildProjectTodayBriefing(defaultWorkspace, snapshot);
 
-    return {
-      ...base,
-      projectBriefing,
-      smartGreeting: {
-        ...base.smartGreeting,
-        headline: projectBriefing.headline,
+    return withLandingView(
+      {
+        ...base,
+        projectBriefing,
+        smartGreeting: {
+          ...base.smartGreeting,
+          headline: projectBriefing.headline,
+        },
+        personalWelcome: {
+          show: true,
+          previousWorkLeadIn: null,
+          previousWorkLabel: null,
+          recommendationLabel: projectBriefing.nextStep,
+        },
+        dailyMission: {
+          title: 'Следующий шаг',
+          description: projectBriefing.nextStep,
+          href: '/projects',
+          goalId: null,
+        },
+        greeting: {
+          ...base.greeting,
+          currentProject: null,
+          currentFocus: projectBriefing.nextStep,
+        },
       },
-      personalWelcome: {
-        show: true,
-        previousWorkLeadIn: null,
-        previousWorkLabel: null,
-        recommendationLabel: projectBriefing.nextStep,
-      },
-      dailyMission: {
-        title: 'Следующий шаг',
-        description: projectBriefing.nextStep,
-        href: '/projects',
-        goalId: null,
-      },
-      greeting: {
-        ...base.greeting,
-        currentProject: null,
-        currentFocus: projectBriefing.nextStep,
-      },
-    };
+      home,
+      snapshot,
+    );
   }
 
   syncProjectRuntimesFromSnapshot(snapshot, context);
@@ -461,35 +494,39 @@ export function buildConciergeFromHomeData(
   }
 
   const projectHref = activeProject.sourceProjectId
-    ? `/projects/${activeProject.sourceProjectId}`
+    ? `/workspace/${activeProject.sourceProjectId}`
     : '/projects';
 
-  return {
-    ...base,
-    projectBriefing,
-    smartGreeting: {
-      ...base.smartGreeting,
-      headline: projectBriefing.headline,
+  return withLandingView(
+    {
+      ...base,
+      projectBriefing,
+      smartGreeting: {
+        ...base.smartGreeting,
+        headline: projectBriefing.headline,
+      },
+      personalWelcome: {
+        show: true,
+        previousWorkLeadIn: projectBriefing.lastResult ? 'Последний результат' : null,
+        previousWorkLabel: projectBriefing.lastResult,
+        recommendationLabel: projectBriefing.nextStep,
+      },
+      insights: insights.slice(0, 4),
+      dailyMission: {
+        title: 'Следующий шаг',
+        description: projectBriefing.nextStep,
+        href: projectHref,
+        goalId: null,
+      },
+      greeting: {
+        ...base.greeting,
+        currentProject: projectBriefing.isDefaultWorkspace ? null : projectBriefing.activeProjectTitle,
+        currentFocus: projectBriefing.nextStep,
+      },
     },
-    personalWelcome: {
-      show: true,
-      previousWorkLeadIn: projectBriefing.lastResult ? 'Последний результат' : null,
-      previousWorkLabel: projectBriefing.lastResult,
-      recommendationLabel: projectBriefing.nextStep,
-    },
-    insights: insights.slice(0, 4),
-    dailyMission: {
-      title: 'Следующий шаг',
-      description: projectBriefing.nextStep,
-      href: projectHref,
-      goalId: null,
-    },
-    greeting: {
-      ...base.greeting,
-      currentProject: projectBriefing.isDefaultWorkspace ? null : projectBriefing.activeProjectTitle,
-      currentFocus: projectBriefing.nextStep,
-    },
-  };
+    home,
+    snapshot,
+  );
 }
 
 export function buildConciergeFromSnapshot(

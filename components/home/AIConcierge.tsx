@@ -1,7 +1,6 @@
 import { OrbitMark } from '@/components/brand/OrbitMark';
 import { PersonalWelcome } from '@/components/home/PersonalWelcome';
 import { SmartGreeting } from '@/components/home/SmartGreeting';
-import { VoiceWelcome } from '@/components/home/VoiceWelcome';
 import { ContinueJourney } from '@/components/home/ContinueJourney';
 import { ConversationStarter } from '@/components/home/ConversationStarter';
 import { OsaAssistantPanel } from '@/components/home/OsaAssistantPanel';
@@ -32,7 +31,6 @@ export function AIConcierge({ data }: AIConciergeProps) {
         <div className="space-y-10">
           <div className="osa-seq-greeting space-y-6">
             <SmartGreeting greeting={data.smartGreeting} />
-            {!showContinue ? <VoiceWelcome className="-mt-2" /> : null}
             <PersonalWelcome welcome={data.personalWelcome} />
           </div>
 

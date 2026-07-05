@@ -222,3 +222,47 @@ export async function resolveOrchestraDecision(projectId: string): Promise<Orche
 
   return { status: 'ok' };
 }
+
+export async function continueInvestorDemoOrchestra(projectId: string): Promise<OrchestraActionResult> {
+  const supabase = await createClient();
+  const organizationId = await getCurrentOrganizationId(supabase);
+
+  if (!organizationId) {
+    return { status: 'failed', message: 'Требуется авторизация.' };
+  }
+
+  const context = await loadHomeUserContext(supabase);
+
+  if (!context) {
+    return { status: 'failed', message: 'Не удалось определить пользователя.' };
+  }
+
+  const snapshot = await loadCabinetRawSnapshot(supabase, organizationId, context.email);
+  syncProjectRuntimesFromSnapshot(snapshot, context);
+
+  const scope = {
+    organizationId,
+    userId: context.email,
+  };
+
+  setActiveProject(scope, projectId);
+
+  const runtime = findProjectRuntime(projectId);
+
+  if (!runtime) {
+    return { status: 'failed', message: 'Проект не найден в Runtime.' };
+  }
+
+  const executive = getLastExecutiveDecision(scope);
+
+  advanceAiOrchestraForProject(projectId, scope, {
+    organizationId,
+    userId: context.email,
+    projectName: runtime.title,
+    goal: executive?.goal,
+  });
+
+  revalidatePath(`/workspace/${projectId}`);
+
+  return { status: 'ok' };
+}
