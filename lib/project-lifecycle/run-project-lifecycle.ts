@@ -13,6 +13,7 @@ import type { ExecutiveDecision, ExecutiveGoal } from '@/types/executive';
 import type { ProjectLifecycleSnapshot } from '@/types/project-lifecycle';
 import type { ProjectType } from '@/utils/projects/project-types';
 
+import { initializeProjectDeliverables } from '@/lib/deliverables/deliverables-engine';
 import { buildExecutiveBriefText } from './build-executive-brief';
 import { buildProjectWorkPlan } from './build-work-plan';
 import { detectProjectType, projectTypeLabel } from './detect-project-type';
@@ -209,6 +210,13 @@ export function runProjectLifecycle(input: RunProjectLifecycleInput): RunProject
   });
 
   saveAiOrchestraState(storage, orchestra);
+
+  initializeProjectDeliverables({
+    projectId: input.projectId,
+    projectName: input.name,
+    projectDescription: input.description ?? '',
+    queue: orchestra.queue,
+  });
 
   publishRuntimeEvent(
     {

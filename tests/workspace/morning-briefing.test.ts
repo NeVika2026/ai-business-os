@@ -68,6 +68,7 @@ function baseData(overrides: Partial<OsaWorkspacePageData> = {}): OsaWorkspacePa
     timeline: [],
     lifecycle: null,
     orchestra: null,
+    deliverables: null,
     replay: buildProjectReplay([], 'Private Alpha'),
     executiveMemory: buildExecutiveMemory([], {
       header: {

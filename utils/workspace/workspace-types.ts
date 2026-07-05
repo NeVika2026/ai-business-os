@@ -1,3 +1,4 @@
+import type { ProjectDeliverablesPackage } from '@/types/deliverables';
 import type { NextBestStepContent } from '@/types/navigator';
 import type { AiOrchestraState } from '@/types/ai-orchestra';
 import type { ProjectLifecycleSnapshot } from '@/types/project-lifecycle';
@@ -35,6 +36,7 @@ export type OsaWorkspacePageData = {
   timeline: WorkspaceTimelineEntry[];
   lifecycle: ProjectLifecycleSnapshot | null;
   orchestra: AiOrchestraState | null;
+  deliverables: ProjectDeliverablesPackage | null;
   replay: ProjectReplay;
   executiveMemory: ExecutiveMemory;
   scope: ProjectRuntimeScope;

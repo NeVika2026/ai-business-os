@@ -11,6 +11,8 @@ import {
 import { OrbitMark } from '@/components/brand/OrbitMark';
 import { OsaFirstContact } from '@/components/first-contact/OsaFirstContact';
 import { DemoCompleteScreen } from '@/components/demo/DemoCompleteScreen';
+import { ProjectDeliverablesProgress } from '@/components/workspace/ProjectDeliverablesProgress';
+import { ProjectResultsSection } from '@/components/workspace/ProjectResultsSection';
 import { AiOrchestraPanel } from '@/components/workspace/AiOrchestraPanel';
 import { MorningBriefingPanel } from '@/components/workspace/MorningBriefingPanel';
 import { ProjectLifecycleReveal } from '@/components/workspace/ProjectLifecycleReveal';
@@ -411,6 +413,12 @@ export function OsaProjectWorkspace({
               </>
             )}
           </section>
+
+          {data.deliverables ? (
+            <ProjectDeliverablesProgress deliverables={data.deliverables} />
+          ) : null}
+
+          {data.deliverables ? <ProjectResultsSection deliverables={data.deliverables} /> : null}
 
           <section className="mt-12 border-t border-[var(--border-subtle)]/60 pt-8">
             {latestMessage ? (

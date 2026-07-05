@@ -1,5 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import {
+  initializeProjectDeliverables,
+  loadProjectDeliverablesPackage,
+  syncDeliverablesWithOrchestra,
+} from '@/lib/deliverables/deliverables-engine';
 import { getLastExecutiveDecision } from '@/lib/executive/executive-engine';
 import { goalLabel } from '@/lib/executive/executive-goals';
 import { setActiveProject } from '@/lib/project-runtime/active-project';
@@ -69,6 +74,29 @@ export async function loadOsaWorkspacePageData(
 
   const lifecycle = loadProjectLifecycleSnapshot(getRuntimeStorage(), projectId);
   const orchestra = loadAiOrchestraState(getRuntimeStorage(), projectId);
+  let deliverables = loadProjectDeliverablesPackage(projectId);
+
+  if (orchestra) {
+    if (!deliverables) {
+      deliverables = initializeProjectDeliverables({
+        projectId,
+        projectName: runtime.title,
+        projectDescription: runtime.description || workspace.project.description || '',
+        queue: orchestra.queue,
+      });
+    } else {
+      deliverables = syncDeliverablesWithOrchestra({
+        projectId,
+        projectName: runtime.title,
+        projectDescription: runtime.description || workspace.project.description || '',
+        queue: orchestra.queue,
+        scope,
+        goal: executive?.goal,
+        userId: context.email,
+      });
+    }
+  }
+
   const runtimeEvents = findProjectRuntimeEvents(projectId, getRuntimeStorage());
   const header = {
     title: runtime.title,
@@ -94,6 +122,7 @@ export async function loadOsaWorkspacePageData(
     timeline: buildWorkspaceTimeline(runtime),
     lifecycle,
     orchestra,
+    deliverables,
     replay: buildProjectReplay(runtimeEvents, runtime.title),
     executiveMemory: buildExecutiveMemory(runtimeEvents, {
       header,

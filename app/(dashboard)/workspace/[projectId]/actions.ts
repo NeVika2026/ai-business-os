@@ -6,6 +6,7 @@ import { aiGateway } from '@/services/runtime/gateway/ai-gateway';
 import { USER_FACING_EXECUTION_ERROR } from '@/lib/ai/router-messages';
 import { getLastExecutiveDecision } from '@/lib/executive/executive-engine';
 import { advanceAiOrchestraForProject, resolveOrchestraBlocked } from '@/lib/project-lifecycle/ai-orchestra-engine';
+import { enrichLatestReadyDeliverable } from '@/lib/deliverables/generate-deliverable-gateway';
 import { publishRuntimeEvent } from '@/lib/events/event-runtime';
 import { RUNTIME_EVENT_TYPES } from '@/types/event-runtime';
 import { setActiveProject, resolveGatewayProjectId } from '@/lib/project-runtime/active-project';
@@ -141,6 +142,14 @@ export async function submitWorkspacePrompt(
       goal: executive?.goal,
     });
 
+    await enrichLatestReadyDeliverable({
+      projectId,
+      projectName: runtime.title,
+      projectDescription: runtime.description,
+      organizationId,
+      userId: context.email,
+    });
+
     publishRuntimeEvent({
       projectId,
       type: RUNTIME_EVENT_TYPES.WORKSPACE_PROMPT_COMPLETED,
@@ -206,6 +215,14 @@ export async function resolveOrchestraDecision(projectId: string): Promise<Orche
   if (!next) {
     return { status: 'failed', message: 'Orchestra не найдена для этого проекта.' };
   }
+
+  await enrichLatestReadyDeliverable({
+    projectId,
+    projectName: findProjectRuntime(projectId)?.title ?? projectId,
+    projectDescription: findProjectRuntime(projectId)?.description ?? '',
+    organizationId,
+    userId: context.email,
+  });
 
   publishRuntimeEvent({
     projectId,

@@ -1,3 +1,4 @@
+import { syncDeliverablesWithOrchestra } from '@/lib/deliverables/deliverables-engine';
 import { getLastExecutiveDecision } from '@/lib/executive/executive-engine';
 import { writeExecutiveDecision } from '@/lib/executive/executive-state';
 import { captureGatewayMemory } from '@/lib/memory/memory-engine';
@@ -212,6 +213,16 @@ export function advanceAiOrchestraForProject(
   const next = advanceOrchestraAgent(state, options);
   saveAiOrchestraState(storage, next);
   syncExecutiveWithOrchestra(scope, next, storage);
+
+  syncDeliverablesWithOrchestra({
+    projectId,
+    projectName: options?.projectName ?? state.projectName,
+    projectDescription: state.projectName,
+    queue: next.queue,
+    scope,
+    goal: options?.goal,
+    userId: options?.userId,
+  });
 
   const completedAgent = state.queue.find((agent) => agent.id === state.activeAgentId);
 
