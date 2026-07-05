@@ -46,6 +46,8 @@ export const RUNTIME_EVENT_TYPES = {
   ORCHESTRA_BLOCKED_RESOLVED: 'orchestra.blocked.resolved',
   DELIVERABLE_DRAFT_STARTED: 'deliverable.draft.started',
   DELIVERABLE_READY: 'deliverable.ready',
+  DELIVERABLE_REVIEW_COMPLETED: 'deliverable.review.completed',
+  DELIVERABLE_IMPROVED: 'deliverable.improved',
   DELIVERABLES_PACKAGE_ASSEMBLED: 'deliverables.package.assembled',
   WORKSPACE_LOADED: 'workspace.loaded',
   WORKSPACE_PROMPT_SUBMITTED: 'workspace.prompt.submitted',

@@ -241,6 +241,38 @@ function expandEventToScenes(event: RuntimeEventRecord, projectTitle: string): P
         },
       ];
 
+    case RUNTIME_EVENT_TYPES.DELIVERABLE_REVIEW_COMPLETED: {
+      const title = stringPayload(event.payload, 'deliverableTitle') ?? 'Deliverable';
+      const score = numberPayload(event.payload, 'score');
+
+      return [
+        {
+          ...base,
+          icon: '◈',
+          description:
+            score !== null
+              ? `Executive Review: ${title} — ${score}/100`
+              : `Executive Review: ${title}`,
+        },
+      ];
+    }
+
+    case RUNTIME_EVENT_TYPES.DELIVERABLE_IMPROVED: {
+      const title = stringPayload(event.payload, 'deliverableTitle') ?? 'Deliverable';
+      const version = numberPayload(event.payload, 'version');
+
+      return [
+        {
+          ...base,
+          icon: '◈',
+          description:
+            version !== null
+              ? `${title} улучшен — v${version}`
+              : `${title} улучшен Executive Brain`,
+        },
+      ];
+    }
+
     case RUNTIME_EVENT_TYPES.WORKSPACE_PROMPT_FAILED:
       return [
         {

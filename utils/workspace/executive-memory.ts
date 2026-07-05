@@ -220,6 +220,42 @@ function mapEventToMemoryEntry(
         nextRecommendation: 'Выбрать следующий лучший шаг.',
       };
 
+    case RUNTIME_EVENT_TYPES.DELIVERABLE_REVIEW_COMPLETED: {
+      const title = stringPayload(event.payload, 'deliverableTitle') ?? 'Deliverable';
+      const score = numberPayload(event.payload, 'score');
+
+      return {
+        id: event.id,
+        dateLabel,
+        title: `Executive Review: ${title}`,
+        reason: 'Executive Brain провёл экспертную проверку deliverable.',
+        consequence:
+          score !== null ? `Executive Score — ${score}/100.` : 'Сформирован review с рекомендациями.',
+        nextRecommendation:
+          stringPayload(event.payload, 'nextAction') ?? 'Улучшить результат или продолжить проект.',
+      };
+    }
+
+    case RUNTIME_EVENT_TYPES.DELIVERABLE_IMPROVED: {
+      const title = stringPayload(event.payload, 'deliverableTitle') ?? 'Deliverable';
+      const version = numberPayload(event.payload, 'version');
+      const changeNotes = event.payload.changeNotes;
+
+      return {
+        id: event.id,
+        dateLabel,
+        title: `Executive Brain улучшил ${title}`,
+        reason: 'Improve создал новую версию существующего deliverable.',
+        consequence:
+          Array.isArray(changeNotes) && changeNotes.length > 0
+            ? changeNotes.filter((note) => typeof note === 'string').join(' ')
+            : version
+              ? `Создана версия v${version}.`
+              : 'Deliverable обновлён.',
+        nextRecommendation: 'Проверить улучшенную версию в Results.',
+      };
+    }
+
     case RUNTIME_EVENT_TYPES.MEMORY_ENTRY_CREATED: {
       const importance = stringPayload(event.payload, 'importance');
       const task = stringPayload(event.payload, 'task');

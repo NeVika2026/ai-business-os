@@ -24,6 +24,7 @@ import {
   buildDeliverableFallbackContent,
   type DeliverableGenerationInput,
 } from './deliverable-content';
+import { finalizeReadyDeliverable } from './improve-deliverable';
 
 function orchestraPhaseToDeliverable(status: OrchestraAgent['status']): DeliverablePhase {
   switch (status) {
@@ -55,7 +56,7 @@ function buildDeliverableRecord(
   if (phase === 'ready') {
     const generated = buildDeliverableFallbackContent(input);
 
-    return {
+    return finalizeReadyDeliverable({
       id: agent.id,
       type,
       title: DELIVERABLE_TYPE_LABELS[type],
@@ -66,7 +67,7 @@ function buildDeliverableRecord(
       summary: generated.summary,
       content: generated.content,
       updatedAt: new Date().toISOString(),
-    };
+    });
   }
 
   return {
@@ -79,8 +80,39 @@ function buildDeliverableRecord(
     phase,
     summary: phase === 'draft' ? `${agent.role} готовит ${DELIVERABLE_TYPE_LABELS[type]}` : '',
     content: '',
+    review: null,
+    versions: [],
+    currentVersion: 0,
     updatedAt: new Date().toISOString(),
   };
+}
+
+function publishDeliverableReviewEvent(
+  storage: ReturnType<typeof getRuntimeStorage>,
+  projectId: string,
+  deliverable: ProjectDeliverable,
+): void {
+  if (!deliverable.review) {
+    return;
+  }
+
+  publishRuntimeEvent(
+    {
+      projectId,
+      type: RUNTIME_EVENT_TYPES.DELIVERABLE_REVIEW_COMPLETED,
+      actor: 'system:executive-brain',
+      source: 'executive_brain',
+      payload: {
+        deliverableId: deliverable.id,
+        deliverableType: deliverable.type,
+        deliverableTitle: deliverable.title,
+        score: deliverable.review.score,
+        confidence: deliverable.review.confidence,
+        nextAction: deliverable.review.nextAction,
+      },
+    },
+    storage,
+  );
 }
 
 export function initializeProjectDeliverables(input: {
@@ -160,7 +192,7 @@ export function syncDeliverablesWithOrchestra(input: {
         storage,
       );
 
-      return {
+      const ready = finalizeReadyDeliverable({
         id: agent.id,
         type,
         title: DELIVERABLE_TYPE_LABELS[type],
@@ -171,7 +203,11 @@ export function syncDeliverablesWithOrchestra(input: {
         summary: generated.summary,
         content: generated.content,
         updatedAt: new Date().toISOString(),
-      };
+      });
+
+      publishDeliverableReviewEvent(storage, input.projectId, ready);
+
+      return ready;
     }
 
     if (nextPhase === 'draft' && previous?.phase === 'thinking') {
@@ -203,6 +239,9 @@ export function syncDeliverablesWithOrchestra(input: {
           ? `${agent.role} готовит ${DELIVERABLE_TYPE_LABELS[type]}`
           : (previous?.summary ?? ''),
       content: previous?.content ?? '',
+      review: previous?.review ?? null,
+      versions: previous?.versions ?? [],
+      currentVersion: previous?.currentVersion ?? 0,
       updatedAt: new Date().toISOString(),
     };
   });
@@ -312,10 +351,6 @@ export function loadProjectDeliverablesPackage(projectId: string): ProjectDelive
   return loadProjectDeliverables(getRuntimeStorage(), projectId);
 }
 
-export function countReadyDeliverables(pkg: ProjectDeliverablesPackage | null): number {
-  return pkg?.deliverables.filter((item) => item.phase === 'ready').length ?? 0;
-}
-
 export function hasResultsReady(pkg: ProjectDeliverablesPackage | null): boolean {
   if (!pkg) {
     return false;
@@ -323,3 +358,5 @@ export function hasResultsReady(pkg: ProjectDeliverablesPackage | null): boolean
 
   return pkg.deliverables.some((item) => item.phase === 'ready');
 }
+
+export { improveProjectDeliverable } from './improve-deliverable';

@@ -418,7 +418,9 @@ export function OsaProjectWorkspace({
             <ProjectDeliverablesProgress deliverables={data.deliverables} />
           ) : null}
 
-          {data.deliverables ? <ProjectResultsSection deliverables={data.deliverables} /> : null}
+          {data.deliverables ? (
+            <ProjectResultsSection projectId={data.projectId} deliverables={data.deliverables} />
+          ) : null}
 
           <section className="mt-12 border-t border-[var(--border-subtle)]/60 pt-8">
             {latestMessage ? (

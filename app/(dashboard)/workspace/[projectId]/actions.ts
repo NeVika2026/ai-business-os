@@ -7,6 +7,7 @@ import { USER_FACING_EXECUTION_ERROR } from '@/lib/ai/router-messages';
 import { getLastExecutiveDecision } from '@/lib/executive/executive-engine';
 import { advanceAiOrchestraForProject, resolveOrchestraBlocked } from '@/lib/project-lifecycle/ai-orchestra-engine';
 import { enrichLatestReadyDeliverable } from '@/lib/deliverables/generate-deliverable-gateway';
+import { improveProjectDeliverable } from '@/lib/deliverables/improve-deliverable';
 import { publishRuntimeEvent } from '@/lib/events/event-runtime';
 import { RUNTIME_EVENT_TYPES } from '@/types/event-runtime';
 import { setActiveProject, resolveGatewayProjectId } from '@/lib/project-runtime/active-project';
@@ -23,6 +24,10 @@ export type WorkspacePromptResult =
   | { status: 'failed'; message: string };
 
 export type OrchestraActionResult =
+  | { status: 'ok' }
+  | { status: 'failed'; message: string };
+
+export type ImproveDeliverableResult =
   | { status: 'ok' }
   | { status: 'failed'; message: string };
 
@@ -278,6 +283,58 @@ export async function continueInvestorDemoOrchestra(projectId: string): Promise<
     projectName: runtime.title,
     goal: executive?.goal,
   });
+
+  revalidatePath(`/workspace/${projectId}`);
+
+  return { status: 'ok' };
+}
+
+export async function improveDeliverableResult(
+  projectId: string,
+  deliverableId: string,
+): Promise<ImproveDeliverableResult> {
+  const supabase = await createClient();
+  const organizationId = await getCurrentOrganizationId(supabase);
+
+  if (!organizationId) {
+    return { status: 'failed', message: 'Требуется авторизация.' };
+  }
+
+  const context = await loadHomeUserContext(supabase);
+
+  if (!context) {
+    return { status: 'failed', message: 'Не удалось определить пользователя.' };
+  }
+
+  const snapshot = await loadCabinetRawSnapshot(supabase, organizationId, context.email);
+  syncProjectRuntimesFromSnapshot(snapshot, context);
+
+  const scope = {
+    organizationId,
+    userId: context.email,
+  };
+
+  setActiveProject(scope, projectId);
+
+  const runtime = findProjectRuntime(projectId);
+
+  if (!runtime) {
+    return { status: 'failed', message: 'Проект не найден в Runtime.' };
+  }
+
+  const executive = getLastExecutiveDecision(scope);
+  const updated = improveProjectDeliverable({
+    projectId,
+    deliverableId,
+    projectName: runtime.title,
+    scope,
+    userId: context.email,
+    goal: executive?.goal,
+  });
+
+  if (!updated) {
+    return { status: 'failed', message: 'Deliverable не найден.' };
+  }
 
   revalidatePath(`/workspace/${projectId}`);
 

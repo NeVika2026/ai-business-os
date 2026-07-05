@@ -8,6 +8,34 @@ import {
   buildDeliverableFallbackContent,
   buildDeliverableGatewayPrompt,
 } from './deliverable-content';
+import { buildExecutiveReview } from './executive-review';
+import { createInitialDeliverableVersion } from './improve-deliverable';
+
+function applyEnrichedContent(
+  deliverable: ProjectDeliverable,
+  content: string,
+  summary: string,
+): ProjectDeliverable {
+  const versions =
+    deliverable.versions.length > 0
+      ? deliverable.versions.map((version, index) =>
+          index === 0 ? { ...version, content, summary } : version,
+        )
+      : createInitialDeliverableVersion({ content, summary });
+
+  const next: ProjectDeliverable = {
+    ...deliverable,
+    summary,
+    content,
+    versions,
+    currentVersion: deliverable.currentVersion || 1,
+    updatedAt: new Date().toISOString(),
+  };
+
+  next.review = buildExecutiveReview(next);
+
+  return next;
+}
 
 export async function enrichDeliverableWithGateway(input: {
   deliverable: ProjectDeliverable;
@@ -67,29 +95,15 @@ export async function enrichDeliverableWithGateway(input: {
     const content = response.content?.trim();
 
     if (!content) {
-      return {
-        ...input.deliverable,
-        summary: fallback.summary,
-        content: fallback.content,
-        updatedAt: new Date().toISOString(),
-      };
+      return applyEnrichedContent(input.deliverable, fallback.content, fallback.summary);
     }
 
     const summaryLine = content.split('\n').find((line) => line.trim().length > 0) ?? fallback.summary;
+    const summary = summaryLine.replace(/^#+\s*/, '').slice(0, 160);
 
-    return {
-      ...input.deliverable,
-      summary: summaryLine.replace(/^#+\s*/, '').slice(0, 160),
-      content,
-      updatedAt: new Date().toISOString(),
-    };
+    return applyEnrichedContent(input.deliverable, content, summary);
   } catch {
-    return {
-      ...input.deliverable,
-      summary: fallback.summary,
-      content: fallback.content,
-      updatedAt: new Date().toISOString(),
-    };
+    return applyEnrichedContent(input.deliverable, fallback.content, fallback.summary);
   }
 }
 
