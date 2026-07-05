@@ -8,6 +8,7 @@ import { OrbitMark } from '@/components/brand/OrbitMark';
 import { AiOrchestraPanel } from '@/components/workspace/AiOrchestraPanel';
 import { MorningBriefingPanel } from '@/components/workspace/MorningBriefingPanel';
 import { ProjectLifecycleReveal } from '@/components/workspace/ProjectLifecycleReveal';
+import { ProjectReplayPanel } from '@/components/workspace/ProjectReplayPanel';
 import type { OsaWorkspacePageData } from '@/utils/workspace/workspace-types';
 import { buildExecutiveWorkspaceView } from '@/utils/workspace/executive-workspace-view';
 import {
@@ -47,6 +48,7 @@ export function OsaProjectWorkspace({ data, showLifecycleReveal = false }: OsaPr
     return [];
   });
   const [error, setError] = useState<string | null>(null);
+  const [showReplay, setShowReplay] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const latestMessage = messages.at(-1) ?? null;
@@ -125,6 +127,14 @@ export function OsaProjectWorkspace({ data, showLifecycleReveal = false }: OsaPr
     );
   }
 
+  if (showReplay) {
+    return (
+      <div className="osa-workspace-surface">
+        <ProjectReplayPanel replay={data.replay} onClose={() => setShowReplay(false)} />
+      </div>
+    );
+  }
+
   return (
     <div className="osa-workspace-surface osa-executive-workspace mx-auto w-full max-w-[1120px] px-2 pb-16 pt-4 sm:px-4">
       <header className="osa-exec-fade flex items-start justify-between gap-6">
@@ -134,9 +144,18 @@ export function OsaProjectWorkspace({ data, showLifecycleReveal = false }: OsaPr
             {view.todayHeadline}
           </h1>
         </div>
-        <p className="hidden max-w-[12rem] text-right text-[12px] leading-relaxed text-[var(--text-tertiary)] sm:block">
-          {view.lastActivityLabel}
-        </p>
+        <div className="flex flex-col items-end gap-3">
+          <button
+            type="button"
+            onClick={() => setShowReplay(true)}
+            className="rounded-full border border-[var(--border-subtle)] px-4 py-2 text-[13px] font-medium text-[var(--text-secondary)] transition hover:border-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+          >
+            Replay Project
+          </button>
+          <p className="hidden max-w-[12rem] text-right text-[12px] leading-relaxed text-[var(--text-tertiary)] sm:block">
+            {view.lastActivityLabel}
+          </p>
+        </div>
       </header>
 
       <div className="osa-exec-fade osa-exec-delay-1 mt-14 flex flex-col items-center">

@@ -11,6 +11,7 @@ import {
   hasDismissedMorningBriefing,
   morningBriefingStorageKey,
 } from '@/utils/workspace/morning-briefing';
+import { buildProjectReplay } from '@/utils/workspace/project-replay';
 import type { OsaWorkspacePageData } from '@/utils/workspace/workspace-types';
 
 const scope = {
@@ -66,6 +67,7 @@ function baseData(overrides: Partial<OsaWorkspacePageData> = {}): OsaWorkspacePa
     timeline: [],
     lifecycle: null,
     orchestra: null,
+    replay: buildProjectReplay([], 'Private Alpha'),
     scope,
     ...overrides,
   };

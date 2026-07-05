@@ -5,6 +5,7 @@ import { resetExecutiveState } from '@/lib/executive/executive-state';
 import { createProjectRuntime } from '@/lib/project-runtime/project-runtime-engine';
 import { resetProjectRuntimeStore } from '@/lib/project-runtime/project-runtime-store';
 import { buildExecutiveWorkspaceView } from '@/utils/workspace/executive-workspace-view';
+import { buildProjectReplay } from '@/utils/workspace/project-replay';
 import type { OsaWorkspacePageData } from '@/utils/workspace/workspace-types';
 
 const scope = {
@@ -46,6 +47,7 @@ function baseData(overrides: Partial<OsaWorkspacePageData> = {}): OsaWorkspacePa
     timeline: [],
     lifecycle: null,
     orchestra: null,
+    replay: buildProjectReplay([], 'AI Business OS'),
     scope,
     ...overrides,
   };

@@ -3,6 +3,8 @@ import type { AiOrchestraState } from '@/types/ai-orchestra';
 import type { ProjectLifecycleSnapshot } from '@/types/project-lifecycle';
 import type { ProjectRuntimeScope } from '@/types/project-runtime';
 
+import type { ProjectReplay } from './project-replay';
+
 export type WorkspaceTimelineEntry = {
   id: string;
   task: string;
@@ -32,5 +34,6 @@ export type OsaWorkspacePageData = {
   timeline: WorkspaceTimelineEntry[];
   lifecycle: ProjectLifecycleSnapshot | null;
   orchestra: AiOrchestraState | null;
+  replay: ProjectReplay;
   scope: ProjectRuntimeScope;
 };

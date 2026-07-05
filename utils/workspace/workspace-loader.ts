@@ -18,8 +18,9 @@ import { PROJECT_STATUS_LABELS } from '@/utils/projects/project-types';
 import { buildWorkspaceTimeline } from './workspace-timeline';
 import { buildMorningBriefing } from './morning-briefing';
 import type { OsaWorkspacePageData } from './workspace-types';
-import { publishRuntimeEvent } from '@/lib/events/event-runtime';
+import { findProjectRuntimeEvents, publishRuntimeEvent } from '@/lib/events/event-runtime';
 import { RUNTIME_EVENT_TYPES } from '@/types/event-runtime';
+import { buildProjectReplay } from './project-replay';
 
 export async function loadOsaWorkspacePageData(
   supabase: SupabaseClient,
@@ -86,6 +87,10 @@ export async function loadOsaWorkspacePageData(
     timeline: buildWorkspaceTimeline(runtime),
     lifecycle: loadProjectLifecycleSnapshot(getRuntimeStorage(), projectId),
     orchestra: loadAiOrchestraState(getRuntimeStorage(), projectId),
+    replay: buildProjectReplay(
+      findProjectRuntimeEvents(projectId, getRuntimeStorage()),
+      runtime.title,
+    ),
     scope,
   };
 

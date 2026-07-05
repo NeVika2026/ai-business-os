@@ -93,6 +93,95 @@
     animation: orbit-breathe 4.5s ease-in-out infinite;
   }
 
+  @keyframes osa-exec-fade-in {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes osa-orbit-presence-pulse {
+    0%,
+    88%,
+    100% {
+      opacity: 1;
+    }
+
+    94% {
+      opacity: 0.82;
+    }
+  }
+
+  @keyframes osa-team-pulse {
+    0%,
+    100% {
+      opacity: 0.45;
+    }
+
+    50% {
+      opacity: 1;
+    }
+  }
+
+  .osa-executive-workspace {
+    --exec-surface: #f6f5f2;
+  }
+
+  .osa-exec-fade {
+    animation: osa-exec-fade-in 0.7s ease-out both;
+  }
+
+  .osa-exec-delay-1 {
+    animation-delay: 0.12s;
+  }
+
+  .osa-exec-delay-2 {
+    animation-delay: 0.22s;
+  }
+
+  .osa-orbit-presence {
+    animation: osa-orbit-presence-pulse 8s ease-in-out infinite;
+  }
+
+  .osa-team-pulse {
+    animation: osa-team-pulse 3s ease-in-out infinite;
+  }
+
+  .osa-executive-workspace .bg-\[var\(--surface-1\)\] {
+    background-color: var(--exec-surface);
+  }
+
+  .osa-project-replay {
+    background: #ffffff;
+  }
+
+  .osa-replay-scene {
+    animation: osa-exec-fade-in 0.55s ease-out both;
+  }
+
+  .osa-project-replay-story .osa-replay-scene:nth-child(1) {
+    animation-delay: 0.04s;
+  }
+
+  .osa-project-replay-story .osa-replay-scene:nth-child(2) {
+    animation-delay: 0.1s;
+  }
+
+  .osa-project-replay-story .osa-replay-scene:nth-child(3) {
+    animation-delay: 0.16s;
+  }
+
+  .osa-project-replay-story .osa-replay-scene:nth-child(4) {
+    animation-delay: 0.22s;
+  }
+
+  .osa-project-replay-story .osa-replay-scene:nth-child(n + 5) {
+    animation-delay: 0.28s;
+  }
+
   .osa-seq-orbit {
     animation: wow-fade-in 0.55s ease-out both;
   }
@@ -112,6 +201,174 @@
     animation-delay: 1.3s;
   }
 
+  @keyframes osa-fc-orbit-emerge {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 0.58;
+    }
+  }
+
+  @keyframes osa-fc-line-enter {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes osa-fc-line-dissolve {
+    from {
+      opacity: 1;
+    }
+
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes osa-fc-osa-word-enter {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes osa-fc-screen-dissolve {
+    from {
+      opacity: 1;
+    }
+
+    to {
+      opacity: 0;
+    }
+  }
+
+  .osa-fc-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000000;
+    cursor: pointer;
+  }
+
+  .osa-fc-line {
+    max-width: min(100%, 36rem);
+    padding: 0 1.5rem;
+    font-size: 1.25rem;
+    font-weight: 400;
+    line-height: 1.6;
+    color: #ffffff;
+    text-align: center;
+  }
+
+  .osa-fc-line-enter {
+    animation: osa-fc-line-enter 0.65s ease-out both;
+  }
+
+  .osa-fc-line-visible {
+    opacity: 1;
+  }
+
+  .osa-fc-line-dissolve {
+    animation: osa-fc-line-dissolve 0.45s ease-out forwards;
+  }
+
+  .osa-fc-orbit-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2.75rem;
+    padding: 2rem 1.5rem;
+  }
+
+  .osa-fc-orbit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .osa-fc-orbit-emerge {
+    animation: osa-fc-orbit-emerge 1s ease-out both;
+  }
+
+  .osa-fc-orbit-visible {
+    opacity: 0.58;
+  }
+
+  .osa-fc-orbit-mark {
+    color: rgba(255, 255, 255, 0.42);
+  }
+
+  .osa-fc-line-with-orbit {
+    font-size: 1.125rem;
+  }
+
+  .osa-fc-closing {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 2rem 1.5rem;
+    text-align: center;
+  }
+
+  .osa-fc-osa-word {
+    font-size: clamp(3rem, 12vw, 5.5rem);
+    font-weight: 500;
+    letter-spacing: 0.28em;
+    color: #ffffff;
+    text-indent: 0.28em;
+  }
+
+  .osa-fc-osa-word-hidden {
+    opacity: 0;
+  }
+
+  .osa-fc-osa-word-enter {
+    animation: osa-fc-osa-word-enter 0.55s ease-out both;
+  }
+
+  .osa-fc-osa-word-visible {
+    opacity: 1;
+  }
+
+  .osa-fc-tagline {
+    max-width: min(100%, 28rem);
+    font-size: 0.8125rem;
+    font-weight: 400;
+    line-height: 1.5;
+    letter-spacing: 0.02em;
+    color: rgba(255, 255, 255, 0.62);
+  }
+
+  .osa-fc-tagline-enter {
+    animation: osa-fc-line-enter 0.35s ease-out both;
+  }
+
+  .osa-fc-tagline-visible {
+    opacity: 1;
+  }
+
+  .osa-fc-screen-dissolve {
+    animation: osa-fc-screen-dissolve 0.55s ease-out forwards;
+    pointer-events: none;
+  }
+
+  .osa-login-enter {
+    animation: wow-fade-in 0.55s ease-out both;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .orbit-breathe,
     .orbit-breathe-slow {
@@ -122,6 +379,18 @@
     .osa-seq-greeting,
     .osa-seq-workspace,
     .osa-seq-navigator {
+      animation: none;
+    }
+
+    .osa-exec-fade,
+    .osa-orbit-presence,
+    .osa-team-pulse,
+    .osa-fc-orbit-emerge,
+    .osa-fc-line-dissolve,
+    .osa-fc-osa-word-enter,
+    .osa-fc-tagline-enter,
+    .osa-fc-screen-dissolve,
+    .osa-login-enter {
       animation: none;
     }
   }
