@@ -1,3 +1,5 @@
+import type { ExecutiveAttentionItem } from '@/types/executive-attention';
+
 export type MissionControlProject = {
   id: string;
   name: string;
@@ -47,6 +49,7 @@ export type MissionControlData = {
   } | null;
   recommendations: string[];
   risks: string[];
+  attentionRequired: ExecutiveAttentionItem[];
   continueHref: string;
   continueLabel: string;
 };

@@ -105,6 +105,7 @@ describe('Mission Control', () => {
     assert.ok(data.todayFocus.headline.length > 0);
     assert.ok(data.nextBestAction.label.length > 0);
     assert.equal(data.organizationName, 'Acme AI');
+    assert.ok(Array.isArray(data.attentionRequired));
   });
 
   it('includes subsystem and insight risks without new runtime data', () => {
@@ -122,8 +123,11 @@ describe('Mission Control', () => {
       context,
     });
 
-    assert.ok(data.risks.some((risk) => risk.includes('failed')));
-    assert.ok(data.risks.some((risk) => risk.includes('knowledge')));
+    assert.ok(data.attentionRequired.some((item) => item.cause.includes('ошибк')));
+    assert.ok(
+      data.attentionRequired.some((item) => item.title.toLowerCase().includes('knowledge')) ||
+        data.risks.some((risk) => risk.toLowerCase().includes('контекст') || risk.toLowerCase().includes('memory')),
+    );
   });
 
   it('resolves workspace project id from synced runtime', () => {

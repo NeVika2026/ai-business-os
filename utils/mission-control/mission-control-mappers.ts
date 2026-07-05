@@ -1,4 +1,6 @@
 import { getLastExecutiveDecision } from '@/lib/executive/executive-engine';
+import { buildExecutiveAttentionItems } from '@/lib/executive/executive-watcher';
+import { resolveProjectRuntimeScope } from '@/lib/project-runtime/scope';
 import { isDefaultWorkspaceId } from '@/lib/project-runtime/constants';
 import { orchestraStatusLabel } from '@/lib/project-lifecycle/build-ai-orchestra';
 import { deliverablePhaseLabel } from '@/lib/deliverables/deliverable-catalog';
@@ -15,6 +17,7 @@ import type {
   MissionControlOrchestraAgent,
   MissionControlProject,
 } from './mission-control-types';
+import type { ExecutiveAttentionItem } from '@/types/executive-attention';
 
 type BuildMissionControlInput = {
   concierge: ConciergeData;
@@ -135,7 +138,19 @@ function mapRecommendations(
   return uniqueStrings(recommendations).slice(0, 5);
 }
 
-function mapRisks(concierge: ConciergeData, snapshot: CabinetRawSnapshot, workspace: OsaWorkspacePageData | null): string[] {
+function mapRisksFromAttention(attentionItems: ExecutiveAttentionItem[]): string[] {
+  return uniqueStrings(
+    attentionItems
+      .filter((item) => item.priority === 'high' || item.priority === 'medium')
+      .map((item) => item.consequence),
+  ).slice(0, 5);
+}
+
+function mapLegacyRisks(
+  concierge: ConciergeData,
+  snapshot: CabinetRawSnapshot,
+  workspace: OsaWorkspacePageData | null,
+): string[] {
   const risks: string[] = [];
 
   for (const insight of concierge.insights) {
@@ -175,8 +190,30 @@ function mapRisks(concierge: ConciergeData, snapshot: CabinetRawSnapshot, worksp
   return uniqueStrings(risks).slice(0, 5);
 }
 
+function mapRisks(
+  concierge: ConciergeData,
+  snapshot: CabinetRawSnapshot,
+  workspace: OsaWorkspacePageData | null,
+  attentionItems: ExecutiveAttentionItem[],
+): string[] {
+  const derived = mapRisksFromAttention(attentionItems);
+
+  if (derived.length > 0) {
+    return derived;
+  }
+
+  return mapLegacyRisks(concierge, snapshot, workspace);
+}
+
 export function buildMissionControlData(input: BuildMissionControlInput): MissionControlData {
   const { concierge, snapshot, workspace, context } = input;
+  const scope = resolveProjectRuntimeScope(snapshot, context);
+  const attentionRequired = buildExecutiveAttentionItems({
+    scope,
+    snapshot,
+    concierge,
+    workspace,
+  });
   const projectId = workspace?.projectId ?? null;
   const projectHref = projectId ? `/workspace/${projectId}` : concierge.landing.continueHref ?? '/projects';
   const projectName = workspace?.header.title ?? concierge.projectBriefing.activeProjectTitle ?? 'Проект';
@@ -223,7 +260,8 @@ export function buildMissionControlData(input: BuildMissionControlInput): Missio
         }
       : null,
     recommendations: mapRecommendations(concierge, workspace),
-    risks: mapRisks(concierge, snapshot, workspace),
+    risks: mapRisks(concierge, snapshot, workspace, attentionRequired),
+    attentionRequired,
     continueHref: concierge.landing.continueHref ?? '/projects',
     continueLabel: concierge.landing.continueLabel,
   };

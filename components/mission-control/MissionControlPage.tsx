@@ -5,6 +5,7 @@ import { HomeInvestorDemoAction } from '@/components/home/HomeInvestorDemoAction
 import { OsaEmptyState } from '@/components/osa/OsaEmptyState';
 import { OSA_EMPTY_STATES } from '@/utils/osa/empty-states';
 import type { MissionControlData } from '@/utils/mission-control/mission-control-types';
+import type { ExecutiveAttentionPriority } from '@/types/executive-attention';
 
 type MissionControlPageProps = {
   data: MissionControlData;
@@ -16,6 +17,28 @@ function SectionLabel({ children }: { children: string }) {
       {children}
     </p>
   );
+}
+
+function priorityLabel(priority: ExecutiveAttentionPriority): string {
+  switch (priority) {
+    case 'high':
+      return 'High';
+    case 'medium':
+      return 'Medium';
+    case 'low':
+      return 'Low';
+  }
+}
+
+function priorityTone(priority: ExecutiveAttentionPriority): string {
+  switch (priority) {
+    case 'high':
+      return 'text-red-700';
+    case 'medium':
+      return 'text-amber-700';
+    case 'low':
+      return 'text-[var(--text-tertiary)]';
+  }
 }
 
 export function MissionControlPage({ data }: MissionControlPageProps) {
@@ -59,6 +82,46 @@ export function MissionControlPage({ data }: MissionControlPageProps) {
         <p className="max-w-xl text-[14px] leading-relaxed text-[var(--text-tertiary)]">
           {data.nextBestAction.description}
         </p>
+      </section>
+
+      <section className="mt-24 space-y-8">
+        <SectionLabel>Attention Required</SectionLabel>
+        {data.attentionRequired.length === 0 ? (
+          <p className="text-[15px] leading-relaxed text-[var(--text-tertiary)]">
+            Executive Brain не видит отклонений — проекты в норме.
+          </p>
+        ) : (
+          <ul className="space-y-10">
+            {data.attentionRequired.map((item) => (
+              <li key={item.id} className="space-y-3">
+                <div className="flex flex-wrap items-baseline justify-between gap-3">
+                  {item.href ? (
+                    <Link
+                      href={item.href}
+                      className="text-[17px] font-medium text-[var(--text-primary)] transition hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                    >
+                      {item.title}
+                    </Link>
+                  ) : (
+                    <p className="text-[17px] font-medium text-[var(--text-primary)]">{item.title}</p>
+                  )}
+                  <p className={`text-[12px] font-medium uppercase tracking-[0.14em] ${priorityTone(item.priority)}`}>
+                    Priority {priorityLabel(item.priority)}
+                  </p>
+                </div>
+                <p className="text-[15px] leading-relaxed text-[var(--text-secondary)]">{item.cause}</p>
+                <div className="space-y-1 text-[14px] leading-relaxed text-[var(--text-tertiary)]">
+                  <p>
+                    <span className="text-[var(--text-secondary)]">Последствия.</span> {item.consequence}
+                  </p>
+                  <p>
+                    <span className="text-[var(--text-secondary)]">Recommendation.</span> {item.recommendation}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <div className="mt-28 grid gap-24 xl:grid-cols-[minmax(0,1fr)_240px] xl:gap-20">
