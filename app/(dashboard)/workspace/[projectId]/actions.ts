@@ -4,11 +4,10 @@ import { revalidatePath } from 'next/cache';
 
 import { aiGateway } from '@/services/runtime/gateway/ai-gateway';
 import {
-  mapCaughtErrorToUserMessage,
   USER_FACING_RUNTIME_ERROR,
   userFacingErrorMessage,
 } from '@/lib/ai/user-facing-errors';
-import { USER_FACING_EXECUTION_ERROR } from '@/lib/ai/router-messages';
+import { buildWorkspaceTaskFallback } from '@/lib/login/first-result-plan';
 import { getLastExecutiveDecision } from '@/lib/executive/executive-engine';
 import { advanceAiOrchestraForProject, resolveOrchestraBlocked } from '@/lib/project-lifecycle/ai-orchestra-engine';
 import { enrichLatestReadyDeliverable } from '@/lib/deliverables/generate-deliverable-gateway';
@@ -128,6 +127,8 @@ export async function submitWorkspacePrompt(
     const content = response.content?.trim();
 
     if (!content) {
+      const fallback = buildWorkspaceTaskFallback(trimmed, runtime.title);
+
       publishRuntimeEvent({
         projectId,
         type: RUNTIME_EVENT_TYPES.WORKSPACE_PROMPT_FAILED,
@@ -137,10 +138,25 @@ export async function submitWorkspacePrompt(
         payload: {
           runId,
           reason: 'empty_response',
+          usedFallback: true,
         },
       });
 
-      return { status: 'failed', message: USER_FACING_EXECUTION_ERROR };
+      publishRuntimeEvent({
+        projectId,
+        type: RUNTIME_EVENT_TYPES.WORKSPACE_PROMPT_COMPLETED,
+        actor: `user:${context.email}`,
+        source: 'workspace',
+        payload: {
+          runId,
+          responseLength: fallback.length,
+          usedFallback: true,
+        },
+      });
+
+      revalidatePath(`/workspace/${projectId}`);
+
+      return { status: 'ok', content: fallback };
     }
 
     const executive = getLastExecutiveDecision(scope);
@@ -175,6 +191,8 @@ export async function submitWorkspacePrompt(
 
     return { status: 'ok', content };
   } catch (error) {
+    const fallback = buildWorkspaceTaskFallback(trimmed, runtime.title);
+
     publishRuntimeEvent({
       projectId,
       type: RUNTIME_EVENT_TYPES.WORKSPACE_PROMPT_FAILED,
@@ -184,10 +202,26 @@ export async function submitWorkspacePrompt(
       payload: {
         runId,
         reason: 'gateway_error',
+        usedFallback: true,
+        error: error instanceof Error ? error.message : 'unknown',
       },
     });
 
-    return { status: 'failed', message: mapCaughtErrorToUserMessage(error, 'gateway') };
+    publishRuntimeEvent({
+      projectId,
+      type: RUNTIME_EVENT_TYPES.WORKSPACE_PROMPT_COMPLETED,
+      actor: `user:${context.email}`,
+      source: 'workspace',
+      payload: {
+        runId,
+        responseLength: fallback.length,
+        usedFallback: true,
+      },
+    });
+
+    revalidatePath(`/workspace/${projectId}`);
+
+    return { status: 'ok', content: fallback };
   }
 }
 

@@ -42,7 +42,7 @@ export type ProfileMetric = {
 export const CABINET_ROUTE = '/cabinet';
 
 export const PRIMARY_NAVIGATION: CabinetNavItem[] = [
-  { label: 'Mission Control', href: '/home', icon: 'today' },
+  { label: 'Home', href: '/home', icon: 'today' },
   { label: 'Projects', href: '/projects', icon: 'projects' },
   { label: 'History', href: '/history', icon: 'history' },
   { label: 'Settings', href: '/settings', icon: 'settings' },
@@ -191,7 +191,7 @@ export function isCabinetNavigationOrdered(): boolean {
   const labels = CABINET_NAVIGATION.map((item) => item.label);
 
   return (
-    labels.indexOf('Mission Control') < labels.indexOf('Projects') &&
+    labels.indexOf('Home') < labels.indexOf('Projects') &&
     labels.indexOf('Projects') < labels.indexOf('History') &&
     labels.indexOf('History') < labels.indexOf('Settings')
   );

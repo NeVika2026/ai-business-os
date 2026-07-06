@@ -1,11 +1,13 @@
 type OsaErrorStateProps = {
   message: string;
+  hint?: string;
   onRetry?: () => void;
   retryLabel?: string;
 };
 
 export function OsaErrorState({
   message,
+  hint,
   onRetry,
   retryLabel = 'Попробовать снова',
 }: OsaErrorStateProps) {
@@ -15,7 +17,8 @@ export function OsaErrorState({
       role="alert"
       aria-live="polite"
     >
-      <p className="text-[14px] leading-relaxed text-red-800">{message}</p>
+      <p className="text-[14px] font-medium leading-relaxed text-red-900">{message}</p>
+      {hint ? <p className="mt-2 text-[14px] leading-relaxed text-red-800">{hint}</p> : null}
       {onRetry ? (
         <button
           type="button"

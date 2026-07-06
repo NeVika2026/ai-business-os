@@ -2,17 +2,13 @@ import Link from 'next/link';
 
 import { NextBestStep } from '@/components/navigator/NextBestStep';
 
-const FALLBACK_MESSAGE =
-  'Не удалось подготовить первый план. Попробуйте ещё раз.' as const;
-
 type FirstResultScreenProps = {
   plan: string | null;
-  hasError: boolean;
 };
 
-export function FirstResultScreen({ plan, hasError }: FirstResultScreenProps) {
-  const showError = hasError || !plan?.trim();
-  const safePlan = showError ? null : plan?.trim() ?? null;
+export function FirstResultScreen({ plan }: FirstResultScreenProps) {
+  const safePlan = plan?.trim() ?? null;
+  const showError = !safePlan;
 
   return (
     <main className="flex min-h-full flex-1 flex-col items-center justify-center px-6 py-20 sm:py-28">
@@ -23,7 +19,7 @@ export function FirstResultScreen({ plan, hasError }: FirstResultScreenProps) {
               Что-то пошло не так
             </h1>
             <p className="mt-4 text-base leading-relaxed text-[var(--text-secondary)]">
-              {FALLBACK_MESSAGE}
+              Не удалось сохранить результат. Попробуйте ещё раз.
             </p>
             <div className="mt-8 flex justify-center">
               <Link

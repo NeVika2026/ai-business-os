@@ -4,8 +4,14 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { aiGateway } from '@/services/runtime/gateway/ai-gateway';
+import { publishRuntimeEvent } from '@/lib/events/event-runtime';
+import {
+  buildFirstResultGatewayPrompt,
+  buildFirstResultFallbackPlan,
+  resolveFirstPlanContent,
+} from '@/lib/login/first-result-plan';
 import { saveFirstResult } from '@/lib/login/first-result-store';
-import { USER_FACING_EXECUTION_ERROR } from '@/lib/ai/router-messages';
+import { RUNTIME_EVENT_TYPES } from '@/types/event-runtime';
 import type { GatewayRequest } from '@/types/runtime/dto';
 import { createClient } from '@/services/supabase/server';
 
@@ -18,6 +24,32 @@ function getOrigin(headersList: Headers) {
   }
 
   return 'http://127.0.0.1:3000';
+}
+
+function logFirstResultEvent(input: {
+  runId: string;
+  status: 'completed' | 'failed';
+  usedFallback: boolean;
+  reason?: string;
+  contentLength: number;
+}) {
+  publishRuntimeEvent({
+    projectId: null,
+    type:
+      input.status === 'completed'
+        ? RUNTIME_EVENT_TYPES.WORKSPACE_PROMPT_COMPLETED
+        : RUNTIME_EVENT_TYPES.WORKSPACE_PROMPT_FAILED,
+    actor: 'system:login-first-result',
+    source: 'workspace',
+    status: input.status === 'completed' ? 'completed' : 'failed',
+    payload: {
+      runId: input.runId,
+      intent: 'login_first_result',
+      usedFallback: input.usedFallback,
+      reason: input.reason ?? null,
+      contentLength: input.contentLength,
+    },
+  });
 }
 
 export async function sendMagicLink(formData: FormData) {
@@ -74,7 +106,7 @@ export async function generateFirstPlan(formData: FormData) {
     messages: [
       {
         role: 'user',
-        content: `Ты — член моей команды в AI Business OS. Помоги мне сделать первый шаг.\n\nМоя задача:\n\"${trimmed}\"\n\nОтветь коротким планом действий в 4–6 пунктов, на русском языке, без технических терминов и без ссылок на модели ИИ.`,
+        content: buildFirstResultGatewayPrompt(trimmed),
       },
     ],
     tools: [],
@@ -98,21 +130,32 @@ export async function generateFirstPlan(formData: FormData) {
     },
   };
 
+  let gatewayContent: string | null = null;
+  let failureReason: string | undefined;
+
   try {
     const response = await aiGateway.complete(request);
-    const content = response.content ?? '';
+    gatewayContent = response.content ?? null;
 
-    if (!content.trim()) {
-      throw new Error('empty_content');
+    if (!gatewayContent?.trim()) {
+      failureReason = 'empty_response';
     }
-
-    const id = crypto.randomUUID();
-    saveFirstResult(id, content.trim());
-    redirect(`/login/first-result?id=${encodeURIComponent(id)}`);
-  } catch {
-    const id = crypto.randomUUID();
-    saveFirstResult(id, USER_FACING_EXECUTION_ERROR);
-    redirect(`/login/first-result?id=${encodeURIComponent(id)}&error=1`);
+  } catch (error) {
+    failureReason = error instanceof Error ? error.message : 'gateway_error';
   }
-}
 
+  const resolved = resolveFirstPlanContent(trimmed, gatewayContent);
+  const content = resolved.content;
+
+  logFirstResultEvent({
+    runId,
+    status: 'completed',
+    usedFallback: resolved.usedFallback,
+    reason: failureReason,
+    contentLength: content.length,
+  });
+
+  const id = crypto.randomUUID();
+  saveFirstResult(id, content, trimmed);
+  redirect(`/login/first-result?id=${encodeURIComponent(id)}`);
+}

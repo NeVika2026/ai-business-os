@@ -1,5 +1,6 @@
 import { FirstResultScreen } from '@/components/welcome/FirstResultScreen';
-import { getFirstResult } from '@/lib/login/first-result-store';
+import { buildFirstResultFallbackPlan } from '@/lib/login/first-result-plan';
+import { getFirstResultEntry } from '@/lib/login/first-result-store';
 
 type FirstResultPageProps = {
   searchParams: Promise<{
@@ -10,9 +11,11 @@ type FirstResultPageProps = {
 
 export default async function FirstResultPage({ searchParams }: FirstResultPageProps) {
   const params = await searchParams;
-  const plan = getFirstResult(params.id);
-  const hasError = params.error === '1';
+  const entry = getFirstResultEntry(params.id);
+  const plan =
+    entry?.content?.trim() ||
+    (entry?.task ? buildFirstResultFallbackPlan(entry.task) : null);
 
-  return <FirstResultScreen plan={plan} hasError={hasError} />;
+  return <FirstResultScreen plan={plan} />;
 }
 

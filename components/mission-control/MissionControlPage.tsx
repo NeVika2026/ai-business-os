@@ -45,9 +45,17 @@ export function MissionControlPage({ data }: MissionControlPageProps) {
   return (
     <div className="osa-mission-control mx-auto w-full max-w-[980px] px-2 pb-32 pt-8 sm:px-4 sm:pt-12">
       <header className="space-y-6">
-        <div className="flex items-center gap-4">
-          <OrbitMark size="sm" breathe className="text-[var(--accent)]" />
-          <p className="text-[13px] tracking-[0.04em] text-[var(--text-secondary)]">{data.organizationName}</p>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <OrbitMark size="sm" breathe className="text-[var(--accent)]" />
+            <p className="text-[13px] tracking-[0.04em] text-[var(--text-secondary)]">{data.organizationName}</p>
+          </div>
+          <Link
+            href="/home"
+            className="text-[13px] text-[var(--text-tertiary)] transition hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+          >
+            ← Home
+          </Link>
         </div>
 
         <div className="space-y-3">

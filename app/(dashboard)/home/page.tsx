@@ -1,10 +1,10 @@
 import { redirect } from 'next/navigation';
 
-import { MissionControlPage } from '@/components/mission-control/MissionControlPage';
+import { OsaHomeActionScreen } from '@/components/home/OsaHomeActionScreen';
 import { TodayFallback } from '@/components/home/TodayFallback';
 import { createClient } from '@/services/supabase/server';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
-import { loadMissionControlPageData } from '@/utils/mission-control/mission-control-loader';
+import { loadHomeUserContext } from '@/utils/home/home-loader';
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -14,15 +14,11 @@ export default async function HomePage() {
     redirect('/login');
   }
 
-  const result = await loadMissionControlPageData(supabase, organizationId);
+  const context = await loadHomeUserContext(supabase);
 
-  if (result.status === 'unauthorized') {
-    redirect('/login');
-  }
-
-  if (result.status === 'fallback') {
+  if (!context) {
     return <TodayFallback />;
   }
 
-  return <MissionControlPage data={result.data} />;
+  return <OsaHomeActionScreen organizationName={context.organizationName} />;
 }

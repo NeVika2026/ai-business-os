@@ -3,6 +3,10 @@
 import { revalidatePath } from 'next/cache';
 
 import { mapCaughtErrorToUserMessage } from '@/lib/ai/user-facing-errors';
+import { resolveActiveProject } from '@/lib/project-runtime/active-project';
+import { resolveProjectRuntimeScope } from '@/lib/project-runtime/scope';
+import { syncProjectRuntimesFromSnapshot } from '@/lib/project-runtime/project-runtime-sync';
+import { submitWorkspacePrompt } from '@/app/(dashboard)/workspace/[projectId]/actions';
 import { createClient } from '@/services/supabase/server';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
 import { mapRunsToHistory } from '@/utils/cabinet/dashboard-mappers';
@@ -20,8 +24,86 @@ import {
 import { loadHomeUserContext } from '@/utils/home/home-loader';
 import type { HomeGoalId } from '@/utils/home/home-types';
 import { buildWowHandoffContext } from '@/utils/home/wow-engine';
+import { buildHomeTaskPrompt, homeTaskErrorHint, type HomeQuickActionId } from '@/utils/home/home-action';
+import { resolveMissionControlProjectId } from '@/utils/mission-control/mission-control-mappers';
 
 const RUNNING_STATUSES = new Set(['pending', 'running']);
+
+export type SubmitHomeTaskResult =
+  | { status: 'ok'; content: string; projectId: string }
+  | { status: 'failed'; message: string; hint: string };
+
+export async function submitHomeTask(
+  input: string,
+  quickActionId?: HomeQuickActionId,
+): Promise<SubmitHomeTaskResult> {
+  const prompt = buildHomeTaskPrompt(input, quickActionId);
+
+  if (!prompt.trim()) {
+    return {
+      status: 'failed',
+      message: 'Опишите задачу для OSA.',
+      hint: 'Введите запрос или выберите быстрое действие.',
+    };
+  }
+
+  const supabase = await createClient();
+  const organizationId = await getCurrentOrganizationId(supabase);
+
+  if (!organizationId) {
+    return {
+      status: 'failed',
+      message: 'Требуется авторизация.',
+      hint: homeTaskErrorHint('Требуется авторизация.'),
+    };
+  }
+
+  const context = await loadHomeUserContext(supabase);
+
+  if (!context) {
+    return {
+      status: 'failed',
+      message: 'Не удалось определить пользователя.',
+      hint: homeTaskErrorHint('Не удалось определить пользователя.'),
+    };
+  }
+
+  const snapshot = await loadCabinetRawSnapshot(supabase, organizationId, context.email);
+  syncProjectRuntimesFromSnapshot(snapshot, context);
+
+  const scope = resolveProjectRuntimeScope(snapshot, context);
+  const activeRuntime = resolveActiveProject(scope);
+  const projectId = resolveMissionControlProjectId(activeRuntime, snapshot) ?? activeRuntime.id;
+
+  try {
+    const result = await submitWorkspacePrompt(projectId, prompt);
+
+    if (result.status === 'failed') {
+      return {
+        status: 'failed',
+        message: result.message,
+        hint: homeTaskErrorHint(result.message),
+      };
+    }
+
+    revalidatePath('/home');
+    revalidatePath(`/workspace/${projectId}`);
+
+    return {
+      status: 'ok',
+      content: result.content,
+      projectId,
+    };
+  } catch (error) {
+    const message = mapCaughtErrorToUserMessage(error, 'generic');
+
+    return {
+      status: 'failed',
+      message,
+      hint: homeTaskErrorHint(message),
+    };
+  }
+}
 
 export type StartGoalHandoffResult =
   | { status: 'ok'; handoffId: string; url: string }

@@ -1,7 +1,12 @@
-const RESULTS = new Map<string, string>();
+export type StoredFirstResult = {
+  content: string;
+  task: string;
+};
 
-export function saveFirstResult(id: string, content: string): void {
-  RESULTS.set(id, content);
+const RESULTS = new Map<string, StoredFirstResult>();
+
+export function saveFirstResult(id: string, content: string, task: string): void {
+  RESULTS.set(id, { content, task });
 }
 
 export function getFirstResult(id: string | null | undefined): string | null {
@@ -9,6 +14,13 @@ export function getFirstResult(id: string | null | undefined): string | null {
     return null;
   }
 
-  return RESULTS.get(id) ?? null;
+  return RESULTS.get(id)?.content ?? null;
 }
 
+export function getFirstResultEntry(id: string | null | undefined): StoredFirstResult | null {
+  if (!id) {
+    return null;
+  }
+
+  return RESULTS.get(id) ?? null;
+}
