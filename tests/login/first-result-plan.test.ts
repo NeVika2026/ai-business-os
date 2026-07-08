@@ -13,7 +13,7 @@ describe('first result plan', () => {
 
     assert.match(plan, /Подготовить план поиска клиентов/);
     assert.match(plan, /1\./);
-    assert.match(plan, /Следующее действие/);
+    assert.match(plan, /продолжите со мной/);
   });
 
   it('uses gateway content when available', () => {
@@ -30,11 +30,12 @@ describe('first result plan', () => {
     assert.match(resolved.content, /Launch landing/);
   });
 
-  it('builds workspace fallback for home and dashboard tasks', () => {
+  it('builds workspace fallback without corporate terminology', () => {
     const plan = buildWorkspaceTaskFallback('Собрать план продаж', 'Landing Page');
 
     assert.match(plan, /Landing Page/);
     assert.match(plan, /Собрать план продаж/);
-    assert.match(plan, /Executive Brain/);
+    assert.match(plan, /Я набросала первый шаг/);
+    assert.doesNotMatch(plan, /Executive Brain|Orchestra|Runtime/i);
   });
 });

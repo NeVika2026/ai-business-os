@@ -5,12 +5,15 @@ import { useState } from 'react';
 import { useFormStatus } from 'react-dom';
 
 import { generateFirstPlan } from '@/app/login/actions';
-import { ThinkingScene } from '@/components/runtime/ThinkingScene';
+import { FirstExperiencePrimaryCta } from '@/components/first-experience/FirstExperienceCta';
+import { IntroProcessingView } from '@/components/first-experience/IntroProcessingView';
+import { FirstExperienceShell } from '@/components/first-experience/FirstExperienceShell';
+import { OSA_VOICE } from '@/utils/first-experience/osa-voice';
 
 const QUICK_PROMPTS = [
   { label: 'Стратегия', value: 'Подготовить стратегию роста на ближайший квартал' },
   { label: 'Контент', value: 'Составить контент-план на месяц для соцсетей' },
-  { label: 'Анализ бизнеса', value: 'Проанализировать текущую ситуацию в бизнесе и предложить приоритеты' },
+  { label: 'Разобраться', value: 'Проанализировать текущую ситуацию в бизнесе и предложить приоритеты' },
 ] as const;
 
 type IntroFormContentProps = {
@@ -22,25 +25,14 @@ function IntroFormContent({ request, setRequest }: IntroFormContentProps) {
   const { pending } = useFormStatus();
 
   if (pending) {
-    return <ThinkingScene />;
+    return <IntroProcessingView />;
   }
 
   return (
-    <div className="wow-fade-in mx-auto w-full max-w-lg">
-      <div className="text-center">
-        <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-3xl">
-          Какую задачу решаем?
-        </h1>
-        <p className="mt-4 text-base leading-relaxed text-[var(--text-secondary)]">
-          Опишите, что хотите получить. Система подготовит первый черновик без регистрации.
-        </p>
-      </div>
-
-      <div className="mt-10 space-y-6">
-        <div>
-          <label htmlFor="first-request" className="sr-only">
-            Описание задачи
-          </label>
+    <div className="space-y-12">
+      <section className="space-y-8">
+        <label className="block space-y-4">
+          <span className="sr-only">{OSA_VOICE.intro.title}</span>
           <textarea
             id="first-request"
             name="task"
@@ -48,45 +40,40 @@ function IntroFormContent({ request, setRequest }: IntroFormContentProps) {
             required
             value={request}
             onChange={(event) => setRequest(event.target.value)}
-            placeholder="Например: подготовить план поиска клиентов на новостройки"
-            className="w-full resize-none rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-0)] px-4 py-3 text-sm leading-relaxed text-[var(--text-primary)] outline-none transition placeholder:text-[var(--text-secondary)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)]"
+            placeholder={OSA_VOICE.intro.placeholder}
+            className="first-experience-input"
           />
-        </div>
+        </label>
 
-        <div className="flex flex-wrap justify-center gap-2">
+        <div className="flex flex-wrap gap-3">
           {QUICK_PROMPTS.map((prompt) => (
             <button
               key={prompt.label}
               type="button"
               onClick={() => setRequest(prompt.value)}
-              className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface-0)] px-4 py-2 text-sm text-[var(--text-primary)] transition hover:bg-[var(--surface-1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+              className="first-experience-chip focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
             >
               {prompt.label}
             </button>
           ))}
         </div>
 
-        <div className="flex flex-col items-center gap-4 pt-2">
-          <button
-            type="submit"
-            disabled={!request.trim()}
-            className="inline-flex rounded-xl bg-[var(--accent)] px-8 py-3 text-sm font-medium text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-0)] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Получить первый результат
-          </button>
-
-          <p className="max-w-sm text-center text-xs leading-relaxed text-[var(--text-secondary)]">
-            Аккаунт понадобится только для сохранения результата и продолжения работы.
+        <div className="space-y-4">
+          <FirstExperiencePrimaryCta type="submit" disabled={!request.trim()}>
+            {OSA_VOICE.intro.cta}
+          </FirstExperiencePrimaryCta>
+          <p className="max-w-md text-[15px] leading-relaxed text-[var(--text-tertiary)]">
+            {OSA_VOICE.intro.note}
           </p>
         </div>
-      </div>
+      </section>
 
-      <p className="mt-10 text-center">
+      <p className="text-[15px] text-[var(--text-tertiary)]">
         <Link
           href="/login"
-          className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+          className="transition hover:text-[var(--text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
         >
-          Назад
+          ← Назад
         </Link>
       </p>
     </div>
@@ -97,10 +84,14 @@ export function FirstRequestScreen() {
   const [request, setRequest] = useState('');
 
   return (
-    <main className="flex min-h-full flex-1 flex-col items-center justify-center bg-[var(--surface-0)] px-6 py-20 sm:py-28">
-      <form action={generateFirstPlan} className="w-full">
+    <FirstExperienceShell
+      presence={OSA_VOICE.intro.presence}
+      title={OSA_VOICE.intro.title}
+      subtitle={OSA_VOICE.intro.subtitle}
+    >
+      <form action={generateFirstPlan}>
         <IntroFormContent request={request} setRequest={setRequest} />
       </form>
-    </main>
+    </FirstExperienceShell>
   );
 }

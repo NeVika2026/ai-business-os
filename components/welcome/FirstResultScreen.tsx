@@ -1,6 +1,9 @@
 import Link from 'next/link';
 
-import { NextBestStep } from '@/components/navigator/NextBestStep';
+import { FirstExperiencePrimaryCta } from '@/components/first-experience/FirstExperienceCta';
+import { FirstResultExperience } from '@/components/first-experience/FirstResultExperience';
+import { FirstExperienceShell } from '@/components/first-experience/FirstExperienceShell';
+import { OSA_VOICE } from '@/utils/first-experience/osa-voice';
 
 type FirstResultScreenProps = {
   plan: string | null;
@@ -10,63 +13,42 @@ export function FirstResultScreen({ plan }: FirstResultScreenProps) {
   const safePlan = plan?.trim() ?? null;
   const showError = !safePlan;
 
+  if (showError) {
+    return (
+      <FirstExperienceShell
+        presence={OSA_VOICE.result.presence}
+        title={OSA_VOICE.result.errorTitle}
+        subtitle={OSA_VOICE.result.errorSubtitle}
+      >
+        <FirstExperiencePrimaryCta href="/login/intro">{OSA_VOICE.result.retryCta}</FirstExperiencePrimaryCta>
+      </FirstExperienceShell>
+    );
+  }
+
   return (
-    <main className="flex min-h-full flex-1 flex-col items-center justify-center px-6 py-20 sm:py-28">
-      <div className="wow-fade-in w-full max-w-2xl">
-        {showError ? (
-          <div className="text-center">
-            <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-3xl">
-              Что-то пошло не так
-            </h1>
-            <p className="mt-4 text-base leading-relaxed text-[var(--text-secondary)]">
-              Не удалось сохранить результат. Попробуйте ещё раз.
-            </p>
-            <div className="mt-8 flex justify-center">
-              <Link
-                href="/login/intro"
-                className="inline-flex rounded-xl bg-[var(--accent)] px-8 py-3 text-sm font-medium text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-0)]"
-              >
-                Попробовать снова
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="text-center">
-              <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-3xl">
-                Вот с чего я предлагаю начать
-              </h1>
-
-              <p className="mt-4 text-base leading-relaxed text-[var(--text-secondary)]">
-                Мы подготовили черновик решения. Чтобы сохранить его и продолжить работу завтра,
-                создайте аккаунт.
-              </p>
-            </div>
-
-            <section
-              aria-label="Первый план действий"
-              className="mt-8 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-1)] px-5 py-5 text-left sm:px-6"
+    <FirstExperienceShell
+      presence={OSA_VOICE.result.presence}
+      title={OSA_VOICE.result.title}
+      subtitle={OSA_VOICE.result.subtitle}
+      showMark={false}
+    >
+      <FirstResultExperience
+        content={safePlan}
+        autoContinueHref="/login/sign-in"
+        primaryCta={{ label: OSA_VOICE.result.saveCta, href: '/login/sign-in' }}
+        secondaryCta={{ label: OSA_VOICE.result.tryAnotherCta, href: '/login/intro' }}
+        footer={
+          <p className="text-[15px] leading-relaxed text-[var(--text-tertiary)]">
+            {OSA_VOICE.result.signInFooter}{' '}
+            <Link
+              href="/login/sign-in"
+              className="font-medium text-[var(--accent)] transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
             >
-              <h2 className="text-sm font-medium text-[var(--text-primary)]">Первый план действий</h2>
-              <div className="mt-4 whitespace-pre-line text-sm leading-relaxed text-[var(--text-secondary)]">
-                {safePlan}
-              </div>
-            </section>
-
-            <NextBestStep />
-
-            <div className="mt-10 flex justify-center">
-              <Link
-                href="/login/sign-in"
-                className="inline-flex rounded-xl bg-[var(--accent)] px-8 py-3 text-sm font-medium text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-0)]"
-              >
-                Сохранить результат
-              </Link>
-            </div>
-          </>
-        )}
-      </div>
-    </main>
+              {OSA_VOICE.result.signInLink}
+            </Link>
+          </p>
+        }
+      />
+    </FirstExperienceShell>
   );
 }
-

@@ -1,27 +1,24 @@
-export const HOME_ACTION_PLACEHOLDER = 'Что нужно разобрать, создать или улучшить?' as const;
+import { OSA_PROCESS_STEPS, OSA_VOICE } from '@/utils/first-experience/osa-voice';
 
-export const HOME_PROCESS_STEPS = [
-  'OSA читает задачу',
-  'OSA ищет контекст',
-  'OSA определяет проблему',
-  'OSA предлагает первый результат',
-] as const;
+export const HOME_ACTION_PLACEHOLDER = OSA_VOICE.home.placeholder;
+
+export const HOME_PROCESS_STEPS = OSA_PROCESS_STEPS;
 
 export const HOME_QUICK_ACTIONS = [
   {
     id: 'analysis',
-    label: 'Создать анализ',
-    template: 'Создай анализ',
+    label: 'Разобраться',
+    template: 'Помоги разобраться',
   },
   {
     id: 'debug',
-    label: 'Найти ошибку',
-    template: 'Найди ошибку',
+    label: 'Найти слабое место',
+    template: 'Найди слабое место',
   },
   {
     id: 'plan',
-    label: 'Собрать план',
-    template: 'Собери план',
+    label: 'Наметить план',
+    template: 'Наметь план',
   },
 ] as const;
 
@@ -54,8 +51,8 @@ export function homeTaskErrorHint(message: string): string {
   }
 
   if (normalized.includes('runtime') || normalized.includes('недоступен')) {
-    return 'Обновите страницу или откройте проект в Workspace.';
+    return 'Обновите страницу или вернитесь к задаче чуть позже.';
   }
 
-  return 'Упростите формулировку или выберите одно из быстрых действий.';
+  return 'Попробуйте короче сформулировать или выберите один из вариантов ниже.';
 }

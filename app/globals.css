@@ -72,6 +72,450 @@
     animation-delay: 0.15s;
   }
 
+  .first-experience-ambient {
+    position: relative;
+    isolation: isolate;
+    background-color: var(--surface-0);
+  }
+
+  .first-experience-ambient::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 70% 45% at 50% -5%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 72%),
+      radial-gradient(ellipse 50% 35% at 100% 100%, color-mix(in srgb, var(--accent) 4%, transparent), transparent 68%);
+    z-index: 0;
+  }
+
+  .first-experience-ambient > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .first-experience-primary {
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent) 88%, white),
+      color-mix(in srgb, var(--accent) 96%, black 4%)
+    );
+    box-shadow: 0 8px 24px -16px color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+
+  .first-experience-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 28px -14px color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+
+  .first-experience-secondary {
+    color: var(--text-secondary);
+    border: 1px solid var(--border-subtle);
+    background: color-mix(in srgb, var(--surface-0) 80%, transparent);
+  }
+
+  .first-experience-secondary:hover {
+    color: var(--text-primary);
+    border-color: color-mix(in srgb, var(--accent) 35%, var(--border-subtle));
+    background: var(--surface-1);
+  }
+
+  .first-experience-result-card {
+    border-radius: 28px;
+    border: 1px solid color-mix(in srgb, var(--border-subtle) 90%, transparent);
+    background: color-mix(in srgb, var(--surface-1) 70%, var(--surface-0));
+    padding: 1.75rem 1.5rem 2rem;
+    box-shadow: none;
+  }
+
+  @media (min-width: 640px) {
+    .first-experience-result-card {
+      padding: 2rem 2rem 2.25rem;
+    }
+  }
+
+  .osa-presence-greeting {
+    animation: osa-presence-in 0.8s ease-out both;
+  }
+
+  .osa-presence-mark {
+    animation: osa-presence-in 0.65s ease-out both;
+  }
+
+  @keyframes osa-presence-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .first-result-key-insight {
+    border-radius: 20px;
+    background: color-mix(in srgb, var(--surface-0) 55%, transparent);
+    padding: 0.25rem 0;
+  }
+
+  .first-result-wow-orbit svg {
+    filter: drop-shadow(0 0 22px color-mix(in srgb, var(--accent) 50%, transparent));
+    transform: scale(1.08);
+    animation:
+      orbit-breathe 3.5s ease-in-out infinite,
+      first-result-orbit-brighten 1.6s ease-out both;
+  }
+
+  .first-result-wow-phrase {
+    animation: first-result-phrase-in 0.7s ease-out 0.35s both;
+  }
+
+  .first-result-reveal {
+    animation: wow-fade-in 0.9s ease-out both;
+  }
+
+  @keyframes first-result-orbit-brighten {
+    from {
+      opacity: 0.55;
+      transform: scale(0.92);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1.08);
+    }
+  }
+
+  @keyframes first-result-phrase-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .first-experience-input {
+    width: 100%;
+    resize: none;
+    border-radius: 24px;
+    border: 1px solid var(--border-subtle);
+    background: color-mix(in srgb, var(--surface-1) 88%, var(--surface-0));
+    padding: 1.25rem 1.5rem;
+    font-size: clamp(1.125rem, 2.2vw, 1.35rem);
+    line-height: 1.55;
+    color: var(--text-primary);
+    outline: none;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      background-color 0.2s ease;
+  }
+
+  .first-experience-input::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  .first-experience-input:focus {
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--border-subtle));
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 12%, transparent);
+    background: var(--surface-1);
+  }
+
+  .first-experience-chip {
+    border-radius: 9999px;
+    border: 1px solid var(--border-subtle);
+    background: color-mix(in srgb, var(--surface-0) 70%, transparent);
+    padding: 0.625rem 1.25rem;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    transition:
+      border-color 0.2s ease,
+      color 0.2s ease,
+      background-color 0.2s ease;
+  }
+
+  .first-experience-chip:hover {
+    border-color: color-mix(in srgb, var(--accent) 40%, var(--border-subtle));
+    color: var(--accent);
+    background: var(--surface-1);
+  }
+
+  .osa-home-canvas {
+    position: relative;
+    isolation: isolate;
+    min-height: 100%;
+    background:
+      radial-gradient(ellipse 110% 70% at 50% -18%, color-mix(in srgb, var(--accent) 9%, #fbfbfa), transparent 62%),
+      radial-gradient(ellipse 55% 42% at 8% 62%, color-mix(in srgb, #dfe6ee 36%, transparent), transparent 72%),
+      radial-gradient(ellipse 48% 38% at 96% 78%, color-mix(in srgb, #efe9e3 42%, transparent), transparent 70%),
+      linear-gradient(180deg, #fcfcfb 0%, #f7f6f4 48%, #f3f2f0 100%);
+  }
+
+  .osa-home-depth {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 90% 55% at 50% 108%, color-mix(in srgb, #d9d5cf 18%, transparent), transparent 68%),
+      radial-gradient(circle at 50% 42%, transparent 36%, color-mix(in srgb, #1a1a1a 2.5%, transparent) 100%);
+    opacity: 0.55;
+  }
+
+  .osa-home-glow {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 50% 46%, color-mix(in srgb, var(--accent) 11%, transparent), transparent 44%),
+      radial-gradient(circle at 50% 58%, color-mix(in srgb, white 70%, transparent), transparent 38%);
+    filter: blur(18px);
+    opacity: 0.85;
+  }
+
+  .osa-home-stage {
+    min-height: 100%;
+  }
+
+  .osa-home-eyes-slot {
+    margin-bottom: clamp(1.25rem, 3vh, 1.75rem);
+    opacity: 0.92;
+  }
+
+  .osa-home-compose {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.85rem, 2vh, 1.1rem);
+  }
+
+  .osa-home-greeting {
+    min-height: 1.2em;
+    text-align: center;
+    font-size: clamp(1.05rem, 2.2vw, 1.22rem);
+    font-weight: 400;
+    line-height: 1.3;
+    letter-spacing: -0.015em;
+    color: color-mix(in srgb, var(--text-tertiary) 88%, transparent);
+    opacity: 0;
+    transform: translateY(6px);
+    transition:
+      opacity 0.65s ease,
+      transform 0.65s ease;
+  }
+
+  .osa-home-greeting--visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .osa-home-input-wrap {
+    position: relative;
+  }
+
+  .osa-home-input {
+    width: 100%;
+    min-height: clamp(11rem, 30vh, 14.5rem);
+    resize: none;
+    border: 1px solid color-mix(in srgb, var(--text-primary) 10%, var(--border-subtle));
+    border-radius: 30px;
+    background: #fffefb;
+    padding: 1.85rem 4.5rem 1.85rem 1.85rem;
+    font-size: clamp(1.28rem, 2.8vw, 1.62rem);
+    line-height: 1.5;
+    font-weight: 400;
+    color: var(--text-primary);
+    outline: none;
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, white 80%, transparent) inset,
+      0 0 0 1px color-mix(in srgb, var(--accent) 7%, transparent);
+    transition:
+      border-color 0.28s ease,
+      box-shadow 0.28s ease,
+      background-color 0.28s ease;
+  }
+
+  .osa-home-input::placeholder {
+    color: color-mix(in srgb, var(--text-tertiary) 76%, transparent);
+  }
+
+  .osa-home-input:focus {
+    border-color: color-mix(in srgb, var(--accent) 22%, var(--border-subtle));
+    background: #ffffff;
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, white 85%, transparent) inset,
+      0 0 0 1px color-mix(in srgb, var(--accent) 14%, transparent),
+      0 0 0 5px color-mix(in srgb, var(--accent) 6%, transparent);
+  }
+
+  .osa-home-send {
+    position: absolute;
+    right: 1.1rem;
+    bottom: 1.1rem;
+    display: inline-flex;
+    height: 2.35rem;
+    width: 2.35rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in srgb, var(--border-subtle) 70%, transparent);
+    background: color-mix(in srgb, var(--surface-0) 55%, white);
+    color: var(--text-tertiary);
+    font-size: 1rem;
+    line-height: 1;
+    transition:
+      opacity 0.2s ease,
+      transform 0.2s ease,
+      border-color 0.2s ease,
+      background-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  .osa-home-send:not(:disabled):hover {
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--accent) 24%, var(--border-subtle));
+    color: var(--text-secondary);
+  }
+
+  .osa-home-send:disabled {
+    opacity: 0.28;
+    cursor: not-allowed;
+  }
+
+  .osa-home-send--ready {
+    border-color: transparent;
+    background: var(--text-primary);
+    color: white;
+    box-shadow: none;
+  }
+
+  .osa-home-send--ready:hover {
+    color: white;
+    background: color-mix(in srgb, var(--text-primary) 92%, black);
+  }
+
+  .osa-home-processing {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-tertiary);
+    animation: osa-presence-in 0.7s ease-out both;
+  }
+
+  .osa-home-ghost-link {
+    align-self: center;
+    margin-top: auto;
+    padding-top: 2rem;
+    font-size: 12px;
+    color: color-mix(in srgb, var(--text-tertiary) 55%, transparent);
+    transition: color 0.2s ease;
+  }
+
+  .osa-home-ghost-link:hover {
+    color: var(--text-tertiary);
+  }
+
+  .osa-eyes {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--osa-eyes-gap, 1.35rem);
+    transition: opacity 0.35s ease;
+  }
+
+  .osa-eyes--noticed {
+    opacity: 1;
+  }
+
+  .osa-eyes--sm {
+    --osa-eye-width: 1.85rem;
+    --osa-eye-height: 0.66rem;
+    --osa-eyes-gap: 0.82rem;
+    --osa-pupil-size: 0.3rem;
+  }
+
+  .osa-eyes--md {
+    --osa-eye-width: 2.35rem;
+    --osa-eye-height: 0.8rem;
+    --osa-eyes-gap: 1rem;
+    --osa-pupil-size: 0.36rem;
+  }
+
+  .osa-eyes--lg {
+    --osa-eye-width: 3rem;
+    --osa-eye-height: 0.95rem;
+    --osa-eyes-gap: 1.3rem;
+    --osa-pupil-size: 0.46rem;
+  }
+
+  .osa-eye {
+    position: relative;
+    width: var(--osa-eye-width);
+    height: var(--osa-eye-height);
+    transition: transform 0.35s ease;
+  }
+
+  .osa-eyes--noticed .osa-eye {
+    transform: translateY(-0.5px);
+  }
+
+  .osa-eye-socket {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    border: 1px solid color-mix(in srgb, var(--text-primary) 42%, transparent);
+    border-radius: 9999px;
+    background: color-mix(in srgb, white 82%, var(--surface-0));
+    transition:
+      border-color 0.3s ease,
+      background-color 0.3s ease;
+  }
+
+  .osa-eye--noticed .osa-eye-socket {
+    border-color: color-mix(in srgb, var(--text-primary) 62%, transparent);
+    background: #ffffff;
+  }
+
+  .osa-eye-pupil {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: var(--osa-pupil-size);
+    height: var(--osa-pupil-size);
+    border-radius: 9999px;
+    background: var(--text-primary);
+    will-change: transform;
+  }
+
+  .osa-eye--noticed .osa-eye-pupil {
+    filter: brightness(1.05);
+  }
+
+  .osa-eye-lid {
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: #f7f6f4;
+    transform: scaleY(0);
+    transform-origin: center top;
+    transition: transform 0.11s ease-in;
+    pointer-events: none;
+  }
+
+  .osa-eye--closed .osa-eye-lid {
+    transform: scaleY(1);
+  }
+
+  .osa-eye--closed .osa-eye-pupil {
+    opacity: 0;
+  }
+
   @keyframes orbit-breathe {
     0%,
     100% {
