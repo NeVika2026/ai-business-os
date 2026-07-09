@@ -279,6 +279,182 @@
     opacity: 0.85;
   }
 
+  .osa-home-hero-light {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: calc(var(--osa-hero-light, 0.35) * 1);
+    transform: scale(calc(0.92 + var(--osa-hero-light, 0.35) * 0.12));
+    transition:
+      opacity 0.9s ease,
+      transform 1.1s ease;
+    background:
+      radial-gradient(
+        circle at 50% 42%,
+        color-mix(
+          in srgb,
+          var(--accent) calc(14% + var(--osa-hero-warmth, 0.2) * 10%),
+          color-mix(in srgb, #f0d8c8 calc(var(--osa-hero-warmth, 0.2) * 28%), transparent)
+        ),
+        transparent 52%
+      );
+    will-change: opacity, transform;
+  }
+
+  .osa-home-canvas--typing .osa-home-hero-light {
+    opacity: calc(var(--osa-hero-light, 1) * 1.05);
+  }
+
+  .osa-hero-presence {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: min(100%, 11rem);
+    min-height: 5.5rem;
+    margin-inline: auto;
+  }
+
+  .osa-hero-center-light {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 7.5rem;
+    height: 7.5rem;
+    margin: -3.75rem 0 0 -3.75rem;
+    border-radius: 9999px;
+    opacity: 0;
+    transform: scale(0.72);
+    transition:
+      opacity 0.8s ease,
+      transform 0.9s ease;
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--accent) 16%, white),
+      transparent 70%
+    );
+    will-change: opacity, transform;
+  }
+
+  .osa-hero-center-light--on {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+
+  .osa-hero-presence--skipped .osa-hero-center-light--on {
+    opacity: 0.7;
+    transform: scale(1.04);
+    transition-duration: 0.35s;
+  }
+
+  .osa-hero-orbit-field {
+    position: relative;
+    width: 9.5rem;
+    height: 9.5rem;
+  }
+
+  .osa-hero-orbit {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 2rem;
+    height: 2rem;
+    margin: -1rem 0 0 -1rem;
+    opacity: 0.82;
+    will-change: transform, opacity;
+  }
+
+  .osa-hero-orbit-field--orbit-free .osa-hero-orbit--0 {
+    animation: osa-hero-spin 7.5s linear infinite;
+  }
+
+  .osa-hero-orbit-field--orbit-free .osa-hero-orbit--1 {
+    animation: osa-hero-spin 9.2s linear infinite reverse;
+  }
+
+  .osa-hero-orbit-field--orbit-free .osa-hero-orbit--2 {
+    animation: osa-hero-spin 8.4s linear infinite;
+    animation-delay: -1.2s;
+  }
+
+  .osa-hero-orbit-field--orbit-gather .osa-hero-orbit {
+    animation: osa-hero-gather 1s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+  }
+
+  .osa-hero-orbit-field--orbit-gather .osa-hero-orbit--1 {
+    animation-delay: 0.04s;
+  }
+
+  .osa-hero-orbit-field--orbit-gather .osa-hero-orbit--2 {
+    animation-delay: 0.08s;
+  }
+
+  .osa-hero-presence--skipped .osa-hero-orbit {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.2) !important;
+    transition:
+      opacity 0.35s ease,
+      transform 0.35s ease;
+  }
+
+  .osa-hero-eyes {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: scale(0.88);
+    will-change: opacity, transform;
+  }
+
+  .osa-hero-eyes--forming {
+    animation: osa-hero-eyes-form 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .osa-hero-eyes--alive {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .osa-hero-presence--skipped .osa-hero-eyes {
+    opacity: 1;
+    transform: scale(1);
+    transition:
+      opacity 0.35s ease,
+      transform 0.35s ease;
+  }
+
+  @keyframes osa-hero-spin {
+    from {
+      transform: rotate(0deg) translate(var(--osa-orbit-x, 0px), var(--osa-orbit-y, 0px)) rotate(0deg);
+    }
+
+    to {
+      transform: rotate(360deg) translate(var(--osa-orbit-x, 0px), var(--osa-orbit-y, 0px))
+        rotate(-360deg);
+    }
+  }
+
+  @keyframes osa-hero-gather {
+    to {
+      opacity: 0;
+      transform: translate(0, 0) scale(0.15);
+    }
+  }
+
+  @keyframes osa-hero-eyes-form {
+    from {
+      opacity: 0;
+      transform: scale(0.82);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
   .osa-home-stage {
     min-height: 100%;
   }
@@ -292,6 +468,30 @@
     display: flex;
     flex-direction: column;
     gap: clamp(0.85rem, 2vh, 1.1rem);
+    opacity: 0;
+    transform: scale(0.96) translateY(10px);
+    transition:
+      opacity 0.85s ease,
+      transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, transform;
+  }
+
+  .osa-home-compose--waiting {
+    pointer-events: auto;
+  }
+
+  .osa-home-compose--visible {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+
+  .osa-home-compose--waiting .osa-home-greeting {
+    opacity: 0;
+  }
+
+  .osa-home-compose--visible .osa-home-greeting {
+    opacity: 1;
+    transform: translateY(0);
   }
 
   .osa-home-greeting {
@@ -336,8 +536,18 @@
       0 0 0 1px color-mix(in srgb, var(--accent) 7%, transparent);
     transition:
       border-color 0.28s ease,
-      box-shadow 0.28s ease,
-      background-color 0.28s ease;
+      box-shadow 0.45s ease,
+      background-color 0.28s ease,
+      transform 0.45s ease;
+    will-change: box-shadow, transform;
+  }
+
+  .osa-home-input--typing {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, white 85%, transparent) inset,
+      0 0 0 1px color-mix(in srgb, var(--accent) 16%, transparent),
+      0 0 0 4px color-mix(in srgb, #f0d8c8 18%, transparent);
+    transform: scale(1.002);
   }
 
   .osa-home-input::placeholder {
@@ -405,6 +615,291 @@
     font-size: 14px;
     color: var(--text-tertiary);
     animation: osa-presence-in 0.7s ease-out both;
+  }
+
+  .osa-live-thinking {
+    margin-top: 0.35rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.75rem;
+    text-align: center;
+  }
+
+  .osa-live-thinking-headline {
+    font-size: clamp(1.15rem, 2.4vw, 1.35rem);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    animation: osa-live-fade-in 0.55s ease-out both;
+  }
+
+  .osa-live-thinking-steps {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.85rem;
+    min-width: min(100%, 16rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .osa-live-thinking-item {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    font-size: 15px;
+    line-height: 1.4;
+    color: var(--text-secondary);
+    animation: osa-live-fade-in 0.55s ease-out both;
+  }
+
+  .osa-live-thinking-item--done {
+    color: color-mix(in srgb, var(--text-secondary) 72%, transparent);
+  }
+
+  .osa-live-thinking-item--active {
+    color: var(--text-primary);
+  }
+
+  .osa-live-thinking-item--almost {
+    color: var(--text-tertiary);
+  }
+
+  .osa-live-thinking-mark {
+    display: inline-flex;
+    width: 1rem;
+    justify-content: center;
+    font-size: 13px;
+    line-height: 1;
+  }
+
+  .osa-live-thinking-mark--done {
+    color: color-mix(in srgb, var(--text-tertiary) 90%, transparent);
+  }
+
+  .osa-live-thinking-mark--soft {
+    color: color-mix(in srgb, var(--text-tertiary) 70%, transparent);
+  }
+
+  .osa-live-discovery {
+    margin-top: 1.75rem;
+    text-align: center;
+    font-size: clamp(1.2rem, 2.6vw, 1.45rem);
+    font-weight: 400;
+    letter-spacing: -0.025em;
+    color: var(--text-primary);
+    animation: osa-live-fade-in 0.7s ease-out both;
+  }
+
+  .osa-home-continue-prompt {
+    font-size: clamp(1.05rem, 2.2vw, 1.15rem);
+    font-weight: 400;
+    letter-spacing: -0.015em;
+    color: var(--text-primary);
+  }
+
+  .osa-clarify-panel {
+    margin-top: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    animation: osa-live-fade-in 0.7s ease-out both;
+  }
+
+  .osa-clarify-intro {
+    text-align: center;
+    font-size: clamp(1rem, 2vw, 1.08rem);
+    line-height: 1.6;
+    color: var(--text-secondary);
+  }
+
+  .osa-clarify-type {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-tertiary);
+  }
+
+  .osa-clarify-type span {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .osa-clarify-questions {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .osa-clarify-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .osa-clarify-label {
+    font-size: 14px;
+    color: var(--text-primary);
+  }
+
+  .osa-clarify-input {
+    width: 100%;
+    border-radius: 16px;
+    border: 1px solid color-mix(in srgb, var(--border-subtle) 80%, transparent);
+    background: color-mix(in srgb, var(--surface-1) 70%, transparent);
+    padding: 0.9rem 1rem;
+    font-size: 15px;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .osa-clarify-input:focus {
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--border-subtle));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+
+  .osa-clarify-submit {
+    align-self: center;
+    margin-top: 0.5rem;
+    border-radius: 999px;
+    background: var(--accent);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    font-size: 14px;
+    font-weight: 500;
+    transition: opacity 0.2s ease;
+  }
+
+  .osa-clarify-submit:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .osa-active-agent {
+    margin-top: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    animation: osa-live-fade-in 0.7s ease-out both;
+  }
+
+  .osa-active-agent-headline {
+    text-align: center;
+    font-size: clamp(1.05rem, 2.2vw, 1.2rem);
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+  }
+
+  .osa-active-agent-card {
+    border-radius: 24px;
+    border: 1px solid color-mix(in srgb, var(--border-subtle) 75%, transparent);
+    background: color-mix(in srgb, var(--surface-1) 65%, transparent);
+    padding: 1.25rem 1.35rem;
+  }
+
+  .osa-active-agent-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .osa-active-agent-pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--accent);
+    animation: osa-team-pulse 1.4s ease-in-out infinite;
+  }
+
+  .osa-active-agent-role {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .osa-active-agent-activity {
+    margin-top: 0.65rem;
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--text-secondary);
+  }
+
+  .osa-active-agent-progress {
+    margin-top: 1rem;
+    height: 4px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--border-subtle) 70%, transparent);
+  }
+
+  .osa-active-agent-progress-bar {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--accent);
+    transition: width 0.7s ease-out;
+  }
+
+  .osa-real-work-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .osa-real-work-eyebrow {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+
+  .osa-real-work-summary {
+    margin-top: 0.5rem;
+    font-size: clamp(1.05rem, 2.2vw, 1.2rem);
+    font-weight: 500;
+    line-height: 1.45;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+  }
+
+  .osa-real-work-version {
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border-subtle));
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    padding: 0.35rem 0.75rem;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .osa-real-work-content {
+    max-height: 420px;
+    overflow: auto;
+    border-radius: 20px;
+    background: var(--surface-1);
+    padding: 1.35rem 1.5rem;
+    font-size: 14px;
+    line-height: 1.75;
+    color: var(--text-primary);
+    animation: osa-live-fade-in 0.8s ease-out both;
+  }
+
+  @keyframes osa-live-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .osa-home-ghost-link {

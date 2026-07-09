@@ -6,6 +6,12 @@ type OsaEyesProps = {
   className?: string;
   size?: 'sm' | 'md' | 'lg';
   active?: boolean;
+  /** When true, gaze centers forward and cursor tracking pauses. */
+  lookStraight?: boolean;
+  /** Skip the intro wink sequence (e.g. during Live Thinking). */
+  skipIntro?: boolean;
+  /** Hero opening uses a slower, synced wink cadence. */
+  introVariant?: 'default' | 'hero';
   onPresenceReady?: () => void;
 };
 
@@ -20,6 +26,7 @@ const SIZE_CLASS: Record<NonNullable<OsaEyesProps['size']>, string> = {
 const INTRO_WINK_DELAY_MS = 520;
 const INTRO_WINK_HOLD_MS = 170;
 const INTRO_PAUSE_AFTER_WINK_MS = 780;
+const HERO_INTRO_WINK_DELAY_MS = 500;
 const GAZE_LERP_ACTIVE = 0.16;
 const GAZE_LERP_IDLE = 0.045;
 
@@ -66,6 +73,9 @@ export function OsaEyes({
   className = '',
   size = 'md',
   active = true,
+  lookStraight = false,
+  skipIntro = false,
+  introVariant = 'default',
   onPresenceReady,
 }: OsaEyesProps) {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -117,7 +127,7 @@ export function OsaEyes({
   }, []);
 
   useEffect(() => {
-    if (!active) {
+    if (!active || lookStraight) {
       return;
     }
 
@@ -128,7 +138,14 @@ export function OsaEyes({
     window.addEventListener('pointermove', onPointerMove, { passive: true });
 
     return () => window.removeEventListener('pointermove', onPointerMove);
-  }, [active, updateGazeFromPointer]);
+  }, [active, lookStraight, updateGazeFromPointer]);
+
+  useEffect(() => {
+    if (lookStraight) {
+      driftTargetRef.current = { x: 0, y: 0 };
+      pointerActiveRef.current = false;
+    }
+  }, [lookStraight]);
 
   useEffect(() => {
     if (!active) {
@@ -139,10 +156,14 @@ export function OsaEyes({
 
     const tick = (now: number) => {
       const current = driftRef.current;
-      const target = driftTargetRef.current;
-      const lerp = pointerActiveRef.current ? GAZE_LERP_ACTIVE : GAZE_LERP_IDLE;
+      const target = lookStraight ? { x: 0, y: 0 } : driftTargetRef.current;
+      const lerp = lookStraight
+        ? 0.22
+        : pointerActiveRef.current
+          ? GAZE_LERP_ACTIVE
+          : GAZE_LERP_IDLE;
 
-      if (!pointerActiveRef.current && now - lastIdleTick > 2_400) {
+      if (!lookStraight && !pointerActiveRef.current && now - lastIdleTick > 2_400) {
         idlePhaseRef.current += 0.012;
         driftTargetRef.current = {
           x: Math.sin(idlePhaseRef.current) * 1.4,
@@ -166,7 +187,7 @@ export function OsaEyes({
         window.cancelAnimationFrame(frameRef.current);
       }
     };
-  }, [active]);
+  }, [active, lookStraight]);
 
   useEffect(() => {
     if (!active) {
@@ -227,15 +248,17 @@ export function OsaEyes({
   }, [active]);
 
   useEffect(() => {
-    if (!active) {
+    if (!active || skipIntro || introVariant === 'hero') {
+      if (skipIntro) {
+        markPresenceReady();
+      }
       return;
     }
 
-    let winkStartTimer: number | undefined;
     let winkEndTimer: number | undefined;
     let pauseTimer: number | undefined;
 
-    winkStartTimer = window.setTimeout(() => {
+    const winkStartTimer = window.setTimeout(() => {
       setWinking(true);
       winkEndTimer = window.setTimeout(() => {
         setWinking(false);
@@ -248,7 +271,25 @@ export function OsaEyes({
       if (winkEndTimer) window.clearTimeout(winkEndTimer);
       if (pauseTimer) window.clearTimeout(pauseTimer);
     };
-  }, [active, markPresenceReady]);
+  }, [active, introVariant, markPresenceReady, skipIntro]);
+
+  useEffect(() => {
+    if (!active || skipIntro || introVariant !== 'hero') {
+      return;
+    }
+
+    let winkEndTimer: number | undefined;
+
+    const winkStartTimer = window.setTimeout(() => {
+      setWinking(true);
+      winkEndTimer = window.setTimeout(() => setWinking(false), INTRO_WINK_HOLD_MS);
+    }, HERO_INTRO_WINK_DELAY_MS);
+
+    return () => {
+      if (winkStartTimer) window.clearTimeout(winkStartTimer);
+      if (winkEndTimer) window.clearTimeout(winkEndTimer);
+    };
+  }, [active, introVariant, skipIntro]);
 
   return (
     <div

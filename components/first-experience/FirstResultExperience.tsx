@@ -25,6 +25,10 @@ type FirstResultExperienceProps = {
   projectId?: string | null;
   workspaceHref?: string | null;
   autoContinueHref?: string | null;
+  /** Skip the orbit WOW phase — used when Live Thinking already ran. */
+  skipWow?: boolean;
+  /** Soft question shown above the actions (Home). */
+  continuePrompt?: string;
   primaryCta?: FirstResultCta;
   secondaryCta?: FirstResultCta;
   footer?: React.ReactNode;
@@ -35,23 +39,62 @@ export function FirstResultExperience({
   projectId,
   workspaceHref,
   autoContinueHref,
+  skipWow = false,
+  continuePrompt,
   primaryCta,
   secondaryCta,
   footer,
 }: FirstResultExperienceProps) {
   const router = useRouter();
   const presentation = useMemo(() => buildFirstResultPresentation(content), [content]);
-  const [phase, setPhase] = useState<'wow' | 'revealed'>('wow');
-  const [autoContinueDismissed, setAutoContinueDismissed] = useState(false);
+  const [phase, setPhase] = useState<'wow' | 'revealed'>(skipWow ? 'revealed' : 'wow');
+  const [autoContinueDismissed, setAutoContinueDismissed] = useState(Boolean(continuePrompt));
   const [autoContinueError, setAutoContinueError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const canAutoContinue = Boolean((projectId && workspaceHref) || autoContinueHref);
+  const usesSimpleContinue = Boolean(continuePrompt);
 
   useEffect(() => {
+    if (skipWow) {
+      return;
+    }
+
     const timer = window.setTimeout(() => setPhase('revealed'), WOW_REVEAL_MS);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [skipWow]);
+
+  const handleContinuePrimary = () => {
+    if (primaryCta?.onClick) {
+      primaryCta.onClick();
+      return;
+    }
+
+    setAutoContinueError(null);
+
+    if (projectId && workspaceHref) {
+      startTransition(async () => {
+        const result = await continueInvestorDemoOrchestra(projectId);
+
+        if (result.status === 'failed') {
+          setAutoContinueError(result.message);
+          return;
+        }
+
+        router.push(workspaceHref);
+      });
+      return;
+    }
+
+    if (primaryCta?.href) {
+      router.push(primaryCta.href);
+      return;
+    }
+
+    if (autoContinueHref) {
+      router.push(autoContinueHref);
+    }
+  };
 
   const handleAutoContinueYes = () => {
     setAutoContinueError(null);
@@ -75,8 +118,10 @@ export function FirstResultExperience({
     }
   };
 
-  const showAutoContinue = phase === 'revealed' && canAutoContinue && !autoContinueDismissed;
-  const showManualCtas = phase === 'revealed' && (!canAutoContinue || autoContinueDismissed);
+  const showAutoContinue =
+    phase === 'revealed' && canAutoContinue && !autoContinueDismissed && !usesSimpleContinue;
+  const showManualCtas =
+    phase === 'revealed' && (usesSimpleContinue || !canAutoContinue || autoContinueDismissed);
 
   return (
     <div className="space-y-12">
@@ -144,24 +189,41 @@ export function FirstResultExperience({
           ) : null}
 
           {showManualCtas ? (
-            <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
-              {primaryCta?.href ? (
-                <FirstExperiencePrimaryCta href={primaryCta.href}>{primaryCta.label}</FirstExperiencePrimaryCta>
+            <div className="space-y-5">
+              {continuePrompt ? (
+                <p className="osa-home-continue-prompt">{continuePrompt}</p>
               ) : null}
-              {primaryCta && !primaryCta.href ? (
-                <FirstExperiencePrimaryCta onClick={primaryCta.onClick}>
-                  {primaryCta.label}
-                </FirstExperiencePrimaryCta>
-              ) : null}
-              {secondaryCta?.href ? (
-                <FirstExperienceSecondaryCta href={secondaryCta.href}>
-                  {secondaryCta.label}
-                </FirstExperienceSecondaryCta>
-              ) : null}
-              {secondaryCta && !secondaryCta.href ? (
-                <FirstExperienceSecondaryCta onClick={secondaryCta.onClick}>
-                  {secondaryCta.label}
-                </FirstExperienceSecondaryCta>
+
+              <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
+                {usesSimpleContinue && (primaryCta || workspaceHref) ? (
+                  <FirstExperiencePrimaryCta disabled={isPending} onClick={handleContinuePrimary}>
+                    {isPending ? OSA_VOICE.result.autoContinueLoading : primaryCta?.label ?? OSA_VOICE.result.continueCta}
+                  </FirstExperiencePrimaryCta>
+                ) : null}
+
+                {!usesSimpleContinue && primaryCta?.href ? (
+                  <FirstExperiencePrimaryCta href={primaryCta.href}>{primaryCta.label}</FirstExperiencePrimaryCta>
+                ) : null}
+                {!usesSimpleContinue && primaryCta && !primaryCta.href ? (
+                  <FirstExperiencePrimaryCta onClick={primaryCta.onClick}>
+                    {primaryCta.label}
+                  </FirstExperiencePrimaryCta>
+                ) : null}
+
+                {secondaryCta?.href ? (
+                  <FirstExperienceSecondaryCta href={secondaryCta.href}>
+                    {secondaryCta.label}
+                  </FirstExperienceSecondaryCta>
+                ) : null}
+                {secondaryCta && !secondaryCta.href ? (
+                  <FirstExperienceSecondaryCta onClick={secondaryCta.onClick}>
+                    {secondaryCta.label}
+                  </FirstExperienceSecondaryCta>
+                ) : null}
+              </div>
+
+              {autoContinueError ? (
+                <p className="text-sm text-red-600">{autoContinueError}</p>
               ) : null}
             </div>
           ) : null}
