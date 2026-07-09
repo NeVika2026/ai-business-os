@@ -14,6 +14,7 @@ import {
   OsaHeroPresence,
   type OsaHeroPresenceHandle,
 } from '@/components/home/OsaHeroPresence';
+import { OsaSkillModeLine } from '@/components/home/OsaSkillModeLine';
 import { OsaRealWorkResult } from '@/components/home/OsaRealWorkResult';
 import { OsaErrorState } from '@/components/osa/OsaErrorState';
 import type { HomeQuickActionId } from '@/utils/home/home-action';
@@ -40,6 +41,7 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
   const [heroReady, setHeroReady] = useState(false);
   const [greeting] = useState(() => pickHeroGreeting());
   const [taskType, setTaskType] = useState<RealWorkTaskType | null>(null);
+  const [skillModeLabel, setSkillModeLabel] = useState<string | null>(null);
   const [clarifyQuestions, setClarifyQuestions] = useState<string[]>([]);
   const [orchestra, setOrchestra] = useState<HomeOrchestraSnapshot | null>(null);
   const [deliverable, setDeliverable] = useState<HomeDeliverablePayload | null>(null);
@@ -74,6 +76,7 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
     setError(null);
     setPrompt('');
     setTaskType(null);
+    setSkillModeLabel(null);
     setClarifyQuestions([]);
     setOrchestra(null);
     setDeliverable(null);
@@ -149,9 +152,12 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
         setTaskType(result.taskType);
         setClarifyQuestions(result.questions);
         setProjectId(result.projectId);
+        setSkillModeLabel(result.skillModeLabel);
         setPhase('clarify');
         return;
       }
+
+      setSkillModeLabel(result.skillModeLabel);
 
       setTaskType(result.status === 'working' ? result.taskType : taskType);
       setProjectId(result.projectId);
@@ -273,6 +279,10 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
                   />
                 ) : null}
               </div>
+            ) : null}
+
+            {skillModeLabel && (phase === 'clarify' || phase === 'working') ? (
+              <OsaSkillModeLine label={skillModeLabel} />
             ) : null}
 
             {phase === 'clarify' && taskType ? (

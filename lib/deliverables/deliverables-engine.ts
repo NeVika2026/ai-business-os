@@ -20,6 +20,7 @@ import {
   assignDeliverableType,
   DELIVERABLE_TYPE_LABELS,
 } from './deliverable-catalog';
+import { resolveDeliverableTypeForAgent } from '@/lib/skills/skill-deliverables';
 import {
   buildDeliverableFallbackContent,
   type DeliverableGenerationInput,
@@ -122,8 +123,13 @@ export function initializeProjectDeliverables(input: {
   queue: OrchestraAgent[];
 }): ProjectDeliverablesPackage {
   const usedTypes = new Set<ReturnType<typeof assignDeliverableType>>();
-  const deliverables = input.queue.map((agent) => {
-    const type = assignDeliverableType(agent.agentId, usedTypes);
+  const deliverables = input.queue.map((agent, index) => {
+    const type = resolveDeliverableTypeForAgent({
+      projectId: input.projectId,
+      agentId: agent.agentId,
+      agentIndex: index,
+      usedTypes,
+    });
 
     return buildDeliverableRecord(agent, type, input.projectName, input.projectDescription);
   });
@@ -159,8 +165,13 @@ export function syncDeliverablesWithOrchestra(input: {
     (existing?.deliverables ?? []).map((deliverable) => [deliverable.id, deliverable]),
   );
 
-  const deliverables: ProjectDeliverable[] = input.queue.map((agent) => {
-    const type = assignDeliverableType(agent.agentId, usedTypes);
+  const deliverables: ProjectDeliverable[] = input.queue.map((agent, index) => {
+    const type = resolveDeliverableTypeForAgent({
+      projectId: input.projectId,
+      agentId: agent.agentId,
+      agentIndex: index,
+      usedTypes,
+    });
     const previous = previousById.get(agent.id);
     const nextPhase = orchestraPhaseToDeliverable(agent.status);
 

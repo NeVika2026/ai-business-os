@@ -12,8 +12,13 @@ import { RUNTIME_EVENT_TYPES } from '@/types/event-runtime';
 import type { ExecutiveDecision, ExecutiveGoal } from '@/types/executive';
 import type { ProjectLifecycleSnapshot } from '@/types/project-lifecycle';
 import type { ProjectType } from '@/utils/projects/project-types';
+import type { OsaSkillId } from '@/types/skills';
 
 import { initializeProjectDeliverables } from '@/lib/deliverables/deliverables-engine';
+import { specialistsFromSkill } from '@/lib/skills/skill-specialists';
+import { saveProjectSkill } from '@/lib/skills/skill-storage';
+import { getSkillById } from '@/lib/skills/skills-registry';
+import { buildWorkPlanFromSkill } from '@/lib/skills/skill-work-plan';
 import { buildExecutiveBriefText } from './build-executive-brief';
 import { buildProjectWorkPlan } from './build-work-plan';
 import { detectProjectType, projectTypeLabel } from './detect-project-type';
@@ -27,6 +32,7 @@ export type RunProjectLifecycleInput = {
   declaredType: ProjectType;
   organizationId: string;
   userId: string;
+  skillId?: OsaSkillId;
 };
 
 export type RunProjectLifecycleResult = {
@@ -87,6 +93,8 @@ export function runProjectLifecycle(input: RunProjectLifecycleInput): RunProject
     userId: input.userId,
   };
 
+  const skill = input.skillId ? getSkillById(input.skillId) : null;
+
   publishRuntimeEvent(
     {
       projectId: input.projectId,
@@ -97,19 +105,29 @@ export function runProjectLifecycle(input: RunProjectLifecycleInput): RunProject
       payload: {
         projectName: input.name,
         declaredType: input.declaredType,
+        skillId: skill?.id ?? null,
+        skillName: skill?.name ?? null,
       },
     },
     storage,
   );
 
-  const detectedType = detectProjectType({
-    declaredType: input.declaredType,
-    name: input.name,
-    description: input.description,
-  });
+  if (skill) {
+    saveProjectSkill(storage, input.projectId, skill.id);
+  }
 
-  const specialists = selectProjectSpecialists(detectedType);
-  const workPlan = buildProjectWorkPlan(detectedType, input.name);
+  const detectedType = skill
+    ? skill.projectType
+    : detectProjectType({
+        declaredType: input.declaredType,
+        name: input.name,
+        description: input.description,
+      });
+
+  const specialists = skill ? specialistsFromSkill(skill) : selectProjectSpecialists(detectedType);
+  const workPlan = skill
+    ? buildWorkPlanFromSkill(skill, input.name)
+    : buildProjectWorkPlan(detectedType, input.name);
   const firstStep = workPlan[0]?.title ?? `Продолжить проект «${input.name}»`;
   const executiveBrief = buildExecutiveBriefText({
     projectName: input.name,

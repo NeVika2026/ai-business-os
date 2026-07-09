@@ -5,6 +5,9 @@ import { revalidatePath } from 'next/cache';
 import { mapCaughtErrorToUserMessage } from '@/lib/ai/user-facing-errors';
 import { loadProjectDeliverablesPackage } from '@/lib/deliverables/deliverables-engine';
 import { getLastExecutiveDecision } from '@/lib/executive/executive-engine';
+import { buildSkillModeLabel, selectSkillForPrompt } from '@/lib/skills/skill-selector';
+import { loadProjectSkill } from '@/lib/skills/skill-storage';
+import { getSkillById } from '@/lib/skills/skills-registry';
 import {
   advanceAiOrchestraForProject,
   loadProjectOrchestra,
@@ -40,9 +43,7 @@ import {
 import {
   buildClarificationQuestions,
   buildEnrichedRealWorkPrompt,
-  classifyRealWorkTaskType,
   mapTaskTypeToDeliverableType,
-  mapTaskTypeToProjectType,
   needsClarification,
   serializeHomeDeliverable,
   type ClarificationAnswer,
@@ -51,6 +52,7 @@ import {
 } from '@/utils/home/real-work-mode';
 import { resolveMissionControlProjectId } from '@/utils/mission-control/mission-control-mappers';
 import type { ProjectDeliverable } from '@/types/deliverables';
+import type { DeliverableType } from '@/types/deliverables';
 import type { AiOrchestraState } from '@/types/ai-orchestra';
 import { mapRunsToHistory } from '@/utils/cabinet/dashboard-mappers';
 
@@ -74,22 +76,34 @@ export type StartHomeRealWorkResult =
       taskType: RealWorkTaskType;
       questions: string[];
       projectId: string;
+      skillModeLabel: string;
     }
   | {
       status: 'working';
       taskType: RealWorkTaskType;
       projectId: string;
       orchestra: HomeOrchestraSnapshot;
+      skillModeLabel: string;
     }
-  | { status: 'ok'; deliverable: HomeDeliverablePayload; projectId: string }
+  | {
+      status: 'ok';
+      deliverable: HomeDeliverablePayload;
+      projectId: string;
+      skillModeLabel: string;
+    }
   | { status: 'failed'; message: string; hint: string };
 
 export type AdvanceHomeRealWorkResult =
   | {
       status: 'working';
       orchestra: HomeOrchestraSnapshot;
+      skillModeLabel: string;
     }
-  | { status: 'ok'; deliverable: HomeDeliverablePayload }
+  | {
+      status: 'ok';
+      deliverable: HomeDeliverablePayload;
+      skillModeLabel: string;
+    }
   | { status: 'failed'; message: string; hint: string };
 
 type HomeExecutionContext = {
@@ -103,7 +117,9 @@ type HomeExecutionContext = {
   };
 };
 
-async function resolveHomeExecutionContext(): Promise<HomeExecutionContext | { error: SubmitHomeTaskResult }> {
+type HomeActionFailure = { status: 'failed'; message: string; hint: string };
+
+async function resolveHomeExecutionContext(): Promise<HomeExecutionContext | { error: HomeActionFailure }> {
   const supabase = await createClient();
   const organizationId = await getCurrentOrganizationId(supabase);
 
@@ -184,9 +200,36 @@ function toDeliverablePayload(deliverable: ProjectDeliverable): HomeDeliverableP
   });
 }
 
-function ensureProjectOrchestra(
+function resolveTargetDeliverableType(
   projectId: string,
   taskType: RealWorkTaskType,
+): DeliverableType {
+  const selection = loadProjectSkill(projectId);
+
+  if (selection) {
+    return getSkillById(selection.skillId).primaryDeliverable;
+  }
+
+  return mapTaskTypeToDeliverableType(taskType);
+}
+
+function resolveSkillModeLabel(projectId: string, fallbackSkillName?: string): string {
+  const selection = loadProjectSkill(projectId);
+
+  if (selection) {
+    return buildSkillModeLabel(getSkillById(selection.skillId));
+  }
+
+  if (fallbackSkillName) {
+    return `Выбрала режим: ${fallbackSkillName}`;
+  }
+
+  return 'Выбрала режим: Анализ';
+}
+
+function ensureProjectOrchestra(
+  projectId: string,
+  skillId: ReturnType<typeof selectSkillForPrompt>['id'],
   context: HomeExecutionContext,
 ): void {
   if (loadProjectOrchestra(projectId)) {
@@ -196,14 +239,16 @@ function ensureProjectOrchestra(
   const runtime = findProjectRuntime(projectId);
   const name = runtime?.title ?? 'Проект OSA';
   const description = runtime?.description ?? '';
+  const skill = getSkillById(skillId);
 
   runProjectLifecycle({
     projectId,
     name,
     description,
-    declaredType: mapTaskTypeToProjectType(taskType),
+    declaredType: skill.projectType,
     organizationId: context.organizationId,
     userId: context.userId,
+    skillId: skill.id,
   });
 }
 
@@ -242,10 +287,9 @@ function advanceOrchestraStep(
 
 function runOrchestraUntilDeliverableReady(
   projectId: string,
-  taskType: RealWorkTaskType,
+  targetType: DeliverableType,
   context: HomeExecutionContext,
 ): ProjectDeliverable | null {
-  const targetType = mapTaskTypeToDeliverableType(taskType);
 
   for (let step = 0; step < ORCHESTRA_STEP_LIMIT; step += 1) {
     const pkg = loadProjectDeliverablesPackage(projectId);
@@ -296,8 +340,10 @@ export async function startHomeRealWork(
     return resolved.error;
   }
 
-  const taskType =
-    options?.taskType ?? classifyRealWorkTaskType(basePrompt, options?.quickActionId);
+  const skill = selectSkillForPrompt(basePrompt, options?.quickActionId);
+  const skillModeLabel = buildSkillModeLabel(skill);
+
+  const taskType = options?.taskType ?? skill.taskType;
 
   if (!options?.clarifications?.length) {
     const questions = buildClarificationQuestions(taskType, basePrompt);
@@ -308,6 +354,7 @@ export async function startHomeRealWork(
         taskType,
         questions,
         projectId: resolved.projectId,
+        skillModeLabel,
       };
     }
   }
@@ -319,7 +366,7 @@ export async function startHomeRealWork(
   );
 
   try {
-    ensureProjectOrchestra(resolved.projectId, taskType, resolved);
+    ensureProjectOrchestra(resolved.projectId, skill.id, resolved);
 
     const result = await submitWorkspacePrompt(resolved.projectId, prompt);
 
@@ -331,7 +378,7 @@ export async function startHomeRealWork(
       };
     }
 
-    const targetType = mapTaskTypeToDeliverableType(taskType);
+    const targetType = resolveTargetDeliverableType(resolved.projectId, taskType);
     const pkg = loadProjectDeliverablesPackage(resolved.projectId);
     const ready = findTargetDeliverable(pkg?.deliverables ?? [], targetType);
 
@@ -343,6 +390,7 @@ export async function startHomeRealWork(
         status: 'ok',
         deliverable: toDeliverablePayload(ready),
         projectId: resolved.projectId,
+        skillModeLabel,
       };
     }
 
@@ -351,6 +399,7 @@ export async function startHomeRealWork(
       taskType,
       projectId: resolved.projectId,
       orchestra: toOrchestraSnapshot(loadProjectOrchestra(resolved.projectId)),
+      skillModeLabel,
     };
   } catch (error) {
     const message = mapCaughtErrorToUserMessage(error, 'generic');
@@ -396,7 +445,8 @@ export async function advanceHomeRealWork(
   }
 
   try {
-    const targetType = mapTaskTypeToDeliverableType(taskType);
+    const targetType = resolveTargetDeliverableType(projectId, taskType);
+    const skillModeLabel = resolveSkillModeLabel(projectId);
     const existing = loadProjectDeliverablesPackage(projectId);
     const ready = findTargetDeliverable(existing?.deliverables ?? [], targetType);
 
@@ -407,6 +457,7 @@ export async function advanceHomeRealWork(
       return {
         status: 'ok',
         deliverable: toDeliverablePayload(ready),
+        skillModeLabel,
       };
     }
 
@@ -426,6 +477,7 @@ export async function advanceHomeRealWork(
       return {
         status: 'ok',
         deliverable: toDeliverablePayload(fallback),
+        skillModeLabel,
       };
     }
 
@@ -441,12 +493,14 @@ export async function advanceHomeRealWork(
       return {
         status: 'ok',
         deliverable: toDeliverablePayload(deliverable),
+        skillModeLabel,
       };
     }
 
     return {
       status: 'working',
       orchestra: toOrchestraSnapshot(loadProjectOrchestra(projectId)),
+      skillModeLabel,
     };
   } catch (error) {
     const message = mapCaughtErrorToUserMessage(error, 'generic');

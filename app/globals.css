@@ -455,6 +455,15 @@
     }
   }
 
+  .osa-skill-mode-line {
+    margin-top: 0.35rem;
+    text-align: center;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    animation: osa-live-fade-in 0.65s ease-out both;
+  }
+
   .osa-home-stage {
     min-height: 100%;
   }
