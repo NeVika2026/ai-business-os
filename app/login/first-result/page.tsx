@@ -12,10 +12,22 @@ type FirstResultPageProps = {
 export default async function FirstResultPage({ searchParams }: FirstResultPageProps) {
   const params = await searchParams;
   const entry = getFirstResultEntry(params.id);
-  const plan =
+  const content =
     entry?.content?.trim() ||
     (entry?.task ? buildFirstResultFallbackPlan(entry.task) : null);
 
-  return <FirstResultScreen plan={plan} />;
+  return (
+    <FirstResultScreen
+      entry={
+        content
+          ? {
+              task: entry?.task ?? '',
+              content,
+              usedFallback: entry?.usedFallback ?? (entry?.content ? undefined : true),
+              failureReason: entry?.failureReason,
+            }
+          : null
+      }
+    />
+  );
 }
-

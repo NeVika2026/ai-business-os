@@ -156,6 +156,9 @@ export async function generateFirstPlan(formData: FormData) {
   });
 
   const id = crypto.randomUUID();
-  saveFirstResult(id, content, trimmed);
+  saveFirstResult(id, content, trimmed, {
+    usedFallback: resolved.usedFallback,
+    failureReason: failureReason ?? null,
+  });
   redirect(`/login/first-result?id=${encodeURIComponent(id)}`);
 }
