@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 type OsaEyesProps = {
   className?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'hero';
   active?: boolean;
   /** When true, gaze centers forward and cursor tracking pauses. */
   lookStraight?: boolean;
@@ -21,6 +21,8 @@ const SIZE_CLASS: Record<NonNullable<OsaEyesProps['size']>, string> = {
   sm: 'osa-eyes--sm',
   md: 'osa-eyes--md',
   lg: 'osa-eyes--lg',
+  xl: 'osa-eyes--xl',
+  hero: 'osa-eyes--hero',
 };
 
 const INTRO_WINK_DELAY_MS = 520;

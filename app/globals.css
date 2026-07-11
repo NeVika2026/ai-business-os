@@ -200,112 +200,759 @@
     }
   }
 
-  .login-first-result-page {
+  .osa-fe-shell,
+  .osa-home-shell {
+    --osa-home-milk: #fffaf5;
+    --osa-home-graphite: #1f2430;
+    --osa-home-blue: #2563eb;
+    --osa-home-purple: #7c3aed;
+    --osa-home-coral: #ff6b57;
+    --osa-home-lime: #c7f464;
+    --osa-home-blue-soft: color-mix(in srgb, var(--osa-home-blue) 14%, white);
+    --osa-home-purple-soft: color-mix(in srgb, var(--osa-home-purple) 12%, white);
+    color: var(--osa-home-graphite);
+    background: var(--osa-home-milk);
+  }
+
+  .osa-fe-canvas,
+  .osa-home-canvas {
+    position: relative;
+    isolation: isolate;
+    min-height: 100%;
+    color: var(--osa-home-graphite);
+    background:
+      radial-gradient(circle at 12% 18%, color-mix(in srgb, var(--osa-home-blue) 16%, transparent), transparent 34%),
+      radial-gradient(circle at 88% 14%, color-mix(in srgb, var(--osa-home-purple) 14%, transparent), transparent 32%),
+      radial-gradient(circle at 72% 82%, color-mix(in srgb, var(--osa-home-coral) 10%, transparent), transparent 28%),
+      linear-gradient(180deg, #fffdf9 0%, var(--osa-home-milk) 52%, #fff7ef 100%);
+  }
+
+  .osa-fe-depth,
+  .osa-home-depth {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.35;
+    background:
+      radial-gradient(ellipse 70% 45% at 50% 0%, color-mix(in srgb, white 70%, transparent), transparent 72%),
+      radial-gradient(circle at 50% 100%, color-mix(in srgb, var(--osa-home-purple) 6%, transparent), transparent 42%);
+  }
+
+  .osa-fe-glow,
+  .osa-home-glow {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.75;
+    filter: blur(24px);
+    background:
+      radial-gradient(circle at 28% 42%, color-mix(in srgb, var(--osa-home-blue) 18%, transparent), transparent 38%),
+      radial-gradient(circle at 74% 36%, color-mix(in srgb, var(--osa-home-purple) 16%, transparent), transparent 36%);
+    animation: osa-home-glow-shift 14s ease-in-out infinite alternate;
+  }
+
+  .osa-fe-blob,
+  .osa-home-blob {
+    position: absolute;
+    pointer-events: none;
+    border-radius: 999px;
+    filter: blur(8px);
+    opacity: 0.55;
+    animation: osa-home-blob-float 16s ease-in-out infinite;
+  }
+
+  .osa-fe-blob--blue,
+  .osa-home-blob--blue {
+    top: 8%;
+    left: -4%;
+    width: 18rem;
+    height: 18rem;
+    background: radial-gradient(circle, color-mix(in srgb, var(--osa-home-blue) 28%, white), transparent 70%);
+  }
+
+  .osa-fe-blob--purple,
+  .osa-home-blob--purple {
+    right: -6%;
+    bottom: 10%;
+    width: 22rem;
+    height: 22rem;
+    background: radial-gradient(circle, color-mix(in srgb, var(--osa-home-purple) 24%, white), transparent 72%);
+    animation-delay: -6s;
+  }
+
+  .osa-fe-canvas--active .osa-fe-glow,
+  .osa-home-canvas--typing .osa-home-glow {
+    opacity: 0.92;
+    animation-duration: 10s;
+  }
+
+  .osa-fe-canvas--active .osa-fe-blob,
+  .osa-home-canvas--typing .osa-home-blob {
+    opacity: 0.72;
+    animation-duration: 11s;
+  }
+
+  .osa-fe-stage,
+  .osa-home-stage {
+    min-height: 100%;
+  }
+
+  .osa-fe-grid,
+  .osa-home-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: center;
+    min-height: calc(100vh - 2rem);
+  }
+
+  .osa-fe-main,
+  .osa-home-main {
+    position: relative;
+    z-index: 2;
+  }
+
+  .osa-fe-side,
+  .osa-home-side {
+    position: relative;
+    min-height: 18rem;
+  }
+
+  @media (min-width: 1024px) {
+    .osa-fe-grid,
+    .osa-home-grid {
+      grid-template-columns: minmax(0, 1.08fr) minmax(280px, 0.92fr);
+      gap: 2rem;
+    }
+
+    .osa-fe-side,
+    .osa-home-side {
+      min-height: 34rem;
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .osa-fe-side,
+    .osa-home-side {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.42;
+    }
+  }
+
+  .osa-fe-eyes-slot {
+    margin-bottom: clamp(0.85rem, 2vh, 1.25rem);
+  }
+
+  .osa-fe-lead {
+    font-size: clamp(1rem, 2vw, 1.12rem);
+    line-height: 1.45;
+    color: color-mix(in srgb, var(--osa-home-graphite) 68%, transparent);
+  }
+
+  .osa-fe-title {
+    margin-top: 0.35rem;
+    font-size: clamp(2rem, 4.8vw, 3.1rem);
+    font-weight: 650;
+    line-height: 1.04;
+    letter-spacing: -0.035em;
+    color: var(--osa-home-graphite);
+  }
+
+  .osa-fe-title--compact {
+    font-size: clamp(1.75rem, 4vw, 2.45rem);
+    max-width: 14ch;
+  }
+
+  .osa-fe-title--result {
+    font-size: clamp(1.55rem, 3.6vw, 2.2rem);
+    max-width: 22ch;
+  }
+
+  .osa-fe-subtitle {
+    margin-top: 0.65rem;
+    max-width: 36ch;
+    font-size: clamp(1rem, 2vw, 1.12rem);
+    line-height: 1.55;
+    color: color-mix(in srgb, var(--osa-home-graphite) 72%, transparent);
+  }
+
+  .osa-fe-welcome,
+  .osa-fe-intro,
+  .osa-fe-result {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    padding-block: clamp(0.5rem, 2vh, 1.5rem);
+  }
+
+  .osa-fe-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding-top: 0.35rem;
+  }
+
+  .osa-fe-primary-btn,
+  .osa-fe-secondary-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    padding: 0.85rem 1.45rem;
+    font-size: 0.98rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease,
+      opacity 0.2s ease;
+  }
+
+  .osa-fe-primary-btn {
+    border: none;
+    background: linear-gradient(135deg, var(--osa-home-blue), var(--osa-home-purple));
+    color: white;
+    box-shadow: 0 16px 30px -16px color-mix(in srgb, var(--osa-home-purple) 55%, transparent);
+  }
+
+  .osa-fe-primary-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 18px 34px -14px color-mix(in srgb, var(--osa-home-purple) 62%, transparent);
+  }
+
+  .osa-fe-canvas--login-welcome {
+    --osa-home-blue: #0057ff;
+    --osa-home-purple: #5b21b6;
+    --osa-home-coral: #ff4d3a;
+    --osa-home-lime: #b8e62e;
+    --osa-premium-ink: #12141c;
+    min-height: 100dvh;
+    background:
+      radial-gradient(ellipse 90% 70% at 50% 38%, color-mix(in srgb, var(--osa-home-blue) 22%, transparent), transparent 58%),
+      radial-gradient(circle at 14% 18%, color-mix(in srgb, var(--osa-home-blue) 32%, transparent), transparent 34%),
+      radial-gradient(circle at 86% 16%, color-mix(in srgb, var(--osa-home-purple) 30%, transparent), transparent 32%),
+      radial-gradient(circle at 72% 88%, color-mix(in srgb, var(--osa-home-coral) 22%, transparent), transparent 30%),
+      linear-gradient(168deg, #fffefb 0%, #fff8f2 42%, #fff3ec 100%);
+  }
+
+  .osa-fe-canvas--login-welcome .osa-fe-glow {
+    opacity: 1;
+    filter: blur(40px);
+    background:
+      radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--osa-home-blue) 34%, transparent), transparent 48%),
+      radial-gradient(circle at 54% 46%, color-mix(in srgb, var(--osa-home-purple) 28%, transparent), transparent 44%);
+    animation: osa-premium-ambient 12s ease-in-out infinite alternate;
+  }
+
+  .osa-fe-canvas--login-welcome .osa-fe-blob--blue {
+    top: 4%;
+    left: 8%;
+    width: 28rem;
+    height: 28rem;
+    opacity: 0.82;
+    filter: blur(12px);
+    background: radial-gradient(circle, color-mix(in srgb, var(--osa-home-blue) 52%, white), transparent 68%);
+  }
+
+  .osa-fe-canvas--login-welcome .osa-fe-blob--purple {
+    right: 6%;
+    bottom: 6%;
+    width: 32rem;
+    height: 32rem;
+    opacity: 0.78;
+    filter: blur(14px);
+    background: radial-gradient(circle, color-mix(in srgb, var(--osa-home-purple) 48%, white), transparent 70%);
+  }
+
+  .osa-fe-stage--hero {
+    display: flex;
+    min-height: 100dvh;
+    width: 100%;
+    padding: 0;
+  }
+
+  .osa-fe-premium-hero {
+    position: relative;
     display: flex;
     flex: 1;
-    justify-content: center;
-    background:
-      radial-gradient(ellipse 80% 50% at 50% -10%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%),
-      linear-gradient(180deg, color-mix(in srgb, var(--surface-0) 92%, white), var(--surface-0));
-    padding: 1.5rem 1.25rem 2rem;
-  }
-
-  .login-first-result-shell {
-    display: flex;
-    width: 100%;
-    max-width: 800px;
     flex-direction: column;
-    gap: 1.25rem;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 100dvh;
+    overflow: hidden;
+    isolation: isolate;
   }
 
-  .login-first-result-dev {
-    border-radius: 12px;
-    padding: 0.65rem 0.85rem;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
-    font-size: 12px;
-    line-height: 1.45;
+  .osa-fe-premium-aurora {
+    position: absolute;
+    pointer-events: none;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.75;
+    animation: osa-premium-aurora-drift 18s ease-in-out infinite alternate;
   }
 
-  .login-first-result-dev--ai {
-    border: 1px solid color-mix(in srgb, #22c55e 45%, var(--border-subtle));
-    background: color-mix(in srgb, #22c55e 10%, var(--surface-0));
-    color: #166534;
+  .osa-fe-premium-aurora--blue {
+    top: 8%;
+    left: 10%;
+    width: 42vw;
+    height: 42vw;
+    max-width: 34rem;
+    max-height: 34rem;
+    background: radial-gradient(circle, color-mix(in srgb, var(--osa-home-blue) 55%, transparent), transparent 72%);
   }
 
-  .login-first-result-dev--fallback {
-    border: 1px solid color-mix(in srgb, #f59e0b 50%, var(--border-subtle));
-    background: color-mix(in srgb, #f59e0b 12%, var(--surface-0));
-    color: #92400e;
+  .osa-fe-premium-aurora--violet {
+    top: 18%;
+    right: 6%;
+    width: 36vw;
+    height: 36vw;
+    max-width: 28rem;
+    max-height: 28rem;
+    background: radial-gradient(circle, color-mix(in srgb, var(--osa-home-purple) 50%, transparent), transparent 70%);
+    animation-delay: -6s;
   }
 
-  .login-first-result-dev-label {
-    font-weight: 600;
+  .osa-fe-premium-aurora--coral {
+    bottom: 8%;
+    left: 22%;
+    width: 28vw;
+    height: 28vw;
+    max-width: 22rem;
+    max-height: 22rem;
+    background: radial-gradient(circle, color-mix(in srgb, var(--osa-home-coral) 42%, transparent), transparent 72%);
+    animation-delay: -10s;
   }
 
-  .login-first-result-dev-notice,
-  .login-first-result-dev-reason {
-    margin-top: 0.2rem;
-    opacity: 0.92;
+  .osa-fe-premium-vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 120% 90% at 50% 45%, transparent 42%, color-mix(in srgb, var(--osa-premium-ink) 6%, transparent) 100%);
+    opacity: 0.35;
   }
 
-  .login-first-result-hero {
+  .osa-fe-premium-eyes-stage {
+    position: relative;
+    z-index: 2;
     display: flex;
     align-items: center;
-    gap: 0.85rem;
+    justify-content: center;
+    width: min(92vw, 52rem);
+    aspect-ratio: 2.2 / 1;
+    animation: osa-premium-eyes-rise 1.2s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  .login-first-result-mark {
-    flex-shrink: 0;
-    color: var(--accent);
+  .osa-fe-premium-eyes-radiance {
+    position: absolute;
+    inset: -18%;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--osa-home-blue) 42%, transparent) 0%,
+      color-mix(in srgb, var(--osa-home-purple) 28%, transparent) 38%,
+      transparent 72%
+    );
+    filter: blur(36px);
+    opacity: 0.95;
+    animation: osa-premium-radiance 6s ease-in-out infinite alternate;
   }
 
-  .login-first-result-lead {
-    font-size: clamp(1.05rem, 2.2vw, 1.2rem);
-    line-height: 1.4;
-    color: var(--text-secondary);
+  .osa-fe-premium-eyes-ring {
+    position: absolute;
+    inset: -8%;
+    border-radius: 50%;
+    border: 1px solid color-mix(in srgb, white 65%, transparent);
+    background: radial-gradient(circle, color-mix(in srgb, white 35%, transparent), transparent 68%);
+    box-shadow:
+      0 0 80px color-mix(in srgb, var(--osa-home-blue) 35%, transparent),
+      inset 0 0 60px color-mix(in srgb, var(--osa-home-purple) 14%, transparent);
+    opacity: 0.85;
   }
 
-  .login-first-result-headline {
-    font-size: clamp(1.45rem, 3.4vw, 1.95rem);
+  .osa-fe-premium-eyes-core {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .osa-fe-premium-eyes-core .osa-eyes {
+    filter: drop-shadow(0 28px 60px color-mix(in srgb, var(--osa-home-purple) 45%, transparent));
+  }
+
+  .osa-fe-premium-eyes-core .osa-eye-socket {
+    border-color: color-mix(in srgb, white 55%, var(--osa-home-purple));
+    background:
+      radial-gradient(circle at 28% 22%, #ffffff 0%, color-mix(in srgb, var(--osa-home-blue) 10%, white) 46%, color-mix(in srgb, var(--osa-home-purple) 16%, #f8f4ff) 100%);
+    box-shadow:
+      inset 0 -10px 22px color-mix(in srgb, var(--osa-home-purple) 22%, transparent),
+      inset 0 2px 8px color-mix(in srgb, white 80%, transparent),
+      0 20px 48px -12px color-mix(in srgb, var(--osa-home-blue) 55%, transparent);
+  }
+
+  .osa-fe-premium-eyes-core .osa-eye-iris {
+    background: radial-gradient(
+      circle at 30% 26%,
+      #93c5fd 0%,
+      #1d4ed8 22%,
+      #4c1d95 58%,
+      #1e1b4b 96%
+    );
+    box-shadow:
+      0 0 28px color-mix(in srgb, var(--osa-home-blue) 55%, transparent),
+      0 0 48px color-mix(in srgb, var(--osa-home-purple) 35%, transparent),
+      inset 0 -4px 10px color-mix(in srgb, #0f172a 40%, transparent);
+  }
+
+  .osa-fe-premium-eyes-core .osa-eye-pupil {
+    background: #0a0c12;
+    box-shadow: inset 0 1px 2px color-mix(in srgb, white 25%, transparent);
+  }
+
+  .osa-fe-premium-eyes-core .osa-eye-shine {
+    width: calc(var(--osa-pupil-size) * 0.7);
+    height: calc(var(--osa-pupil-size) * 0.7);
+    opacity: 0.98;
+  }
+
+  .osa-fe-premium-foot {
+    position: absolute;
+    bottom: clamp(1.75rem, 6vh, 3.25rem);
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.55rem;
+    text-align: center;
+    animation: osa-premium-foot-in 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.45s both;
+  }
+
+  .osa-fe-premium-mark {
+    margin: 0;
+    font-size: 0.72rem;
     font-weight: 600;
-    line-height: 1.3;
-    letter-spacing: -0.02em;
-    color: var(--text-primary);
+    letter-spacing: 0.38em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--osa-premium-ink) 48%, transparent);
   }
 
-  .login-first-result-copy {
-    font-size: 1.05rem;
+  .osa-fe-premium-line {
+    margin: 0;
+    max-width: 22ch;
+    font-size: clamp(1rem, 2.2vw, 1.15rem);
+    font-weight: 400;
+    line-height: 1.45;
+    letter-spacing: -0.01em;
+    color: color-mix(in srgb, var(--osa-premium-ink) 72%, transparent);
+  }
+
+  .osa-fe-premium-enter {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-top: 0.35rem;
+    padding: 0.72rem 1.35rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, white 70%, var(--osa-home-purple));
+    background: color-mix(in srgb, white 72%, transparent);
+    backdrop-filter: blur(16px);
+    color: var(--osa-premium-ink);
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    box-shadow:
+      0 16px 40px -20px color-mix(in srgb, var(--osa-home-purple) 55%, transparent),
+      0 0 0 1px color-mix(in srgb, white 50%, transparent) inset;
+    transition:
+      transform 0.25s ease,
+      box-shadow 0.25s ease,
+      background-color 0.25s ease;
+  }
+
+  .osa-fe-premium-enter:hover {
+    transform: translateY(-2px);
+    background: color-mix(in srgb, white 88%, transparent);
+    box-shadow:
+      0 22px 48px -18px color-mix(in srgb, var(--osa-home-blue) 50%, transparent),
+      0 0 0 1px color-mix(in srgb, white 65%, transparent) inset;
+  }
+
+  .osa-fe-premium-enter-arrow {
+    color: color-mix(in srgb, var(--osa-home-blue) 85%, var(--osa-home-purple));
+    transition: transform 0.25s ease;
+  }
+
+  .osa-fe-premium-enter:hover .osa-fe-premium-enter-arrow {
+    transform: translateX(3px);
+  }
+
+  @keyframes osa-premium-ambient {
+    from {
+      opacity: 0.82;
+      transform: scale(1);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1.05);
+    }
+  }
+
+  @keyframes osa-premium-aurora-drift {
+    from {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+
+    to {
+      transform: translate3d(2%, -3%, 0) scale(1.06);
+    }
+  }
+
+  @keyframes osa-premium-radiance {
+    from {
+      opacity: 0.82;
+      transform: scale(0.96);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1.05);
+    }
+  }
+
+  @keyframes osa-premium-eyes-rise {
+    from {
+      opacity: 0;
+      transform: translateY(18px) scale(0.94);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes osa-premium-foot-in {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .osa-fe-premium-eyes-stage {
+      width: min(96vw, 100%);
+      margin-top: -4vh;
+    }
+
+    .osa-fe-premium-foot {
+      width: calc(100% - 2rem);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .osa-fe-canvas--login-welcome .osa-fe-glow,
+    .osa-fe-premium-aurora,
+    .osa-fe-premium-eyes-radiance,
+    .osa-fe-premium-eyes-stage,
+    .osa-fe-premium-foot {
+      animation: none;
+    }
+  }
+
+  .osa-fe-secondary-btn {
+    border: 1px solid color-mix(in srgb, var(--osa-home-purple) 18%, white);
+    background: color-mix(in srgb, white 88%, var(--osa-home-milk));
+    color: var(--osa-home-graphite);
+  }
+
+  .osa-fe-secondary-btn:hover {
+    border-color: color-mix(in srgb, var(--osa-home-blue) 28%, white);
+    transform: translateY(-1px);
+  }
+
+  .osa-fe-intro-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 0.35rem;
+  }
+
+  .osa-fe-input-wrap {
+    position: relative;
+  }
+
+  .osa-fe-input {
+    width: 100%;
+    min-height: clamp(9.5rem, 22vh, 12rem);
+    resize: none;
+    border: 1px solid color-mix(in srgb, var(--osa-home-blue) 18%, white);
+    border-radius: 28px;
+    background: color-mix(in srgb, white 92%, var(--osa-home-milk));
+    padding: 1.45rem 4.75rem 1.45rem 1.45rem;
+    font-size: clamp(1.08rem, 2.3vw, 1.28rem);
     line-height: 1.55;
-    color: var(--text-secondary);
+    color: var(--osa-home-graphite);
+    outline: none;
+    box-shadow:
+      0 24px 60px -36px color-mix(in srgb, var(--osa-home-purple) 35%, transparent),
+      0 0 0 1px color-mix(in srgb, white 80%, transparent) inset;
+    transition:
+      border-color 0.28s ease,
+      box-shadow 0.45s ease,
+      transform 0.45s ease;
   }
 
-  .login-first-result-sections {
+  .osa-fe-input--typing {
+    border-color: color-mix(in srgb, var(--osa-home-blue) 34%, white);
+    box-shadow:
+      0 28px 70px -34px color-mix(in srgb, var(--osa-home-blue) 34%, transparent),
+      0 0 0 4px color-mix(in srgb, var(--osa-home-purple) 10%, transparent);
+    transform: translateY(-1px);
+  }
+
+  .osa-fe-input::placeholder {
+    color: color-mix(in srgb, var(--osa-home-graphite) 42%, transparent);
+  }
+
+  .osa-fe-input:focus {
+    border-color: color-mix(in srgb, var(--osa-home-purple) 34%, white);
+    background: white;
+    box-shadow:
+      0 30px 70px -32px color-mix(in srgb, var(--osa-home-purple) 34%, transparent),
+      0 0 0 5px color-mix(in srgb, var(--osa-home-blue) 8%, transparent);
+  }
+
+  .osa-fe-send {
+    position: absolute;
+    right: 1rem;
+    bottom: 1rem;
+    display: inline-flex;
+    height: 3rem;
+    width: 3rem;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--osa-home-graphite) 8%, white);
+    color: color-mix(in srgb, var(--osa-home-graphite) 45%, transparent);
+    font-size: 1.15rem;
+    line-height: 1;
+    transition:
+      opacity 0.2s ease,
+      transform 0.2s ease,
+      background 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .osa-fe-send--ready {
+    background: linear-gradient(135deg, var(--osa-home-blue), var(--osa-home-purple));
+    color: white;
+    box-shadow: 0 16px 30px -16px color-mix(in srgb, var(--osa-home-purple) 55%, transparent);
+  }
+
+  .osa-fe-send--ready:hover {
+    transform: translateY(-1px);
+  }
+
+  .osa-fe-send:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .osa-fe-examples {
     display: flex;
     flex-direction: column;
-    gap: 0.95rem;
+    gap: 0.45rem;
+    align-items: flex-start;
   }
 
-  .login-first-result-section {
+  .osa-fe-example {
+    border: none;
+    background: transparent;
+    padding: 0;
+    text-align: left;
+    font-size: 0.95rem;
+    line-height: 1.45;
+    color: color-mix(in srgb, var(--osa-home-blue) 78%, var(--osa-home-graphite));
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--osa-home-coral) 45%, transparent);
+    text-underline-offset: 0.18em;
+    cursor: pointer;
+  }
+
+  .osa-fe-example:hover {
+    color: var(--osa-home-purple);
+  }
+
+  .osa-fe-back {
+    font-size: 0.92rem;
+    color: color-mix(in srgb, var(--osa-home-graphite) 52%, transparent);
+  }
+
+  .osa-fe-back a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .osa-fe-back a:hover {
+    color: var(--osa-home-purple);
+  }
+
+  .osa-fe-processing {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 1rem;
+    padding-top: 0.5rem;
   }
 
-  .login-first-result-section-label {
+  .osa-fe-processing-label {
+    font-size: clamp(1.1rem, 2.4vw, 1.35rem);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--osa-home-graphite);
+  }
+
+  .osa-fe-result-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    margin-top: 0.25rem;
+  }
+
+  .osa-fe-result-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .osa-fe-result-label {
     font-size: 0.82rem;
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: var(--text-tertiary);
+    color: color-mix(in srgb, var(--osa-home-purple) 72%, var(--osa-home-graphite));
   }
 
-  .login-first-result-section-body {
+  .osa-fe-result-body {
     font-size: clamp(1rem, 2vw, 1.08rem);
     line-height: 1.6;
-    color: var(--text-primary);
+    color: var(--osa-home-graphite);
   }
 
-  .login-first-result-list {
+  .osa-fe-result-list {
     margin: 0;
     padding-left: 1.15rem;
     display: flex;
@@ -313,28 +960,54 @@
     gap: 0.45rem;
   }
 
-  .login-first-result-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    padding-top: 0.35rem;
-  }
-
-  .login-first-result-footnote {
+  .osa-fe-footnote {
     font-size: 0.92rem;
     line-height: 1.5;
-    color: var(--text-tertiary);
+    color: color-mix(in srgb, var(--osa-home-graphite) 52%, transparent);
   }
 
-  .login-first-result-link {
+  .osa-fe-footnote-link {
     font-weight: 500;
-    color: var(--accent);
+    color: var(--osa-home-blue);
     text-decoration: none;
-    transition: opacity 0.2s ease;
   }
 
-  .login-first-result-link:hover {
-    opacity: 0.8;
+  .osa-fe-footnote-link:hover {
+    color: var(--osa-home-purple);
+  }
+
+  .osa-fe-dev {
+    border-radius: 12px;
+    padding: 0.65rem 0.85rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .osa-fe-dev--ai {
+    border: 1px solid color-mix(in srgb, #22c55e 45%, white);
+    background: color-mix(in srgb, #22c55e 10%, white);
+    color: #166534;
+  }
+
+  .osa-fe-dev--fallback {
+    border: 1px solid color-mix(in srgb, #f59e0b 50%, white);
+    background: color-mix(in srgb, #f59e0b 12%, white);
+    color: #92400e;
+  }
+
+  .osa-fe-dev-label {
+    font-weight: 600;
+  }
+
+  .osa-fe-dev-notice,
+  .osa-fe-dev-reason {
+    margin-top: 0.2rem;
+    opacity: 0.92;
+  }
+
+  .osa-home-grid {
+    min-height: calc(100vh - 5.5rem);
   }
 
   .first-experience-input {
@@ -382,17 +1055,6 @@
     border-color: color-mix(in srgb, var(--accent) 40%, var(--border-subtle));
     color: var(--accent);
     background: var(--surface-1);
-  }
-
-  .osa-home-shell {
-    --osa-home-milk: #fffaf5;
-    --osa-home-graphite: #1f2430;
-    --osa-home-blue: #2563eb;
-    --osa-home-purple: #7c3aed;
-    --osa-home-coral: #ff6b57;
-    --osa-home-lime: #c7f464;
-    --osa-home-blue-soft: color-mix(in srgb, var(--osa-home-blue) 14%, white);
-    --osa-home-purple-soft: color-mix(in srgb, var(--osa-home-purple) 12%, white);
   }
 
   .osa-home-topnav {
@@ -524,40 +1186,6 @@
     }
   }
 
-  .osa-home-canvas {
-    position: relative;
-    isolation: isolate;
-    min-height: 100%;
-    color: var(--osa-home-graphite);
-    background:
-      radial-gradient(circle at 12% 18%, color-mix(in srgb, var(--osa-home-blue) 16%, transparent), transparent 34%),
-      radial-gradient(circle at 88% 14%, color-mix(in srgb, var(--osa-home-purple) 14%, transparent), transparent 32%),
-      radial-gradient(circle at 72% 82%, color-mix(in srgb, var(--osa-home-coral) 10%, transparent), transparent 28%),
-      linear-gradient(180deg, #fffdf9 0%, var(--osa-home-milk) 52%, #fff7ef 100%);
-  }
-
-  .osa-home-depth {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    opacity: 0.35;
-    background:
-      radial-gradient(ellipse 70% 45% at 50% 0%, color-mix(in srgb, white 70%, transparent), transparent 72%),
-      radial-gradient(circle at 50% 100%, color-mix(in srgb, var(--osa-home-purple) 6%, transparent), transparent 42%);
-  }
-
-  .osa-home-glow {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    opacity: 0.75;
-    filter: blur(24px);
-    background:
-      radial-gradient(circle at 28% 42%, color-mix(in srgb, var(--osa-home-blue) 18%, transparent), transparent 38%),
-      radial-gradient(circle at 74% 36%, color-mix(in srgb, var(--osa-home-purple) 16%, transparent), transparent 36%);
-    animation: osa-home-glow-shift 14s ease-in-out infinite alternate;
-  }
-
   .osa-home-hero-light {
     position: absolute;
     inset: 0;
@@ -580,32 +1208,6 @@
     will-change: opacity, transform;
   }
 
-  .osa-home-blob {
-    position: absolute;
-    pointer-events: none;
-    border-radius: 999px;
-    filter: blur(8px);
-    opacity: 0.55;
-    animation: osa-home-blob-float 16s ease-in-out infinite;
-  }
-
-  .osa-home-blob--blue {
-    top: 8%;
-    left: -4%;
-    width: 18rem;
-    height: 18rem;
-    background: radial-gradient(circle, color-mix(in srgb, var(--osa-home-blue) 28%, white), transparent 70%);
-  }
-
-  .osa-home-blob--purple {
-    right: -6%;
-    bottom: 10%;
-    width: 22rem;
-    height: 22rem;
-    background: radial-gradient(circle, color-mix(in srgb, var(--osa-home-purple) 24%, white), transparent 72%);
-    animation-delay: -6s;
-  }
-
   .osa-home-canvas--typing .osa-home-hero-light {
     opacity: calc(var(--osa-hero-light, 1) * 1.08);
   }
@@ -618,35 +1220,6 @@
   .osa-home-canvas--thinking .osa-home-glow {
     opacity: 1;
     animation-duration: 6s;
-  }
-
-  .osa-home-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 1.5rem;
-    align-items: center;
-    min-height: calc(100vh - 5.5rem);
-  }
-
-  .osa-home-main {
-    position: relative;
-    z-index: 2;
-  }
-
-  .osa-home-side {
-    position: relative;
-    min-height: 18rem;
-  }
-
-  @media (min-width: 1024px) {
-    .osa-home-grid {
-      grid-template-columns: minmax(0, 1.08fr) minmax(280px, 0.92fr);
-      gap: 2rem;
-    }
-
-    .osa-home-side {
-      min-height: 34rem;
-    }
   }
 
   .osa-home-art {
@@ -1509,6 +2082,22 @@
     --osa-eyes-gap: 1.45rem;
     --osa-pupil-size: 0.52rem;
     --osa-iris-size: 1.12rem;
+  }
+
+  .osa-eyes--xl {
+    --osa-eye-width: 10.5rem;
+    --osa-eye-height: 3.35rem;
+    --osa-eyes-gap: 4.2rem;
+    --osa-pupil-size: 1.5rem;
+    --osa-iris-size: 3.35rem;
+  }
+
+  .osa-eyes--hero {
+    --osa-eye-width: clamp(7.5rem, 18vw, 14rem);
+    --osa-eye-height: clamp(2.4rem, 5.8vw, 4.6rem);
+    --osa-eyes-gap: clamp(3rem, 8vw, 5.8rem);
+    --osa-pupil-size: clamp(1.1rem, 2.6vw, 2.05rem);
+    --osa-iris-size: clamp(2.4rem, 5.8vw, 4.55rem);
   }
 
   .osa-eye {
