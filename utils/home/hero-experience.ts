@@ -1,5 +1,10 @@
 export const HERO_GREETINGS = ['Чем сегодня помочь?', 'С чего начнём?'] as const;
 
+export const HERO_HOME_GREETING = 'Чем сегодня помочь?' as const;
+
+export const HERO_HOME_PLACEHOLDER =
+  'Расскажите, что хотите создать, улучшить или решить…' as const;
+
 export type HeroPhase = 'orbit-free' | 'orbit-gather' | 'eyes-form' | 'eyes-alive' | 'ready';
 
 export const HERO_PHASE_MS: Record<Exclude<HeroPhase, 'ready'>, number> = {

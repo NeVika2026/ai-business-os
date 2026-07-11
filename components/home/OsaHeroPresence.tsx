@@ -189,7 +189,7 @@ export const OsaHeroPresence = forwardRef<OsaHeroPresenceHandle, OsaHeroPresence
             className={`osa-hero-eyes ${eyesForming ? 'osa-hero-eyes--forming' : ''} ${eyesAlive ? 'osa-hero-eyes--alive' : ''}`}
           >
             <OsaEyes
-              size="md"
+              size="lg"
               active
               lookStraight={lookStraight}
               skipIntro={skipIntro || mode === 'companion' || skipped}

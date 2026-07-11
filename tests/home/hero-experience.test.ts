@@ -3,6 +3,8 @@ import { describe, it } from 'node:test';
 
 import {
   HERO_GREETINGS,
+  HERO_HOME_GREETING,
+  HERO_HOME_PLACEHOLDER,
   HERO_PHASE_MS,
   heroLightIntensity,
   heroLightWarmth,
@@ -26,6 +28,11 @@ describe('hero experience', () => {
     assert.equal(heroPhaseDelay('orbit-gather'), 1_000);
     assert.equal(heroPhaseDelay('eyes-form'), 500);
     assert.equal(heroPhaseDelay('eyes-alive'), 1_000);
+  });
+
+  it('exposes home copy constants', () => {
+    assert.equal(HERO_HOME_GREETING, 'Чем сегодня помочь?');
+    assert.match(HERO_HOME_PLACEHOLDER, /создать/);
   });
 
   it('warms light while typing', () => {

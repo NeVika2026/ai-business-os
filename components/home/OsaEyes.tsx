@@ -58,11 +58,18 @@ function Eye({
     >
       <div className="osa-eye-socket">
         <span
+          className="osa-eye-iris"
+          style={{
+            transform: `translate(calc(-50% + ${gazeX * 0.72}px), calc(-50% + ${gazeY * 0.72}px))`,
+          }}
+        />
+        <span
           className="osa-eye-pupil"
           style={{
             transform: `translate(calc(-50% + ${gazeX}px), calc(-50% + ${gazeY}px))`,
           }}
         />
+        <span className="osa-eye-shine" aria-hidden="true" />
       </div>
       <span className="osa-eye-lid" aria-hidden="true" />
     </div>

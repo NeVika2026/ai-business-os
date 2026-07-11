@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 
+import { OsaHomeTopNav } from '@/components/home/OsaHomeTopNav';
 import { Sidebar } from '@/components/layout/sidebar';
 
 type AppShellProps = {
@@ -14,6 +15,16 @@ type AppShellProps = {
 
 export function AppShell({ pathname, email, organizationName, header, children }: AppShellProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const isHomeCanvas = pathname === '/home';
+
+  if (isHomeCanvas) {
+    return (
+      <div className="osa-home-shell flex min-h-screen flex-col bg-[var(--osa-home-milk,#fffaf5)] text-[var(--osa-home-graphite,#1f2430)]">
+        <OsaHomeTopNav email={email} />
+        <main className="relative flex-1 overflow-y-auto">{children}</main>
+      </div>
+    );
+  }
 
   return (
     <div

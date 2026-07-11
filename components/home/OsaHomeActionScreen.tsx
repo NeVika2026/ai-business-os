@@ -10,6 +10,7 @@ import {
 } from '@/app/(dashboard)/home/actions';
 import { OsaActiveAgent } from '@/components/home/OsaActiveAgent';
 import { OsaClarifyPanel } from '@/components/home/OsaClarifyPanel';
+import { OsaHomeArtComposition } from '@/components/home/OsaHomeArtComposition';
 import {
   OsaHeroPresence,
   type OsaHeroPresenceHandle,
@@ -19,9 +20,10 @@ import { OsaRealWorkResult } from '@/components/home/OsaRealWorkResult';
 import { OsaErrorState } from '@/components/osa/OsaErrorState';
 import type { HomeQuickActionId } from '@/utils/home/home-action';
 import {
+  HERO_HOME_GREETING,
+  HERO_HOME_PLACEHOLDER,
   heroLightIntensity,
   heroLightWarmth,
-  pickHeroGreeting,
 } from '@/utils/home/hero-experience';
 import type { ClarificationAnswer, HomeDeliverablePayload, RealWorkTaskType } from '@/utils/home/real-work-mode';
 
@@ -39,7 +41,6 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
   const [prompt, setPrompt] = useState('');
   const [phase, setPhase] = useState<ScreenPhase>('input');
   const [heroReady, setHeroReady] = useState(false);
-  const [greeting] = useState(() => pickHeroGreeting());
   const [taskType, setTaskType] = useState<RealWorkTaskType | null>(null);
   const [skillModeLabel, setSkillModeLabel] = useState<string | null>(null);
   const [clarifyQuestions, setClarifyQuestions] = useState<string[]>([]);
@@ -55,6 +56,7 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
   const isTyping = prompt.trim().length > 0;
   const showCompose = phase === 'input' || phase === 'error';
   const companionPhase = phase === 'working' || phase === 'clarify' || phase === 'error';
+  const isThinking = phase === 'working';
 
   const canvasStyle = useMemo(
     () =>
@@ -190,14 +192,23 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
   const busy = isPending || phase === 'working';
   const canSubmit = prompt.trim().length > 0 && !busy && phase !== 'clarify';
 
+  const canvasClassName = [
+    'osa-home-canvas',
+    'flex min-h-full flex-1 flex-col',
+    isTyping ? 'osa-home-canvas--typing' : '',
+    isThinking ? 'osa-home-canvas--thinking' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   if (phase === 'result' && deliverable && projectId && workspaceHref) {
     return (
-      <main className="osa-home-canvas flex min-h-full flex-1 flex-col" style={canvasStyle}>
+      <main className={canvasClassName} style={canvasStyle}>
         <div className="osa-home-depth" aria-hidden="true" />
         <div className="osa-home-glow" aria-hidden="true" />
         <div className="osa-home-hero-light" aria-hidden="true" />
 
-        <div className="osa-home-stage relative z-[1] mx-auto flex w-full max-w-[720px] flex-1 flex-col px-5 pb-12 pt-[clamp(3rem,10vh,5rem)] sm:px-7">
+        <div className="osa-home-stage relative z-[1] mx-auto flex w-full max-w-[920px] flex-1 flex-col px-5 pb-12 pt-8 sm:px-8">
           <OsaRealWorkResult
             deliverable={deliverable}
             projectId={projectId}
@@ -212,95 +223,100 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
   }
 
   return (
-    <main
-      className={`osa-home-canvas flex min-h-full flex-1 flex-col ${isTyping ? 'osa-home-canvas--typing' : ''}`}
-      style={canvasStyle}
-    >
+    <main className={canvasClassName} style={canvasStyle}>
       <div className="osa-home-depth" aria-hidden="true" />
       <div className="osa-home-glow" aria-hidden="true" />
       <div className="osa-home-hero-light" aria-hidden="true" />
+      <div className="osa-home-blob osa-home-blob--blue" aria-hidden="true" />
+      <div className="osa-home-blob osa-home-blob--purple" aria-hidden="true" />
 
-      <div className="osa-home-stage relative z-[1] mx-auto flex w-full max-w-[720px] flex-1 flex-col px-5 pb-8 sm:px-7">
-        <div className="flex flex-1 flex-col items-center justify-center py-[clamp(2rem,8vh,4rem)]">
-          <div className="osa-home-hero w-full">
-            <div className="osa-home-eyes-slot flex justify-center">
-              <OsaHeroPresence
-                ref={heroRef}
-                mode={introPlayed || companionPhase ? 'companion' : 'intro'}
-                lookStraight={phase === 'working'}
-                skipIntro={introPlayed}
-                onReady={handleHeroReady}
-              />
-            </div>
-
-            {showCompose ? (
-              <div
-                className={`osa-home-compose ${heroReady ? 'osa-home-compose--visible' : 'osa-home-compose--waiting'}`}
-              >
-                <h1 className="osa-home-greeting osa-home-greeting--visible">{greeting}</h1>
-
-                <div className="osa-home-input-wrap">
-                  <label className="sr-only" htmlFor="osa-home-prompt">
-                    {greeting}
-                  </label>
-                  <textarea
-                    id="osa-home-prompt"
-                    value={prompt}
-                    onChange={(event) => handlePromptChange(event.target.value)}
-                    onFocus={() => heroRef.current?.skip()}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && canSubmit) {
-                        event.preventDefault();
-                        runTask();
-                      }
-                    }}
-                    rows={4}
-                    disabled={busy}
-                    placeholder={heroReady ? 'Напишите здесь…' : ''}
-                    className={`osa-home-input ${isTyping ? 'osa-home-input--typing' : ''}`}
-                    autoFocus
-                  />
-                  <button
-                    type="button"
-                    disabled={!canSubmit}
-                    onClick={() => runTask()}
-                    aria-label="Отправить"
-                    className={`osa-home-send ${canSubmit ? 'osa-home-send--ready' : ''}`}
-                  >
-                    <span aria-hidden="true">↑</span>
-                  </button>
-                </div>
-
-                {phase === 'error' && error ? (
-                  <OsaErrorState
-                    message={error.message}
-                    hint={error.hint}
-                    onRetry={() => runTask(lastQuickActionId)}
-                  />
-                ) : null}
+      <div className="osa-home-stage relative z-[1] mx-auto w-full max-w-[1240px] flex-1 px-4 pb-8 pt-4 sm:px-6 lg:px-8">
+        <div className="osa-home-grid">
+          <div className="osa-home-main">
+            <div className="osa-home-hero w-full">
+              <div className="osa-home-eyes-slot">
+                <OsaHeroPresence
+                  ref={heroRef}
+                  mode={introPlayed || companionPhase ? 'companion' : 'intro'}
+                  lookStraight={phase === 'working'}
+                  skipIntro={introPlayed}
+                  onReady={handleHeroReady}
+                />
               </div>
-            ) : null}
 
-            {skillModeLabel && (phase === 'clarify' || phase === 'working') ? (
-              <OsaSkillModeLine label={skillModeLabel} />
-            ) : null}
+              {showCompose ? (
+                <div
+                  className={`osa-home-compose ${heroReady ? 'osa-home-compose--visible' : 'osa-home-compose--waiting'}`}
+                >
+                  <h1 className="osa-home-greeting osa-home-greeting--visible">{HERO_HOME_GREETING}</h1>
 
-            {phase === 'clarify' && taskType ? (
-              <OsaClarifyPanel
-                taskType={taskType}
-                questions={clarifyQuestions}
-                disabled={isPending}
-                onSubmit={(answers) => executeRealWork(lastQuickActionId, answers)}
-              />
-            ) : null}
+                  <div className="osa-home-input-wrap">
+                    <label className="sr-only" htmlFor="osa-home-prompt">
+                      {HERO_HOME_GREETING}
+                    </label>
+                    <textarea
+                      id="osa-home-prompt"
+                      value={prompt}
+                      onChange={(event) => handlePromptChange(event.target.value)}
+                      onFocus={() => heroRef.current?.skip()}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && canSubmit) {
+                          event.preventDefault();
+                          runTask();
+                        }
+                      }}
+                      rows={5}
+                      disabled={busy}
+                      placeholder={heroReady ? HERO_HOME_PLACEHOLDER : ''}
+                      className={`osa-home-input ${isTyping ? 'osa-home-input--typing' : ''}`}
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      disabled={!canSubmit}
+                      onClick={() => runTask()}
+                      aria-label="Отправить"
+                      className={`osa-home-send ${canSubmit ? 'osa-home-send--ready' : ''}`}
+                    >
+                      <span aria-hidden="true">↑</span>
+                    </button>
+                  </div>
 
-            {phase === 'working' && orchestra ? <OsaActiveAgent orchestra={orchestra} /> : null}
+                  {phase === 'error' && error ? (
+                    <OsaErrorState
+                      message={error.message}
+                      hint={error.hint}
+                      onRetry={() => runTask(lastQuickActionId)}
+                    />
+                  ) : null}
+                </div>
+              ) : null}
 
-            {phase === 'working' && !orchestra ? (
-              <p className="osa-live-discovery" aria-live="polite">
-                Думаю…
-              </p>
-            ) : null}
+              {skillModeLabel && (phase === 'clarify' || phase === 'working') ? (
+                <OsaSkillModeLine label={skillModeLabel} />
+              ) : null}
+
+              {phase === 'clarify' && taskType ? (
+                <OsaClarifyPanel
+                  taskType={taskType}
+                  questions={clarifyQuestions}
+                  disabled={isPending}
+                  onSubmit={(answers) => executeRealWork(lastQuickActionId, answers)}
+                />
+              ) : null}
+
+              {phase === 'working' && orchestra ? <OsaActiveAgent orchestra={orchestra} /> : null}
+
+              {phase === 'working' && !orchestra ? (
+                <p className="osa-live-discovery" aria-live="polite">
+                  Думаю…
+                </p>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="osa-home-side">
+            <OsaHomeArtComposition active={isTyping} thinking={isThinking} />
           </div>
         </div>
 
