@@ -772,6 +772,781 @@
     }
   }
 
+  /* ── Login hero — OSA mascot start screen ── */
+  .osa-fe-canvas--login-hero {
+    --osa-login-bg-deep: #041047;
+    --osa-login-bg-mid: #06165f;
+    --osa-login-bg-bright: #0047ff;
+    --osa-login-cyan: #22d3ee;
+    --osa-login-violet: #7c3aed;
+    --osa-login-coral: #ff6b81;
+    --osa-login-text: #ffffff;
+    --osa-login-text-muted: rgba(255, 255, 255, 0.78);
+    min-height: 100dvh;
+    background:
+      radial-gradient(ellipse 72% 58% at 68% 36%, color-mix(in srgb, var(--osa-login-bg-bright) 58%, transparent), transparent 62%),
+      radial-gradient(ellipse 40% 35% at 18% 82%, color-mix(in srgb, var(--osa-login-violet) 14%, transparent), transparent 72%),
+      radial-gradient(circle at 92% 12%, color-mix(in srgb, var(--osa-login-coral) 10%, transparent), transparent 28%),
+      linear-gradient(160deg, var(--osa-login-bg-deep) 0%, var(--osa-login-bg-mid) 52%, #0a2a9a 100%);
+  }
+
+  .osa-fe-canvas--login-hero .osa-fe-glow,
+  .osa-fe-canvas--login-hero .osa-fe-blob {
+    opacity: 0;
+  }
+
+  .osa-login-scene {
+    position: relative;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 100dvh;
+    overflow: hidden;
+    isolation: isolate;
+    color: var(--osa-login-text);
+  }
+
+  .osa-login-scene-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    animation: osa-login-bg-in 0.48s ease both;
+  }
+
+  .osa-login-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(72px);
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  .osa-login-orb--violet {
+    top: 6%;
+    right: 2%;
+    width: 20rem;
+    height: 20rem;
+    background: radial-gradient(circle, color-mix(in srgb, var(--osa-login-violet) 42%, transparent), transparent 72%);
+  }
+
+  .osa-login-orb--coral {
+    bottom: 8%;
+    left: 6%;
+    width: 14rem;
+    height: 14rem;
+    background: radial-gradient(circle, color-mix(in srgb, var(--osa-login-coral) 28%, transparent), transparent 74%);
+  }
+
+  .osa-login-vignette {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 130% 95% at 50% 50%, transparent 28%, color-mix(in srgb, var(--osa-login-bg-deep) 82%, transparent) 100%);
+    opacity: 0.95;
+  }
+
+  .osa-login-grain {
+    position: absolute;
+    inset: 0;
+    opacity: 0.08;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+    mix-blend-mode: soft-light;
+    pointer-events: none;
+  }
+
+  .osa-login-topnav {
+    position: relative;
+    z-index: 20;
+    padding: max(0.55rem, env(safe-area-inset-top)) 1.15rem 0;
+    animation: osa-login-nav-in 0.45s ease both;
+  }
+
+  .osa-login-topnav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .osa-login-topnav-brand {
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--osa-login-text);
+    text-decoration: none;
+  }
+
+  .osa-login-topnav-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .osa-login-topnav-signin {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, white 22%, transparent);
+    background: color-mix(in srgb, white 8%, transparent);
+    backdrop-filter: blur(10px);
+    color: var(--osa-login-text);
+    font-size: 0.86rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .osa-login-topnav-signin:hover {
+    background: color-mix(in srgb, white 16%, transparent);
+    border-color: color-mix(in srgb, white 32%, transparent);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px -16px color-mix(in srgb, var(--osa-login-cyan) 35%, transparent);
+  }
+
+  .osa-login-topnav-menu {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.28rem;
+    width: 2.35rem;
+    height: 2.35rem;
+    padding: 0;
+    border: 1px solid color-mix(in srgb, white 20%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, white 7%, transparent);
+    backdrop-filter: blur(10px);
+    cursor: pointer;
+  }
+
+  .osa-login-topnav-menu-bar {
+    display: block;
+    width: 0.95rem;
+    height: 1.5px;
+    margin: 0 auto;
+    border-radius: 999px;
+    background: var(--osa-login-text);
+  }
+
+  .osa-login-topnav-drawer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-top: 0.65rem;
+    padding: 0.75rem;
+    border-radius: 16px;
+    border: 1px solid color-mix(in srgb, white 18%, transparent);
+    background: color-mix(in srgb, var(--osa-login-bg-deep) 72%, transparent);
+    backdrop-filter: blur(16px);
+  }
+
+  .osa-login-topnav-drawer-link {
+    padding: 0.65rem 0.85rem;
+    border-radius: 10px;
+    color: var(--osa-login-text);
+    text-decoration: none;
+    font-size: 0.92rem;
+  }
+
+  .osa-login-topnav-drawer-link:hover {
+    background: color-mix(in srgb, white 10%, transparent);
+  }
+
+  .osa-login-scene-content {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: grid;
+    flex: 1;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 1fr auto;
+    min-height: 0;
+    padding: max(3.5rem, calc(env(safe-area-inset-top) + 2.75rem)) 1.25rem max(1.35rem, env(safe-area-inset-bottom));
+  }
+
+  .osa-login-hero {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .osa-login-hero-glow {
+    position: absolute;
+    top: 2%;
+    right: 0;
+    width: min(68vw, 720px);
+    height: min(78vh, 820px);
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--osa-login-cyan) 36%, transparent) 0%,
+      color-mix(in srgb, var(--osa-login-bg-bright) 28%, transparent) 38%,
+      transparent 76%
+    );
+    filter: blur(48px);
+    opacity: 0;
+    animation: osa-login-glow-in 0.52s ease 0.12s both;
+  }
+
+  .osa-login-hero-image-wrap {
+    position: absolute;
+    right: clamp(-16rem, -17vw, -5rem);
+    top: clamp(-9rem, -11vh, -4rem);
+    width: min(112vw, 1320px);
+    height: min(118dvh, 1160px);
+    opacity: 0;
+    filter: blur(14px);
+    transform: scale(1.05);
+    animation: osa-login-hero-image-in 0.56s ease 0.18s both;
+    mask-image: radial-gradient(ellipse 90% 84% at 64% 28%, black 58%, transparent 90%);
+  }
+
+  .osa-login-hero-image {
+    object-fit: cover;
+    object-position: 56% 6%;
+    filter: saturate(1.14) brightness(1.03) contrast(1.08);
+  }
+
+  .osa-login-hero-eye-stage {
+    position: absolute;
+    top: clamp(35%, 38vh, 41%);
+    left: clamp(63%, 67vw, 71%);
+    z-index: 3;
+    width: clamp(22rem, 36vw, 35rem);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .osa-login-hero-eye-dim {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    gap: clamp(1.65rem, 3.4vw, 2.75rem);
+    align-items: center;
+    opacity: 0;
+    animation: osa-login-eye-patch-in 0.4s ease 0.38s both;
+  }
+
+  .osa-login-hero-eye-dim-spot {
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--osa-login-bg-deep) 92%, transparent) 0%,
+      color-mix(in srgb, var(--osa-login-bg-mid) 62%, transparent) 48%,
+      transparent 84%
+    );
+    filter: blur(4px);
+  }
+
+  .osa-login-hero-eye-dim-spot--left {
+    width: clamp(7.2rem, 13.5vw, 11.4rem);
+    height: clamp(7rem, 13vw, 11rem);
+  }
+
+  .osa-login-hero-eye-dim-spot--right {
+    width: clamp(7.6rem, 14.2vw, 12rem);
+    height: clamp(7.4rem, 13.8vw, 11.6rem);
+  }
+
+  .osa-login-hero-eyes {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.38s ease;
+  }
+
+  .osa-login-hero-eye-patches {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+    gap: clamp(1.65rem, 3.4vw, 2.75rem);
+    align-items: center;
+    opacity: 0;
+    animation: osa-login-eye-patch-in 0.4s ease 0.4s both;
+  }
+
+  .osa-login-hero-eye-patch {
+    border-radius: 50%;
+    background: radial-gradient(circle at 36% 30%, #ffffff 0%, #f5f8ff 40%, #e6edff 100%);
+    box-shadow:
+      inset 0 -5px 14px color-mix(in srgb, #0047ff 14%, transparent),
+      inset 0 2px 8px color-mix(in srgb, white 65%, transparent),
+      0 10px 28px -10px color-mix(in srgb, #06165f 45%, transparent);
+  }
+
+  .osa-login-hero-eye-patch--left {
+    width: clamp(7rem, 13.2vw, 11.2rem);
+    height: clamp(6.85rem, 12.8vw, 10.8rem);
+    transform: rotate(-1.5deg);
+  }
+
+  .osa-login-hero-eye-patch--right {
+    width: clamp(7.5rem, 14vw, 11.8rem);
+    height: clamp(7.2rem, 13.5vw, 11.4rem);
+    transform: rotate(1.2deg);
+  }
+
+  .osa-login-hero-eyes--ready {
+    opacity: 1;
+  }
+
+  .osa-login-copy {
+    position: relative;
+    z-index: 4;
+    align-self: end;
+    max-width: min(32rem, 86vw);
+    padding: 0 0 clamp(0.85rem, 2.5vh, 1.75rem);
+    animation: osa-login-copy-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.52s both;
+  }
+
+  .osa-login-copy::before {
+    content: '';
+    position: absolute;
+    inset: -2.5rem -3rem -2rem -2rem;
+    z-index: -1;
+    background: radial-gradient(
+      ellipse 95% 85% at 18% 58%,
+      color-mix(in srgb, var(--osa-login-bg-deep) 72%, transparent),
+      transparent 74%
+    );
+    pointer-events: none;
+  }
+
+  .osa-login-copy-kicker {
+    margin: 0 0 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    color: var(--osa-login-text-muted);
+    text-shadow: 0 2px 12px color-mix(in srgb, var(--osa-login-bg-deep) 70%, transparent);
+  }
+
+  .osa-login-copy-title {
+    margin: 0;
+    font-size: clamp(2.75rem, 6.4vw, 5rem);
+    font-weight: 700;
+    line-height: 0.94;
+    letter-spacing: -0.035em;
+    color: var(--osa-login-text);
+    text-shadow:
+      0 2px 0 color-mix(in srgb, var(--osa-login-bg-deep) 25%, transparent),
+      0 12px 40px color-mix(in srgb, var(--osa-login-bg-deep) 65%, transparent);
+  }
+
+  .osa-login-copy-subtitle {
+    margin: 1rem 0 0;
+    max-width: 22ch;
+    font-size: clamp(0.95rem, 1.65vw, 1.08rem);
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.82);
+    text-shadow: 0 4px 20px color-mix(in srgb, var(--osa-login-bg-deep) 75%, transparent);
+  }
+
+  .osa-login-prompt-stack {
+    position: relative;
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    width: min(63vw, 52rem);
+    margin: 0 auto;
+    animation: osa-login-prompt-in 0.36s cubic-bezier(0.22, 1, 0.36, 1) 0.66s both;
+  }
+
+  .osa-login-prompt-box {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    min-height: 4.25rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, white 14%, transparent);
+    background: color-mix(in srgb, var(--osa-login-bg-deep) 48%, transparent);
+    backdrop-filter: blur(22px) saturate(1.2);
+    box-shadow:
+      0 20px 50px -28px color-mix(in srgb, var(--osa-login-bg-deep) 85%, transparent),
+      0 0 0 1px color-mix(in srgb, white 6%, transparent) inset;
+    transition:
+      border-color 0.25s ease,
+      box-shadow 0.25s ease,
+      transform 0.25s ease,
+      background-color 0.25s ease;
+  }
+
+  .osa-login-prompt-box--active,
+  .osa-login-prompt-box:focus-within {
+    border-color: color-mix(in srgb, var(--osa-login-cyan) 48%, transparent);
+    background: color-mix(in srgb, var(--osa-login-bg-deep) 38%, transparent);
+    box-shadow:
+      0 24px 60px -24px color-mix(in srgb, var(--osa-login-cyan) 32%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--osa-login-cyan) 18%, transparent) inset;
+    transform: translateY(-1px);
+  }
+
+  .osa-login-prompt-input {
+    flex: 1;
+    min-height: 4.25rem;
+    resize: none;
+    border: none;
+    background: transparent;
+    padding: 1.15rem 1.2rem 1.15rem 1.55rem;
+    font-size: clamp(1rem, 1.75vw, 1.1rem);
+    line-height: 1.45;
+    color: var(--osa-login-text);
+    outline: none;
+  }
+
+  .osa-login-prompt-input::placeholder {
+    color: color-mix(in srgb, white 58%, transparent);
+  }
+
+  .osa-login-prompt-submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+    flex-shrink: 0;
+    width: 3.25rem;
+    height: 3.25rem;
+    margin-right: 0.5rem;
+    border: none;
+    border-radius: 999px;
+    background: color-mix(in srgb, white 12%, transparent);
+    color: color-mix(in srgb, white 50%, transparent);
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+    transition:
+      transform 0.2s ease,
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease;
+  }
+
+  .osa-login-prompt-submit--ready {
+    background: linear-gradient(135deg, var(--osa-login-cyan), var(--osa-login-violet));
+    color: white;
+    box-shadow: 0 12px 28px -12px color-mix(in srgb, var(--osa-login-violet) 60%, transparent);
+  }
+
+  .osa-login-prompt-submit--ready:hover {
+    transform: translateY(-1px) scale(1.04);
+    box-shadow: 0 16px 32px -10px color-mix(in srgb, var(--osa-login-cyan) 50%, transparent);
+  }
+
+  .osa-login-prompt-submit:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .osa-login-quick-actions {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 0.45rem;
+  }
+
+  .osa-login-quick-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.38rem;
+    padding: 0.38rem 0.72rem;
+    border: 1px solid color-mix(in srgb, white 14%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--osa-login-bg-deep) 32%, transparent);
+    backdrop-filter: blur(10px);
+    color: var(--osa-login-text-muted);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+      transform 0.2s ease,
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease,
+      background-color 0.2s ease;
+  }
+
+  .osa-login-quick-action:hover {
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--osa-login-cyan) 28%, transparent);
+    background: color-mix(in srgb, var(--osa-login-bg-deep) 22%, transparent);
+    color: var(--osa-login-text);
+    box-shadow: 0 8px 20px -14px color-mix(in srgb, var(--osa-login-cyan) 30%, transparent);
+  }
+
+  .osa-login-quick-action-icon {
+    display: inline-flex;
+    color: color-mix(in srgb, var(--osa-login-cyan) 80%, white);
+  }
+
+  .osa-login-processing {
+    position: relative;
+    z-index: 8;
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    min-height: 60dvh;
+    padding: 2rem 0;
+  }
+
+  .osa-login-processing .osa-fe-processing-label,
+  .osa-login-processing .osa-fe-lead,
+  .osa-login-processing .osa-home-process-step {
+    color: var(--osa-login-text);
+  }
+
+  .osa-login-processing .osa-home-process-step-label {
+    color: var(--osa-login-text-muted);
+  }
+
+  @keyframes osa-login-eye-patch-in {
+    from {
+      opacity: 0;
+      transform: scale(0.92);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes osa-login-glow-in {
+    from {
+      opacity: 0;
+      transform: scale(0.92);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes osa-login-hero-image-in {
+    from {
+      opacity: 0;
+      filter: blur(18px);
+      transform: scale(1.03);
+    }
+
+    to {
+      opacity: 1;
+      filter: blur(0);
+      transform: scale(1);
+    }
+  }
+
+  @keyframes osa-login-bg-in {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes osa-login-nav-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes osa-login-copy-in {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes osa-login-prompt-in {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes osa-login-orb-drift {
+    from {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+
+    to {
+      transform: translate3d(2%, -2%, 0) scale(1.05);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .osa-login-scene-content {
+      grid-template-columns: minmax(0, 42%) minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr) auto;
+      column-gap: 1rem;
+      padding-inline: clamp(1.5rem, 4vw, 3rem);
+    }
+
+    .osa-login-copy {
+      grid-column: 1;
+      grid-row: 1;
+      align-self: end;
+      padding-bottom: clamp(5rem, 12vh, 8rem);
+    }
+
+    .osa-login-prompt-stack {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      width: min(62vw, 52rem);
+    }
+  }
+
+  @media (min-width: 769px) and (max-width: 1023px) {
+    .osa-login-copy-title {
+      font-size: clamp(2.1rem, 4.8vw, 3.2rem);
+    }
+
+    .osa-login-hero-image-wrap {
+      right: -18%;
+      top: -6%;
+      width: 104vw;
+      height: 92dvh;
+    }
+
+    .osa-login-hero-eye-stage {
+      top: 36%;
+      left: 60%;
+      width: clamp(18rem, 36vw, 26rem);
+    }
+
+    .osa-login-prompt-stack {
+      width: min(72vw, 44rem);
+    }
+
+    .osa-login-quick-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 28rem;
+      margin-inline: auto;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .osa-login-hero-image-wrap {
+      right: -32%;
+      top: -10%;
+      width: 148vw;
+      height: 62dvh;
+      mask-image: radial-gradient(ellipse 92% 86% at 50% 36%, black 54%, transparent 90%);
+    }
+
+    .osa-login-hero-image {
+      object-fit: cover;
+      object-position: 48% 4%;
+    }
+
+    .osa-login-hero-eye-stage {
+      top: 27%;
+      left: 50%;
+      width: clamp(16rem, 68vw, 21rem);
+    }
+
+    .osa-login-hero-eye-patches,
+    .osa-login-hero-eye-dim {
+      gap: clamp(1.1rem, 5vw, 1.65rem);
+    }
+
+    .osa-login-hero-eye-patch--left,
+    .osa-login-hero-eye-dim-spot--left {
+      width: clamp(5rem, 21vw, 6.4rem);
+      height: clamp(4.85rem, 20vw, 6.2rem);
+    }
+
+    .osa-login-hero-eye-patch--right,
+    .osa-login-hero-eye-dim-spot--right {
+      width: clamp(5.3rem, 22vw, 6.7rem);
+      height: clamp(5.1rem, 21vw, 6.5rem);
+    }
+
+    .osa-login-copy {
+      padding-top: 48dvh;
+    }
+
+    .osa-login-copy-title {
+      font-size: clamp(2rem, 9vw, 2.8rem);
+    }
+
+    .osa-login-prompt-stack {
+      width: 100%;
+    }
+
+    .osa-login-quick-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      flex-wrap: wrap;
+      overflow: visible;
+      justify-content: center;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .osa-login-quick-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      overflow: visible;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .osa-login-scene-bg,
+    .osa-login-topnav,
+    .osa-login-copy,
+    .osa-login-prompt-stack,
+    .osa-login-orb,
+    .osa-login-hero-image-wrap,
+    .osa-login-hero-glow,
+    .osa-login-hero-eye-patch,
+    .osa-login-hero-eye-dim,
+    .osa-login-hero-eye-dim-spot {
+      animation: none;
+      opacity: 1;
+      filter: none;
+      transform: none;
+    }
+
+    .osa-login-hero-eyes--ready {
+      opacity: 1;
+    }
+  }
+
   .osa-fe-secondary-btn {
     border: 1px solid color-mix(in srgb, var(--osa-home-purple) 18%, white);
     background: color-mix(in srgb, white 88%, var(--osa-home-milk));
@@ -2098,6 +2873,87 @@
     --osa-eyes-gap: clamp(3rem, 8vw, 5.8rem);
     --osa-pupil-size: clamp(1.1rem, 2.6vw, 2.05rem);
     --osa-iris-size: clamp(2.4rem, 5.8vw, 4.55rem);
+  }
+
+  .osa-eyes--overlay {
+    --osa-eye-width: clamp(6.6rem, 12.4vw, 10.4rem);
+    --osa-eye-height: clamp(6.4rem, 12vw, 10rem);
+    --osa-eyes-gap: clamp(1.65rem, 3.4vw, 2.75rem);
+    --osa-pupil-size: clamp(1.6rem, 3vw, 2.5rem);
+    --osa-iris-size: clamp(3.6rem, 6.8vw, 5.8rem);
+    justify-content: center;
+    gap: var(--osa-eyes-gap);
+    filter: drop-shadow(0 12px 28px color-mix(in srgb, #0047ff 42%, transparent));
+  }
+
+  .osa-eyes--overlay-mode .osa-eye--left {
+    transform: rotate(-1.5deg) scale(0.98);
+  }
+
+  .osa-eyes--overlay-mode .osa-eye--right {
+    transform: rotate(1.2deg) scale(1.02);
+  }
+
+  .osa-eyes--overlay-mode .osa-eye-socket--overlay {
+    overflow: hidden;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .osa-eyes--overlay-mode .osa-eye-iris {
+    background: radial-gradient(
+      circle at 32% 28%,
+      #7eeaff 0%,
+      #22d3ee 16%,
+      #0ea5e9 40%,
+      #0047ff 66%,
+      #1e1b4b 100%
+    );
+    box-shadow:
+      0 0 20px color-mix(in srgb, #22d3ee 55%, transparent),
+      inset 0 -4px 10px color-mix(in srgb, #0f172a 40%, transparent),
+      inset 0 2px 6px color-mix(in srgb, white 25%, transparent);
+  }
+
+  .osa-eyes--overlay-mode .osa-eye-pupil {
+    background: radial-gradient(circle at 38% 32%, #1a1f2e 0%, #030712 68%);
+    transition: transform 0.22s ease;
+  }
+
+  .osa-eyes--overlay-mode .osa-eye-shine {
+    width: calc(var(--osa-pupil-size) * 0.68);
+    height: calc(var(--osa-pupil-size) * 0.68);
+    opacity: 0.98;
+  }
+
+  .osa-eyes--overlay-mode .osa-eye-shine--secondary {
+    top: 62%;
+    left: 42%;
+    width: calc(var(--osa-pupil-size) * 0.32);
+    height: calc(var(--osa-pupil-size) * 0.32);
+    opacity: 0.55;
+  }
+
+  .osa-eyes--overlay-mode .osa-eye-lid--overlay {
+    background: linear-gradient(180deg, #2563eb 0%, #1e3a8a 55%, #172554 100%);
+    opacity: 0.96;
+    z-index: 4;
+  }
+
+  .osa-eyes--overlay-mode .osa-eye--closed .osa-eye-lid--overlay {
+    transform: scaleY(1);
+  }
+
+  .osa-eyes--overlay-mode .osa-eye--closed .osa-eye-iris,
+  .osa-eyes--overlay-mode .osa-eye--closed .osa-eye-pupil,
+  .osa-eyes--overlay-mode .osa-eye--closed .osa-eye-shine {
+    opacity: 1;
+  }
+
+  .osa-eyes--overlay-mode .osa-eye-lid--overlay {
+    border-radius: 50%;
   }
 
   .osa-eye {
