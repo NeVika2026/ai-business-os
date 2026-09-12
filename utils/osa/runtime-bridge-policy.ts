@@ -6,11 +6,7 @@ export function isRuntimeBridgeEnabled(): boolean {
   return process.env.RUNTIME_BRIDGE_ENABLED === 'true';
 }
 
-export function isRuntimeBridgeEnabledForGoal(goalId: string | null | undefined): boolean {
-  if (goalId !== SPRINT_RUNTIME_GOAL) {
-    return false;
-  }
-
+export function isRuntimeBridgeEnabledForGoal(_goalId: string | null | undefined): boolean {
   return isRuntimeBridgeEnabled();
 }
 

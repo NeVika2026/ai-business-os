@@ -51,6 +51,10 @@ import {
   type RealWorkTaskType,
 } from '@/utils/home/real-work-mode';
 import { resolveMissionControlProjectId } from '@/utils/mission-control/mission-control-mappers';
+import {
+  buildHomeDirectorPlan,
+  type HomeDirectorPlanResult,
+} from '@/utils/home/director-plan';
 import type { ProjectDeliverable } from '@/types/deliverables';
 import type { DeliverableType } from '@/types/deliverables';
 import type { AiOrchestraState } from '@/types/ai-orchestra';
@@ -58,6 +62,44 @@ import { mapRunsToHistory } from '@/utils/cabinet/dashboard-mappers';
 
 const RUNNING_STATUSES = new Set(['pending', 'running']);
 const ORCHESTRA_STEP_LIMIT = 12;
+
+export type PrepareHomeDirectorPlanResult =
+  | HomeDirectorPlanResult
+  | { status: 'failed'; message: string; hint: string };
+
+export async function prepareHomeDirectorPlan(
+  input: string,
+  options?: {
+    quickActionId?: HomeQuickActionId;
+    clarifications?: ClarificationAnswer[];
+  },
+): Promise<PrepareHomeDirectorPlanResult> {
+  const basePrompt = buildHomeTaskPrompt(input, options?.quickActionId);
+
+  if (!basePrompt.trim()) {
+    return {
+      status: 'failed',
+      message: 'Опишите задачу для OSA.',
+      hint: 'Введите запрос или выберите быстрое действие.',
+    };
+  }
+
+  try {
+    return buildHomeDirectorPlan(
+      input,
+      options?.quickActionId,
+      options?.clarifications ?? [],
+    );
+  } catch (error) {
+    const message = mapCaughtErrorToUserMessage(error, 'generic');
+
+    return {
+      status: 'failed',
+      message,
+      hint: homeTaskErrorHint(message),
+    };
+  }
+}
 
 export type HomeOrchestraSnapshot = {
   activeAgentName: string | null;

@@ -17,6 +17,10 @@ import {
   resolveFindClientsResultText,
   shouldExecuteFindClientsWithRuntime,
 } from '@/utils/osa/find-clients-execution';
+import {
+  buildGenericOsaRuntimePayload,
+  shouldUseGenericOsaRuntime,
+} from '@/utils/osa/generic-runtime';
 import { isRuntimeBridgeEnabledForGoal } from '@/utils/osa/runtime-bridge-policy';
 import {
   applyExecutionControl,
@@ -36,6 +40,11 @@ import {
   buildOsaRunInsertRecord,
   buildOsaRunInputPayload,
   buildOsaRunUpdateForFindClientsResult,
+  buildOsaRunUpdateForRuntimeFailure,
+  buildOsaRunUpdateForRuntimeSuccess,
+  buildOsaRunUpdateForSimulated,
+  buildPersistedRuntimeOsaTaskResult,
+  buildPersistedSimulatedOsaTaskResult,
   buildOsaRuntimeCompletedEvent,
   buildOsaRuntimeFailedEvent,
   buildOsaRuntimeStartedEvent,
@@ -634,47 +643,152 @@ export async function executeOsaTaskRun(runId: string): Promise<OsaTaskSubmitRes
       });
     }
 
-    const failureMessage =
-      'Only Find Clients is available right now. Go back to Today and choose Find more clients.';
+    const runtimeBridgeEnabled =
+      inputRecord.runtime_bridge_enabled === true &&
+      shouldUseGenericOsaRuntime({
+        runtimeBridgeEnabled: true,
+        goalId,
+      });
+
     const context: OsaRunPersistenceContext = {
       runId: run.id,
       sessionId,
       organizationId,
       aiEmployeeId,
       userId: auth.userId,
-      runtimeBridgeEnabled: false,
+      runtimeBridgeEnabled,
     };
 
-    await supabase
-      .from('agent_runs')
-      .update({
-        status: 'failed',
-        completed_at: new Date().toISOString(),
-        error_message: failureMessage,
-        output: {
-          status: 'failed',
-          message: failureMessage,
-          session_id: sessionId,
-        },
-      })
-      .eq('id', run.id);
-    await createOsaEvent(
-      supabase,
-      buildOsaRuntimeFailedEvent(context, {
-        session_id: sessionId,
-        status: 'failed',
-        error: { message: failureMessage },
-      }),
+    const coordinator = resolveCoordinatorFromRunInput(
+      inputRecord,
+      preparedInput,
+      sessionId,
     );
-    revalidateOsaRunPaths(run.id, aiEmployeeId);
 
-    return {
-      status: 'failed',
-      message: failureMessage,
-      resultText: null,
-      agentTrace: buildOsaAgentTrace(preparedInput.selectedAgents),
-      runtimeReport: null,
-    };
+    if (!runtimeBridgeEnabled) {
+      const simulatedUpdate = buildOsaRunUpdateForSimulated(
+        preparedInput,
+        context,
+        coordinator,
+      );
+
+      await supabase
+        .from('agent_runs')
+        .update(simulatedUpdate)
+        .eq('id', run.id);
+
+      const simulatedResult = buildPersistedSimulatedOsaTaskResult(
+        preparedInput,
+        sessionId,
+        run.id,
+      );
+
+      await createOsaEvent(
+        supabase,
+        buildOsaRuntimeCompletedEvent(context, {
+          session_id: sessionId,
+          status: 'simulated',
+          simulated: true,
+          result_text: simulatedResult.resultText,
+          agent_trace: simulatedResult.agentTrace,
+          goal_id: goalId,
+          project_id: preparedInput.projectId ?? null,
+        }),
+      );
+
+      revalidateOsaRunPaths(run.id, aiEmployeeId);
+      revalidatePath('/home');
+      revalidatePath('/projects');
+
+      if (preparedInput.projectId) {
+        revalidatePath(`/workspace/${preparedInput.projectId}`);
+      }
+
+      return simulatedResult;
+    }
+
+    const execution = buildOrchestratorAgentExecution({
+      organizationId,
+      employeeId: aiEmployeeId,
+      runId: run.id,
+      action: 'execute',
+      payload: buildGenericOsaRuntimePayload({
+        preparedInput,
+        sessionId,
+        runId: run.id,
+      }),
+    });
+
+    const runtimeResult = await executeOrchestratorRuntimeAgent(execution);
+    const result = buildPersistedRuntimeOsaTaskResult(
+      preparedInput,
+      runtimeResult,
+      run.id,
+    );
+
+    if (runtimeResult.success) {
+      await supabase
+        .from('agent_runs')
+        .update(
+          buildOsaRunUpdateForRuntimeSuccess(
+            runtimeResult,
+            preparedInput,
+            context,
+            coordinator,
+          ),
+        )
+        .eq('id', run.id);
+
+      await createOsaEvent(
+        supabase,
+        buildOsaRuntimeCompletedEvent(context, {
+          session_id: sessionId,
+          status: 'completed',
+          simulated: false,
+          result_text: result.resultText,
+          agent_trace: result.agentTrace,
+          goal_id: goalId,
+          project_id: preparedInput.projectId ?? null,
+          report: runtimeResult.report,
+        }),
+      );
+    } else {
+      await supabase
+        .from('agent_runs')
+        .update(
+          buildOsaRunUpdateForRuntimeFailure(
+            runtimeResult,
+            preparedInput,
+            context,
+            coordinator,
+          ),
+        )
+        .eq('id', run.id);
+
+      await createOsaEvent(
+        supabase,
+        buildOsaRuntimeFailedEvent(context, {
+          session_id: sessionId,
+          status: 'failed',
+          simulated: false,
+          error: runtimeResult.error,
+          agent_trace: result.agentTrace,
+          goal_id: goalId,
+          project_id: preparedInput.projectId ?? null,
+          report: runtimeResult.report,
+        }),
+      );
+    }
+
+    revalidateOsaRunPaths(run.id, aiEmployeeId);
+    revalidatePath('/home');
+    revalidatePath('/projects');
+
+    if (preparedInput.projectId) {
+      revalidatePath(`/workspace/${preparedInput.projectId}`);
+    }
+
+    return result;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Could not complete the task';
 
