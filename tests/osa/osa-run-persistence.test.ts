@@ -122,7 +122,6 @@ describe('OSA run persistence mapping', () => {
           },
           status: 'completed',
           output: { content: 'Готово' },
-          error: null,
           usage: {
             inputTokens: 12,
             outputTokens: 34,

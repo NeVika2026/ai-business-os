@@ -22,7 +22,7 @@ describe('CommandRunner', () => {
   it('returns graceful failure for a missing command', () => {
     const runner = createCommandRunner({
       instanceId: 'command-runner-missing',
-      env: { PATH: '' },
+      env: { ...process.env, PATH: '' },
     });
 
     assert.equal(runner.exists('node'), false);

@@ -100,6 +100,6 @@ describe('Gateway mock integration', () => {
     const gatewayRequest = toGatewayRequest(promptRequest, contextPackage);
 
     const response = await aiGateway.complete(gatewayRequest);
-    assert.ok(response.content.includes('[mock:'));
+    assert.match(response.content ?? '', /\[mock:/);
   });
 });

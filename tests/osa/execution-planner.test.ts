@@ -116,7 +116,7 @@ describe('OSA execution planner', () => {
 
     const stageTotal = plan.stages.reduce((sum, stage) => sum + stage.estimatedMinutes, 0);
     assert.ok(plan.estimatedMinutes <= stageTotal);
-    assert.ok(plan.estimatedMinutes >= plan.stages[0]?.estimatedMinutes ?? 0);
+    assert.ok(plan.estimatedMinutes >= (plan.stages[0]?.estimatedMinutes ?? 0));
   });
 
   it('formats ETA for display', () => {

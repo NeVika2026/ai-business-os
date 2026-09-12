@@ -63,7 +63,7 @@ export function Sidebar({
           <OrbitMark size="sm" breathe className="shrink-0 md:mx-auto lg:mx-0" />
           <div className="min-w-0 md:sr-only lg:not-sr-only">
             <p className="truncate text-sm font-semibold tracking-tight text-[var(--text-primary)]">
-              AI Business OS
+              Бизнес Завод
             </p>
           </div>
         </div>

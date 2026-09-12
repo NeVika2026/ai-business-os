@@ -159,6 +159,11 @@ describe('handoff session', () => {
         resumeExecutionId: 'run-001',
         resumeExecutionHref: '/results/run-001',
         resumeExecutionLabel: 'Grow revenue',
+        userName: null,
+        projectCount: 1,
+        lastCompletedResultLabel: null,
+        lastCompletedTiming: null,
+        recommendedContinuationLabel: null,
       },
     });
     const handoff = mapHandoffRowToOsaInput(row);

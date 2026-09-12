@@ -256,10 +256,10 @@ describe('AutonomousWorker', () => {
     const commandRunner = createCommandRunner({ cwd: rootDir, instanceId: 'prepared-runner' });
     const originalRun = commandRunner.run.bind(commandRunner);
     commandRunner.run = (command, args) => {
-      if (command === 'npm' && args[1] === 'lint') {
+      if (command === 'npm' && args?.[1] === 'lint') {
         lintCalled = true;
       }
-      if (command === 'npm' && args[1] === 'build') {
+      if (command === 'npm' && args?.[1] === 'build') {
         buildCalled = true;
       }
       return originalRun(command, args);

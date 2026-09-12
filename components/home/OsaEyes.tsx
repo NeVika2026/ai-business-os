@@ -2,6 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+export type OsaPresenceState =
+  | 'idle'
+  | 'input-hover'
+  | 'input-focus'
+  | 'typing'
+  | 'quick-action-hover'
+  | 'submit';
+
 type OsaEyesProps = {
   className?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'hero' | 'overlay';
@@ -15,13 +23,21 @@ type OsaEyesProps = {
   /** Fixed gaze target in viewport coordinates (overrides cursor). */
   lookAtPoint?: { x: number; y: number } | null;
   /** Look at a connected element instead of the cursor. */
-  gazeTarget?: 'cursor' | 'input' | 'submit';
+  gazeTarget?: 'cursor' | 'input' | 'submit' | 'element';
   inputAnchorRef?: React.RefObject<HTMLElement | null>;
   submitAnchorRef?: React.RefObject<HTMLElement | null>;
-  /** Brief pupil expansion on submit. */
+  /** Arbitrary element to look at (e.g. quick action). */
+  lookAtElementRef?: React.RefObject<HTMLElement | null>;
+  /** Brief pupil expansion on submit / focus. */
   pupilDilate?: boolean;
+  /** Soft eye glow boost (focus / submit). */
+  eyeGlow?: boolean;
+  /** Slight vertical squint when hovering action buttons. */
+  squint?: boolean;
   /** When gazing at input, look slightly lower on focus. */
   inputFocused?: boolean;
+  /** Presence mode for idle drift / typing scan. */
+  presence?: OsaPresenceState;
   /** Full eye or iris/pupil overlay on hero asset. */
   renderMode?: 'full' | 'overlay';
   onPresenceReady?: () => void;
@@ -51,6 +67,14 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+function prefersReducedMotion(): boolean {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
 function Eye({
   id,
   gazeX,
@@ -60,6 +84,7 @@ function Eye({
   noticed,
   renderMode,
   pupilDilate,
+  squint,
 }: {
   id: EyeId;
   gazeX: number;
@@ -69,6 +94,7 @@ function Eye({
   noticed: boolean;
   renderMode: 'full' | 'overlay';
   pupilDilate: boolean;
+  squint: boolean;
 }) {
   const closed = blinking || (winking && id === 'right');
   const overlay = renderMode === 'overlay';
@@ -78,7 +104,7 @@ function Eye({
 
   return (
     <div
-      className={`osa-eye osa-eye--${id} ${closed ? 'osa-eye--closed' : ''} ${noticed ? 'osa-eye--noticed' : ''} ${overlay ? 'osa-eye--overlay' : ''}`}
+      className={`osa-eye osa-eye--${id} ${closed ? 'osa-eye--closed' : ''} ${noticed ? 'osa-eye--noticed' : ''} ${overlay ? 'osa-eye--overlay' : ''} ${squint ? 'osa-eye--squint' : ''}`}
       data-eye={id}
     >
       <div className={`osa-eye-socket ${overlay ? 'osa-eye-socket--overlay' : ''}`}>
@@ -128,8 +154,12 @@ export function OsaEyes({
   gazeTarget = 'cursor',
   inputAnchorRef,
   submitAnchorRef,
+  lookAtElementRef,
   pupilDilate = false,
+  eyeGlow = false,
+  squint = false,
   inputFocused = false,
+  presence = 'idle',
   renderMode = 'full',
   onPresenceReady,
 }: OsaEyesProps) {
@@ -137,6 +167,8 @@ export function OsaEyes({
   const presenceReadyRef = useRef(false);
   const pointerActiveRef = useRef(false);
   const idlePhaseRef = useRef(0);
+  const typingPhaseRef = useRef(0);
+  const reducedMotionRef = useRef(false);
   const [gaze, setGaze] = useState({ x: 0, y: 0 });
   const [blinking, setBlinking] = useState(false);
   const [winking, setWinking] = useState(false);
@@ -154,41 +186,56 @@ export function OsaEyes({
     onPresenceReady?.();
   }, [onPresenceReady]);
 
-  const updateGazeFromPointer = useCallback((clientX: number, clientY: number) => {
-    const root = rootRef.current;
+  const updateGazeFromPointer = useCallback(
+    (clientX: number, clientY: number) => {
+      const root = rootRef.current;
 
-    if (!root) {
-      return;
-    }
+      if (!root) {
+        return;
+      }
 
-    if (!pointerActiveRef.current) {
-      pointerActiveRef.current = true;
-      setNoticed(true);
-      window.setTimeout(() => setNoticed(false), 520);
-    }
+      if (!pointerActiveRef.current) {
+        pointerActiveRef.current = true;
+        setNoticed(true);
+        window.setTimeout(() => setNoticed(false), 520);
+      }
 
-    const rect = root.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const dx = (clientX - centerX) / Math.max(window.innerWidth * 0.34, 1);
-    const dy = (clientY - centerY) / Math.max(window.innerHeight * 0.32, 1);
-    const distance = Math.hypot(clientX - centerX, clientY - centerY);
-    const proximity = clamp(1 - distance / Math.max(window.innerWidth * 0.55, 1), 0, 1);
+      const rect = root.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const dx = (clientX - centerX) / Math.max(window.innerWidth * 0.34, 1);
+      const dy = (clientY - centerY) / Math.max(window.innerHeight * 0.32, 1);
+      const distance = Math.hypot(clientX - centerX, clientY - centerY);
+      const proximity = clamp(1 - distance / Math.max(window.innerWidth * 0.55, 1), 0, 1);
 
-    const limits = renderMode === 'overlay' ? OVERLAY_GAZE_CLAMP : FULL_GAZE_CLAMP;
+      const limits = renderMode === 'overlay' ? OVERLAY_GAZE_CLAMP : FULL_GAZE_CLAMP;
 
-    driftTargetRef.current = {
-      x: clamp(dx * (6.2 + proximity * 1.4), -limits.x, limits.x),
-      y: clamp(dy * (4.2 + proximity * 0.8), -limits.y, limits.y),
-    };
-  }, [renderMode]);
+      driftTargetRef.current = {
+        x: clamp(dx * (6.2 + proximity * 1.4), -limits.x, limits.x),
+        y: clamp(dy * (4.2 + proximity * 0.8), -limits.y, limits.y),
+      };
+    },
+    [renderMode],
+  );
 
   useEffect(() => {
-    if (!active || lookStraight) {
+    reducedMotionRef.current = prefersReducedMotion();
+
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const onChange = () => {
+      reducedMotionRef.current = media.matches;
+    };
+
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, []);
+
+  useEffect(() => {
+    if (!active || lookStraight || reducedMotionRef.current) {
       return;
     }
 
-    if (lookAtPoint || gazeTarget !== 'cursor') {
+    if (lookAtPoint || gazeTarget !== 'cursor' || presence !== 'idle') {
       return;
     }
 
@@ -199,7 +246,7 @@ export function OsaEyes({
     window.addEventListener('pointermove', onPointerMove, { passive: true });
 
     return () => window.removeEventListener('pointermove', onPointerMove);
-  }, [active, gazeTarget, lookAtPoint, lookStraight, updateGazeFromPointer]);
+  }, [active, gazeTarget, lookAtPoint, lookStraight, presence, updateGazeFromPointer]);
 
   useEffect(() => {
     if (!active || lookStraight || !lookAtPoint) {
@@ -221,10 +268,10 @@ export function OsaEyes({
       return;
     }
 
-    if (gazeTarget !== 'cursor') {
+    if (gazeTarget !== 'cursor' || presence === 'typing' || presence === 'submit') {
       pointerActiveRef.current = true;
     }
-  }, [gazeTarget, lookAtPoint, lookStraight]);
+  }, [gazeTarget, lookAtPoint, lookStraight, presence]);
 
   useEffect(() => {
     if (!active) {
@@ -234,22 +281,34 @@ export function OsaEyes({
     let lastIdleTick = performance.now();
 
     const tick = (now: number) => {
-      if (!lookStraight && !lookAtPoint && gazeTarget !== 'cursor') {
-        const anchor =
-          gazeTarget === 'input'
-            ? inputAnchorRef?.current
-            : gazeTarget === 'submit'
-              ? submitAnchorRef?.current
-              : null;
+      if (!lookStraight && !lookAtPoint) {
+        if (presence === 'typing') {
+          typingPhaseRef.current += 0.018;
+          const limits = renderMode === 'overlay' ? OVERLAY_GAZE_CLAMP : FULL_GAZE_CLAMP;
+          driftTargetRef.current = {
+            x: Math.sin(typingPhaseRef.current) * Math.min(3.2, limits.x * 0.7),
+            y: 1.2 + Math.sin(typingPhaseRef.current * 0.45) * 0.35,
+          };
+          pointerActiveRef.current = true;
+        } else if (gazeTarget !== 'cursor') {
+          const anchor =
+            gazeTarget === 'input'
+              ? inputAnchorRef?.current
+              : gazeTarget === 'submit'
+                ? submitAnchorRef?.current
+                : gazeTarget === 'element'
+                  ? lookAtElementRef?.current
+                  : null;
 
-        if (anchor) {
-          const rect = anchor.getBoundingClientRect();
-          const focusOffsetY =
-            gazeTarget === 'input' && inputFocused ? Math.min(rect.height * 0.18, 14) : 0;
-          updateGazeFromPointer(
-            rect.left + rect.width / 2,
-            rect.top + rect.height / 2 + focusOffsetY,
-          );
+          if (anchor) {
+            const rect = anchor.getBoundingClientRect();
+            const focusOffsetY =
+              gazeTarget === 'input' && inputFocused ? Math.min(rect.height * 0.18, 14) : 0;
+            updateGazeFromPointer(
+              rect.left + rect.width / 2,
+              rect.top + rect.height / 2 + focusOffsetY,
+            );
+          }
         }
       }
 
@@ -257,7 +316,7 @@ export function OsaEyes({
       const target = lookStraight ? { x: 0, y: 0 } : driftTargetRef.current;
       const lerp = lookStraight
         ? 0.22
-        : lookAtPoint || gazeTarget !== 'cursor' || pointerActiveRef.current
+        : lookAtPoint || gazeTarget !== 'cursor' || presence === 'typing' || pointerActiveRef.current
           ? GAZE_LERP_ACTIVE
           : GAZE_LERP_IDLE;
 
@@ -265,7 +324,9 @@ export function OsaEyes({
         !lookStraight &&
         !lookAtPoint &&
         gazeTarget === 'cursor' &&
+        presence === 'idle' &&
         !pointerActiveRef.current &&
+        !reducedMotionRef.current &&
         now - lastIdleTick > 2_400
       ) {
         idlePhaseRef.current += 0.012;
@@ -296,26 +357,43 @@ export function OsaEyes({
     gazeTarget,
     inputAnchorRef,
     inputFocused,
+    lookAtElementRef,
     lookAtPoint,
     lookStraight,
+    presence,
+    renderMode,
     submitAnchorRef,
     updateGazeFromPointer,
   ]);
 
   useEffect(() => {
-    if (!active) {
+    if (!active || reducedMotionRef.current) {
       return;
     }
 
     let blinkTimer: number | undefined;
     let reopenTimer: number | undefined;
+    let doubleTimer: number | undefined;
 
     const scheduleBlink = () => {
       blinkTimer = window.setTimeout(
         () => {
+          const doDouble = Math.random() < 0.22;
           setBlinking(true);
           reopenTimer = window.setTimeout(() => {
             setBlinking(false);
+
+            if (doDouble) {
+              doubleTimer = window.setTimeout(() => {
+                setBlinking(true);
+                reopenTimer = window.setTimeout(() => {
+                  setBlinking(false);
+                  scheduleBlink();
+                }, 100);
+              }, 140);
+              return;
+            }
+
             scheduleBlink();
           }, 120);
         },
@@ -328,11 +406,12 @@ export function OsaEyes({
     return () => {
       if (blinkTimer) window.clearTimeout(blinkTimer);
       if (reopenTimer) window.clearTimeout(reopenTimer);
+      if (doubleTimer) window.clearTimeout(doubleTimer);
     };
   }, [active]);
 
   useEffect(() => {
-    if (!active) {
+    if (!active || reducedMotionRef.current) {
       return;
     }
 
@@ -392,24 +471,30 @@ export function OsaEyes({
     }
 
     let winkEndTimer: number | undefined;
+    let readyTimer: number | undefined;
 
     const winkStartTimer = window.setTimeout(() => {
       setWinking(true);
-      winkEndTimer = window.setTimeout(() => setWinking(false), INTRO_WINK_HOLD_MS);
+      winkEndTimer = window.setTimeout(() => {
+        setWinking(false);
+        readyTimer = window.setTimeout(() => markPresenceReady(), INTRO_PAUSE_AFTER_WINK_MS);
+      }, INTRO_WINK_HOLD_MS);
     }, HERO_INTRO_WINK_DELAY_MS);
 
     return () => {
       if (winkStartTimer) window.clearTimeout(winkStartTimer);
       if (winkEndTimer) window.clearTimeout(winkEndTimer);
+      if (readyTimer) window.clearTimeout(readyTimer);
     };
-  }, [active, introVariant, skipIntro]);
+  }, [active, introVariant, markPresenceReady, skipIntro]);
 
   return (
     <div
       ref={rootRef}
-      className={`osa-eyes ${SIZE_CLASS[size]} ${renderMode === 'overlay' ? 'osa-eyes--overlay-mode' : ''} ${noticed ? 'osa-eyes--noticed' : ''} ${className}`.trim()}
+      className={`osa-eyes ${SIZE_CLASS[size]} ${renderMode === 'overlay' ? 'osa-eyes--overlay-mode' : ''} ${noticed ? 'osa-eyes--noticed' : ''} ${eyeGlow ? 'osa-eyes--glow' : ''} ${className}`.trim()}
       role="img"
       aria-label="OSA"
+      data-presence={presence}
     >
       <Eye
         id="left"
@@ -420,6 +505,7 @@ export function OsaEyes({
         noticed={noticed}
         renderMode={renderMode}
         pupilDilate={pupilDilate}
+        squint={squint}
       />
       <Eye
         id="right"
@@ -430,6 +516,7 @@ export function OsaEyes({
         noticed={noticed}
         renderMode={renderMode}
         pupilDilate={pupilDilate}
+        squint={squint}
       />
     </div>
   );

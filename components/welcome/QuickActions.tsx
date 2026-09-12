@@ -1,5 +1,7 @@
 'use client';
 
+import { useRef } from 'react';
+
 export type QuickAction = {
   id: string;
   label: string;
@@ -28,8 +30,8 @@ export const QUICK_ACTIONS: QuickAction[] = [
   },
   {
     id: 'strategy',
-    label: 'Разработать стратегию',
-    text: 'Разработай пошаговую стратегию достижения цели',
+    label: 'Собрать стратегию',
+    text: 'Собери пошаговую стратегию достижения цели',
     icon: 'strategy',
   },
 ];
@@ -74,9 +76,12 @@ function QuickActionIcon({ type }: { type: QuickAction['icon'] }) {
 
 type QuickActionsProps = {
   onSelect: (text: string) => void;
+  onHoverChange?: (element: HTMLElement | null) => void;
 };
 
-export function QuickActions({ onSelect }: QuickActionsProps) {
+export function QuickActions({ onSelect, onHoverChange }: QuickActionsProps) {
+  const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
   return (
     <div className="osa-login-quick-actions" role="group" aria-label="Быстрые действия">
       {QUICK_ACTIONS.map((action) => (
@@ -84,7 +89,14 @@ export function QuickActions({ onSelect }: QuickActionsProps) {
           key={action.id}
           type="button"
           className="osa-login-quick-action"
+          ref={(node) => {
+            buttonRefs.current[action.id] = node;
+          }}
           onClick={() => onSelect(action.text)}
+          onMouseEnter={() => onHoverChange?.(buttonRefs.current[action.id] ?? null)}
+          onMouseLeave={() => onHoverChange?.(null)}
+          onFocus={() => onHoverChange?.(buttonRefs.current[action.id] ?? null)}
+          onBlur={() => onHoverChange?.(null)}
         >
           <span className="osa-login-quick-action-icon">
             <QuickActionIcon type={action.icon} />

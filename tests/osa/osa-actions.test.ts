@@ -66,7 +66,6 @@ describe('OSA task submission helpers', () => {
           },
           status: 'completed',
           output: { content: 'План готов' },
-          error: null,
           usage: {
             inputTokens: 10,
             outputTokens: 20,

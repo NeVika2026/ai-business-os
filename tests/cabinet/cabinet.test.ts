@@ -28,10 +28,22 @@ describe('Personal Cabinet v1.0', () => {
     assert.equal(NAVIGATION_HREF_SET.has('/osa'), false);
   });
 
-  it('defines sidebar navigation items in required order', () => {
+  it('defines Business Zavod sidebar navigation in platform order', () => {
     assert.deepEqual(
       MAIN_NAVIGATION.map((item) => item.label),
-      ['Home', 'Projects', 'History', 'Settings'],
+      [
+        'Главная',
+        'Создать',
+        'Продать',
+        'Продвинуть',
+        'Опубликовать',
+        'Найти',
+        'Проанализировать',
+        'Автоматизировать',
+        'Проекты',
+        'Файлы',
+        'Интеграции',
+      ],
     );
   });
 

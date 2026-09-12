@@ -21,7 +21,8 @@ describe('Runtime orchestrator bridge integration', () => {
     assert.equal(execution.scope.organizationId, TEST_ORG_ID);
     assert.equal(execution.employeeId, TEST_EMPLOYEE_ID);
     assert.equal(execution.input.action, 'execute');
-    assert.equal(execution.input.payload.trace?.runId, TEST_RUN_ID);
+    const trace = execution.input.payload.trace as { runId?: string } | undefined;
+    assert.equal(trace?.runId, TEST_RUN_ID);
   });
 
   it('executes through runtime bridge and returns structured result', async () => {

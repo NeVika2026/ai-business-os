@@ -51,7 +51,7 @@ describe('Tool handler and policy coverage', () => {
         }
         return 'ok';
       },
-      { maxAttempts: 3, backoffMs: [1], retryableErrors: ['EXECUTION_TIMEOUT'] },
+      { maxAttempts: 3, delayMs: 1, backoff: 'linear', retryableErrors: ['EXECUTION_TIMEOUT'] },
     );
 
     assert.equal(result.value, 'ok');
@@ -67,7 +67,7 @@ describe('Tool handler and policy coverage', () => {
             (error as Error & { code: string }).code = 'EXECUTION_TIMEOUT';
             throw error;
           },
-          { maxAttempts: 2, backoffMs: [1], retryableErrors: ['EXECUTION_TIMEOUT'] },
+          { maxAttempts: 2, delayMs: 1, backoff: 'linear', retryableErrors: ['EXECUTION_TIMEOUT'] },
         ),
       RetryExhaustedError,
     );

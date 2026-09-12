@@ -35,7 +35,7 @@ describe('Runtime gateway adapter integration', () => {
 
     const response = await gateway.complete(gatewayRequest);
     assert.equal(response.error, undefined);
-    assert.ok(response.content.length > 0);
+    assert.ok((response.content ?? '').length > 0);
     assert.ok(response.usage.inputTokens >= 0);
 
     const snapshot = gateway.serialize();

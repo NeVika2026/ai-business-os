@@ -47,7 +47,16 @@ describe('Production benchmarks', () => {
         roadmapId: 'bench-roadmap',
         roadmapTitle: 'Bench',
         tasks: [
-          { id: 't1', title: 'Task', dependencies: [], status: 'pending', priority: 0, order: 0 },
+          {
+            id: 't1',
+            title: 'Task',
+            description: null,
+            dependencies: [],
+            status: 'pending',
+            priority: 0,
+            order: 0,
+            metadata: {},
+          },
         ],
       });
     });

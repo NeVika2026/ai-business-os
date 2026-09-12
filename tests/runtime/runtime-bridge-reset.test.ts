@@ -15,18 +15,16 @@ describe('RuntimeBridge resetRuntime cascade', () => {
     bridge.getGatewayAdapter().serialize();
     bridge.getToolAdapter().listTools();
     idempotencyStore.set('reset-test-key', {
+      toolCallId: 'call-reset',
+      name: 'noop',
       success: true,
       output: null,
       audit: {
-        traceId: 'trace-reset',
         runId: 'run-reset',
-        toolId: 'noop',
-        toolCallId: 'call-reset',
-        status: 'success',
         durationMs: 0,
+        approvalRequired: false,
+        approved: true,
         idempotencyKey: 'reset-test-key',
-        cached: false,
-        retryAttempts: 0,
         executedAt: new Date().toISOString(),
       },
     });

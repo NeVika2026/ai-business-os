@@ -36,7 +36,7 @@ describe('OSA Runtime Storage', () => {
     assert.equal(storage.exists('test:items', 'a'), true);
     assert.deepEqual(storage.load<{ value: number }>('test:items', 'a'), { value: 1 });
 
-    storage.update('test:items', 'a', (current) => ({
+    storage.update<{ value: number }>('test:items', 'a', (current) => ({
       value: (current?.value ?? 0) + 1,
     }));
 

@@ -13,6 +13,7 @@ import {
 } from '@/lib/ai/model-router';
 import { USER_FACING_EXECUTION_ERROR } from '@/lib/ai/router-messages';
 import { DEFAULT_ROUTING_TABLE } from '@/lib/ai/routing-config';
+import type { ProviderRoute } from '@/lib/ai/routing-types';
 import { NoAllowedModelProviderError } from '@/services/runtime/gateway/errors';
 import { filterRoutesByOrgPolicy } from '@/services/runtime/gateway/policy/filter-routes';
 import type { OrganizationModelPolicy } from '@/services/runtime/gateway/policy/types';
@@ -134,14 +135,16 @@ describe('Organization policy in intelligent router', () => {
       coding: [
         { providerCode: 'openai', modelCode: 'gpt-4o-mini' },
         { providerCode: 'ollama', modelCode: 'llama3.2' },
-        { providerCode: 'gigachat', modelCode: 'GigaChat-Pro' },
+        { providerCode: 'gigachat', modelCode: 'GigaChat-Pro' } as unknown as ProviderRoute,
       ],
     });
 
     const plan = resolveRoutingPlan(buildAutoRequest());
     assert.ok(plan.routes.length > 0);
     assert.equal(
-      plan.routes.some((route) => route.providerCode === 'ollama' || route.providerCode === 'gigachat'),
+      plan.routes.some(
+        (route) => route.providerCode === 'ollama' || String(route.providerCode) === 'gigachat',
+      ),
       false,
     );
   });

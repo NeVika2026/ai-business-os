@@ -1,0 +1,139 @@
+export type IntegrationStatus = 'connected' | 'missing' | 'built_in';
+
+export type IntegrationCategory = 'infrastructure' | 'ai' | 'media' | 'local';
+
+export type IntegrationDefinition = {
+  id: string;
+  name: string;
+  description: string;
+  category: IntegrationCategory;
+  capabilities: string[];
+  envKeys?: string[];
+  builtIn?: boolean;
+};
+
+export type IntegrationStatusView = {
+  id: string;
+  name: string;
+  description: string;
+  category: IntegrationCategory;
+  capabilities: string[];
+  status: IntegrationStatus;
+};
+
+export const INTEGRATION_CATALOG: IntegrationDefinition[] = [
+  {
+    id: 'supabase',
+    name: 'Supabase',
+    description: 'Авторизация, данные проектов и рабочее хранилище.',
+    category: 'infrastructure',
+    capabilities: ['Авторизация', 'База данных', 'Проекты'],
+    envKeys: ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY'],
+  },
+  {
+    id: 'openai',
+    name: 'OpenAI',
+    description: 'Текстовые задачи, анализ и AI-оркестрация.',
+    category: 'ai',
+    capabilities: ['Текст', 'Анализ', 'Планирование'],
+    envKeys: ['OPENAI_API_KEY'],
+  },
+  {
+    id: 'anthropic',
+    name: 'Anthropic',
+    description: 'Текстовые и сложные аналитические задачи.',
+    category: 'ai',
+    capabilities: ['Текст', 'Анализ', 'Код'],
+    envKeys: ['ANTHROPIC_API_KEY'],
+  },
+  {
+    id: 'google-ai',
+    name: 'Google AI',
+    description: 'Мультимодальные и длинные контекстные задачи.',
+    category: 'ai',
+    capabilities: ['Текст', 'Мультимодальность', 'Длинный контекст'],
+    envKeys: ['GOOGLE_AI_API_KEY'],
+  },
+  {
+    id: 'groq',
+    name: 'Groq',
+    description: 'Быстрые текстовые задачи через совместимые модели.',
+    category: 'ai',
+    capabilities: ['Текст', 'Быстрые ответы'],
+    envKeys: ['GROQ_API_KEY'],
+  },
+  {
+    id: 'openrouter',
+    name: 'OpenRouter',
+    description: 'Маршрутизация к дополнительным AI-моделям.',
+    category: 'ai',
+    capabilities: ['Модели', 'Резервный маршрут'],
+    envKeys: ['OPENROUTER_API_KEY'],
+  },
+  {
+    id: 'fugu',
+    name: 'Fugu',
+    description: 'Дополнительный AI-провайдер платформы.',
+    category: 'ai',
+    capabilities: ['Текст', 'Резервный маршрут'],
+    envKeys: ['FUGU_API_KEY'],
+  },
+  {
+    id: 'ollama',
+    name: 'Ollama',
+    description: 'Локальные модели на компьютере или сервере.',
+    category: 'local',
+    capabilities: ['Локальный AI', 'Приватный режим'],
+    envKeys: ['OLLAMA_BASE_URL'],
+  },
+  {
+    id: 'runway',
+    name: 'Runway',
+    description: 'Генерация и обработка видеосцен.',
+    category: 'media',
+    capabilities: ['Видео', 'Сцены'],
+    envKeys: ['RUNWAYML_API_SECRET'],
+  },
+  {
+    id: 'elevenlabs',
+    name: 'ElevenLabs',
+    description: 'Озвучка и синтез естественной речи.',
+    category: 'media',
+    capabilities: ['Озвучка', 'Голос'],
+    envKeys: ['ELEVENLABS_API_KEY'],
+  },
+  {
+    id: 'remotion',
+    name: 'Remotion',
+    description: 'Сборка сцен, титров, субтитров и финального видео.',
+    category: 'media',
+    capabilities: ['Монтаж', 'Субтитры', 'Рендер'],
+    builtIn: true,
+  },
+];
+
+export function resolveIntegrationStatuses(
+  env: Record<string, string | undefined>,
+): IntegrationStatusView[] {
+  return INTEGRATION_CATALOG.map((integration) => {
+    let status: IntegrationStatus = 'missing';
+
+    if (integration.builtIn) {
+      status = 'built_in';
+    } else if (
+      integration.envKeys?.length &&
+      integration.envKeys.every((key) => Boolean(env[key]?.trim()))
+    ) {
+      status = 'connected';
+    }
+
+    return {
+      id: integration.id,
+      name: integration.name,
+      description: integration.description,
+      category: integration.category,
+      capabilities: [...integration.capabilities],
+      status,
+    };
+  });
+}

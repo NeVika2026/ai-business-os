@@ -93,7 +93,6 @@ describe('OSA Executive Brain', () => {
       title: 'FAMALL',
       organizationId: scope.organizationId,
       userId: scope.userId,
-      lastActivity: '2026-06-30T10:00:00.000Z',
     });
 
     setActiveProject(scope, runtime.id);

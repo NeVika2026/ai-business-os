@@ -18,11 +18,14 @@ function createGatewayFailureBridge(instanceId: string) {
   const gatewayAdapter = createRuntimeGatewayAdapter({
     dependencies: {
       complete: async (request) => ({
+        trace: request.trace,
         content: '',
+        toolCalls: [],
         finishReason: 'stop',
         providerCode: request.providerCode,
         modelCode: request.modelCode,
-        usage: { inputTokens: 0, outputTokens: 0 },
+        usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+        latencyMs: 0,
         error: {
           code: 'MOCK_GATEWAY_FAILURE',
           message: 'Simulated gateway failure',

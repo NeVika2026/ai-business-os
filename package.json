@@ -16,11 +16,14 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
+    "@remotion/captions": "^4.0.506",
+    "@remotion/player": "^4.0.506",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.2",
-    "next": "16.2.9",
+    "next": "^16.3.5",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "remotion": "^4.0.506"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

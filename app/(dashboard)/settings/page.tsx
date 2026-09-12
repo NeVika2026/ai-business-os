@@ -1,13 +1,19 @@
-import { PlaceholderPage } from '@/components/layout/placeholder-page';
 import { DemoModeToggle } from '@/components/demo/DemoModeToggle';
+import { IntegrationsDashboard } from '@/components/platform/IntegrationsDashboard';
+import { resolveIntegrationStatuses } from '@/utils/platform/integration-catalog';
 
 export default function SettingsPage() {
+  const integrations = resolveIntegrationStatuses(process.env);
+
   return (
-    <div className="mx-auto w-full max-w-3xl">
-      <PlaceholderPage title="Settings" description="Настройки OSA и режим демонстрации." />
-      <div className="mt-8 rounded-[24px] border border-[var(--border-subtle)]/80 bg-white px-6 sm:px-8">
-        <DemoModeToggle />
-      </div>
+    <div className="space-y-8">
+      <IntegrationsDashboard integrations={integrations} />
+
+      <section className="mx-auto w-full max-w-6xl">
+        <div className="rounded-[24px] border border-[var(--border-subtle)] bg-[var(--surface-1)] px-6 sm:px-8">
+          <DemoModeToggle />
+        </div>
+      </section>
     </div>
   );
 }

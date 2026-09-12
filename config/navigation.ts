@@ -1,4 +1,4 @@
-import { CABINET_NAVIGATION } from '@/utils/cabinet/cabinet-config';
+import { BUSINESS_ZAVOD_NAVIGATION } from '@/utils/platform/business-zavod-config';
 
 export type NavItem = {
   label: string;
@@ -6,7 +6,7 @@ export type NavItem = {
   icon: string;
 };
 
-export const MAIN_NAVIGATION: NavItem[] = CABINET_NAVIGATION.map((item) => ({
+export const MAIN_NAVIGATION: NavItem[] = BUSINESS_ZAVOD_NAVIGATION.map((item) => ({
   label: item.label,
   href: item.href,
   icon: item.icon,
