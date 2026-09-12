@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useMemo, useRef, useState, useTransition, type CSSProperties } from 'react';
 
@@ -19,9 +18,8 @@ import {
 import { OsaSkillModeLine } from '@/components/home/OsaSkillModeLine';
 import { OsaRealWorkResult } from '@/components/home/OsaRealWorkResult';
 import { OsaErrorState } from '@/components/osa/OsaErrorState';
-import { PlatformTaskCatalog } from '@/components/platform/PlatformTaskCatalog';
+import { BusinessZavodHomeExperience } from '@/components/platform/BusinessZavodHomeExperience';
 import { VoiceInputButton } from '@/components/platform/VoiceInputButton';
-import { BUSINESS_ZAVOD_TASKS } from '@/utils/platform/business-zavod-config';
 import type { HomeQuickActionId } from '@/utils/home/home-action';
 import {
   HERO_HOME_GREETING,
@@ -38,19 +36,6 @@ type OsaHomeActionScreenProps = {
 type ScreenPhase = 'input' | 'clarify' | 'working' | 'result' | 'error';
 
 const ORCHESTRA_POLL_MS = 900;
-
-const FEATURED_PLATFORM_TASK_IDS = new Set([
-  'marketing-pack',
-  'create-video',
-  'create-presentation',
-  'find-clients',
-  'analyze-competitors',
-  'automate-routine',
-]);
-
-const FEATURED_PLATFORM_TASKS = BUSINESS_ZAVOD_TASKS.filter((task) =>
-  FEATURED_PLATFORM_TASK_IDS.has(task.id),
-);
 
 export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenProps) {
   const searchParams = useSearchParams();
@@ -346,30 +331,7 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
           </div>
         </div>
 
-        {showCompose ? (
-          <section className="mx-auto mt-8 w-full max-w-[1040px] rounded-[28px] border border-black/[0.06] bg-white/55 p-4 shadow-[0_18px_50px_-38px_rgba(71,64,117,.38)] backdrop-blur-sm sm:p-5">
-            <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--osa-home-purple)]/70">
-                  Бизнес Завод
-                </p>
-                <h2 className="mt-1 text-lg font-semibold text-[var(--osa-home-graphite)]">
-                  Можно просто сказать задачу. Или выбрать готовый запуск.
-                </h2>
-              </div>
-              <Link href="/modules/create" className="text-sm font-medium text-[var(--osa-home-purple)]">
-                Все возможности →
-              </Link>
-            </div>
-            <PlatformTaskCatalog tasks={FEATURED_PLATFORM_TASKS} compact />
-          </section>
-        ) : null}
-
-        {showCompose ? (
-          <Link href="/home/mission-control" className="osa-home-ghost-link">
-            Все дела
-          </Link>
-        ) : null}
+        {showCompose ? <BusinessZavodHomeExperience /> : null}
       </div>
 
       <span className="sr-only">{organizationName}</span>

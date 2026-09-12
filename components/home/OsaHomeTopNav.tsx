@@ -8,9 +8,10 @@ import { OrbitMark } from '@/components/brand/OrbitMark';
 import { UserAvatarButton } from '@/components/layout/user-menu';
 
 const NAV_ITEMS = [
+  { label: 'Создать', href: '/modules/create' },
+  { label: 'Продвинуть', href: '/modules/promote' },
   { label: 'Проекты', href: '/projects' },
-  { label: 'Результаты', href: '/history' },
-  { label: 'Все дела', href: '/home/mission-control' },
+  { label: 'Магазин', href: '/marketplace' },
 ] as const;
 
 type OsaHomeTopNavProps = {
@@ -24,9 +25,12 @@ export function OsaHomeTopNav({ email }: OsaHomeTopNavProps) {
   return (
     <header className="osa-home-topnav">
       <div className="osa-home-topnav-inner">
-        <Link href="/home" className="osa-home-topnav-brand" aria-label="OSA Home">
+        <Link href="/home" className="osa-home-topnav-brand" aria-label="Бизнес Завод">
           <OrbitMark size="sm" breathe className="osa-home-topnav-mark" />
-          <span className="osa-home-topnav-wordmark">OSA</span>
+          <span className="osa-home-topnav-wordmark">Бизнес Завод</span>
+          <span className="hidden text-[10px] font-medium uppercase tracking-[0.18em] text-black/35 sm:inline">
+            OSA inside
+          </span>
         </Link>
 
         <nav className="osa-home-topnav-links" aria-label="Основная навигация">

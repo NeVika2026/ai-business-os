@@ -19,8 +19,7 @@ describe('Business Zavod shell integration', () => {
     );
 
     assert.match(home, /VoiceInputButton/);
-    assert.match(home, /PlatformTaskCatalog/);
-    assert.match(home, /BUSINESS_ZAVOD_TASKS/);
+    assert.match(home, /BusinessZavodHomeExperience/);
   });
 
   it('prefills Home from the prompt query without auto execution', () => {
