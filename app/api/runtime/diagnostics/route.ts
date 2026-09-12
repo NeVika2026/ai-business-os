@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { createClient } from '@/services/supabase/server';
 import { checkAllProvidersHealth } from '@/services/runtime/gateway/health';
 import { isGatewayMockMode } from '@/services/runtime/gateway/adapter-factory';
 import { hasProviderCredentials } from '@/services/runtime/gateway/credential-resolver';
@@ -10,6 +11,15 @@ export const runtime = 'nodejs';
 
 export async function GET() {
   try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ status: 'error', message: 'Unauthorized' }, { status: 401 });
+    }
+
     const gatewayHealth = await checkAllProvidersHealth();
     const observer = runtimeBridge.getObserver();
 
