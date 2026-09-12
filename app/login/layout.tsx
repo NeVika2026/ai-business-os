@@ -1,3 +1,3 @@
 export default function LoginLayout({ children }: { children: React.ReactNode }) {
-  return <div className="osa-fe-shell flex min-h-dvh flex-col overflow-hidden">{children}</div>;
+  return <div className="min-h-dvh bg-[#f7f6f2]">{children}</div>;
 }
