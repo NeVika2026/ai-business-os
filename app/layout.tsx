@@ -5,17 +5,18 @@ import './globals.css';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
-  subsets: ['latin'],
+  subsets: ['latin', 'cyrillic'],
 });
 
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
-  subsets: ['latin'],
+  subsets: ['latin', 'cyrillic'],
 });
 
 export const metadata: Metadata = {
-  title: 'AI Business OS',
-  description: 'Платформа цифровой AI-команды для бизнеса',
+  title: 'Бизнес Завод — AI-платформа для реальной работы',
+  description:
+    'OSA понимает задачу, собирает AI-команду и доводит работу до готового результата.',
 };
 
 export default function RootLayout({
