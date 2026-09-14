@@ -6,7 +6,7 @@ import { describe, it } from 'node:test';
 const ROOT = join(import.meta.dirname, '..', '..');
 
 describe('Business Zavod home experience', () => {
-  it('ships the platform sections requested for the first page', () => {
+  it('ships the factory sections requested for the first page', () => {
     const path = join(
       ROOT,
       'components',
@@ -17,11 +17,11 @@ describe('Business Zavod home experience', () => {
     assert.equal(existsSync(path), true);
 
     const source = readFileSync(path, 'utf8');
-    assert.match(source, /Что можно запустить/);
-    assert.match(source, /Готовые сценарии/);
-    assert.match(source, /AI-команда/);
-    assert.match(source, /Продолжить работу/);
-    assert.match(source, /Магазин возможностей/);
+    assert.match(source, /Цеха Бизнес-Завода/);
+    assert.match(source, /Готовые производственные линии/);
+    assert.match(source, /AI-сотрудники/);
+    assert.match(source, /Продолжить производство/);
+    assert.match(source, /Расширение производства/);
     assert.match(source, /BUSINESS_ZAVOD_MODULES/);
     assert.match(source, /BUSINESS_ZAVOD_TASKS/);
     assert.match(source, /\/marketplace/);
@@ -35,5 +35,7 @@ describe('Business Zavod home experience', () => {
     );
 
     assert.match(home, /BusinessZavodHomeExperience/);
+    assert.match(home, /BusinessFactoryHero/);
+    assert.match(home, /BusinessFactoryHome\.module\.css/);
   });
 });
