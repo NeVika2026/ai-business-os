@@ -84,14 +84,6 @@ export function RealMediaProductionPanel({
     };
   }, []);
 
-  useEffect(() => {
-    setApproved(false);
-    setTask(null);
-    setAudioBase64('');
-    setSrt('');
-    setError('');
-  }, [modeId]);
-
   const generationKind = useMemo<'video' | 'image' | null>(() => {
     if (modeId === 'video') return 'video';
     if (modeId === 'image' || modeId === 'stories') return 'image';
