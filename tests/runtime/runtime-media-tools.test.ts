@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
 
 import { createProductionToolRegistry } from '@/services/runtime/tools/tool-registry';
+import { createToolExecutor } from '@/services/runtime/tools/executor/tool-executor-factory';
 import {
   ElevenLabsVoiceGenerateHandler,
   ElevenLabsVoiceListHandler,
@@ -46,6 +47,55 @@ describe('Media runtime tools', () => {
     assert.match(video?.approvalPolicy.reason ?? '', /paid credits/i);
     assert.equal(status?.approvalPolicy.required, false);
     assert.equal(voices?.approvalPolicy.required, false);
+  });
+
+  it('blocks paid media generation until explicit approval is present', async () => {
+    process.env.RUNWAYML_API_SECRET = 'test-runway-secret';
+    let fetchCalled = false;
+
+    globalThis.fetch = async () => {
+      fetchCalled = true;
+      return new Response(JSON.stringify({ id: 'task-video-1' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    };
+
+    const executor = createToolExecutor(createProductionToolRegistry());
+    const baseExecution = {
+      call: {
+        id: 'call-media-video',
+        name: 'media.video.generate',
+        arguments: { prompt_text: 'Vertical cinematic apartment ad' },
+        audit: {
+          runId: 'run-media',
+          employeeId: 'employee-media',
+          organizationId: 'org-media',
+          requestedAt: new Date().toISOString(),
+        },
+      },
+      scope: { organizationId: 'org-media' },
+      trace: {
+        runId: 'run-media',
+        correlationId: 'correlation-media',
+        traceId: 'trace-media',
+      },
+      employee: {
+        id: 'employee-media',
+        roleTitle: 'Creator',
+        permissions: { can_use_media_tools: true },
+        enabledTools: ['media.video.generate'],
+      },
+    };
+
+    const blocked = await executor.execute(baseExecution);
+    assert.equal(blocked.success, false);
+    assert.equal(blocked.error?.code, 'TOOL_APPROVAL_REQUIRED');
+    assert.equal(fetchCalled, false);
+
+    const approved = await executor.execute({ ...baseExecution, alreadyApproved: true });
+    assert.equal(approved.success, true);
+    assert.equal(fetchCalled, true);
   });
 
   it('starts a real Runway task through the production handler contract', async () => {
