@@ -12,7 +12,7 @@ import {
 import { OsaActiveAgent } from '@/components/home/OsaActiveAgent';
 import { OsaClarifyPanel } from '@/components/home/OsaClarifyPanel';
 import { OsaDirectorPlanPanel } from '@/components/home/OsaDirectorPlanPanel';
-import { OsaHomeArtComposition } from '@/components/home/OsaHomeArtComposition';
+import { BusinessFactoryHero } from '@/components/home/BusinessFactoryHero';
 import {
   OsaHeroPresence,
   type OsaHeroPresenceHandle,
@@ -302,6 +302,10 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
         <div className="osa-home-grid">
           <div className="osa-home-main">
             <div className="osa-home-hero w-full">
+              <div className="mb-5 lg:hidden">
+                <BusinessFactoryHero active={isTyping} thinking={isThinking} />
+              </div>
+
               <div className="osa-home-eyes-slot">
                 <OsaHeroPresence
                   ref={heroRef}
@@ -401,7 +405,9 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
           </div>
 
           <div className="osa-home-side">
-            <OsaHomeArtComposition active={isTyping} thinking={isThinking} />
+            <div className="hidden lg:block">
+              <BusinessFactoryHero active={isTyping} thinking={isThinking} />
+            </div>
           </div>
         </div>
 
