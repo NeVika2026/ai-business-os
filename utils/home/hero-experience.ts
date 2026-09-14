@@ -1,9 +1,9 @@
-export const HERO_GREETINGS = ['Чем сегодня помочь?', 'С чего начнём?'] as const;
+export const HERO_GREETINGS = ['Что запускаем сегодня?', 'Что производим сегодня?'] as const;
 
-export const HERO_HOME_GREETING = 'Чем сегодня помочь?' as const;
+export const HERO_HOME_GREETING = 'Что запускаем сегодня?' as const;
 
 export const HERO_HOME_PLACEHOLDER =
-  'Расскажите, что хотите создать, улучшить или решить…' as const;
+  'Опишите задачу, цель или идею — завод сам соберёт нужную AI-команду…' as const;
 
 export type HeroPhase = 'orbit-free' | 'orbit-gather' | 'eyes-form' | 'eyes-alive' | 'ready';
 
