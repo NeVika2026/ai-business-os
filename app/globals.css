@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 @import '../styles/tokens.css';
+@import '../styles/primitives.css';
+@import '../components/dashboard/ai-command-center.css';
 
 @custom-variant dark (&:is([data-theme='dark'] *));
 
@@ -8,8 +10,31 @@
     border-color: var(--border-subtle);
   }
 
+  html {
+    min-height: 100%;
+    background: var(--surface-0);
+  }
+
   body {
-    background-color: var(--surface-0);
+    min-height: 100vh;
+    margin: 0;
+    background:
+      radial-gradient(circle at 15% 0%, rgba(91, 140, 255, 0.12), transparent 30%),
+      radial-gradient(circle at 85% 8%, rgba(124, 108, 255, 0.14), transparent 28%),
+      radial-gradient(circle at 50% 100%, rgba(53, 216, 255, 0.08), transparent 34%),
+      var(--surface-0);
     color: var(--text-primary);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--accent-soft);
+    color: var(--text-primary);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent-cyan);
+    outline-offset: 3px;
   }
 }
