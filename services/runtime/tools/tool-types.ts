@@ -9,6 +9,7 @@ export const TOOL_CATEGORIES = [
   'web',
   'storage',
   'integrations',
+  'media',
   'system',
   'mcp',
 ] as const;
