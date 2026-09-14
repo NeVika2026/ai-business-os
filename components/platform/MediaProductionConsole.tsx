@@ -1,0 +1,398 @@
+'use client';
+
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+
+import {
+  getMediaGenerationStatusAction,
+  listMediaVoicesAction,
+  startMediaGenerationAction,
+  type MediaStudioKind,
+  type MediaStudioStatusResult,
+} from '@/app/(dashboard)/modules/create/studio/actions';
+import type { CreateStudioModeId } from '@/utils/platform/create-studio';
+
+type MediaProductionConsoleProps = {
+  modeId: CreateStudioModeId;
+  goal: string;
+  format: string;
+  context: string;
+};
+
+type VoiceOption = {
+  id: string;
+  name: string;
+  category: string;
+  previewUrl: string | null;
+};
+
+const LIVE_MODES = new Set<CreateStudioModeId>(['video', 'image', 'voice']);
+
+function toMediaKind(modeId: CreateStudioModeId): MediaStudioKind | null {
+  if (modeId === 'video' || modeId === 'image' || modeId === 'voice') {
+    return modeId;
+  }
+
+  return null;
+}
+
+function statusLabel(status: MediaStudioStatusResult['status'] | 'idle') {
+  switch (status) {
+    case 'pending':
+      return 'В очереди';
+    case 'running':
+      return 'Генерируется';
+    case 'completed':
+      return 'Готово';
+    case 'failed':
+      return 'Ошибка';
+    default:
+      return 'Готов к запуску';
+  }
+}
+
+function modeLabel(modeId: CreateStudioModeId) {
+  if (modeId === 'video') return 'Видео';
+  if (modeId === 'image') return 'Изображение';
+  if (modeId === 'voice') return 'Озвучка';
+  return 'Медиа';
+}
+
+export function MediaProductionConsole({
+  modeId,
+  goal,
+  format,
+  context,
+}: MediaProductionConsoleProps) {
+  const kind = toMediaKind(modeId);
+  const [approved, setApproved] = useState(false);
+  const [referenceImageUrl, setReferenceImageUrl] = useState('');
+  const [duration, setDuration] = useState(5);
+  const [voices, setVoices] = useState<VoiceOption[]>([]);
+  const [voiceId, setVoiceId] = useState('');
+  const [jobId, setJobId] = useState('');
+  const [jobStatus, setJobStatus] = useState<MediaStudioStatusResult | null>(null);
+  const [error, setError] = useState('');
+  const [isStarting, startTransition] = useTransition();
+  const [isLoadingVoices, startVoiceTransition] = useTransition();
+  const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const promptText = useMemo(() => {
+    return [goal.trim(), format.trim() ? 'Формат: ' + format.trim() : '', context.trim() ? 'Важно: ' + context.trim() : '']
+      .filter(Boolean)
+      .join('\n');
+  }, [goal, format, context]);
+
+  const isLiveMode = LIVE_MODES.has(modeId);
+  const busy =
+    isStarting ||
+    jobStatus?.status === 'pending' ||
+    jobStatus?.status === 'running';
+
+  useEffect(() => {
+    if (modeId !== 'voice' || voices.length > 0 || isLoadingVoices) {
+      return;
+    }
+
+    startVoiceTransition(async () => {
+      try {
+        const result = await listMediaVoicesAction();
+        setVoices(result);
+        setVoiceId((current) => current || result[0]?.id || '');
+      } catch {
+        setError('Не удалось загрузить список голосов.');
+      }
+    });
+  }, [modeId, voices.length, isLoadingVoices]);
+
+  useEffect(() => {
+    if (!kind || !jobId || !jobStatus) {
+      return;
+    }
+
+    if (jobStatus.status === 'completed' || jobStatus.status === 'failed') {
+      return;
+    }
+
+    pollRef.current = setTimeout(async () => {
+      const next = await getMediaGenerationStatusAction(kind, jobId);
+      setJobStatus(next);
+      if (next.status === 'failed') {
+        setError('Генерация завершилась с ошибкой: ' + next.providerStatus);
+      }
+    }, 3000);
+
+    return () => {
+      if (pollRef.current) clearTimeout(pollRef.current);
+    };
+  }, [kind, jobId, jobStatus]);
+
+  if (!isLiveMode || !kind) {
+    return (
+      <section className="mt-5 rounded-[28px] border border-white/[0.07] bg-[#080b11] p-5 text-white sm:p-6">
+        <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#58dbe8]">
+          Реальное производство
+        </p>
+        <h2 className="mt-2 text-xl font-semibold tracking-[-0.04em] text-[#fff8e7]">
+          Этот цех готовится к прямому экспорту
+        </h2>
+        <p className="mt-3 max-w-3xl text-xs leading-5 text-white/36">
+          Сейчас прямой запуск подключён для видео, изображений и озвучки. Для сторис,
+          презентаций и документов AI-директор продолжает собирать результат через основной
+          workflow проекта.
+        </p>
+      </section>
+    );
+  }
+
+  const startGeneration = () => {
+    if (!promptText || !approved || busy) return;
+
+    setError('');
+    setJobId('');
+    setJobStatus(null);
+
+    startTransition(async () => {
+      const result = await startMediaGenerationAction({
+        kind,
+        promptText,
+        approved,
+        ratio: kind === 'video' ? '768:1280' : '1080:1920',
+        duration,
+        imageUrl: kind === 'video' ? referenceImageUrl : undefined,
+        voiceId: kind === 'voice' ? voiceId : undefined,
+      });
+
+      if (result.status !== 'started') {
+        setError(result.message);
+        return;
+      }
+
+      setJobId(result.id);
+      const initial: MediaStudioStatusResult = {
+        status: 'pending',
+        providerStatus: 'pending',
+        outputUrl: null,
+        outputUrls: [],
+        ephemeral: false,
+      };
+      setJobStatus(initial);
+    });
+  };
+
+  const selectedVoice = voices.find((voice) => voice.id === voiceId) ?? null;
+  const displayStatus = jobStatus?.status ?? 'idle';
+
+  return (
+    <section className="relative mt-5 overflow-hidden rounded-[30px] border border-[#58dbe8]/10 bg-[linear-gradient(145deg,#070a0f,#0a1018)] p-5 text-white sm:p-6">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[radial-gradient(circle,rgba(88,219,232,.10),transparent_68%)]"
+      />
+
+      <div className="relative grid gap-6 xl:grid-cols-[.9fr_1.1fr]">
+        <div>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#58dbe8]">
+                Реальное производство
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[#fff8e7]">
+                {modeLabel(modeId)}
+              </h2>
+            </div>
+            <span
+              className={[
+                'rounded-full border px-3 py-1.5 text-[9px] font-bold',
+                displayStatus === 'completed'
+                  ? 'border-emerald-300/15 bg-emerald-300/[0.06] text-emerald-200'
+                  : displayStatus === 'failed'
+                    ? 'border-red-300/15 bg-red-300/[0.06] text-red-200'
+                    : 'border-[#58dbe8]/15 bg-[#58dbe8]/[0.05] text-[#8ceaf2]',
+              ].join(' ')}
+            >
+              {statusLabel(displayStatus)}
+            </span>
+          </div>
+
+          <p className="mt-4 text-xs leading-5 text-white/38">
+            Это уже не демонстрация: кнопка ниже запускает внешний генератор и может расходовать
+            платные кредиты. Поэтому запуск возможен только после явного подтверждения.
+          </p>
+
+          {kind === 'video' ? (
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <label className="grid gap-2">
+                <span className="text-[11px] font-semibold text-white/55">Длительность сцены</span>
+                <select
+                  value={duration}
+                  onChange={(event) => setDuration(Number(event.target.value))}
+                  className="rounded-2xl border border-white/[0.08] bg-[#0a0e15] px-3 py-2.5 text-xs text-white outline-none"
+                >
+                  <option value={5}>5 секунд</option>
+                  <option value={10}>10 секунд</option>
+                </select>
+              </label>
+              <label className="grid gap-2">
+                <span className="text-[11px] font-semibold text-white/55">Референс-кадр · необязательно</span>
+                <input
+                  value={referenceImageUrl}
+                  onChange={(event) => setReferenceImageUrl(event.target.value)}
+                  placeholder="https://…"
+                  className="rounded-2xl border border-white/[0.08] bg-[#0a0e15] px-3 py-2.5 text-xs text-white outline-none focus:border-[#58dbe8]/25"
+                />
+              </label>
+            </div>
+          ) : null}
+
+          {kind === 'voice' ? (
+            <div className="mt-5">
+              <label className="grid gap-2">
+                <span className="text-[11px] font-semibold text-white/55">Голос</span>
+                <select
+                  value={voiceId}
+                  onChange={(event) => setVoiceId(event.target.value)}
+                  disabled={isLoadingVoices}
+                  className="rounded-2xl border border-white/[0.08] bg-[#0a0e15] px-3 py-2.5 text-xs text-white outline-none disabled:opacity-45"
+                >
+                  {voices.length === 0 ? (
+                    <option value="">
+                      {isLoadingVoices ? 'Загружаю голоса…' : 'Нет доступных голосов'}
+                    </option>
+                  ) : (
+                    voices.map((voice) => (
+                      <option key={voice.id} value={voice.id}>
+                        {voice.name}{voice.category ? ' · ' + voice.category : ''}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </label>
+              {selectedVoice?.previewUrl ? (
+                <audio className="mt-3 h-9 w-full" controls preload="none" src={selectedVoice.previewUrl}>
+                  Предпросмотр голоса недоступен.
+                </audio>
+              ) : null}
+            </div>
+          ) : null}
+
+          <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-[18px] border border-[#e7b952]/13 bg-[#e7b952]/[0.035] p-3.5">
+            <input
+              type="checkbox"
+              checked={approved}
+              onChange={(event) => setApproved(event.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-[#e7b952]"
+            />
+            <span className="text-[11px] leading-5 text-white/48">
+              <strong className="block text-[#f2d474]">
+                Подтверждаю запуск платной генерации
+              </strong>
+              Я понимаю, что внешний сервис может списать кредиты за этот запуск.
+            </span>
+          </label>
+
+          <button
+            type="button"
+            onClick={startGeneration}
+            disabled={!promptText || !approved || busy || (kind === 'voice' && !voiceId)}
+            className="mt-4 w-full rounded-[18px] bg-[linear-gradient(135deg,#58dbe8,#338eaa)] px-5 py-3.5 text-sm font-extrabold text-[#041015] shadow-[0_16px_34px_-20px_rgba(88,219,232,.75)] transition hover:-translate-y-0.5 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:translate-y-0"
+          >
+            {busy ? 'Генерация запущена…' : 'Запустить реальную генерацию'}
+          </button>
+
+          {error ? (
+            <p className="mt-3 rounded-2xl border border-red-300/10 bg-red-300/[0.04] px-3 py-2.5 text-[11px] leading-5 text-red-100/70">
+              {error}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="min-h-[250px] rounded-[24px] border border-white/[0.065] bg-black/20 p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/35">
+              Выход линии
+            </p>
+            {jobId ? (
+              <span className="max-w-[180px] truncate text-[9px] text-white/20" title={jobId}>
+                ID {jobId}
+              </span>
+            ) : null}
+          </div>
+
+          {!jobStatus ? (
+            <div className="flex min-h-[205px] items-center justify-center text-center">
+              <div>
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.07] bg-white/[0.025] text-xl text-white/20">
+                  {kind === 'video' ? '▶' : kind === 'image' ? '◇' : '◉'}
+                </div>
+                <p className="mt-4 text-xs font-semibold text-white/42">Результат появится здесь</p>
+                <p className="mt-1 text-[10px] leading-5 text-white/22">
+                  Сначала опиши результат слева и подтверди платный запуск.
+                </p>
+              </div>
+            </div>
+          ) : jobStatus.status === 'pending' || jobStatus.status === 'running' ? (
+            <div className="flex min-h-[205px] items-center justify-center text-center">
+              <div className="w-full max-w-sm">
+                <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-white/[0.08] border-t-[#58dbe8]" />
+                <p className="mt-4 text-sm font-semibold text-[#dffbff]">
+                  {jobStatus.status === 'running' ? 'Производство идёт' : 'Задача в очереди'}
+                </p>
+                <p className="mt-1 text-[10px] text-white/28">
+                  Статус проверяется автоматически каждые 3 секунды.
+                </p>
+              </div>
+            </div>
+          ) : jobStatus.status === 'completed' && jobStatus.outputUrl ? (
+            <div>
+              {kind === 'video' ? (
+                <video
+                  className="max-h-[420px] w-full rounded-[18px] bg-black object-contain"
+                  controls
+                  playsInline
+                  src={jobStatus.outputUrl}
+                />
+              ) : kind === 'image' ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={jobStatus.outputUrl}
+                  alt="Сгенерированный результат"
+                  className="max-h-[420px] w-full rounded-[18px] bg-black object-contain"
+                />
+              ) : (
+                <audio className="mt-10 w-full" controls src={jobStatus.outputUrl}>
+                  Готовая озвучка недоступна в этом браузере.
+                </audio>
+              )}
+
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                <p className="text-[10px] text-emerald-200/55">Готово · {jobStatus.providerStatus}</p>
+                <a
+                  href={jobStatus.outputUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[10px] font-semibold text-[#8ceaf2] hover:text-white"
+                >
+                  Открыть файл ↗
+                </a>
+              </div>
+
+              {jobStatus.ephemeral ? (
+                <p className="mt-3 rounded-2xl border border-amber-300/10 bg-amber-300/[0.035] px-3 py-2 text-[10px] leading-5 text-amber-100/55">
+                  Временная ссылка провайдера. На следующем этапе подключим постоянное сохранение
+                  файла в хранилище Бизнес-Завода.
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <div className="flex min-h-[205px] items-center justify-center text-center">
+              <div>
+                <p className="text-sm font-semibold text-red-100/70">Генерация не завершена</p>
+                <p className="mt-2 text-[10px] text-white/28">{jobStatus.providerStatus}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}

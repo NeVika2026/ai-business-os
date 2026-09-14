@@ -13,6 +13,14 @@ import {
 } from '@/services/runtime/tools/handlers/integration-handler';
 import { knowledgeSearchHandler } from '@/services/runtime/tools/handlers/knowledge-handler';
 import {
+  elevenLabsVoiceGenerateHandler,
+  elevenLabsVoiceListHandler,
+  elevenLabsVoiceStatusHandler,
+  runwayImageGenerateHandler,
+  runwayTaskStatusHandler,
+  runwayVideoGenerateHandler,
+} from '@/services/runtime/tools/handlers/media-handler';
+import {
   automationStatusHandler,
   diagnosticsRuntimeHandler,
   gatewayHealthHandler,
@@ -42,6 +50,12 @@ const PRODUCTION_HANDLERS: Record<string, BaseToolHandler> = {
   'mcp.call': mcpCallHandler,
   'files.read': filesReadHandler,
   'files.list': filesListHandler,
+  'media.video.generate': runwayVideoGenerateHandler,
+  'media.image.generate': runwayImageGenerateHandler,
+  'media.runway.status': runwayTaskStatusHandler,
+  'media.voice.list': elevenLabsVoiceListHandler,
+  'media.voice.generate': elevenLabsVoiceGenerateHandler,
+  'media.voice.status': elevenLabsVoiceStatusHandler,
 };
 
 export function attachProductionHandlers(tools: RegisteredToolInput[]): RegisteredToolInput[] {

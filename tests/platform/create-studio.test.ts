@@ -76,5 +76,19 @@ describe('Business Zavod Create Studio', () => {
     assert.match(source, /getCreateStudioProductionLine/);
     assert.match(source, /Передать AI-директору/);
     assert.match(source, /Идею можно описать одной фразой/);
+    assert.match(source, /MediaProductionConsole/);
+  });
+
+  it('renders explicit approval for real paid media generation', () => {
+    const source = readFileSync(
+      join(import.meta.dirname, '..', '..', 'components', 'platform', 'MediaProductionConsole.tsx'),
+      'utf8',
+    );
+
+    assert.match(source, /Подтверждаю запуск платной генерации/);
+    assert.match(source, /Запустить реальную генерацию/);
+    assert.match(source, /startMediaGenerationAction/);
+    assert.match(source, /getMediaGenerationStatusAction/);
+    assert.match(source, /каждые 3 секунды/);
   });
 });

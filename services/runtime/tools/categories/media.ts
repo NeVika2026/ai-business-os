@@ -1,0 +1,203 @@
+import type { RegisteredToolInput } from '@/services/runtime/tools/tool-types';
+import {
+  DEFAULT_EXTERNAL_APPROVAL,
+  DEFAULT_READ_APPROVAL,
+  DEFAULT_READ_RETRY_POLICY,
+  DEFAULT_WRITE_RETRY_POLICY,
+} from '@/services/runtime/tools/tool-types';
+
+const externalPermissions = {
+  requiredFlags: ['can_use_media_tools'],
+  categoryDefault: true,
+};
+
+export const mediaTools: RegisteredToolInput[] = [
+  {
+    id: 'media.video.generate',
+    name: 'Generate Video',
+    description: 'Start a paid video generation job from text and an optional reference image.',
+    version: '1.0.0',
+    category: 'media',
+    permissions: externalPermissions,
+    approvalPolicy: {
+      ...DEFAULT_EXTERNAL_APPROVAL,
+      reason: 'Video generation may consume paid credits and requires explicit approval.',
+    },
+    timeoutMs: 30_000,
+    retryPolicy: DEFAULT_WRITE_RETRY_POLICY,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        prompt_text: { type: 'string', minLength: 1, maxLength: 5000 },
+        image_url: { type: 'string' },
+        model: { type: 'string' },
+        ratio: { type: 'string' },
+        duration: { type: 'number', minimum: 4, maximum: 15 },
+      },
+      required: ['prompt_text'],
+      additionalProperties: false,
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string' },
+        status: { type: 'string' },
+        kind: { type: 'string' },
+      },
+      required: ['taskId', 'status', 'kind'],
+    },
+    enabled: true,
+  },
+  {
+    id: 'media.image.generate',
+    name: 'Generate Image',
+    description: 'Start a paid image generation job for a scene, storyboard frame, creative or still.',
+    version: '1.0.0',
+    category: 'media',
+    permissions: externalPermissions,
+    approvalPolicy: {
+      ...DEFAULT_EXTERNAL_APPROVAL,
+      reason: 'Image generation may consume paid credits and requires explicit approval.',
+    },
+    timeoutMs: 30_000,
+    retryPolicy: DEFAULT_WRITE_RETRY_POLICY,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        prompt_text: { type: 'string', minLength: 1, maxLength: 32000 },
+        model: { type: 'string' },
+        ratio: { type: 'string' },
+        output_count: { type: 'number', minimum: 1, maximum: 4 },
+      },
+      required: ['prompt_text'],
+      additionalProperties: false,
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string' },
+        status: { type: 'string' },
+        kind: { type: 'string' },
+      },
+      required: ['taskId', 'status', 'kind'],
+    },
+    enabled: true,
+  },
+  {
+    id: 'media.runway.status',
+    name: 'Media Task Status',
+    description: 'Check a video or image generation task and return finished asset URLs when available.',
+    version: '1.0.0',
+    category: 'media',
+    permissions: externalPermissions,
+    approvalPolicy: DEFAULT_READ_APPROVAL,
+    timeoutMs: 20_000,
+    retryPolicy: DEFAULT_READ_RETRY_POLICY,
+    inputSchema: {
+      type: 'object',
+      properties: { task_id: { type: 'string', minLength: 1 } },
+      required: ['task_id'],
+      additionalProperties: false,
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string' },
+        status: { type: 'string' },
+        assetUrls: { type: 'array' },
+        ephemeral: { type: 'boolean' },
+      },
+      required: ['taskId', 'status', 'assetUrls', 'ephemeral'],
+    },
+    enabled: true,
+  },
+  {
+    id: 'media.voice.list',
+    name: 'List Voices',
+    description: 'List available speech voices without exposing API credentials.',
+    version: '1.0.0',
+    category: 'media',
+    permissions: externalPermissions,
+    approvalPolicy: DEFAULT_READ_APPROVAL,
+    timeoutMs: 20_000,
+    retryPolicy: DEFAULT_READ_RETRY_POLICY,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        search: { type: 'string', maxLength: 100 },
+        limit: { type: 'number', minimum: 1, maximum: 30 },
+      },
+      additionalProperties: false,
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        voices: { type: 'array' },
+        count: { type: 'number' },
+      },
+      required: ['voices', 'count'],
+    },
+    enabled: true,
+  },
+  {
+    id: 'media.voice.generate',
+    name: 'Generate Voice',
+    description: 'Start a paid speech generation job from text and a selected voice.',
+    version: '1.0.0',
+    category: 'media',
+    permissions: externalPermissions,
+    approvalPolicy: {
+      ...DEFAULT_EXTERNAL_APPROVAL,
+      reason: 'Speech generation is billed per character and requires explicit approval.',
+    },
+    timeoutMs: 30_000,
+    retryPolicy: DEFAULT_WRITE_RETRY_POLICY,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        text: { type: 'string', minLength: 1, maxLength: 20000 },
+        voice_id: { type: 'string', minLength: 1 },
+        model_id: { type: 'string' },
+      },
+      required: ['text', 'voice_id'],
+      additionalProperties: false,
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        generationId: { type: 'string' },
+        status: { type: 'string' },
+        kind: { type: 'string' },
+      },
+      required: ['generationId', 'status', 'kind'],
+    },
+    enabled: true,
+  },
+  {
+    id: 'media.voice.status',
+    name: 'Voice Task Status',
+    description: 'Check a speech generation job and return its output URL when completed.',
+    version: '1.0.0',
+    category: 'media',
+    permissions: externalPermissions,
+    approvalPolicy: DEFAULT_READ_APPROVAL,
+    timeoutMs: 20_000,
+    retryPolicy: DEFAULT_READ_RETRY_POLICY,
+    inputSchema: {
+      type: 'object',
+      properties: { generation_id: { type: 'string', minLength: 1 } },
+      required: ['generation_id'],
+      additionalProperties: false,
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        generationId: { type: 'string' },
+        status: { type: 'string' },
+        outputUrl: { type: ['string', 'null'] },
+      },
+      required: ['generationId', 'status'],
+    },
+    enabled: true,
+  },
+];

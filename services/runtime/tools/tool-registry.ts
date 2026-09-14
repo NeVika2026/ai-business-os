@@ -2,6 +2,7 @@ import { attachProductionHandlers } from '@/services/runtime/tools/production-ha
 import { communicationTools } from '@/services/runtime/tools/categories/communication';
 import { crmTools } from '@/services/runtime/tools/categories/crm';
 import { knowledgeTools } from '@/services/runtime/tools/categories/knowledge';
+import { mediaTools } from '@/services/runtime/tools/categories/media';
 import { mcpTools } from '@/services/runtime/tools/categories/mcp';
 import { storageTools } from '@/services/runtime/tools/categories/storage';
 import { systemTools } from '@/services/runtime/tools/categories/system';
@@ -17,6 +18,7 @@ import type {
 const DEFAULT_MOCK_TOOLS: RegisteredToolInput[] = [
   ...crmTools,
   ...knowledgeTools,
+  ...mediaTools,
   ...communicationTools,
   ...webTools,
   ...storageTools,
