@@ -31,8 +31,8 @@ describe('hero experience', () => {
   });
 
   it('exposes home copy constants', () => {
-    assert.equal(HERO_HOME_GREETING, 'Чем сегодня помочь?');
-    assert.match(HERO_HOME_PLACEHOLDER, /создать/);
+    assert.equal(HERO_HOME_GREETING, 'Что запускаем сегодня?');
+    assert.match(HERO_HOME_PLACEHOLDER, /Опишите задачу, цель или идею/);
   });
 
   it('warms light while typing', () => {
