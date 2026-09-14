@@ -256,6 +256,7 @@ export function CreateStudio({ initialModeId = 'video' }: CreateStudioProps) {
       </section>
 
       <MediaProductionConsole
+        key={modeId}
         modeId={modeId}
         goal={goal}
         format={format}
