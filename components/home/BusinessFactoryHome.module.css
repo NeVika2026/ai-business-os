@@ -1,0 +1,177 @@
+.factoryCanvas.factoryCanvas {
+  --factory-gold: #e7b952;
+  --factory-gold-soft: #f5d980;
+  --factory-cyan: #58dbe8;
+  --factory-ink: #07090d;
+  --factory-panel: rgba(10, 14, 22, 0.82);
+  color: #f7f2e8;
+  background:
+    radial-gradient(circle at 78% 16%, rgba(231, 185, 82, 0.12), transparent 25%),
+    radial-gradient(circle at 64% 28%, rgba(88, 219, 232, 0.08), transparent 28%),
+    linear-gradient(155deg, #05070a 0%, #090d14 46%, #06080b 100%);
+}
+
+.factoryCanvas :global(.osa-home-depth) {
+  opacity: 0.22;
+  background:
+    linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: linear-gradient(to bottom, transparent, #000 12%, #000 78%, transparent);
+}
+
+.factoryCanvas :global(.osa-home-glow) {
+  opacity: 0.82;
+  filter: blur(38px);
+  background:
+    radial-gradient(circle at 24% 34%, rgba(88, 219, 232, 0.11), transparent 32%),
+    radial-gradient(circle at 72% 36%, rgba(231, 185, 82, 0.12), transparent 34%);
+}
+
+.factoryCanvas :global(.osa-home-blob) {
+  opacity: 0.2;
+  filter: blur(22px);
+}
+
+.factoryCanvas :global(.osa-home-blob--blue) {
+  background: radial-gradient(circle, rgba(88, 219, 232, 0.28), transparent 70%);
+}
+
+.factoryCanvas :global(.osa-home-blob--purple) {
+  background: radial-gradient(circle, rgba(231, 185, 82, 0.2), transparent 72%);
+}
+
+.factoryCanvas :global(.osa-home-grid) {
+  min-height: min(780px, calc(100vh - 1rem));
+  gap: clamp(1.2rem, 3vw, 3rem);
+}
+
+.factoryCanvas :global(.osa-home-greeting) {
+  max-width: 12ch;
+  color: #fff8e7;
+  font-size: clamp(2.65rem, 5.8vw, 5.6rem);
+  font-weight: 700;
+  line-height: 0.94;
+  letter-spacing: -0.06em;
+  text-wrap: balance;
+}
+
+.factoryCanvas :global(.osa-home-greeting)::after {
+  content: ' AI-команда соберётся сама.';
+  display: block;
+  margin-top: 0.65rem;
+  max-width: 34rem;
+  color: #8c96a5;
+  font-size: clamp(.78rem, 1.15vw, .95rem);
+  font-weight: 600;
+  line-height: 1.55;
+  letter-spacing: 0;
+}
+
+.factoryCanvas :global(.osa-home-input) {
+  min-height: clamp(9.5rem, 22vh, 12rem);
+  border: 1px solid rgba(244, 202, 111, 0.22);
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.065), rgba(255,255,255,.024));
+  color: #ffffff;
+  box-shadow:
+    0 24px 70px rgba(0,0,0,.24),
+    inset 0 1px 0 rgba(255,255,255,.04);
+  backdrop-filter: blur(20px);
+}
+
+.factoryCanvas :global(.osa-home-input)::placeholder {
+  color: #697483;
+}
+
+.factoryCanvas :global(.osa-home-input--typing) {
+  border-color: rgba(88, 219, 232, 0.32);
+  box-shadow:
+    0 28px 72px rgba(0,0,0,.28),
+    0 0 0 1px rgba(88,219,232,.07) inset,
+    0 0 42px rgba(88,219,232,.08);
+}
+
+.factoryCanvas :global(.osa-home-input):focus {
+  border-color: rgba(231, 185, 82, 0.48);
+  background: rgba(10, 14, 22, 0.92);
+  box-shadow:
+    0 30px 76px rgba(0,0,0,.3),
+    0 0 0 1px rgba(231,185,82,.08) inset,
+    0 0 46px rgba(231,185,82,.09);
+}
+
+.factoryCanvas :global(.osa-home-send) {
+  background: rgba(255,255,255,.08);
+  color: #7d8796;
+}
+
+.factoryCanvas :global(.osa-home-send--ready) {
+  background: linear-gradient(135deg, #f4d576, #c88d28);
+  color: #181006;
+  box-shadow: 0 15px 32px -14px rgba(231, 185, 82, 0.62);
+}
+
+.factoryCanvas :global(.osa-home-send--ready):hover {
+  color: #181006;
+  box-shadow: 0 18px 38px -12px rgba(231, 185, 82, 0.72);
+}
+
+.factoryCanvas :global(.osa-skill-mode-line),
+.factoryCanvas :global(.osa-live-discovery) {
+  color: #aab2be;
+}
+
+.factoryCanvas :global(.osa-home-eyes-slot) {
+  opacity: .82;
+}
+
+.factoryCanvas :global(.osa-hero-center-light) {
+  filter: hue-rotate(145deg) saturate(.75);
+  opacity: .45;
+}
+
+.factoryCanvas :global(.osa-eye-iris) {
+  background: radial-gradient(circle at 32% 28%, #d8fbff 0%, #58dbe8 30%, #cf9f43 72%, #302311 100%);
+  box-shadow: 0 0 14px rgba(88, 219, 232, .32);
+}
+
+.factoryCanvas :global(.osa-eye-socket) {
+  border-color: rgba(231,185,82,.22);
+  background: radial-gradient(circle at 30% 28%, #fffdf6 0%, #e8eef0 45%, #dbcda7 100%);
+  box-shadow: 0 10px 28px -14px rgba(231,185,82,.32);
+}
+
+@media (max-width: 1023px) {
+  .factoryCanvas :global(.osa-home-grid) {
+    min-height: auto;
+  }
+
+  .factoryCanvas :global(.osa-home-greeting) {
+    max-width: 14ch;
+    font-size: clamp(2.35rem, 10vw, 4.4rem);
+  }
+}
+
+@media (max-width: 560px) {
+  .factoryCanvas :global(.osa-home-stage) {
+    padding-inline: .7rem;
+  }
+
+  .factoryCanvas :global(.osa-home-greeting) {
+    font-size: clamp(2.2rem, 12vw, 3.5rem);
+  }
+
+  .factoryCanvas :global(.osa-home-input) {
+    min-height: 8.6rem;
+    border-radius: 22px;
+    padding: 1.2rem 4.5rem 1.2rem 1.2rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .factoryCanvas :global(.osa-home-glow),
+  .factoryCanvas :global(.osa-home-blob) {
+    animation: none !important;
+  }
+}
