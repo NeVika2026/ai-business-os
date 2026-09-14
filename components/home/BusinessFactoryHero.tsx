@@ -2,7 +2,7 @@
 
 import styles from './BusinessFactoryHero.module.css';
 
-// Auto-deploy verification: production branch is connected to Vercel.
+// Git auto-deploy verification: 2026-09-15
 
 type BusinessFactoryHeroProps = {
   active?: boolean;
