@@ -89,13 +89,6 @@ export function MediaProductionConsole({
     jobStatus?.status === 'running';
 
   useEffect(() => {
-    setApproved(false);
-    setJobId('');
-    setJobStatus(null);
-    setError('');
-  }, [modeId]);
-
-  useEffect(() => {
     if (modeId !== 'voice' || voices.length > 0 || isLoadingVoices) {
       return;
     }
