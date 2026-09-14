@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { RealMediaProductionPanel } from '@/components/platform/RealMediaProductionPanel';
 import {
   CREATE_STUDIO_MODES,
   buildCreateStudioPrompt,
@@ -252,6 +253,8 @@ export function CreateStudio({ initialModeId = 'video' }: CreateStudioProps) {
           </div>
         </aside>
       </section>
+
+      <RealMediaProductionPanel modeId={modeId} prompt={goal} format={format} />
     </main>
   );
 }
