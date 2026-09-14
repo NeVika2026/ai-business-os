@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useState } from 'react';
-import { useRouter } from 'next/navigation';
+
+import { dispatchTask } from '@/app/(dashboard)/orchestrator/actions';
 
 const workshops = [
   { n: '01', title: 'Оркестратор', text: 'Собирает команду AI под цель', href: '/orchestrator', icon: '✦' },
@@ -25,15 +25,6 @@ function Arrow() {
 }
 
 export function AiCommandCenter() {
-  const router = useRouter();
-  const [task, setTask] = useState('');
-
-  function launch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const value = task.trim();
-    router.push(value ? `/orchestrator?task=${encodeURIComponent(value)}` : '/orchestrator');
-  }
-
   return (
     <main className="factory-home">
       <div className="factory-noise" aria-hidden="true" />
@@ -59,11 +50,12 @@ export function AiCommandCenter() {
             оркестратор подключит нужных AI-сотрудников, инструменты и бизнес-контекст.
           </p>
 
-          <form className="factory-launcher" onSubmit={launch}>
+          <form className="factory-launcher" action={dispatchTask}>
             <span className="factory-launcher-mark">✦</span>
             <input
-              value={task}
-              onChange={(event) => setTask(event.target.value)}
+              name="task"
+              required
+              maxLength={4000}
               placeholder="Например: запусти рекламу, сделай ролик и собери воронку"
               aria-label="Задача для Бизнес-Завода"
             />
