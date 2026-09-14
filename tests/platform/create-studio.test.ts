@@ -20,7 +20,19 @@ describe('Business Zavod Create Studio', () => {
       JSON.stringify(CREATE_STUDIO_MODES),
       /OpenAI|Runway|ElevenLabs|Claude|Gemini|Kling|Sora/i,
     );
+    it('renders explicit approval for real paid media generation', () => {
+    const source = readFileSync(
+      join(import.meta.dirname, '..', '..', 'components', 'platform', 'MediaProductionConsole.tsx'),
+      'utf8',
+    );
+
+    assert.match(source, /Подтверждаю запуск платной генерации/);
+    assert.match(source, /Запустить реальную генерацию/);
+    assert.match(source, /startMediaGenerationAction/);
+    assert.match(source, /getMediaGenerationStatusAction/);
+    assert.match(source, /каждые 3 секунды/);
   });
+});
 
   it('defines a full production line for video without provider names', () => {
     const line = getCreateStudioProductionLine('video');
@@ -76,5 +88,6 @@ describe('Business Zavod Create Studio', () => {
     assert.match(source, /getCreateStudioProductionLine/);
     assert.match(source, /Передать AI-директору/);
     assert.match(source, /Идею можно описать одной фразой/);
+    assert.match(source, /MediaProductionConsole/);
   });
 });
