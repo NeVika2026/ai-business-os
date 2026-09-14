@@ -20,6 +20,8 @@ function deriveCategoryFromToolId(toolId: string): ToolCategory {
       return 'communication';
     case 'web':
       return 'web';
+    case 'media':
+      return 'media';
     case 'runtime':
       return 'system';
     case 'mcp':
@@ -30,7 +32,7 @@ function deriveCategoryFromToolId(toolId: string): ToolCategory {
 }
 
 function deriveApprovalPolicy(toolId: string): ToolApprovalPolicy {
-  const writeSuffixes = ['.create', '.update', '.delete', '.send'];
+  const writeSuffixes = ['.create', '.update', '.delete', '.send', '.generate'];
   const requiresApproval = writeSuffixes.some((suffix) => toolId.endsWith(suffix));
 
   if (requiresApproval) {
