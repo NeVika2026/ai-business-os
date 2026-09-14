@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { MediaProductionConsole } from '@/components/platform/MediaProductionConsole';
+
 import {
   CREATE_STUDIO_MODES,
   buildCreateStudioPrompt,
@@ -252,6 +254,13 @@ export function CreateStudio({ initialModeId = 'video' }: CreateStudioProps) {
           </div>
         </aside>
       </section>
+
+      <MediaProductionConsole
+        modeId={modeId}
+        goal={goal}
+        format={format}
+        context={context}
+      />
     </main>
   );
 }
