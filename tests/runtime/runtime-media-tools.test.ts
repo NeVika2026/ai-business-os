@@ -50,10 +50,12 @@ describe('Media runtime tools', () => {
 
   it('starts a real Runway task through the production handler contract', async () => {
     process.env.RUNWAYML_API_SECRET = 'test-runway-secret';
-    let request: { url: string; init?: RequestInit } | null = null;
+    let capturedUrl = '';
+    let capturedMethod = '';
 
     globalThis.fetch = async (input, init) => {
-      request = { url: String(input), init };
+      capturedUrl = String(input);
+      capturedMethod = String(init?.method ?? 'GET');
       return new Response(JSON.stringify({ id: 'task-video-1' }), {
         status: 200,
         headers: { 'content-type': 'application/json' },
@@ -74,8 +76,8 @@ describe('Media runtime tools', () => {
       status: 'pending',
       kind: 'video',
     });
-    assert.equal(request?.url, 'https://api.dev.runwayml.com/v1/image_to_video');
-    assert.equal(request?.init?.method, 'POST');
+    assert.equal(capturedUrl, 'https://api.dev.runwayml.com/v1/image_to_video');
+    assert.equal(capturedMethod, 'POST');
     assert.doesNotMatch(JSON.stringify(result), /test-runway-secret/);
   });
 
