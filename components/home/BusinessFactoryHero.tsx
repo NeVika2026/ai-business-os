@@ -2,6 +2,8 @@
 
 import styles from './BusinessFactoryHero.module.css';
 
+// Auto-deploy verification: production branch is connected to Vercel.
+
 type BusinessFactoryHeroProps = {
   active?: boolean;
   thinking?: boolean;
