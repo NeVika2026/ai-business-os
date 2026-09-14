@@ -14,6 +14,12 @@ export type CreateStudioMode = {
   noun: string;
 };
 
+export type CreateStudioProductionStage = {
+  id: string;
+  label: string;
+  detail: string;
+};
+
 export type CreateStudioBrief = {
   modeId: CreateStudioModeId;
   goal: string;
@@ -67,25 +73,92 @@ export const CREATE_STUDIO_MODES: CreateStudioMode[] = [
   },
 ];
 
+const CREATE_STUDIO_PRODUCTION_LINES: Record<CreateStudioModeId, CreateStudioProductionStage[]> = {
+  video: [
+    { id: 'idea', label: 'Идея', detail: 'Цель, хук и смысл ролика' },
+    { id: 'script', label: 'Сценарий', detail: 'Текст, ритм и длительность' },
+    { id: 'storyboard', label: 'Раскадровка', detail: 'Сцены и логика переходов' },
+    { id: 'visual', label: 'Визуал', detail: 'Один стиль, герои и окружение' },
+    { id: 'scenes', label: 'Сцены', detail: 'Подготовка и генерация кадров' },
+    { id: 'voice', label: 'Голос', detail: 'Подача, темп и озвучка' },
+    { id: 'captions', label: 'Субтитры', detail: 'Крупные читаемые титры' },
+    { id: 'edit', label: 'Монтаж', detail: 'Сборка, музыка и ритм' },
+    { id: 'qa', label: 'QA', detail: 'Связность, ошибки и синхронность' },
+    { id: 'export', label: 'Экспорт', detail: 'Готовый файл под площадку' },
+  ],
+  image: [
+    { id: 'idea', label: 'Идея', detail: 'Главный смысл и задача' },
+    { id: 'composition', label: 'Композиция', detail: 'Иерархия и акцент' },
+    { id: 'visual', label: 'Визуал', detail: 'Стиль, свет и материалы' },
+    { id: 'generate', label: 'Генерация', detail: 'Основной вариант' },
+    { id: 'retouch', label: 'Доработка', detail: 'Текст, детали и чистка' },
+    { id: 'export', label: 'Экспорт', detail: 'Размеры под площадку' },
+  ],
+  stories: [
+    { id: 'hook', label: 'Хук', detail: 'Первая карточка цепляет' },
+    { id: 'story', label: 'Сюжет', detail: 'Логика и развитие мысли' },
+    { id: 'cards', label: 'Карточки', detail: 'Текст каждой сторис' },
+    { id: 'visual', label: 'Визуал', detail: 'Единый стиль серии' },
+    { id: 'cta', label: 'CTA', detail: 'Переход к заявке' },
+    { id: 'qa', label: 'QA', detail: 'Повторы, ритм и читаемость' },
+    { id: 'export', label: 'Экспорт', detail: 'Готовая серия 9:16' },
+  ],
+  presentation: [
+    { id: 'goal', label: 'Цель', detail: 'Что должна доказать презентация' },
+    { id: 'structure', label: 'Структура', detail: 'Логика блоков и слайдов' },
+    { id: 'copy', label: 'Тексты', detail: 'Короткие сильные формулировки' },
+    { id: 'visual', label: 'Визуал', detail: 'Образ, сетка и стиль' },
+    { id: 'slides', label: 'Слайды', detail: 'Сборка всей колоды' },
+    { id: 'qa', label: 'QA', detail: 'Проверка смысла и верстки' },
+    { id: 'export', label: 'Экспорт', detail: 'Финальный файл' },
+  ],
+  document: [
+    { id: 'goal', label: 'Цель', detail: 'Задача документа' },
+    { id: 'structure', label: 'Структура', detail: 'Разделы и порядок' },
+    { id: 'draft', label: 'Черновик', detail: 'Содержание и аргументация' },
+    { id: 'review', label: 'Проверка', detail: 'Факты, логика и язык' },
+    { id: 'layout', label: 'Оформление', detail: 'Читаемая структура' },
+    { id: 'export', label: 'Экспорт', detail: 'Готовый документ' },
+  ],
+  voice: [
+    { id: 'script', label: 'Текст', detail: 'Что именно произносить' },
+    { id: 'direction', label: 'Подача', detail: 'Интонация, темп и эмоция' },
+    { id: 'voice', label: 'Голос', detail: 'Подбор подходящего звучания' },
+    { id: 'synthesis', label: 'Синтез', detail: 'Создание дорожки' },
+    { id: 'mix', label: 'Сведение', detail: 'Чистка и громкость' },
+    { id: 'export', label: 'Экспорт', detail: 'Готовый аудиофайл' },
+  ],
+};
+
 export function getCreateStudioMode(modeId: CreateStudioModeId): CreateStudioMode {
   return CREATE_STUDIO_MODES.find((item) => item.id === modeId) ?? CREATE_STUDIO_MODES[0]!;
 }
 
+export function getCreateStudioProductionLine(
+  modeId: CreateStudioModeId,
+): CreateStudioProductionStage[] {
+  return CREATE_STUDIO_PRODUCTION_LINES[modeId] ?? CREATE_STUDIO_PRODUCTION_LINES.video;
+}
+
 export function buildCreateStudioPrompt(input: CreateStudioBrief): string {
   const mode = getCreateStudioMode(input.modeId);
+  const productionLine = getCreateStudioProductionLine(input.modeId);
   const lines = [
-    `Создай ${mode.noun} под мою задачу.`,
-    `Цель: ${input.goal.trim()}`,
+    'Создай ' + mode.noun + ' под мою задачу.',
+    'Цель: ' + input.goal.trim(),
   ];
 
-  if (input.audience?.trim()) lines.push(`Аудитория: ${input.audience.trim()}`);
-  if (input.format?.trim()) lines.push(`Формат: ${input.format.trim()}`);
-  if (input.context?.trim()) lines.push(`Контекст: ${input.context.trim()}`);
+  if (input.audience?.trim()) lines.push('Аудитория: ' + input.audience.trim());
+  if (input.format?.trim()) lines.push('Формат: ' + input.format.trim());
+  if (input.context?.trim()) lines.push('Контекст: ' + input.context.trim());
 
   lines.push(
     '',
-    'Сначала предложи концепцию и структуру результата.',
-    'Покажи план до затратных действий и не запускай финальную генерацию без моего подтверждения.',
+    'Производственная линия: ' + productionLine.map((stage) => stage.label).join(' → ') + '.',
+    'Сначала предложи концепцию, структуру и производственный план.',
+    'Если это видео или серия визуалов — сохраняй единый визуальный мир: одинаковые герои, пространство, реквизит, свет и стиль между сценами.',
+    'Не запускай затратную генерацию или финальную сборку без моего подтверждения.',
+    'После подтверждения двигайся по этапам последовательно и проверяй результат перед экспортом.',
   );
 
   return lines.join('\n');
