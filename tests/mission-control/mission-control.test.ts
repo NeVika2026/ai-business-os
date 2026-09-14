@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import { resetExecutiveState } from '@/lib/executive/executive-state';
 import { resetProjectRuntimeStore } from '@/lib/project-runtime/project-runtime-store';
@@ -85,6 +87,20 @@ const context = {
 };
 
 describe('Mission Control', () => {
+  it('renders the factory command floor from real Mission Control data', () => {
+    const source = readFileSync(
+      join(import.meta.dirname, '..', '..', 'components', 'mission-control', 'MissionControlPage.tsx'),
+      'utf8',
+    );
+
+    assert.match(source, /Состояние завода/);
+    assert.match(source, /AI Orchestra/);
+    assert.match(source, /Результаты производства/);
+    assert.match(source, /Executive Brain/);
+    assert.match(source, /data\.attentionRequired\.length/);
+    assert.match(source, /data\.orchestra\?\.overallProgress/);
+  });
+
   beforeEach(() => {
     resetProjectRuntimeStore();
     resetExecutiveState();
