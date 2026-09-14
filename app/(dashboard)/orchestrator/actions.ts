@@ -20,6 +20,76 @@ function getOptionalText(value: FormDataEntryValue | null) {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+function getTaskText(value: FormDataEntryValue | null) {
+  const task = getOptionalText(value);
+
+  if (!task) {
+    throw new Error('Task is required');
+  }
+
+  return task.slice(0, 4000);
+}
+
+const TASK_ROUTE_RULES = [
+  {
+    task: ['маркет', 'реклам', 'контент', 'smm', 'seo', 'лид', 'оффер', 'ворон'],
+    employee: ['маркет', 'реклам', 'content', 'smm', 'seo', 'growth'],
+  },
+  {
+    task: ['продаж', 'клиент', 'сделк', 'crm', 'ворон', 'лид'],
+    employee: ['продаж', 'sales', 'crm', 'account'],
+  },
+  {
+    task: ['финанс', 'бюджет', 'деньг', 'инвест', 'cash', 'profit', 'доход'],
+    employee: ['финанс', 'finance', 'аналит', 'investment'],
+  },
+  {
+    task: ['договор', 'юрист', 'право', 'закон', 'суд', 'документ'],
+    employee: ['юрист', 'legal', 'прав', 'document'],
+  },
+  {
+    task: ['автомат', 'процесс', 'операц', 'workflow', 'интеграц'],
+    employee: ['автомат', 'операц', 'process', 'automation'],
+  },
+  {
+    task: ['видео', 'ролик', 'сторис', 'пост', 'дизайн', 'визуал'],
+    employee: ['контент', 'video', 'creative', 'design', 'маркет'],
+  },
+] as const;
+
+function routeEmployee(
+  task: string,
+  employees: { id: string; name: string; role_title: string }[],
+) {
+  const normalizedTask = task.toLowerCase();
+
+  const ranked = employees.map((employee, index) => {
+    const employeeText = `${employee.name} ${employee.role_title}`.toLowerCase();
+    let score = 0;
+
+    for (const rule of TASK_ROUTE_RULES) {
+      const taskMatch = rule.task.some((token) => normalizedTask.includes(token));
+
+      if (!taskMatch) {
+        continue;
+      }
+
+      score += rule.employee.some((token) => employeeText.includes(token)) ? 10 : 1;
+    }
+
+    for (const token of normalizedTask.split(/[^a-zа-яё0-9]+/i)) {
+      if (token.length >= 5 && employeeText.includes(token)) {
+        score += 3;
+      }
+    }
+
+    return { employee, score, index };
+  });
+
+  ranked.sort((a, b) => b.score - a.score || a.index - b.index);
+  return ranked[0]?.employee ?? null;
+}
+
 async function createRunEvent(
   supabase: Awaited<ReturnType<typeof createClient>>,
   params: {
@@ -51,6 +121,49 @@ async function createRunEvent(
   }
 }
 
+export async function dispatchTask(formData: FormData) {
+  const task = getTaskText(formData.get('task'));
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error('Unauthorized');
+  }
+
+  const organizationId = await getCurrentOrganizationId(supabase);
+
+  if (!organizationId) {
+    throw new Error('Organization not found');
+  }
+
+  const { data: employees, error } = await supabase
+    .from('ai_employees')
+    .select('id, name, role_title')
+    .eq('organization_id', organizationId)
+    .eq('status', 'active')
+    .eq('is_active', true)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  const employee = routeEmployee(task, employees ?? []);
+
+  if (!employee) {
+    throw new Error('No active AI employees available');
+  }
+
+  const routedForm = new FormData();
+  routedForm.set('ai_employee_id', employee.id);
+  routedForm.set('task', task);
+  routedForm.set('routing_mode', 'automatic');
+
+  return executeAgent(routedForm);
+}
+
 export async function executeAgent(formData: FormData) {
   const supabase = await createClient();
   const {
@@ -68,6 +181,7 @@ export async function executeAgent(formData: FormData) {
   }
 
   const aiEmployeeId = getOptionalText(formData.get('ai_employee_id'));
+  const task = getOptionalText(formData.get('task'));
 
   if (!aiEmployeeId) {
     throw new Error('AI employee id is required');
@@ -102,6 +216,8 @@ export async function executeAgent(formData: FormData) {
         simulated: !runtimeBridgeEnabled,
         runtime_bridge_enabled: runtimeBridgeEnabled,
         employee_name: employee.name,
+        task,
+        routing_mode: getOptionalText(formData.get('routing_mode')) ?? 'manual',
       },
       started_at: startedAt,
       created_by: user.id,
@@ -124,6 +240,7 @@ export async function executeAgent(formData: FormData) {
       payload: {
         run_id: run.id,
         ai_employee_id: aiEmployeeId,
+        task,
       },
       correlation_id: run.id,
     })
@@ -166,6 +283,7 @@ export async function executeAgent(formData: FormData) {
       employeeId: aiEmployeeId,
       runId: run.id,
       action: 'execute',
+      payload: task ? { task } : undefined,
     });
     const runtimeResult = await executeOrchestratorRuntimeAgent(execution);
     const completedAt = new Date().toISOString();
@@ -243,6 +361,7 @@ export async function executeAgent(formData: FormData) {
           simulated: true,
           runtime_bridge_enabled: false,
           message: `Pipeline completed for ${employee.name}`,
+          task,
           steps: ['load_context', 'plan', 'execute', 'finalize'],
         },
         tokens_input: 120,
