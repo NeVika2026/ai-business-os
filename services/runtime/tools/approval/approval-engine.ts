@@ -28,7 +28,7 @@ const APPROVAL_POLICIES: Record<ApprovalPolicyName, ApprovalPolicyDefinition> = 
 
 const FINANCIAL_PATTERNS = ['payment', 'invoice', 'billing', 'refund', 'charge'];
 const PUBLISH_PATTERNS = ['.publish', '.post', 'webhook.post', 'notion.publish'];
-const WRITE_SUFFIXES = ['.create', '.update', '.delete', '.send'];
+const WRITE_SUFFIXES = ['.create', '.update', '.delete', '.send', '.generate'];
 
 function resolvePolicyName(context: ApprovalContext): ApprovalPolicyName {
   if (context.policyName) {
@@ -49,7 +49,7 @@ function resolvePolicyName(context: ApprovalContext): ApprovalPolicyName {
     return 'publish';
   }
 
-  if (['communication', 'integrations', 'mcp', 'web'].includes(context.category)) {
+  if (['communication', 'integrations', 'media', 'mcp', 'web'].includes(context.category)) {
     return 'external';
   }
 
