@@ -254,7 +254,7 @@ export function CreateStudio({ initialModeId = 'video' }: CreateStudioProps) {
         </aside>
       </section>
 
-      <RealMediaProductionPanel modeId={modeId} prompt={goal} format={format} />
+      <RealMediaProductionPanel key={modeId} modeId={modeId} prompt={goal} format={format} />
     </main>
   );
 }
