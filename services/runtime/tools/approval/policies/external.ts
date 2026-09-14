@@ -4,7 +4,7 @@ import type {
 } from '@/services/runtime/tools/approval/approval-types';
 import type { ToolCategory } from '@/services/runtime/tools/tool-types';
 
-const EXTERNAL_CATEGORIES = new Set<ToolCategory>(['communication', 'integrations', 'mcp', 'web']);
+const EXTERNAL_CATEGORIES = new Set<ToolCategory>(['communication', 'integrations', 'media', 'mcp', 'web']);
 
 export function evaluateExternalPolicy(context: ApprovalContext): ApprovalPolicyEvaluation {
   const requiresApproval =
