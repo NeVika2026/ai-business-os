@@ -2,11 +2,14 @@
 
 import styles from './BusinessFactoryHero.module.css';
 
-// Git auto-deploy verification: 2026-09-15
-
 type BusinessFactoryHeroProps = {
   active?: boolean;
   thinking?: boolean;
+  currentTask?: string;
+  agentName?: string | null;
+  agentRole?: string | null;
+  activity?: string | null;
+  progress?: number | null;
 };
 
 const sparkPositions = [
@@ -23,8 +26,31 @@ const sparkPositions = [
   ['91%', '27%', '2px', '-4.1s'],
 ] as const;
 
-export function BusinessFactoryHero({ active = false, thinking = false }: BusinessFactoryHeroProps) {
-  const stateLabel = thinking ? 'Собираю решение' : active ? 'Задача принята' : 'AI Core готов';
+function clampProgress(value?: number | null) {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return 0;
+  }
+
+  return Math.min(100, Math.max(0, Math.round(value)));
+}
+
+export function BusinessFactoryHero({
+  active = false,
+  thinking = false,
+  currentTask = '',
+  agentName = null,
+  agentRole = null,
+  activity = null,
+  progress = null,
+}: BusinessFactoryHeroProps) {
+  const progressValue = clampProgress(progress);
+  const stateLabel = thinking
+    ? agentName ?? 'Собираю решение'
+    : active
+      ? 'Задача принята'
+      : 'AI Core готов';
+  const taskLabel = currentTask.trim();
+  const showRuntime = thinking || Boolean(agentName) || Boolean(taskLabel);
 
   return (
     <section
@@ -91,6 +117,30 @@ export function BusinessFactoryHero({ active = false, thinking = false }: Busine
           <b>03</b><span>Результат</span>
         </div>
       </div>
+
+      {showRuntime ? (
+        <div className={styles.runtime} aria-live="polite">
+          <div className={styles.runtimeTop}>
+            <span>
+              <small>{thinking ? 'СЕЙЧАС В РАБОТЕ' : 'ЗАДАЧА В ОЧЕРЕДИ'}</small>
+              <b>{agentName ?? (thinking ? 'Оркестратор собирает команду' : 'Готово к запуску')}</b>
+            </span>
+            {thinking ? <strong>{progressValue}%</strong> : null}
+          </div>
+
+          {agentRole || activity ? (
+            <p>{activity ?? agentRole}</p>
+          ) : taskLabel ? (
+            <p>{taskLabel}</p>
+          ) : null}
+
+          {thinking ? (
+            <div className={styles.progressTrack} aria-label={`Прогресс: ${progressValue}%`}>
+              <i style={{ width: `${progressValue}%` }} />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className={styles.footer}>
         <span>Задача</span><i>→</i><span>AI-команда</span><i>→</i><span>Инструменты</span><i>→</i><span>Результат</span>

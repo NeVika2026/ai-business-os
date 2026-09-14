@@ -37,5 +37,8 @@ describe('Business Zavod home experience', () => {
     assert.match(home, /BusinessZavodHomeExperience/);
     assert.match(home, /BusinessFactoryHero/);
     assert.match(home, /BusinessFactoryHome\.module\.css/);
+    assert.match(home, /currentTask={prompt}/);
+    assert.match(home, /agentName={orchestra\?\.activeAgentName}/);
+    assert.match(home, /progress={orchestra\?\.overallProgress}/);
   });
 });

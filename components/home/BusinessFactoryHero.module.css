@@ -256,6 +256,79 @@
 .badgeTwo { right: 1%; top: 42%; }
 .badgeThree { left: 9%; bottom: 13%; }
 
+.runtime {
+  position: relative;
+  z-index: 6;
+  margin: -8px 0 12px;
+  border: 1px solid rgba(88, 219, 232, 0.12);
+  border-radius: 16px;
+  background: rgba(5, 9, 15, 0.62);
+  padding: 11px 12px;
+  backdrop-filter: blur(14px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
+}
+
+.runtimeTop {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.runtimeTop span {
+  min-width: 0;
+}
+
+.runtimeTop small {
+  display: block;
+  color: #58dbe8;
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: .15em;
+}
+
+.runtimeTop b {
+  display: block;
+  margin-top: 3px;
+  overflow: hidden;
+  color: #fff8e7;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runtimeTop strong {
+  color: #f3c660;
+  font-size: 13px;
+}
+
+.runtime p {
+  margin: 6px 0 0;
+  overflow: hidden;
+  color: #7f8b9a;
+  font-size: 8px;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progressTrack {
+  height: 3px;
+  margin-top: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255,255,255,.07);
+}
+
+.progressTrack i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #58dbe8, #f3c660);
+  box-shadow: 0 0 12px rgba(88,219,232,.35);
+  transition: width .35s ease;
+}
+
 .footer {
   position: relative;
   z-index: 5;
@@ -373,6 +446,17 @@
 }
 
 @media (max-width: 560px) {
+  .runtime {
+    margin-top: -18px;
+  }
+
+  .runtime p {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
   .shell {
     min-height: 290px;
   }
