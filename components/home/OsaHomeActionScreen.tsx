@@ -305,7 +305,15 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
           <div className="osa-home-main">
             <div className="osa-home-hero w-full">
               <div className="mb-5 lg:hidden">
-                <BusinessFactoryHero active={isTyping} thinking={isThinking} />
+                <BusinessFactoryHero
+                  active={isTyping}
+                  thinking={isThinking}
+                  currentTask={prompt}
+                  agentName={orchestra?.activeAgentName}
+                  agentRole={orchestra?.activeAgentRole}
+                  activity={orchestra?.activeActivity}
+                  progress={orchestra?.overallProgress}
+                />
               </div>
 
               <div className="osa-home-eyes-slot">
@@ -408,7 +416,15 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
 
           <div className="osa-home-side">
             <div className="hidden lg:block">
-              <BusinessFactoryHero active={isTyping} thinking={isThinking} />
+              <BusinessFactoryHero
+                active={isTyping}
+                thinking={isThinking}
+                currentTask={prompt}
+                agentName={orchestra?.activeAgentName}
+                agentRole={orchestra?.activeAgentRole}
+                activity={orchestra?.activeActivity}
+                progress={orchestra?.overallProgress}
+              />
             </div>
           </div>
         </div>
