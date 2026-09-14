@@ -13,6 +13,7 @@ import { OsaActiveAgent } from '@/components/home/OsaActiveAgent';
 import { OsaClarifyPanel } from '@/components/home/OsaClarifyPanel';
 import { OsaDirectorPlanPanel } from '@/components/home/OsaDirectorPlanPanel';
 import { BusinessFactoryHero } from '@/components/home/BusinessFactoryHero';
+import homeStyles from '@/components/home/BusinessFactoryHome.module.css';
 import {
   OsaHeroPresence,
   type OsaHeroPresenceHandle,
@@ -263,6 +264,7 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
   const canvasClassName = [
     'osa-home-canvas',
     'flex min-h-full flex-1 flex-col',
+    phase !== 'result' ? homeStyles.factoryCanvas : '',
     isTyping ? 'osa-home-canvas--typing' : '',
     isThinking ? 'osa-home-canvas--thinking' : '',
   ]
