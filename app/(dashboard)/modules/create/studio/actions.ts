@@ -359,3 +359,19 @@ export async function getMediaGenerationStatusAction(
 export async function refreshMediaAssetUrlAction(storagePath: string): Promise<string | null> {
   return refreshPersistedMediaUrl(storagePath);
 }
+
+
+export async function getMediaUploadContextAction(): Promise<{
+  organizationId: string;
+  userId: string;
+} | null> {
+  try {
+    const identity = await resolveMediaExecutionIdentity();
+    return {
+      organizationId: identity.organizationId,
+      userId: identity.userId,
+    };
+  } catch {
+    return null;
+  }
+}
