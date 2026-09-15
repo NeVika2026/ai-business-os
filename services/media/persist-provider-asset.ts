@@ -11,6 +11,7 @@ type PersistProviderAssetInput = {
   kind: 'video' | 'image' | 'audio';
   provider: 'runway' | 'elevenlabs';
   providerAssetId: string;
+  projectId?: string | null;
   durationSeconds?: number;
   metadata?: Record<string, unknown>;
 };
@@ -73,6 +74,17 @@ export async function persistProviderAsset(
       return { persisted: false, url: sourceUrl, storagePath: null };
     }
 
+    let projectId: string | null = null;
+    if (input.projectId?.trim()) {
+      const { data: project } = await supabase
+        .from('projects')
+        .select('id')
+        .eq('id', input.projectId.trim())
+        .eq('organization_id', organizationId)
+        .maybeSingle();
+      projectId = project?.id ? String(project.id) : null;
+    }
+
     const response = await fetch(sourceUrl, { cache: 'no-store' });
 
     if (!response.ok) {
@@ -128,6 +140,7 @@ export async function persistProviderAsset(
       {
         organization_id: organizationId,
         created_by: user.id,
+        project_id: projectId,
         kind: input.kind,
         provider: input.provider,
         provider_asset_id: input.providerAssetId,
