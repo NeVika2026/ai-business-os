@@ -5,11 +5,18 @@ import {
 } from '@/utils/platform/create-studio';
 
 type CreateStudioPageProps = {
-  searchParams: Promise<{ mode?: string; project?: string }>;
+  searchParams: Promise<{
+    mode?: string;
+    project?: string;
+    goal?: string;
+    audience?: string;
+    format?: string;
+    context?: string;
+  }>;
 };
 
 export default async function CreateStudioPage({ searchParams }: CreateStudioPageProps) {
-  const { mode, project } = await searchParams;
+  const { mode, project, goal, audience, format, context } = await searchParams;
   const initialModeId = getCreateStudioMode(
     (mode ?? 'video') as CreateStudioModeId,
   ).id;
@@ -18,6 +25,10 @@ export default async function CreateStudioPage({ searchParams }: CreateStudioPag
     <CreateStudio
       initialModeId={initialModeId}
       initialProjectId={project?.trim() || null}
+      initialGoal={goal?.trim() || ''}
+      initialAudience={audience?.trim() || ''}
+      initialFormat={format?.trim() || ''}
+      initialContext={context?.trim() || ''}
     />
   );
 }
