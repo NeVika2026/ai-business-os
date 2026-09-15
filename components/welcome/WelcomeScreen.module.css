@@ -32,10 +32,15 @@
   background-size: 7px 7px, 11px 11px;
   mix-blend-mode: screen;
 }
-.stage { perspective: 1200px; transform-style: preserve-3d; }
+.stage {
+  perspective: 1400px;
+  transform-style: preserve-3d;
+  position: relative;
+  min-height: 620px;
+}
 .coreWrap {
   position: relative;
-  width: min(520px, 84vw);
+  width: min(640px, 90vw);
   aspect-ratio: 1;
   margin-inline: auto;
   transform-style: preserve-3d;
@@ -45,8 +50,9 @@
   position: absolute;
   inset: 21%;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(105,228,238,.34), rgba(241,201,108,.10) 45%, transparent 72%);
-  filter: blur(38px);
+  background:
+    radial-gradient(circle, rgba(255,255,255,.24) 0 6%, rgba(105,228,238,.46) 12%, rgba(105,228,238,.18) 28%, rgba(241,201,108,.12) 46%, transparent 72%);
+  filter: blur(28px);
   animation: breathe 3.8s ease-in-out infinite;
 }
 .orbit {
@@ -80,9 +86,48 @@
   background: var(--cyan);
   box-shadow: 0 0 18px rgba(105,228,238,.95), 0 0 40px rgba(105,228,238,.45);
 }
+.reactorHalo {
+  position: absolute;
+  inset: 34%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(255,255,255,.96) 0 4%, rgba(105,228,238,.92) 5% 10%, rgba(105,228,238,.28) 22%, rgba(241,201,108,.14) 36%, transparent 62%);
+  filter: blur(2px);
+  box-shadow:
+    0 0 28px rgba(105,228,238,.75),
+    0 0 70px rgba(105,228,238,.35),
+    0 0 120px rgba(241,201,108,.18);
+  animation: reactorPulse 2.6s ease-in-out infinite;
+}
+
+.reactorRing {
+  position: absolute;
+  inset: 27%;
+  border-radius: 50%;
+  border: 1px solid rgba(105,228,238,.22);
+  box-shadow:
+    inset 0 0 36px rgba(105,228,238,.10),
+    0 0 28px rgba(105,228,238,.12);
+  animation: reactorSpin 10s linear infinite;
+}
+
+.reactorRing::before,
+.reactorRing::after {
+  content: '';
+  position: absolute;
+  inset: 11%;
+  border-radius: inherit;
+  border: 1px dashed rgba(241,201,108,.18);
+}
+.reactorRing::after {
+  inset: 22%;
+  border-style: solid;
+  border-color: rgba(255,255,255,.08);
+}
+
 .cube {
   position: absolute;
-  inset: 31%;
+  inset: 28%;
   transform-style: preserve-3d;
   transform: rotateX(-20deg) rotateY(34deg);
   animation: cubeRotate 18s ease-in-out infinite alternate;
@@ -92,22 +137,29 @@
   inset: 0;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(255,255,255,.12);
-  background: linear-gradient(145deg, rgba(255,255,255,.08), rgba(255,255,255,.018)), rgba(8,12,18,.58);
+  border: 1px solid rgba(255,255,255,.18);
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.12), rgba(255,255,255,.02)),
+    linear-gradient(180deg, rgba(105,228,238,.035), rgba(241,201,108,.018)),
+    rgba(8,12,18,.46);
   backdrop-filter: blur(16px);
-  box-shadow: inset 0 0 34px rgba(105,228,238,.035), 0 0 55px rgba(0,0,0,.35);
+  box-shadow:
+    inset 0 0 42px rgba(105,228,238,.11),
+    inset 0 -28px 50px rgba(241,201,108,.04),
+    0 0 42px rgba(105,228,238,.10),
+    0 0 75px rgba(0,0,0,.40);
   color: rgba(255,249,237,.92);
   text-align: center;
   font-weight: 800;
   letter-spacing: .12em;
   font-size: 12px;
 }
-.front { transform: translateZ(84px); }
-.back { transform: rotateY(180deg) translateZ(84px); }
-.right { transform: rotateY(90deg) translateZ(84px); }
-.left { transform: rotateY(-90deg) translateZ(84px); }
-.top { transform: rotateX(90deg) translateZ(84px); }
-.bottom { transform: rotateX(-90deg) translateZ(84px); }
+.front { transform: translateZ(104px); }
+.back { transform: rotateY(180deg) translateZ(104px); }
+.right { transform: rotateY(90deg) translateZ(104px); }
+.left { transform: rotateY(-90deg) translateZ(104px); }
+.top { transform: rotateX(90deg) translateZ(104px); }
+.bottom { transform: rotateX(-90deg) translateZ(104px); }
 .platform {
   position: absolute;
   left: 50%;
@@ -171,12 +223,28 @@
   0%,100% { opacity: .15; transform: scale(.8); }
   50% { opacity: .95; transform: scale(1.4); }
 }
+@keyframes reactorPulse {
+  0%,100% { opacity: .72; transform: scale(.92); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+@keyframes reactorSpin {
+  to { transform: rotate(360deg); }
+}
 @keyframes sweep {
   0% { left: -40%; }
   60%,100% { left: 120%; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .coreWrap, .coreGlow, .orbitA, .orbitB, .orbitC, .cube, .spark, .metricLine::after {
+  .coreWrap, .coreGlow, .orbitA, .orbitB, .orbitC, .reactorHalo, .reactorRing, .cube, .spark, .metricLine::after {
     animation: none !important;
+  }
+}
+
+@media (min-width: 1280px) {
+  .stage {
+    transform: translateY(-14px);
+  }
+  .coreWrap {
+    width: min(690px, 48vw);
   }
 }
