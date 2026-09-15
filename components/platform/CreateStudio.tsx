@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { MediaProductionConsole } from '@/components/platform/MediaProductionConsole';
+import { VideoStoryboardStudio } from '@/components/platform/VideoStoryboardStudio';
 
 import {
   CREATE_STUDIO_MODES,
@@ -262,6 +263,15 @@ export function CreateStudio({ initialModeId = 'video' }: CreateStudioProps) {
         format={format}
         context={context}
       />
+
+      {modeId === 'video' ? (
+        <VideoStoryboardStudio
+          goal={goal}
+          audience={audience}
+          format={format}
+          context={context}
+        />
+      ) : null}
     </main>
   );
 }
