@@ -12,7 +12,7 @@ describe('Cinematic Business Zavod entrance', () => {
 
     assert.match(source, /Задача/);
     assert.match(source, /Результат выходит/);
-    assert.match(source, /OSA CORE/);
+    assert.match(source, /OSA<br\/>CORE/);
     assert.match(source, /LIVE ORCHESTRA/);
     assert.match(source, /PRODUCTION LINES/);
     assert.match(source, /bg-\[#0a0e15\]/);
