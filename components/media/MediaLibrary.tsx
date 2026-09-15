@@ -8,6 +8,7 @@ import type { MediaLibraryData, MediaLibraryItem } from '@/utils/media/load-medi
 
 type MediaLibraryProps = {
   data: MediaLibraryData;
+  initialProjectId?: string;
 };
 
 type KindFilter = 'all' | MediaLibraryItem['kind'];
@@ -56,9 +57,9 @@ function titleForItem(item: MediaLibraryItem) {
   return 'Сгенерированное видео';
 }
 
-export function MediaLibrary({ data }: MediaLibraryProps) {
+export function MediaLibrary({ data, initialProjectId = 'all' }: MediaLibraryProps) {
   const [filter, setFilter] = useState<KindFilter>('all');
-  const [projectFilter, setProjectFilter] = useState('all');
+  const [projectFilter, setProjectFilter] = useState(initialProjectId);
   const [projectLinks, setProjectLinks] = useState<Record<string, string | null>>(
     () => Object.fromEntries(data.items.map((item) => [item.id, item.projectId])),
   );
