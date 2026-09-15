@@ -16,6 +16,7 @@ type MediaProductionConsoleProps = {
   goal: string;
   format: string;
   context: string;
+  projectId?: string | null;
 };
 
 type VoiceOption = {
@@ -62,6 +63,7 @@ export function MediaProductionConsole({
   goal,
   format,
   context,
+  projectId = null,
 }: MediaProductionConsoleProps) {
   const kind = toMediaKind(modeId);
   const [approved, setApproved] = useState(false);
@@ -114,7 +116,7 @@ export function MediaProductionConsole({
     }
 
     pollRef.current = setTimeout(async () => {
-      const next = await getMediaGenerationStatusAction(kind, jobId);
+      const next = await getMediaGenerationStatusAction(kind, jobId, projectId);
       setJobStatus(next);
       if (next.status === 'failed') {
         setError('Генерация завершилась с ошибкой: ' + next.providerStatus);
@@ -124,7 +126,7 @@ export function MediaProductionConsole({
     return () => {
       if (pollRef.current) clearTimeout(pollRef.current);
     };
-  }, [kind, jobId, jobStatus]);
+  }, [kind, jobId, jobStatus, projectId]);
 
   if (!isLiveMode || !kind) {
     return (

@@ -16,9 +16,13 @@ import {
 
 type CreateStudioProps = {
   initialModeId?: CreateStudioModeId;
+  initialProjectId?: string | null;
 };
 
-export function CreateStudio({ initialModeId = 'video' }: CreateStudioProps) {
+export function CreateStudio({
+  initialModeId = 'video',
+  initialProjectId = null,
+}: CreateStudioProps) {
   const router = useRouter();
   const [modeId, setModeId] = useState<CreateStudioModeId>(
     getCreateStudioMode(initialModeId).id,
@@ -262,6 +266,7 @@ export function CreateStudio({ initialModeId = 'video' }: CreateStudioProps) {
         goal={goal}
         format={format}
         context={context}
+        projectId={initialProjectId}
       />
 
       {modeId === 'video' ? (
@@ -270,6 +275,7 @@ export function CreateStudio({ initialModeId = 'video' }: CreateStudioProps) {
           audience={audience}
           format={format}
           context={context}
+          projectId={initialProjectId}
         />
       ) : null}
     </main>

@@ -247,6 +247,7 @@ export async function startMediaGenerationAction(
 export async function getMediaGenerationStatusAction(
   kind: MediaStudioKind,
   id: string,
+  projectId?: string | null,
 ): Promise<MediaStudioStatusResult> {
   if (!id.trim()) {
     return {
@@ -298,6 +299,7 @@ export async function getMediaGenerationStatusAction(
         kind: 'audio',
         provider: 'elevenlabs',
         providerAssetId: id.trim(),
+        projectId,
       });
 
       return {
@@ -333,6 +335,7 @@ export async function getMediaGenerationStatusAction(
       kind: kind === 'image' ? 'image' : 'video',
       provider: 'runway',
       providerAssetId: id.trim(),
+      projectId,
     });
 
     return {
@@ -361,15 +364,31 @@ export async function refreshMediaAssetUrlAction(storagePath: string): Promise<s
 }
 
 
-export async function getMediaUploadContextAction(): Promise<{
+export async function getMediaUploadContextAction(projectId?: string | null): Promise<{
   organizationId: string;
   userId: string;
+  projectId: string | null;
 } | null> {
   try {
     const identity = await resolveMediaExecutionIdentity();
+    let authorizedProjectId: string | null = null;
+
+    if (projectId?.trim()) {
+      const supabase = await createClient();
+      const { data: project } = await supabase
+        .from('projects')
+        .select('id')
+        .eq('id', projectId.trim())
+        .eq('organization_id', identity.organizationId)
+        .maybeSingle();
+
+      authorizedProjectId = project?.id ? String(project.id) : null;
+    }
+
     return {
       organizationId: identity.organizationId,
       userId: identity.userId,
+      projectId: authorizedProjectId,
     };
   } catch {
     return null;
