@@ -5,17 +5,20 @@ import { ProjectGoals } from '@/components/projects/ProjectGoals';
 import { ProjectHeader } from '@/components/projects/ProjectHeader';
 import { ProjectKnowledge } from '@/components/projects/ProjectKnowledge';
 import { ProjectMembers } from '@/components/projects/ProjectMembers';
+import { ProjectMedia } from '@/components/projects/ProjectMedia';
 import { ProjectModules } from '@/components/projects/ProjectModules';
 import { ProjectOverview } from '@/components/projects/ProjectOverview';
 import { ProjectQuickActions } from '@/components/projects/ProjectQuickActions';
 import { ProjectTimeline } from '@/components/projects/ProjectTimeline';
+import type { ProjectMediaItem } from '@/utils/projects/project-media-loader';
 import type { ProjectWorkspaceData } from '@/utils/projects/project-types';
 
 type ProjectWorkspaceProps = {
   workspace: ProjectWorkspaceData;
+  media: ProjectMediaItem[];
 };
 
-export function ProjectWorkspace({ workspace }: ProjectWorkspaceProps) {
+export function ProjectWorkspace({ workspace, media }: ProjectWorkspaceProps) {
   return (
     <div className="space-y-6">
       <ProjectHeader project={workspace.project} />
@@ -26,6 +29,8 @@ export function ProjectWorkspace({ workspace }: ProjectWorkspaceProps) {
       </div>
 
       <ProjectModules modules={workspace.modules} />
+
+      <ProjectMedia projectId={workspace.project.id} media={media} />
 
       <div className="grid gap-6 xl:grid-cols-2">
         <ProjectExecutions executions={workspace.executions} />
