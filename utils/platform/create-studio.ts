@@ -163,3 +163,126 @@ export function buildCreateStudioPrompt(input: CreateStudioBrief): string {
 
   return lines.join('\n');
 }
+
+
+const STUDIO_INTENT_SIGNALS: Array<{
+  mode: CreateStudioModeId;
+  signals: string[];
+}> = [
+  {
+    mode: 'stories',
+    signals: ['сторис', 'stories', 'истории для соцсет', 'серия историй'],
+  },
+  {
+    mode: 'video',
+    signals: [
+      'видео',
+      'ролик',
+      'рилс',
+      'reels',
+      'клип',
+      'мульт',
+      'анимац',
+      'video',
+      'shorts',
+      'тикток',
+      'tiktok',
+    ],
+  },
+  {
+    mode: 'voice',
+    signals: ['озвуч', 'голос', 'voiceover', 'voice over', 'аудиодорож', 'диктор'],
+  },
+  {
+    mode: 'presentation',
+    signals: ['презентац', 'слайды', 'слайд', 'pitch deck', 'питч-дек', 'deck'],
+  },
+  {
+    mode: 'document',
+    signals: [
+      'коммерческое предложение',
+      'компред',
+      'документ',
+      'инструкц',
+      'регламент',
+      'чек-лист',
+      'чеклист',
+    ],
+  },
+  {
+    mode: 'image',
+    signals: [
+      'картин',
+      'изображен',
+      'баннер',
+      'обложк',
+      'иллюстрац',
+      'постер',
+      'фото',
+      'image',
+      'визуал',
+    ],
+  },
+];
+
+const TEXT_ONLY_SIGNALS = [
+  'пост',
+  'статья',
+  'текст для',
+  'контент-план',
+  'контент план',
+  'рассылка',
+  'email-рассылка',
+];
+
+function normalizeStudioIntent(value: string): string {
+  return value.trim().toLowerCase().replace(/ё/g, 'е');
+}
+
+/**
+ * Routes explicit production requests to Create Studio.
+ * Text-only content stays in the content pipeline; media is never silently
+ * collapsed into a post/content-plan deliverable.
+ */
+export function detectCreateStudioMode(input: string): CreateStudioModeId | null {
+  const haystack = normalizeStudioIntent(input);
+
+  if (!haystack) return null;
+
+  const matched = STUDIO_INTENT_SIGNALS.find((rule) =>
+    rule.signals.some((signal) => haystack.includes(signal)),
+  );
+
+  if (!matched) return null;
+
+  const textOnly = TEXT_ONLY_SIGNALS.some((signal) => haystack.includes(signal));
+  const hasStrongMediaIntent = ['video', 'stories', 'voice', 'image'].includes(matched.mode);
+
+  if (textOnly && !hasStrongMediaIntent) {
+    return null;
+  }
+
+  return matched.mode;
+}
+
+export function buildCreateStudioHref(
+  modeId: CreateStudioModeId,
+  goal: string,
+  options?: {
+    audience?: string;
+    format?: string;
+    context?: string;
+    projectId?: string | null;
+  },
+): string {
+  const params = new URLSearchParams();
+  params.set('mode', modeId);
+  params.set('goal', goal.trim());
+
+  if (options?.audience?.trim()) params.set('audience', options.audience.trim());
+  if (options?.format?.trim()) params.set('format', options.format.trim());
+  if (options?.context?.trim()) params.set('context', options.context.trim());
+  if (options?.projectId?.trim()) params.set('project', options.projectId.trim());
+
+  return '/modules/create/studio?' + params.toString();
+}
