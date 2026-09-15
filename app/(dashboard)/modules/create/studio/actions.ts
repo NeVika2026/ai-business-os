@@ -6,6 +6,10 @@ import { createClient } from '@/services/supabase/server';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
 import { createProductionToolRegistry } from '@/services/runtime/tools/tool-registry';
 import { createToolExecutor } from '@/services/runtime/tools/executor/tool-executor-factory';
+import {
+  persistProviderAsset,
+  refreshPersistedMediaUrl,
+} from '@/services/media/persist-provider-asset';
 
 export type MediaStudioKind = 'video' | 'image' | 'voice';
 
@@ -31,8 +35,18 @@ export type MediaStudioStatusResult =
       outputUrl: string | null;
       outputUrls: string[];
       ephemeral: boolean;
+      persisted?: boolean;
+      storagePath?: string | null;
     }
-  | { status: 'failed'; providerStatus: string; outputUrl: null; outputUrls: []; ephemeral: false };
+  | {
+      status: 'failed';
+      providerStatus: string;
+      outputUrl: null;
+      outputUrls: [];
+      ephemeral: false;
+      persisted?: false;
+      storagePath?: null;
+    };
 
 async function resolveMediaExecutionIdentity() {
   const supabase = await createClient();
@@ -265,26 +279,70 @@ export async function getMediaGenerationStatusAction(
       typeof output.status === 'string' ? output.status : 'unknown';
 
     if (kind === 'voice') {
-      const outputUrl = typeof output.outputUrl === 'string' ? output.outputUrl : null;
+      const providerUrl = typeof output.outputUrl === 'string' ? output.outputUrl : null;
+
+      if (!providerUrl) {
+        return {
+          status: normalizeVoiceStatus(providerStatus),
+          providerStatus,
+          outputUrl: null,
+          outputUrls: [],
+          ephemeral: false,
+          persisted: false,
+          storagePath: null,
+        };
+      }
+
+      const persisted = await persistProviderAsset({
+        sourceUrl: providerUrl,
+        kind: 'audio',
+        provider: 'elevenlabs',
+        providerAssetId: id.trim(),
+      });
+
       return {
         status: normalizeVoiceStatus(providerStatus),
         providerStatus,
-        outputUrl,
-        outputUrls: outputUrl ? [outputUrl] : [],
-        ephemeral: Boolean(outputUrl),
+        outputUrl: persisted.url,
+        outputUrls: [persisted.url],
+        ephemeral: !persisted.persisted,
+        persisted: persisted.persisted,
+        storagePath: persisted.storagePath,
       };
     }
 
     const outputUrls = Array.isArray(output.assetUrls)
       ? output.assetUrls.filter((item): item is string => typeof item === 'string')
       : [];
+    const providerUrl = outputUrls[0] ?? null;
+
+    if (!providerUrl) {
+      return {
+        status: normalizeRunwayStatus(providerStatus),
+        providerStatus,
+        outputUrl: null,
+        outputUrls,
+        ephemeral: Boolean(output.ephemeral),
+        persisted: false,
+        storagePath: null,
+      };
+    }
+
+    const persisted = await persistProviderAsset({
+      sourceUrl: providerUrl,
+      kind: kind === 'image' ? 'image' : 'video',
+      provider: 'runway',
+      providerAssetId: id.trim(),
+    });
 
     return {
       status: normalizeRunwayStatus(providerStatus),
       providerStatus,
-      outputUrl: outputUrls[0] ?? null,
-      outputUrls,
-      ephemeral: Boolean(output.ephemeral),
+      outputUrl: persisted.url,
+      outputUrls: [persisted.url, ...outputUrls.slice(1)],
+      ephemeral: !persisted.persisted,
+      persisted: persisted.persisted,
+      storagePath: persisted.storagePath,
     };
   } catch {
     return {
@@ -295,4 +353,9 @@ export async function getMediaGenerationStatusAction(
       ephemeral: false,
     };
   }
+}
+
+
+export async function refreshMediaAssetUrlAction(storagePath: string): Promise<string | null> {
+  return refreshPersistedMediaUrl(storagePath);
 }
