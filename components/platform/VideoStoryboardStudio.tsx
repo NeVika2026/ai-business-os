@@ -6,6 +6,7 @@ import { useMemo, useState, useTransition } from 'react';
 import {
   getMediaGenerationStatusAction,
   listMediaVoicesAction,
+  refreshMediaAssetUrlAction,
   startMediaGenerationAction,
 } from '@/app/(dashboard)/modules/create/studio/actions';
 import {
@@ -25,6 +26,7 @@ type RuntimeScene = StoryboardPlanScene & {
   taskId: string | null;
   status: 'idle' | 'pending' | 'running' | 'completed' | 'failed';
   videoUrl: string | null;
+  storagePath: string | null;
 };
 
 type VoiceOption = {
@@ -41,6 +43,7 @@ type SavedDraft = {
   scenes: RuntimeScene[];
   voiceId: string;
   voiceUrl: string | null;
+  voiceStoragePath: string | null;
 };
 
 const DRAFT_KEY = 'business-zavod:video-storyboard:v1';
@@ -86,6 +89,7 @@ export function VideoStoryboardStudio({
   const [voiceId, setVoiceId] = useState('');
   const [voiceTaskId, setVoiceTaskId] = useState('');
   const [voiceUrl, setVoiceUrl] = useState<string | null>(null);
+  const [voiceStoragePath, setVoiceStoragePath] = useState<string | null>(null);
   const [voiceStatus, setVoiceStatus] = useState<
     'idle' | 'pending' | 'running' | 'completed' | 'failed'
   >('idle');
@@ -153,10 +157,12 @@ export function VideoStoryboardStudio({
           taskId: null,
           status: 'idle',
           videoUrl: null,
+          storagePath: null,
         })),
       );
       setVoiceTaskId('');
       setVoiceUrl(null);
+      setVoiceStoragePath(null);
       setVoiceStatus('idle');
       setApproved(false);
     });
@@ -176,6 +182,7 @@ export function VideoStoryboardStudio({
         updateScene(sceneId, {
           status: 'completed',
           videoUrl: status.outputUrl,
+          storagePath: status.storagePath ?? null,
         });
         return true;
       }
@@ -197,7 +204,7 @@ export function VideoStoryboardStudio({
       for (const scene of scenes) {
         if (scene.status === 'completed' && scene.videoUrl) continue;
 
-        updateScene(scene.id, { status: 'pending', taskId: null, videoUrl: null });
+        updateScene(scene.id, { status: 'pending', taskId: null, videoUrl: null, storagePath: null });
 
         const start = await startMediaGenerationAction({
           kind: 'video',
@@ -230,7 +237,7 @@ export function VideoStoryboardStudio({
     setError('');
 
     startGenerating(async () => {
-      updateScene(scene.id, { status: 'pending', taskId: null, videoUrl: null });
+      updateScene(scene.id, { status: 'pending', taskId: null, videoUrl: null, storagePath: null });
       const start = await startMediaGenerationAction({
         kind: 'video',
         promptText: scenePrompt(scene, style, context),
@@ -289,6 +296,7 @@ export function VideoStoryboardStudio({
 
         if (status.status === 'completed' && status.outputUrl) {
           setVoiceUrl(status.outputUrl);
+          setVoiceStoragePath(status.storagePath ?? null);
           return;
         }
 
@@ -311,11 +319,12 @@ export function VideoStoryboardStudio({
       scenes,
       voiceId,
       voiceUrl,
+      voiceStoragePath,
     };
     localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
   };
 
-  const restoreDraft = () => {
+  const restoreDraft = async () => {
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
       if (!raw) {
@@ -327,10 +336,29 @@ export function VideoStoryboardStudio({
       setTitle(draft.title || '');
       setStyle(draft.style || '');
       setDurationSeconds(draft.durationSeconds || 25);
-      setScenes(Array.isArray(draft.scenes) ? draft.scenes : []);
+
+      const restoredScenes = Array.isArray(draft.scenes) ? draft.scenes : [];
+      const refreshedScenes = await Promise.all(
+        restoredScenes.map(async (scene) => {
+          if (!scene.storagePath) return scene;
+          const refreshedUrl = await refreshMediaAssetUrlAction(scene.storagePath);
+          return {
+            ...scene,
+            videoUrl: refreshedUrl || scene.videoUrl,
+            status: refreshedUrl ? 'completed' : scene.status,
+          } as RuntimeScene;
+        }),
+      );
+
+      setScenes(refreshedScenes);
       setVoiceId(draft.voiceId || '');
-      setVoiceUrl(draft.voiceUrl || null);
-      setVoiceStatus(draft.voiceUrl ? 'completed' : 'idle');
+
+      const refreshedVoiceUrl = draft.voiceStoragePath
+        ? await refreshMediaAssetUrlAction(draft.voiceStoragePath)
+        : null;
+      setVoiceUrl(refreshedVoiceUrl || draft.voiceUrl || null);
+      setVoiceStoragePath(draft.voiceStoragePath || null);
+      setVoiceStatus(refreshedVoiceUrl || draft.voiceUrl ? 'completed' : 'idle');
       setError('');
     } catch {
       setError('Черновик повреждён и не может быть восстановлен.');
