@@ -93,6 +93,7 @@ export const BUSINESS_ZAVOD_NAVIGATION: PlatformNavigationItem[] = [
     moduleId: module.id,
   })),
   { label: 'Проекты', href: '/projects', icon: 'projects' },
+  { label: 'Медиа', href: '/media', icon: '◫' },
   { label: 'Файлы', href: '/knowledge', icon: '📁' },
   { label: 'Интеграции', href: '/settings', icon: '⌘' },
 ];
