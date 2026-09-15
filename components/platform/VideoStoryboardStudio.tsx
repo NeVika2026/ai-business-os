@@ -21,6 +21,7 @@ type VideoStoryboardStudioProps = {
   audience: string;
   format: string;
   context: string;
+  projectId?: string | null;
 };
 
 type RuntimeScene = StoryboardPlanScene & {
@@ -77,7 +78,9 @@ export function VideoStoryboardStudio({
   audience,
   format,
   context,
+  projectId = null,
 }: VideoStoryboardStudioProps) {
+  const draftKey = projectId ? DRAFT_KEY + ':' + projectId : DRAFT_KEY;
   const [durationSeconds, setDurationSeconds] = useState(25);
   const [title, setTitle] = useState('');
   const [style, setStyle] = useState('');
@@ -172,7 +175,7 @@ export function VideoStoryboardStudio({
   const pollScene = async (sceneId: string, taskId: string) => {
     for (let attempt = 0; attempt < 80; attempt += 1) {
       await sleep(3000);
-      const status = await getMediaGenerationStatusAction('video', taskId);
+      const status = await getMediaGenerationStatusAction('video', taskId, projectId);
 
       if (status.status === 'running' || status.status === 'pending') {
         updateScene(sceneId, { status: status.status });
@@ -292,7 +295,7 @@ export function VideoStoryboardStudio({
 
       for (let attempt = 0; attempt < 80; attempt += 1) {
         await sleep(2500);
-        const status = await getMediaGenerationStatusAction('voice', start.id);
+        const status = await getMediaGenerationStatusAction('voice', start.id, projectId);
         setVoiceStatus(status.status);
 
         if (status.status === 'completed' && status.outputUrl) {
@@ -322,12 +325,12 @@ export function VideoStoryboardStudio({
       voiceUrl,
       voiceStoragePath,
     };
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    localStorage.setItem(draftKey, JSON.stringify(draft));
   };
 
   const restoreDraft = async () => {
     try {
-      const raw = localStorage.getItem(DRAFT_KEY);
+      const raw = localStorage.getItem(draftKey);
       if (!raw) {
         setError('Сохранённый черновик не найден.');
         return;
@@ -673,6 +676,7 @@ export function VideoStoryboardStudio({
                 title={title || goal || 'Видео Бизнес-Завода'}
                 scenes={previewScenes}
                 voiceUrl={voiceUrl}
+                projectId={projectId}
               />
             ) : null}
             </>
