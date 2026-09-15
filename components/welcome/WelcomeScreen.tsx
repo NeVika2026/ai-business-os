@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 
 import { generateFirstPlan } from '@/app/login/actions';
+import styles from '@/components/welcome/WelcomeScreen.module.css';
 
 const QUICK_TASKS = [
   'Сделай рекламный ролик для моего продукта',
@@ -13,27 +14,20 @@ const QUICK_TASKS = [
   'Разбери конкурентов и предложи отстройку',
 ] as const;
 
-const MODULES = [
-  { title: 'Создать', text: 'Видео, картинки, сторис, презентации и документы', mark: '✦' },
-  { title: 'Продать', text: 'Офферы, скрипты, воронки и коммерческие предложения', mark: '₽' },
-  { title: 'Продвинуть', text: 'Контент, реклама и полноценные маркетинговые комплекты', mark: '↗' },
-  { title: 'Найти', text: 'Клиенты, объекты, партнёры и новые возможности', mark: '⌕' },
-  { title: 'Проанализировать', text: 'Конкуренты, данные, риски и варианты решений', mark: '◫' },
-  { title: 'Автоматизировать', text: 'Повторяющиеся процессы и рабочие цепочки', mark: '⚡' },
+const LINES = [
+  ['01', 'СОЗДАТЬ', 'Видео · визуал · документы'],
+  ['02', 'ПРОДАТЬ', 'Офферы · скрипты · воронки'],
+  ['03', 'ПРОДВИНУТЬ', 'Контент · реклама · трафик'],
+  ['04', 'НАЙТИ', 'Клиенты · партнёры · возможности'],
+  ['05', 'АНАЛИЗ', 'Рынок · риски · решения'],
+  ['06', 'АВТОМАТИЗИРОВАТЬ', 'Рутина · процессы · лиды'],
 ] as const;
 
-const SCENARIOS = [
-  { title: 'Фото → рекламный ролик', badge: 'Видео', meta: 'Сценарий · сцены · голос · монтаж' },
-  { title: 'Услуга → полный маркетинг', badge: 'Маркетинг', meta: 'Оффер · ЦА · контент · реклама' },
-  { title: 'Объект → сторис и посты', badge: 'Контент', meta: 'Хуки · визуалы · CTA' },
-  { title: 'Идея → презентация', badge: 'Документы', meta: 'Структура · тексты · подача' },
-] as const;
-
-const TEAM = [
-  ['AI-маркетолог', 'Продвижение и офферы'],
-  ['AI-продажник', 'Скрипты и воронки'],
-  ['AI-контентмейкер', 'Видео и визуалы'],
-  ['AI-аналитик', 'Исследования и решения'],
+const AGENTS = [
+  ['AI-маркетолог', 'ONLINE'],
+  ['AI-продажник', 'ONLINE'],
+  ['AI-контентмейкер', 'READY'],
+  ['AI-аналитик', 'READY'],
 ] as const;
 
 function SubmitButton({ disabled }: { disabled: boolean }) {
@@ -43,76 +37,87 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
     <button
       type="submit"
       disabled={disabled || pending}
-      className="inline-flex h-12 items-center justify-center rounded-2xl bg-[#17151f] px-5 text-sm font-semibold text-white shadow-[0_12px_32px_-18px_rgba(23,21,31,.9)] transition hover:-translate-y-0.5 hover:bg-black disabled:cursor-not-allowed disabled:opacity-40"
+      className="group inline-flex h-12 shrink-0 items-center justify-center rounded-[16px] bg-[linear-gradient(135deg,#f2d474,#c68a26)] px-5 text-sm font-extrabold text-[#181006] shadow-[0_16px_34px_-20px_rgba(241,201,108,.9)] transition hover:-translate-y-0.5 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:translate-y-0"
     >
-      {pending ? 'OSA собирает первый результат…' : 'Запустить задачу →'}
+      {pending ? 'OSA запускает завод…' : 'Запустить производство →'}
     </button>
   );
 }
 
 export function WelcomeScreen() {
   const [task, setTask] = useState('');
-
   const examples = useMemo(() => QUICK_TASKS, []);
   const canSubmit = task.trim().length > 2;
 
   return (
-    <main className="min-h-dvh overflow-x-hidden bg-[#f7f6f2] text-[#17151f]">
-      <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
-        <div className="absolute -left-20 top-8 h-[380px] w-[380px] rounded-full bg-[#d9efff] blur-3xl opacity-70" />
-        <div className="absolute right-[-120px] top-[140px] h-[420px] w-[420px] rounded-full bg-[#f4d7ff] blur-3xl opacity-55" />
-        <div className="absolute left-[34%] top-[520px] h-[300px] w-[300px] rounded-full bg-[#fff0c9] blur-3xl opacity-55" />
-      </div>
+    <main className={styles.screen}>
+      <div className={styles.grid} aria-hidden="true" />
+      <div className={styles.noise} aria-hidden="true" />
 
-      <div className="relative mx-auto w-full max-w-[1280px] px-5 pb-16 sm:px-8 lg:px-10">
-        <header className="flex h-20 items-center justify-between border-b border-black/[0.06]">
+      <div className="relative mx-auto w-full max-w-[1480px] px-5 pb-20 sm:px-8 lg:px-10">
+        <header className="flex h-20 items-center justify-between border-b border-white/[0.07]">
           <Link href="/login" className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#17151f] text-sm font-bold text-white shadow-sm">
+            <span className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-[14px] border border-[#f1c96c]/25 bg-[#0b0e14] text-[11px] font-black tracking-[.08em] text-[#f1c96c] shadow-[0_0_30px_rgba(241,201,108,.08)]">
               БЗ
+              <span className="absolute inset-x-1 bottom-1 h-px bg-[linear-gradient(90deg,transparent,#69e4ee,transparent)]" />
             </span>
             <span>
-              <span className="block text-sm font-bold tracking-[0.16em]">БИЗНЕС ЗАВОД</span>
-              <span className="block text-[10px] uppercase tracking-[0.18em] text-black/40">OSA inside</span>
+              <span className="block text-[12px] font-black tracking-[0.22em] text-[#fff8e7]">БИЗНЕС ЗАВОД</span>
+              <span className="block text-[9px] uppercase tracking-[0.22em] text-white/28">OSA OPERATING SYSTEM</span>
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-7 text-sm text-black/55 md:flex">
-            <a href="#possibilities" className="transition hover:text-black">Возможности</a>
-            <a href="#scenarios" className="transition hover:text-black">Сценарии</a>
-            <a href="#team" className="transition hover:text-black">AI-команда</a>
-          </nav>
+          <div className="hidden items-center gap-2 lg:flex">
+            <span className="rounded-full border border-emerald-300/10 bg-emerald-300/[0.04] px-3 py-1.5 text-[9px] font-bold tracking-[.14em] text-emerald-200/70">
+              ● FACTORY ONLINE
+            </span>
+            <span className="rounded-full border border-white/[0.07] px-3 py-1.5 text-[9px] tracking-[.12em] text-white/30">
+              AI TEAM READY
+            </span>
+          </div>
 
           <Link
             href="/login/sign-in"
-            className="rounded-xl border border-black/10 bg-white/70 px-4 py-2.5 text-sm font-semibold shadow-sm backdrop-blur transition hover:bg-white"
+            className="rounded-[14px] border border-white/[0.09] bg-white/[0.045] px-4 py-2.5 text-xs font-semibold text-white/75 backdrop-blur transition hover:border-[#69e4ee]/30 hover:bg-white/[0.07] hover:text-white"
           >
             Войти
           </Link>
         </header>
 
-        <section className="grid min-h-[620px] items-center gap-10 py-14 lg:grid-cols-[1.06fr_.94fr] lg:py-20">
-          <div className="max-w-3xl">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-black/[0.07] bg-white/70 px-3 py-2 text-xs font-medium text-black/55 shadow-sm backdrop-blur">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              AI-команда, которая делает работу, а не просто советует
+        <section className="grid min-h-[760px] items-center gap-8 py-10 xl:grid-cols-[.94fr_1.06fr] xl:py-14">
+          <div className="relative z-[2] max-w-[740px]">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#69e4ee]/14 bg-[#69e4ee]/[0.045] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#9debf2]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#69e4ee] shadow-[0_0_12px_rgba(105,228,238,.8)]" />
+              Не чат. Не каталог AI. Рабочий завод.
             </div>
 
-            <h1 className="text-[46px] font-semibold leading-[0.98] tracking-[-0.055em] sm:text-[64px] lg:text-[78px]">
-              Скажи, что нужно сделать.
-              <span className="mt-2 block bg-gradient-to-r from-[#6258ff] via-[#a14ed5] to-[#e27477] bg-clip-text text-transparent">
-                Остальное соберёт OSA.
+            <p className="text-[10px] font-black uppercase tracking-[0.26em] text-[#f1c96c]">
+              INPUT → ORCHESTRATE → BUILD → VERIFY → RESULT
+            </p>
+
+            <h1 className="mt-4 max-w-[760px] text-[clamp(3.8rem,7vw,7.7rem)] font-semibold leading-[.82] tracking-[-0.075em] text-[#fff8e7]">
+              Задача
+              <span className="block text-white/26">входит.</span>
+              <span className="block bg-[linear-gradient(90deg,#fff7de_0%,#f1c96c_43%,#69e4ee_100%)] bg-clip-text text-transparent">
+                Результат выходит.
               </span>
             </h1>
 
-            <p className="mt-6 max-w-2xl text-base leading-7 text-black/52 sm:text-lg">
-              Одна платформа для контента, продаж, маркетинга, поиска, анализа и автоматизации.
-              Не выбирай нейросеть — просто поставь задачу.
+            <p className="mt-7 max-w-2xl text-sm leading-6 text-white/40 sm:text-base sm:leading-7">
+              OSA сама собирает AI-команду, подключает инструменты, ведёт производство и
+              возвращает готовую работу. Без выбора нейросетей и ручной сборки цепочки.
             </p>
 
             <form
               action={generateFirstPlan}
-              className="mt-8 rounded-[28px] border border-black/[0.08] bg-white/85 p-3 shadow-[0_28px_90px_-54px_rgba(61,52,103,.65)] backdrop-blur-xl"
+              className="mt-8 overflow-hidden rounded-[24px] border border-white/[0.09] bg-[#0a0e15]/88 p-3 shadow-[0_34px_100px_-48px_rgba(0,0,0,.95)] backdrop-blur-2xl"
             >
+              <div className="flex items-center justify-between px-2 pb-2">
+                <span className="text-[9px] font-bold uppercase tracking-[0.17em] text-white/25">
+                  DIRECTOR CONSOLE
+                </span>
+                <span className="text-[9px] text-[#69e4ee]/60">OSA слушает</span>
+              </div>
               <label htmlFor="bz-task" className="sr-only">Что нужно сделать</label>
               <textarea
                 id="bz-task"
@@ -120,15 +125,21 @@ export function WelcomeScreen() {
                 value={task}
                 onChange={(event) => setTask(event.target.value)}
                 rows={3}
-                placeholder="Например: сделай серию сторис про страхование квартиры и приведи к заявке"
-                className="min-h-[112px] w-full resize-none bg-transparent px-4 py-4 text-base leading-7 text-[#17151f] outline-none placeholder:text-black/30"
+                placeholder="Напиши задачу обычными словами…"
+                className="min-h-[118px] w-full resize-none rounded-[16px] border border-white/[0.05] bg-black/20 px-4 py-4 text-base leading-7 text-[#fff8e7] outline-none placeholder:text-white/18 focus:border-[#69e4ee]/18"
               />
-              <div className="flex flex-col gap-3 border-t border-black/[0.06] pt-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-wrap gap-2 px-1">
-                  <span className="rounded-full bg-[#f0efff] px-3 py-1.5 text-xs font-medium text-[#6258ff]">Auto</span>
-                  <span className="rounded-full bg-[#f4f4f1] px-3 py-1.5 text-xs text-black/45">Текст</span>
-                  <span className="rounded-full bg-[#f4f4f1] px-3 py-1.5 text-xs text-black/45">Файлы</span>
-                  <span className="rounded-full bg-[#f4f4f1] px-3 py-1.5 text-xs text-black/45">Медиа</span>
+                  {['AI-директор', 'Файлы', 'Медиа', 'Инструменты'].map((label, index) => (
+                    <span
+                      key={label}
+                      className={index === 0
+                        ? 'rounded-full border border-[#69e4ee]/13 bg-[#69e4ee]/[0.045] px-3 py-1.5 text-[10px] font-semibold text-[#9debf2]'
+                        : 'rounded-full border border-white/[0.06] px-3 py-1.5 text-[10px] text-white/28'}
+                    >
+                      {label}
+                    </span>
+                  ))}
                 </div>
                 <SubmitButton disabled={!canSubmit} />
               </div>
@@ -140,125 +151,137 @@ export function WelcomeScreen() {
                   key={example}
                   type="button"
                   onClick={() => setTask(example)}
-                  className="rounded-full border border-black/[0.07] bg-white/55 px-3 py-2 text-xs text-black/50 backdrop-blur transition hover:bg-white hover:text-black"
+                  className="rounded-full border border-white/[0.065] bg-white/[0.025] px-3 py-2 text-[10px] text-white/32 transition hover:border-[#69e4ee]/16 hover:bg-white/[0.045] hover:text-white/60"
                 >
                   {example}
                 </button>
               ))}
             </div>
+
+            <div className="mt-8 grid max-w-2xl grid-cols-3 gap-2">
+              {[
+                ['7', 'цехов'],
+                ['1', 'AI-директор'],
+                ['∞', 'комбинаций'],
+              ].map(([value, label]) => (
+                <div
+                  key={label}
+                  className="rounded-[16px] border border-white/[0.055] bg-white/[0.02] px-4 py-3"
+                >
+                  <p className="text-lg font-semibold text-[#fff8e7]">{value}</p>
+                  <p className="mt-0.5 text-[9px] uppercase tracking-[.12em] text-white/22">{label}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="relative mx-auto w-full max-w-[560px]">
-            <div className="absolute -inset-8 rounded-[44px] bg-gradient-to-br from-[#d9efff]/70 via-[#f6e5ff]/50 to-[#fff1d5]/70 blur-2xl" />
-            <div className="relative overflow-hidden rounded-[36px] border border-white/80 bg-white/72 p-5 shadow-[0_35px_110px_-58px_rgba(55,47,91,.62)] backdrop-blur-2xl sm:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.18em] text-black/35">AI-директор</p>
-                  <h2 className="mt-1 text-xl font-semibold">OSA собирает команду</h2>
-                </div>
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#6258ff] to-[#c66ae8] text-white shadow-lg shadow-[#6258ff]/20">✦</span>
+          <div className={styles.stage}>
+            <div className={styles.coreWrap} aria-hidden="true">
+              <div className={styles.coreGlow} />
+              <div className={[styles.orbit, styles.orbitA].join(' ')}><span className={styles.orbitDot} /></div>
+              <div className={[styles.orbit, styles.orbitB].join(' ')}><span className={styles.orbitDot} /></div>
+              <div className={[styles.orbit, styles.orbitC].join(' ')} />
+              <div className={styles.beam} />
+              <div className={[styles.spark, styles.spark1].join(' ')} />
+              <div className={[styles.spark, styles.spark2].join(' ')} />
+              <div className={[styles.spark, styles.spark3].join(' ')} />
+              <div className={[styles.spark, styles.spark4].join(' ')} />
+              <div className={styles.cube}>
+                <div className={[styles.face, styles.front].join(' ')}>OSA<br/>CORE</div>
+                <div className={[styles.face, styles.back].join(' ')}>BUILD<br/>OUTPUT</div>
+                <div className={[styles.face, styles.right].join(' ')}>AI<br/>TEAM</div>
+                <div className={[styles.face, styles.left].join(' ')}>TOOLS<br/>LIVE</div>
+                <div className={[styles.face, styles.top].join(' ')}>INPUT<br/>IDEA</div>
+                <div className={[styles.face, styles.bottom].join(' ')}>RESULT<br/>READY</div>
               </div>
+              <div className={styles.platform} />
+            </div>
 
-              <div className="mt-6 rounded-[24px] bg-[#17151f] p-5 text-white">
-                <p className="text-xs uppercase tracking-[0.15em] text-white/40">Задача</p>
-                <p className="mt-2 text-base leading-6">Запустить продвижение услуги и собрать первые заявки.</p>
-                <div className="mt-5 grid grid-cols-2 gap-2">
-                  {TEAM.map(([name]) => (
-                    <div key={name} className="rounded-2xl border border-white/10 bg-white/[0.06] p-3 text-xs text-white/70">
-                      <span className="mr-2 inline-block h-2 w-2 rounded-full bg-[#8bffbf]" />
-                      {name}
+            <div className="relative z-[2] -mt-12 grid gap-3 md:grid-cols-[1.15fr_.85fr]">
+              <div className="rounded-[22px] border border-white/[0.075] bg-[#0a0e15]/76 p-4 shadow-[0_24px_70px_-42px_rgba(0,0,0,.9)] backdrop-blur-2xl">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-[.18em] text-[#69e4ee]">
+                      LIVE ORCHESTRA
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-[#fff8e7]">OSA собирает смену</p>
+                  </div>
+                  <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_14px_rgba(110,255,179,.65)]" />
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  {AGENTS.map(([name, status], index) => (
+                    <div
+                      key={name}
+                      className={[styles.metricLine, 'rounded-[14px] border border-white/[0.055] bg-white/[0.025] px-3 py-2.5'].join(' ')}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-[10px] font-semibold text-white/65">{name}</span>
+                        <span className={index < 2 ? 'text-[8px] text-emerald-200/60' : 'text-[8px] text-[#f1c96c]/55'}>
+                          {status}
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-[22px] border border-black/[0.06] bg-white p-4">
-                  <p className="text-[11px] uppercase tracking-[0.14em] text-black/35">Результат 01</p>
-                  <div className="mt-3 h-24 rounded-2xl bg-gradient-to-br from-[#d9eaff] via-[#ded9ff] to-[#ffd9e7]" />
-                  <p className="mt-3 text-sm font-semibold">Креативы готовы</p>
+              <div className="rounded-[22px] border border-[#f1c96c]/12 bg-[#f1c96c]/[0.035] p-4 backdrop-blur-2xl">
+                <p className="text-[9px] font-black uppercase tracking-[.18em] text-[#f1c96c]">OUTPUT</p>
+                <div className="mt-4 space-y-2">
+                  {['Стратегия', 'Креативы', 'Видео', 'Лиды'].map((item, index) => (
+                    <div key={item} className="flex items-center justify-between text-[10px]">
+                      <span className="text-white/40">{item}</span>
+                      <span className={index < 3 ? 'text-emerald-200/55' : 'text-white/20'}>
+                        {index < 3 ? 'READY' : 'NEXT'}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-                <div className="rounded-[22px] border border-black/[0.06] bg-white p-4">
-                  <p className="text-[11px] uppercase tracking-[0.14em] text-black/35">Результат 02</p>
-                  <div className="mt-3 flex h-24 items-end gap-2 rounded-2xl bg-[#f5f3ef] p-3">
-                    <span className="h-[38%] flex-1 rounded-t-lg bg-[#ffb86b]" />
-                    <span className="h-[72%] flex-1 rounded-t-lg bg-[#766cff]" />
-                    <span className="h-[54%] flex-1 rounded-t-lg bg-[#c876e6]" />
-                    <span className="h-[88%] flex-1 rounded-t-lg bg-[#68c7c1]" />
-                  </div>
-                  <p className="mt-3 text-sm font-semibold">Стратегия собрана</p>
+                <div className="mt-4 h-1 overflow-hidden rounded-full bg-white/[0.05]">
+                  <div className="h-full w-[76%] bg-[linear-gradient(90deg,#69e4ee,#f1c96c)]" />
                 </div>
+                <p className="mt-2 text-right text-[9px] text-white/20">76%</p>
               </div>
             </div>
           </div>
         </section>
 
-        <section id="possibilities" className="py-12">
-          <div className="mb-7 max-w-2xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6258ff]">Не каталог нейросетей</p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">Выбирай результат, а не инструмент.</h2>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-            {MODULES.map((item) => (
-              <article key={item.title} className="rounded-[26px] border border-black/[0.06] bg-white/72 p-5 backdrop-blur transition hover:-translate-y-0.5 hover:bg-white">
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f0efff] text-lg text-[#6258ff]">{item.mark}</span>
-                <h3 className="mt-4 text-lg font-semibold">{item.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-black/48">{item.text}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section id="scenarios" className="py-12">
-          <div className="rounded-[36px] bg-[#17151f] p-6 text-white sm:p-8 lg:p-10">
-            <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#9e97ff]">Готовые сценарии</p>
-                <h2 className="mt-2 text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">Запуск без пустого экрана.</h2>
-              </div>
-              <p className="max-w-md text-sm leading-6 text-white/45">Выбираешь сценарий, добавляешь исходник — OSA сама собирает рабочую цепочку.</p>
+        <section className="border-t border-white/[0.06] py-10">
+          <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-[.2em] text-[#f1c96c]">PRODUCTION LINES</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-[-.04em] text-[#fff8e7] sm:text-3xl">
+                Не сервисы. Цеха результата.
+              </h2>
             </div>
+            <p className="max-w-md text-xs leading-5 text-white/28">
+              Пользователь ставит задачу. Завод сам выбирает людей, AI, инструменты и порядок работы.
+            </p>
+          </div>
 
-            <div className="mt-7 grid gap-3 md:grid-cols-2">
-              {SCENARIOS.map((scenario, index) => (
-                <article key={scenario.title} className="rounded-[24px] border border-white/10 bg-white/[0.055] p-5 transition hover:bg-white/[0.08]">
-                  <div className="flex items-center justify-between">
-                    <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] text-white/60">{scenario.badge}</span>
-                    <span className="text-xs text-white/25">0{index + 1}</span>
+          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+            {LINES.map(([number, title, text]) => (
+              <div
+                key={title}
+                className="group relative overflow-hidden rounded-[20px] border border-white/[0.06] bg-white/[0.018] p-4 transition hover:-translate-y-0.5 hover:border-[#69e4ee]/16 hover:bg-white/[0.03]"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <span className="text-[9px] font-black tracking-[.18em] text-[#69e4ee]/55">LINE {number}</span>
+                    <h3 className="mt-4 text-sm font-bold tracking-[.08em] text-[#fff8e7]">{title}</h3>
+                    <p className="mt-1 text-[10px] leading-5 text-white/28">{text}</p>
                   </div>
-                  <h3 className="mt-6 text-xl font-semibold">{scenario.title}</h3>
-                  <p className="mt-2 text-sm text-white/40">{scenario.meta}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section id="team" className="grid gap-6 py-12 lg:grid-cols-[.9fr_1.1fr]">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6258ff]">AI-команда</p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">OSA сама решает, кого подключить.</h2>
-            <p className="mt-4 max-w-xl text-sm leading-7 text-black/50">Маркетолог, аналитик, продажник, контентмейкер и другие специалисты работают внутри одного проекта и передают результат друг другу.</p>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {TEAM.map(([name, role], index) => (
-              <div key={name} className="flex items-center gap-4 rounded-[22px] border border-black/[0.06] bg-white/70 p-4">
-                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[#e7e7ff] to-[#f5dcff] text-sm font-bold text-[#6258ff]">{index + 1}</span>
-                <div>
-                  <p className="text-sm font-semibold">{name}</p>
-                  <p className="mt-1 text-xs text-black/42">{role}</p>
+                  <span className="mt-1 text-white/12 transition group-hover:text-[#69e4ee]/55">↗</span>
                 </div>
               </div>
             ))}
           </div>
         </section>
 
-        <footer className="mt-6 flex flex-col gap-4 border-t border-black/[0.06] py-8 text-sm text-black/42 sm:flex-row sm:items-center sm:justify-between">
-          <div>Бизнес Завод · OSA inside</div>
-          <div className="flex gap-5">
-            <Link href="/login/sign-in" className="hover:text-black">Войти</Link>
-            <span>AI-платформа для реальной работы</span>
-          </div>
+        <footer className="flex flex-col gap-3 border-t border-white/[0.06] py-8 text-[10px] uppercase tracking-[.12em] text-white/22 sm:flex-row sm:items-center sm:justify-between">
+          <span>BUSINESS ZAVOD · OSA INSIDE · 2026</span>
+          <span>Задача → Производство → Проверка → Результат</span>
         </footer>
       </div>
     </main>
