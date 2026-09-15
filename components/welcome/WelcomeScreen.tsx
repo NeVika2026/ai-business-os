@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 
 import { generateFirstPlan } from '@/app/login/actions';
+import { BusinessFactoryHero } from '@/components/home/BusinessFactoryHero';
 import styles from '@/components/welcome/WelcomeScreen.module.css';
 
 const QUICK_TASKS = [
@@ -176,50 +177,31 @@ export function WelcomeScreen() {
           </div>
 
           <div className={styles.stage}>
-            <div className={styles.coreWrap} aria-hidden="true">
-              <div className={styles.coreGlow} />
-              <div className={styles.reactorRing} />
-              <div className={styles.reactorHalo} />
-              <div className={[styles.orbit, styles.orbitA].join(' ')}><span className={styles.orbitDot} /></div>
-              <div className={[styles.orbit, styles.orbitB].join(' ')}><span className={styles.orbitDot} /></div>
-              <div className={[styles.orbit, styles.orbitC].join(' ')} />
-              <div className={styles.beam} />
-              <div className={[styles.spark, styles.spark1].join(' ')} />
-              <div className={[styles.spark, styles.spark2].join(' ')} />
-              <div className={[styles.spark, styles.spark3].join(' ')} />
-              <div className={[styles.spark, styles.spark4].join(' ')} />
-              <div className={styles.cube}>
-                <div className={[styles.face, styles.front].join(' ')}>OSA<br/>CORE</div>
-                <div className={[styles.face, styles.back].join(' ')}>BUILD<br/>OUTPUT</div>
-                <div className={[styles.face, styles.right].join(' ')}>AI<br/>TEAM</div>
-                <div className={[styles.face, styles.left].join(' ')}>TOOLS<br/>LIVE</div>
-                <div className={[styles.face, styles.top].join(' ')}>INPUT<br/>IDEA</div>
-                <div className={[styles.face, styles.bottom].join(' ')}>RESULT<br/>READY</div>
-              </div>
-              <div className={styles.platform} />
+            <div className="relative z-[2] mx-auto w-full max-w-[690px]">
+              <BusinessFactoryHero />
             </div>
 
-            <div className="relative z-[2] -mt-16 grid gap-3 md:grid-cols-[1.12fr_.88fr] xl:gap-4">
-              <div className="rounded-[24px] border border-[#69e4ee]/12 bg-[#0a0e15]/84 p-5 shadow-[0_24px_80px_-42px_rgba(0,0,0,.95),0_0_38px_-24px_rgba(105,228,238,.45)] backdrop-blur-2xl">
+            <div className="relative z-[3] -mt-7 grid gap-3 md:grid-cols-[1.12fr_.88fr] xl:gap-4">
+              <div className="rounded-[24px] border border-[#69e4ee]/18 bg-[#050a11]/88 p-5 shadow-[0_24px_80px_-42px_rgba(0,0,0,.95),0_0_46px_-24px_rgba(105,228,238,.5)] backdrop-blur-2xl">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-[9px] font-black uppercase tracking-[.18em] text-[#69e4ee]">
-                      LIVE ORCHESTRA
+                      LIVE FACTORY
                     </p>
-                    <p className="mt-1 text-sm font-semibold text-[#fff8e7]">OSA собирает смену</p>
+                    <p className="mt-1 text-sm font-semibold text-[#fff8e7]">OSA собирает нужный цех</p>
                   </div>
-                  <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_14px_rgba(110,255,179,.65)]" />
+                  <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_18px_rgba(110,255,179,.85)]" />
                 </div>
 
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   {AGENTS.map(([name, status], index) => (
                     <div
                       key={name}
-                      className={[styles.metricLine, 'rounded-[14px] border border-white/[0.055] bg-white/[0.025] px-3 py-2.5'].join(' ')}
+                      className={[styles.metricLine, 'rounded-[14px] border border-white/[0.065] bg-white/[0.028] px-3 py-2.5'].join(' ')}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="truncate text-[10px] font-semibold text-white/65">{name}</span>
-                        <span className={index < 2 ? 'text-[8px] text-emerald-200/60' : 'text-[8px] text-[#f1c96c]/55'}>
+                        <span className="truncate text-[10px] font-semibold text-white/70">{name}</span>
+                        <span className={index < 2 ? 'text-[8px] text-emerald-200/65' : 'text-[8px] text-[#f1c96c]/65'}>
                           {status}
                         </span>
                       </div>
@@ -228,22 +210,22 @@ export function WelcomeScreen() {
                 </div>
               </div>
 
-              <div className="rounded-[24px] border border-[#f1c96c]/18 bg-[#f1c96c]/[0.045] p-5 shadow-[0_24px_70px_-44px_rgba(0,0,0,.92),0_0_34px_-26px_rgba(241,201,108,.38)] backdrop-blur-2xl">
+              <div className="rounded-[24px] border border-[#f1c96c]/22 bg-[linear-gradient(145deg,rgba(241,201,108,.07),rgba(105,228,238,.025))] p-5 shadow-[0_24px_70px_-44px_rgba(0,0,0,.92),0_0_42px_-24px_rgba(241,201,108,.4)] backdrop-blur-2xl">
                 <p className="text-[9px] font-black uppercase tracking-[.18em] text-[#f1c96c]">OUTPUT</p>
                 <div className="mt-4 space-y-2">
-                  {['Стратегия', 'Креативы', 'Видео', 'Лиды'].map((item, index) => (
+                  {['Видео', 'Визуал', 'Продажи', 'Аналитика'].map((item, index) => (
                     <div key={item} className="flex items-center justify-between text-[10px]">
-                      <span className="text-white/40">{item}</span>
-                      <span className={index < 3 ? 'text-emerald-200/55' : 'text-white/20'}>
+                      <span className="text-white/45">{item}</span>
+                      <span className={index < 3 ? 'text-emerald-200/60' : 'text-white/25'}>
                         {index < 3 ? 'READY' : 'NEXT'}
                       </span>
                     </div>
                   ))}
                 </div>
-                <div className="mt-4 h-1 overflow-hidden rounded-full bg-white/[0.05]">
-                  <div className="h-full w-[76%] bg-[linear-gradient(90deg,#69e4ee,#f1c96c)]" />
+                <div className="mt-4 h-1 overflow-hidden rounded-full bg-white/[0.06]">
+                  <div className="h-full w-[82%] bg-[linear-gradient(90deg,#69e4ee,#f1c96c)] shadow-[0_0_12px_rgba(105,228,238,.45)]" />
                 </div>
-                <p className="mt-2 text-right text-[9px] text-white/20">76%</p>
+                <p className="mt-2 text-right text-[9px] text-white/24">82%</p>
               </div>
             </div>
           </div>
