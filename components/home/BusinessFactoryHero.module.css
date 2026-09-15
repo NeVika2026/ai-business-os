@@ -119,6 +119,42 @@
   transform-style: preserve-3d;
 }
 
+.graph {
+  position: absolute;
+  inset: 3% 1% 2%;
+  z-index: 1;
+  width: 98%;
+  height: 95%;
+  overflow: visible;
+  opacity: .96;
+}
+
+.link,
+.crossLink {
+  vector-effect: non-scaling-stroke;
+  stroke-width: .38;
+  stroke: rgba(89, 219, 244, .17);
+  stroke-linecap: round;
+}
+
+.crossLink {
+  stroke-width: .24;
+  stroke: rgba(255,255,255,.075);
+}
+
+.link {
+  stroke-dasharray: 2.4 2.8;
+  animation: graphFlow 8s linear infinite;
+}
+
+.linkActive {
+  stroke: url(#bz-core-line);
+  stroke-width: .72;
+  stroke-dasharray: 4.5 2;
+  animation: graphFlowActive 2.2s linear infinite;
+}
+
+
 .floor {
   position: absolute;
   left: 50%;
@@ -303,36 +339,96 @@
 .nodeField {
   position: absolute;
   inset: 0;
+  z-index: 4;
 }
 
 .node {
   position: absolute;
-  min-width: 78px;
-  border: 1px solid rgba(102,227,255,.13);
-  border-radius: 13px;
-  background: rgba(4,9,16,.74);
-  padding: 7px 9px;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 10px 30px rgba(0,0,0,.22);
+  min-width: 72px;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(102,227,255,.12);
+  border-radius: 14px;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.045), rgba(255,255,255,.015)),
+    rgba(3,8,15,.76);
+  padding: 7px 10px 8px;
+  backdrop-filter: blur(14px);
+  box-shadow:
+    0 12px 30px rgba(0,0,0,.25),
+    inset 0 1px 0 rgba(255,255,255,.025);
+  transition:
+    border-color .35s ease,
+    box-shadow .35s ease,
+    transform .35s ease,
+    background .35s ease;
+  animation: nodeDrift 6.5s ease-in-out infinite;
 }
+
+.node:nth-child(2n) { animation-delay: -1.6s; }
+.node:nth-child(3n) { animation-delay: -3.2s; }
+
+.node::before {
+  content:'';
+  position:absolute;
+  inset:-1px;
+  border-radius:inherit;
+  opacity:.18;
+  background:linear-gradient(115deg,transparent 15%,rgba(94,227,255,.22),transparent 52%,rgba(255,201,96,.18),transparent 82%);
+  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  padding:1px;
+  -webkit-mask-composite:xor;
+  mask-composite:exclude;
+}
+
 .node span {
   display:block;
-  color:#ffc85e;
-  font-size:8px;
+  color:#d7a94d;
+  font-size:7px;
   font-weight:900;
-  letter-spacing:.15em;
+  letter-spacing:.16em;
 }
+
 .node b {
   display:block;
   margin-top:2px;
-  color:#9adfeb;
+  color:#7f9ca5;
   font-size:8px;
-  letter-spacing:.11em;
+  letter-spacing:.12em;
 }
-.node1 { left: 1%; top: 20%; }
-.node2 { right: 0; top: 26%; }
-.node3 { left: 5%; bottom: 15%; }
-.node4 { right: 4%; bottom: 11%; }
+
+.node i {
+  position:absolute;
+  right:7px;
+  top:7px;
+  width:4px;
+  height:4px;
+  border-radius:50%;
+  background:#35525c;
+  box-shadow:0 0 8px rgba(94,227,255,.18);
+}
+
+.nodeActive {
+  transform: translate(-50%, -50%) scale(1.08);
+  border-color: rgba(103,231,255,.48);
+  background:
+    linear-gradient(145deg, rgba(96,229,255,.085), rgba(255,201,96,.045)),
+    rgba(3,9,17,.9);
+  box-shadow:
+    0 14px 36px rgba(0,0,0,.34),
+    0 0 24px rgba(87,225,255,.18),
+    0 0 44px rgba(255,196,72,.08);
+}
+
+.nodeActive span { color:#ffd274; }
+.nodeActive b {
+  color:#c7f7ff;
+  text-shadow:0 0 10px rgba(104,232,255,.5);
+}
+.nodeActive i {
+  background:#8af0ff;
+  box-shadow:0 0 10px #6feaff,0 0 20px rgba(255,201,96,.35);
+  animation: nodePulse 1.25s ease-in-out infinite;
+}
 
 .energyParticles {
   position:absolute;
@@ -453,6 +549,19 @@
 .thinking .energyDisc { animation-duration: 1.5s; }
 .thinking .coreSphere { animation-duration: 1.3s; }
 
+@keyframes graphFlow {
+  to { stroke-dashoffset: -20; }
+}
+@keyframes graphFlowActive {
+  to { stroke-dashoffset: -26; }
+}
+@keyframes nodeDrift {
+  0%,100% { margin-top:0; }
+  50% { margin-top:-4px; }
+}
+@keyframes nodePulse {
+  50% { opacity:.38; transform:scale(.72); }
+}
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes spinReverse { to { transform: rotate(-360deg); } }
 @keyframes tiltA { to { transform: rotateX(66deg) rotateZ(384deg); } }
@@ -481,7 +590,7 @@
   .runtime p { white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .aurora,.scanline,.ringOuter,.ringTiltA,.ringTiltB,.ringMid,.energyDisc,.coreSphere,.energyParticles i,.live i {
+  .aurora,.scanline,.graph .link,.node,.nodeActive i,.ringOuter,.ringTiltA,.ringTiltB,.ringMid,.energyDisc,.coreSphere,.energyParticles i,.live i {
     animation:none !important;
   }
 }
