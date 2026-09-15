@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { MediaProductionConsole } from '@/components/platform/MediaProductionConsole';
@@ -8,7 +7,6 @@ import { VideoStoryboardStudio } from '@/components/platform/VideoStoryboardStud
 
 import {
   CREATE_STUDIO_MODES,
-  buildCreateStudioPrompt,
   getCreateStudioMode,
   getCreateStudioProductionLine,
   type CreateStudioModeId,
@@ -17,38 +15,31 @@ import {
 type CreateStudioProps = {
   initialModeId?: CreateStudioModeId;
   initialProjectId?: string | null;
+  initialGoal?: string;
+  initialAudience?: string;
+  initialFormat?: string;
+  initialContext?: string;
 };
 
 export function CreateStudio({
   initialModeId = 'video',
   initialProjectId = null,
+  initialGoal = '',
+  initialAudience = '',
+  initialFormat = '',
+  initialContext = '',
 }: CreateStudioProps) {
-  const router = useRouter();
   const [modeId, setModeId] = useState<CreateStudioModeId>(
     getCreateStudioMode(initialModeId).id,
   );
-  const [goal, setGoal] = useState('');
-  const [audience, setAudience] = useState('');
-  const [format, setFormat] = useState('');
-  const [context, setContext] = useState('');
+  const [goal, setGoal] = useState(initialGoal);
+  const [audience, setAudience] = useState(initialAudience);
+  const [format, setFormat] = useState(initialFormat);
+  const [context, setContext] = useState(initialContext);
 
   const mode = getCreateStudioMode(modeId);
   const productionLine = getCreateStudioProductionLine(modeId);
   const canContinue = goal.trim().length > 0;
-
-  const handoffToOsa = () => {
-    if (!canContinue) return;
-
-    const prompt = buildCreateStudioPrompt({
-      modeId,
-      goal,
-      audience,
-      format,
-      context,
-    });
-
-    router.push('/home?prompt=' + encodeURIComponent(prompt));
-  };
 
   return (
     <main className="relative mx-auto w-full max-w-[1320px] overflow-hidden pb-12">
@@ -198,14 +189,23 @@ export function CreateStudio({
             </div>
           </div>
 
-          <button
-            type="button"
-            disabled={!canContinue}
-            onClick={handoffToOsa}
-            className="mt-6 w-full rounded-[18px] bg-[linear-gradient(135deg,#f2d474,#c68a26)] px-5 py-4 text-sm font-extrabold text-[#181006] shadow-[0_16px_34px_-18px_rgba(231,185,82,.8)] transition hover:-translate-y-0.5 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:translate-y-0"
+          <div
+            className={[
+              'mt-6 rounded-[18px] border px-5 py-4 text-center',
+              canContinue
+                ? 'border-emerald-300/15 bg-emerald-300/[0.045]'
+                : 'border-[var(--border-subtle)] bg-[var(--surface-0)]',
+            ].join(' ')}
           >
-            Передать AI-директору
-          </button>
+            <p className="text-sm font-bold text-[var(--text-primary)]">
+              {canContinue ? 'Задача передана в производственную линию' : 'Опишите результат — завод выберет инструменты'}
+            </p>
+            <p className="mt-1 text-[10px] leading-5 text-[var(--text-secondary)]">
+              {canContinue
+                ? 'Ниже уже доступен реальный генератор. Платные операции запускаются только после подтверждения.'
+                : 'Посты не создаются по умолчанию: формат определяется по самой задаче.'}
+            </p>
+          </div>
 
           <p className="mt-3 text-center text-[10px] leading-5 text-[var(--text-secondary)]">
             Модели и инструменты выбираются внутри платформы автоматически.
