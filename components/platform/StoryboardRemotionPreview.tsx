@@ -20,15 +20,21 @@ type StoryboardCompositionProps = {
 const FPS = 30;
 
 function StoryboardComposition({ scenes, voiceUrl }: StoryboardCompositionProps) {
-  let offset = 0;
+  const timeline = scenes.map((scene, index) => {
+    const durationInFrames = Math.max(1, Math.round(scene.durationSeconds * FPS));
+    const from = scenes
+      .slice(0, index)
+      .reduce(
+        (sum, item) => sum + Math.max(1, Math.round(item.durationSeconds * FPS)),
+        0,
+      );
+
+    return { scene, durationInFrames, from };
+  });
 
   return (
     <AbsoluteFill style={{ backgroundColor: '#05070b' }}>
-      {scenes.map((scene) => {
-        const durationInFrames = Math.max(1, Math.round(scene.durationSeconds * FPS));
-        const from = offset;
-        offset += durationInFrames;
-
+      {timeline.map(({ scene, durationInFrames, from }) => {
         return (
           <Sequence key={scene.id} from={from} durationInFrames={durationInFrames}>
             <AbsoluteFill>
