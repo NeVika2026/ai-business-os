@@ -1,6 +1,6 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useMemo, useRef, useState, useTransition, type CSSProperties } from 'react';
 
 import {
@@ -23,6 +23,7 @@ import { OsaRealWorkResult } from '@/components/home/OsaRealWorkResult';
 import { OsaErrorState } from '@/components/osa/OsaErrorState';
 import { BusinessZavodHomeExperience } from '@/components/platform/BusinessZavodHomeExperience';
 import { VoiceInputButton } from '@/components/platform/VoiceInputButton';
+import { buildCreateStudioHref, detectCreateStudioMode } from '@/utils/platform/create-studio';
 import type { HomeQuickActionId } from '@/utils/home/home-action';
 import {
   HERO_HOME_GREETING,
@@ -48,6 +49,7 @@ type ReadyDirectorPlan = Extract<HomeDirectorPlanResult, { status: 'ready' }>;
 const ORCHESTRA_POLL_MS = 900;
 
 export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenProps) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const initialPrompt = searchParams.get('prompt')?.trim() ?? '';
   const heroRef = useRef<OsaHeroPresenceHandle>(null);
@@ -247,6 +249,17 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
   };
 
   const runTask = (quickActionId?: HomeQuickActionId) => {
+    const trimmed = prompt.trim();
+
+    if (!quickActionId && trimmed) {
+      const studioMode = detectCreateStudioMode(trimmed);
+
+      if (studioMode) {
+        router.push(buildCreateStudioHref(studioMode, trimmed));
+        return;
+      }
+    }
+
     prepareDirectorPlan(quickActionId);
   };
 
