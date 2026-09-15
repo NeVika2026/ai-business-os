@@ -84,7 +84,7 @@ export function WelcomeScreen() {
           </Link>
         </header>
 
-        <section className="grid min-h-[760px] items-center gap-8 py-10 xl:grid-cols-[.94fr_1.06fr] xl:py-14">
+        <section className="grid min-h-[800px] items-center gap-8 py-10 xl:grid-cols-[.9fr_1.1fr] xl:gap-12 xl:py-14">
           <div className="relative z-[2] max-w-[740px]">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#69e4ee]/14 bg-[#69e4ee]/[0.045] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#9debf2]">
               <span className="h-1.5 w-1.5 rounded-full bg-[#69e4ee] shadow-[0_0_12px_rgba(105,228,238,.8)]" />
@@ -110,7 +110,7 @@ export function WelcomeScreen() {
 
             <form
               action={generateFirstPlan}
-              className="mt-8 overflow-hidden rounded-[24px] border border-white/[0.09] bg-[#0a0e15]/88 p-3 shadow-[0_34px_100px_-48px_rgba(0,0,0,.95)] backdrop-blur-2xl"
+              className="mt-8 overflow-hidden rounded-[26px] border border-[#69e4ee]/18 bg-[#090d14]/94 p-3.5 shadow-[0_0_0_1px_rgba(105,228,238,.035),0_28px_90px_-40px_rgba(0,0,0,.98),0_0_55px_-30px_rgba(105,228,238,.5)] backdrop-blur-2xl"
             >
               <div className="flex items-center justify-between px-2 pb-2">
                 <span className="text-[9px] font-bold uppercase tracking-[0.17em] text-white/25">
@@ -126,7 +126,7 @@ export function WelcomeScreen() {
                 onChange={(event) => setTask(event.target.value)}
                 rows={3}
                 placeholder="Напиши задачу обычными словами…"
-                className="min-h-[118px] w-full resize-none rounded-[16px] border border-white/[0.05] bg-black/20 px-4 py-4 text-base leading-7 text-[#fff8e7] outline-none placeholder:text-white/18 focus:border-[#69e4ee]/18"
+                className="min-h-[128px] w-full resize-none rounded-[18px] border border-white/[0.07] bg-black/30 px-4 py-4 text-base leading-7 text-[#fff8e7] outline-none placeholder:text-white/22 focus:border-[#69e4ee]/35 focus:shadow-[0_0_35px_-20px_rgba(105,228,238,.65)]"
               />
               <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-wrap gap-2 px-1">
@@ -178,6 +178,8 @@ export function WelcomeScreen() {
           <div className={styles.stage}>
             <div className={styles.coreWrap} aria-hidden="true">
               <div className={styles.coreGlow} />
+              <div className={styles.reactorRing} />
+              <div className={styles.reactorHalo} />
               <div className={[styles.orbit, styles.orbitA].join(' ')}><span className={styles.orbitDot} /></div>
               <div className={[styles.orbit, styles.orbitB].join(' ')}><span className={styles.orbitDot} /></div>
               <div className={[styles.orbit, styles.orbitC].join(' ')} />
@@ -197,8 +199,8 @@ export function WelcomeScreen() {
               <div className={styles.platform} />
             </div>
 
-            <div className="relative z-[2] -mt-12 grid gap-3 md:grid-cols-[1.15fr_.85fr]">
-              <div className="rounded-[22px] border border-white/[0.075] bg-[#0a0e15]/76 p-4 shadow-[0_24px_70px_-42px_rgba(0,0,0,.9)] backdrop-blur-2xl">
+            <div className="relative z-[2] -mt-16 grid gap-3 md:grid-cols-[1.12fr_.88fr] xl:gap-4">
+              <div className="rounded-[24px] border border-[#69e4ee]/12 bg-[#0a0e15]/84 p-5 shadow-[0_24px_80px_-42px_rgba(0,0,0,.95),0_0_38px_-24px_rgba(105,228,238,.45)] backdrop-blur-2xl">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-[9px] font-black uppercase tracking-[.18em] text-[#69e4ee]">
@@ -226,7 +228,7 @@ export function WelcomeScreen() {
                 </div>
               </div>
 
-              <div className="rounded-[22px] border border-[#f1c96c]/12 bg-[#f1c96c]/[0.035] p-4 backdrop-blur-2xl">
+              <div className="rounded-[24px] border border-[#f1c96c]/18 bg-[#f1c96c]/[0.045] p-5 shadow-[0_24px_70px_-44px_rgba(0,0,0,.92),0_0_34px_-26px_rgba(241,201,108,.38)] backdrop-blur-2xl">
                 <p className="text-[9px] font-black uppercase tracking-[.18em] text-[#f1c96c]">OUTPUT</p>
                 <div className="mt-4 space-y-2">
                   {['Стратегия', 'Креативы', 'Видео', 'Лиды'].map((item, index) => (
