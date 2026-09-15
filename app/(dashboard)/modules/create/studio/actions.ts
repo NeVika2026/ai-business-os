@@ -335,6 +335,7 @@ export async function getMediaGenerationStatusAction(
       kind: kind === 'image' ? 'image' : 'video',
       provider: 'runway',
       providerAssetId: id.trim(),
+      projectId,
     });
 
     return {
