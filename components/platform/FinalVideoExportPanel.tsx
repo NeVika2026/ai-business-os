@@ -14,6 +14,7 @@ type FinalVideoExportPanelProps = {
   title: string;
   scenes: FinalVideoExportScene[];
   voiceUrl?: string | null;
+  projectId?: string | null;
 };
 
 type ExportedFile = {
@@ -38,9 +39,11 @@ export function FinalVideoExportPanel({
   title,
   scenes,
   voiceUrl,
+  projectId = null,
 }: FinalVideoExportPanelProps) {
   const [exported, setExported] = useState<ExportedFile | null>(null);
   const [saved, setSaved] = useState(false);
+  const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [isExporting, startExport] = useTransition();
   const [isSaving, startSaving] = useTransition();
@@ -86,7 +89,7 @@ export function FinalVideoExportPanel({
 
     startSaving(async () => {
       try {
-        const context = await getMediaUploadContextAction();
+        const context = await getMediaUploadContextAction(projectId);
         if (!context) throw new Error('Не удалось определить организацию.');
 
         const supabase = createClient();
@@ -111,6 +114,7 @@ export function FinalVideoExportPanel({
         const { error: rowError } = await supabase.from('media_assets').insert({
           organization_id: context.organizationId,
           created_by: context.userId,
+          project_id: context.projectId,
           kind: 'video',
           provider: 'browser-export',
           provider_asset_id: assetId,
@@ -130,6 +134,7 @@ export function FinalVideoExportPanel({
 
         if (rowError) throw rowError;
 
+        setSavedProjectId(context.projectId);
         setSaved(true);
       } catch (reason) {
         setError(
@@ -205,7 +210,13 @@ export function FinalVideoExportPanel({
 
       {saved ? (
         <p className="mt-3 text-[10px] text-emerald-200/70">
-          Финальный файл сохранён. <Link href="/media" className="underline">Открыть медиатеку</Link>
+          Финальный файл сохранён.{' '}
+          <Link
+            href={savedProjectId ? '/media?project=' + savedProjectId : '/media'}
+            className="underline"
+          >
+            Открыть медиатеку
+          </Link>
         </p>
       ) : null}
 
