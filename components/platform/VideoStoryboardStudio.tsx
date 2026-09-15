@@ -13,6 +13,7 @@ import {
   buildStoryboardPlanAction,
   type StoryboardPlanScene,
 } from '@/app/(dashboard)/modules/create/studio/storyboard-actions';
+import { FinalVideoExportPanel } from '@/components/platform/FinalVideoExportPanel';
 import { StoryboardRemotionPreview } from '@/components/platform/StoryboardRemotionPreview';
 
 type VideoStoryboardStudioProps = {
@@ -646,6 +647,7 @@ export function VideoStoryboardStudio({
           </div>
 
           {previewScenes.length > 0 ? (
+            <>
             <div className="mt-5 grid gap-4 xl:grid-cols-[.72fr_1.28fr]">
               <div>
                 <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#58dbe8]">
@@ -665,6 +667,15 @@ export function VideoStoryboardStudio({
 
               <StoryboardRemotionPreview scenes={previewScenes} voiceUrl={voiceUrl} />
             </div>
+
+            {completedScenes.length === scenes.length ? (
+              <FinalVideoExportPanel
+                title={title || goal || 'Видео Бизнес-Завода'}
+                scenes={previewScenes}
+                voiceUrl={voiceUrl}
+              />
+            ) : null}
+            </>
           ) : null}
         </>
       ) : null}
