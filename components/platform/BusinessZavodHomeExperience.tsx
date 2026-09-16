@@ -35,7 +35,7 @@ function taskHref(task: (typeof BUSINESS_ZAVOD_TASKS)[number]) {
 }
 
 const cardClass =
-  'group relative overflow-hidden rounded-[24px] border border-white/[0.08] bg-white/[0.035] p-5 backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-[#e7b952]/30 hover:bg-white/[0.055] hover:shadow-[0_24px_70px_-40px_rgba(231,185,82,.35)]';
+  'group relative overflow-hidden rounded-[24px] border border-white/[0.11] bg-white/[0.045] p-6 backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-[#e7b952]/30 hover:bg-white/[0.055] hover:shadow-[0_24px_70px_-40px_rgba(231,185,82,.35)]';
 
 export function BusinessZavodHomeExperience() {
   const scenarios = BUSINESS_ZAVOD_TASKS.filter((task) =>
@@ -47,16 +47,16 @@ export function BusinessZavodHomeExperience() {
       <section>
         <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-[#e7b952]">
+            <p className="text-[12px] font-extrabold uppercase tracking-[0.22em] text-[#e7b952]">
               Цеха Бизнес-Завода
             </p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[#fff8e7] sm:text-3xl">
+            <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#fff8e7] sm:text-4xl">
               Выберите направление — или просто поставьте задачу выше
             </h2>
           </div>
           <Link
             href="/marketplace"
-            className="text-sm font-semibold text-[#8fe8ef] transition hover:text-white"
+            className="text-base font-semibold text-[#a9f2f7] transition hover:text-white"
           >
             Все возможности ↗
           </Link>
@@ -82,13 +82,13 @@ export function BusinessZavodHomeExperience() {
                     {String(index + 1).padStart(2, '0')}
                   </span>
                 </div>
-                <h3 className="mt-5 text-base font-semibold text-[#fff8e7]">
+                <h3 className="mt-5 text-lg font-semibold text-[#fff8e7]">
                   {module.label}
                 </h3>
-                <p className="mt-2 text-xs leading-5 text-white/45">
+                <p className="mt-2 text-sm leading-6 text-white/70">
                   {module.description}
                 </p>
-                <span className="mt-5 inline-flex text-xs font-semibold text-[#e7b952]">
+                <span className="mt-5 inline-flex text-sm font-semibold text-[#f2c963]">
                   Открыть цех →
                 </span>
               </div>
@@ -100,17 +100,17 @@ export function BusinessZavodHomeExperience() {
       <section className="rounded-[32px] border border-white/[0.08] bg-[linear-gradient(145deg,rgba(255,255,255,.045),rgba(255,255,255,.018))] p-5 shadow-[0_28px_90px_-55px_rgba(0,0,0,.8)] backdrop-blur-2xl sm:p-7">
         <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-[#58dbe8]">
+            <p className="text-[12px] font-extrabold uppercase tracking-[0.22em] text-[#58dbe8]">
               Готовые производственные линии
             </p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[#fff8e7]">
+            <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#fff8e7]">
               Запуск в один клик
             </h2>
-            <p className="mt-2 text-sm text-white/42">
+            <p className="mt-2 text-base leading-7 text-white/68">
               OSA сама разложит задачу на этапы и подключит нужных специалистов.
             </p>
           </div>
-          <span className="rounded-full border border-emerald-300/15 bg-emerald-300/[0.06] px-3 py-1.5 text-[10px] font-bold text-emerald-200/80">
+          <span className="rounded-full border border-emerald-300/15 bg-emerald-300/[0.06] px-3 py-1.5 text-[12px] font-bold text-emerald-200/90">
             ● Оркестратор онлайн
           </span>
         </div>
@@ -127,16 +127,16 @@ export function BusinessZavodHomeExperience() {
                 className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-[radial-gradient(circle,rgba(88,219,232,.14),transparent_68%)] transition duration-300 group-hover:scale-125"
               />
               <div className="relative">
-                <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#58dbe8]/65">
+                <span className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#58dbe8]/65">
                   LINE {String(index + 1).padStart(2, '0')}
                 </span>
-                <h3 className="mt-3 text-base font-semibold text-[#fff8e7]">
+                <h3 className="mt-3 text-lg font-semibold text-[#fff8e7]">
                   {task.title}
                 </h3>
-                <p className="mt-2 text-sm leading-5 text-white/42">
+                <p className="mt-2 text-base leading-7 text-white/68">
                   {task.description}
                 </p>
-                <span className="mt-4 inline-flex text-sm font-semibold text-[#8fe8ef]">
+                <span className="mt-4 inline-flex text-base font-semibold text-[#a9f2f7]">
                   Запустить →
                 </span>
               </div>
@@ -149,16 +149,16 @@ export function BusinessZavodHomeExperience() {
         <div className="rounded-[30px] border border-white/[0.08] bg-white/[0.03] p-5 backdrop-blur-xl sm:p-6">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-[#e7b952]">
+              <p className="text-[12px] font-extrabold uppercase tracking-[0.22em] text-[#e7b952]">
                 AI-сотрудники
               </p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[#fff8e7]">
+              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#fff8e7]">
                 Команда уже на смене
               </h2>
             </div>
             <Link
               href="/ai-employees"
-              className="text-sm font-semibold text-[#8fe8ef] transition hover:text-white"
+              className="text-base font-semibold text-[#a9f2f7] transition hover:text-white"
             >
               Все сотрудники ↗
             </Link>
@@ -175,10 +175,10 @@ export function BusinessZavodHomeExperience() {
                   {agent.mark}
                 </span>
                 <span>
-                  <span className="block text-sm font-semibold text-[#fff8e7]">
+                  <span className="block text-base font-semibold text-[#fff8e7]">
                     {agent.name}
                   </span>
-                  <span className="mt-0.5 block text-xs leading-5 text-white/40">
+                  <span className="mt-0.5 block text-sm leading-6 text-white/65">
                     {agent.role}
                   </span>
                 </span>
@@ -188,13 +188,13 @@ export function BusinessZavodHomeExperience() {
         </div>
 
         <div className="rounded-[30px] border border-[#e7b952]/15 bg-[radial-gradient(circle_at_100%_0%,rgba(231,185,82,.12),transparent_42%),linear-gradient(145deg,rgba(231,185,82,.045),rgba(88,219,232,.025))] p-5 sm:p-6">
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-[#e7b952]">
+          <p className="text-[12px] font-extrabold uppercase tracking-[0.22em] text-[#e7b952]">
             Mission Control
           </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[#fff8e7]">
+          <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#fff8e7]">
             Продолжить производство
           </h2>
-          <p className="mt-3 text-sm leading-6 text-white/42">
+          <p className="mt-3 text-base leading-7 text-white/68">
             Возвращайтесь к проектам и текущим задачам. OSA сохраняет рабочий контекст.
           </p>
 
@@ -203,15 +203,15 @@ export function BusinessZavodHomeExperience() {
               href="/projects"
               className="rounded-2xl border border-white/[0.07] bg-black/20 p-4 transition hover:border-[#e7b952]/22 hover:bg-black/30"
             >
-              <span className="text-sm font-semibold text-[#fff8e7]">Мои проекты</span>
-              <span className="mt-1 block text-xs text-white/38">Все активные рабочие пространства</span>
+              <span className="text-base font-semibold text-[#fff8e7]">Мои проекты</span>
+              <span className="mt-1 block text-sm text-white/62">Все активные рабочие пространства</span>
             </Link>
             <Link
               href="/home/mission-control"
               className="rounded-2xl border border-white/[0.07] bg-black/20 p-4 transition hover:border-[#58dbe8]/22 hover:bg-black/30"
             >
-              <span className="text-sm font-semibold text-[#fff8e7]">Все задачи</span>
-              <span className="mt-1 block text-xs text-white/38">Что в работе и что требует внимания</span>
+              <span className="text-base font-semibold text-[#fff8e7]">Все задачи</span>
+              <span className="mt-1 block text-sm text-white/62">Что в работе и что требует внимания</span>
             </Link>
           </div>
         </div>
@@ -219,13 +219,13 @@ export function BusinessZavodHomeExperience() {
 
       <section>
         <div className="mb-5">
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-[#58dbe8]">
+          <p className="text-[12px] font-extrabold uppercase tracking-[0.22em] text-[#58dbe8]">
             Расширение производства
           </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[#fff8e7]">
+          <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#fff8e7]">
             Добавляйте новые мощности
           </h2>
-          <p className="mt-2 text-sm text-white/42">
+          <p className="mt-2 text-base leading-7 text-white/68">
             Навыки, интеграции, автоматизации и медиа подключаются без перегрузки главного экрана.
           </p>
         </div>
@@ -240,10 +240,10 @@ export function BusinessZavodHomeExperience() {
               <span className="text-lg text-[#8fe8ef]" aria-hidden="true">
                 {item.mark}
               </span>
-              <h3 className="mt-4 text-sm font-semibold text-[#fff8e7]">
+              <h3 className="mt-4 text-base font-semibold text-[#fff8e7]">
                 {item.title}
               </h3>
-              <p className="mt-2 text-xs leading-5 text-white/40">
+              <p className="mt-2 text-sm leading-6 text-white/65">
                 {item.description}
               </p>
             </Link>
