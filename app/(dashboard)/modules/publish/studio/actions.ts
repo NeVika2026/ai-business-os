@@ -187,3 +187,130 @@ export async function buildPublicationPackAction(input: {
     };
   }
 }
+
+
+export type PublishingConnectionStatus = Record<PublicationChannelId, boolean>;
+
+export async function getPublishingConnectionStatusAction(): Promise<PublishingConnectionStatus> {
+  return {
+    telegram: Boolean(
+      process.env.TELEGRAM_BOT_TOKEN?.trim() &&
+      process.env.TELEGRAM_CHAT_ID?.trim(),
+    ),
+    vk: false,
+    dzen: false,
+    youtube: false,
+    tiktok: false,
+    max: false,
+  };
+}
+
+function splitTelegramText(value: string): string[] {
+  const maxLength = 3900;
+  const paragraphs = value.split(/\n{2,}/).map((item) => item.trim()).filter(Boolean);
+  const chunks: string[] = [];
+  let current = '';
+
+  for (const paragraph of paragraphs) {
+    if (!current) {
+      current = paragraph;
+      continue;
+    }
+
+    const candidate = current + '\n\n' + paragraph;
+    if (candidate.length <= maxLength) {
+      current = candidate;
+      continue;
+    }
+
+    chunks.push(current);
+    current = paragraph;
+  }
+
+  if (current) chunks.push(current);
+
+  return chunks.flatMap((chunk) => {
+    if (chunk.length <= maxLength) return [chunk];
+
+    const parts: string[] = [];
+    let rest = chunk;
+    while (rest.length > maxLength) {
+      let cut = rest.lastIndexOf(' ', maxLength);
+      if (cut < maxLength * 0.6) cut = maxLength;
+      parts.push(rest.slice(0, cut).trim());
+      rest = rest.slice(cut).trim();
+    }
+    if (rest) parts.push(rest);
+    return parts;
+  });
+}
+
+export async function publishVariantAction(input: {
+  channel: PublicationChannelId;
+  title?: string;
+  body: string;
+  cta?: string;
+}): Promise<{ ok: true; message: string } | { ok: false; message: string }> {
+  if (input.channel !== 'telegram') {
+    return {
+      ok: false,
+      message: 'Прямая публикация для этой площадки ещё не подключена.',
+    };
+  }
+
+  const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
+  const chatId = process.env.TELEGRAM_CHAT_ID?.trim();
+
+  if (!token || !chatId) {
+    return {
+      ok: false,
+      message: 'Telegram не подключён. Добавьте TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID в окружение проекта.',
+    };
+  }
+
+  const text = [input.title?.trim(), input.body.trim(), input.cta?.trim()]
+    .filter(Boolean)
+    .join('\n\n');
+
+  if (!text) {
+    return { ok: false, message: 'Нет текста для публикации.' };
+  }
+
+  try {
+    const chunks = splitTelegramText(text);
+
+    for (const chunk of chunks) {
+      const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: chunk,
+          disable_web_page_preview: false,
+        }),
+        cache: 'no-store',
+      });
+
+      const data = (await response.json()) as { ok?: boolean; description?: string };
+
+      if (!response.ok || !data.ok) {
+        return {
+          ok: false,
+          message: data.description || 'Telegram отклонил публикацию.',
+        };
+      }
+    }
+
+    return {
+      ok: true,
+      message: chunks.length > 1
+        ? `Опубликовано в Telegram: ${chunks.length} сообщения.`
+        : 'Опубликовано в Telegram.',
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : 'Не удалось отправить публикацию в Telegram.',
+    };
+  }
+}
