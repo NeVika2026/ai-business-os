@@ -1,6 +1,6 @@
-export type IntegrationStatus = 'connected' | 'missing' | 'built_in';
+export type IntegrationStatus = 'connected' | 'missing' | 'built_in' | 'planned';
 
-export type IntegrationCategory = 'infrastructure' | 'ai' | 'media' | 'local';
+export type IntegrationCategory = 'infrastructure' | 'ai' | 'media' | 'publishing' | 'local';
 
 export type IntegrationDefinition = {
   id: string;
@@ -10,6 +10,7 @@ export type IntegrationDefinition = {
   capabilities: string[];
   envKeys?: string[];
   builtIn?: boolean;
+  planned?: boolean;
 };
 
 export type IntegrationStatusView = {
@@ -110,6 +111,54 @@ export const INTEGRATION_CATALOG: IntegrationDefinition[] = [
     capabilities: ['Монтаж', 'Субтитры', 'Рендер'],
     builtIn: true,
   },
+  {
+    id: 'telegram-publish',
+    name: 'Telegram',
+    description: 'Публикация готовых материалов в канал или чат.',
+    category: 'publishing',
+    capabilities: ['Посты', 'Медиа', 'Каналы'],
+    planned: true,
+  },
+  {
+    id: 'vk-publish',
+    name: 'ВКонтакте',
+    description: 'Публикация в сообщество и адаптация под ленту.',
+    category: 'publishing',
+    capabilities: ['Посты', 'Сообщество', 'Медиа'],
+    planned: true,
+  },
+  {
+    id: 'dzen-publish',
+    name: 'Дзен',
+    description: 'Передача подготовленных публикаций и материалов.',
+    category: 'publishing',
+    capabilities: ['Статьи', 'Посты', 'Видео'],
+    planned: true,
+  },
+  {
+    id: 'youtube-publish',
+    name: 'YouTube',
+    description: 'Публикация видео и Shorts после авторизации канала.',
+    category: 'publishing',
+    capabilities: ['Видео', 'Shorts', 'Описание'],
+    planned: true,
+  },
+  {
+    id: 'tiktok-publish',
+    name: 'TikTok',
+    description: 'Публикация коротких видео после подключения аккаунта.',
+    category: 'publishing',
+    capabilities: ['Видео', 'Подпись'],
+    planned: true,
+  },
+  {
+    id: 'max-publish',
+    name: 'MAX',
+    description: 'Публикация адаптированных материалов в канал.',
+    category: 'publishing',
+    capabilities: ['Посты', 'Канал'],
+    planned: true,
+  },
 ];
 
 export function resolveIntegrationStatuses(
@@ -120,6 +169,8 @@ export function resolveIntegrationStatuses(
 
     if (integration.builtIn) {
       status = 'built_in';
+    } else if (integration.planned) {
+      status = 'planned';
     } else if (
       integration.envKeys?.length &&
       integration.envKeys.every((key) => Boolean(env[key]?.trim()))
