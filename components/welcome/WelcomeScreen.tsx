@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 
 import { generateFirstPlan } from '@/app/login/actions';
@@ -16,19 +16,19 @@ const QUICK_TASKS = [
 ] as const;
 
 const LINES = [
-  ['01', 'СОЗДАТЬ', 'Видео · визуал · документы'],
-  ['02', 'ПРОДАТЬ', 'Офферы · скрипты · воронки'],
-  ['03', 'ПРОДВИНУТЬ', 'Контент · реклама · трафик'],
-  ['04', 'НАЙТИ', 'Клиенты · партнёры · возможности'],
-  ['05', 'АНАЛИЗ', 'Рынок · риски · решения'],
-  ['06', 'АВТОМАТИЗИРОВАТЬ', 'Рутина · процессы · лиды'],
+  ['01', 'СОЗДАТЬ', 'Видео · визуал · документы', 'Создай сильный визуальный материал под мою задачу.'],
+  ['02', 'ПРОДАТЬ', 'Офферы · скрипты · воронки', 'Собери продающий оффер и рабочий скрипт продаж для моего продукта или услуги.'],
+  ['03', 'ПРОДВИНУТЬ', 'Контент · реклама · трафик', 'Разработай план продвижения: аудитория, оффер, контент, реклама и каналы привлечения.'],
+  ['04', 'НАЙТИ', 'Клиенты · партнёры · возможности', 'Найди клиентов, партнёров и новые возможности для моего продукта или услуги.'],
+  ['05', 'АНАЛИЗ', 'Рынок · риски · решения', 'Проанализируй мою ситуацию, рынок и конкурентов и предложи конкретные решения.'],
+  ['06', 'АВТОМАТИЗИРОВАТЬ', 'Рутина · процессы · лиды', 'Разбери мой рабочий процесс и собери схему автоматизации рутины и обработки заявок.'],
 ] as const;
 
 const AGENTS = [
-  ['AI-маркетолог', 'ONLINE'],
-  ['AI-продажник', 'ONLINE'],
-  ['AI-контентмейкер', 'READY'],
-  ['AI-аналитик', 'READY'],
+  ['Маркетолог', 'ONLINE'],
+  ['Продажи', 'ONLINE'],
+  ['Контент', 'READY'],
+  ['Аналитика', 'READY'],
 ] as const;
 
 function SubmitButton({ disabled }: { disabled: boolean }) {
@@ -47,8 +47,17 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
 
 export function WelcomeScreen() {
   const [task, setTask] = useState('');
+  const consoleRef = useRef<HTMLFormElement | null>(null);
   const examples = useMemo(() => QUICK_TASKS, []);
   const canSubmit = task.trim().length > 2;
+
+  const chooseProductionLine = (prompt: string) => {
+    setTask(prompt);
+    window.requestAnimationFrame(() => {
+      consoleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      consoleRef.current?.querySelector('textarea')?.focus();
+    });
+  };
 
   return (
     <main className={styles.screen}>
@@ -112,6 +121,7 @@ export function WelcomeScreen() {
             </p>
 
             <form
+              ref={consoleRef}
               action={generateFirstPlan}
               className="mt-7 overflow-hidden rounded-[26px] border border-[#69e4ee]/18 bg-[#090d14]/94 p-3.5 shadow-[0_0_0_1px_rgba(105,228,238,.035),0_28px_90px_-40px_rgba(0,0,0,.98),0_0_55px_-30px_rgba(105,228,238,.5)] backdrop-blur-2xl"
             >
@@ -247,20 +257,25 @@ export function WelcomeScreen() {
           </div>
 
           <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-            {LINES.map(([number, title, text]) => (
-              <div
+            {LINES.map(([number, title, text, prompt]) => (
+              <button
                 key={title}
-                className="group relative min-h-[150px] overflow-hidden rounded-[22px] border border-white/[0.10] bg-white/[0.032] p-6 transition hover:-translate-y-0.5 hover:border-[#69e4ee]/16 hover:bg-white/[0.03]"
+                type="button"
+                onClick={() => chooseProductionLine(prompt)}
+                className="group relative min-h-[150px] overflow-hidden rounded-[22px] border border-white/[0.10] bg-white/[0.032] p-6 text-left transition hover:-translate-y-1 hover:border-[#69e4ee]/28 hover:bg-[#69e4ee]/[0.045] focus:outline-none focus:ring-2 focus:ring-[#69e4ee]/30"
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex h-full items-start justify-between gap-4">
                   <div>
                     <span className="text-[14px] font-black tracking-[.14em] text-[#8df0f6]">LINE {number}</span>
                     <h3 className="mt-4 text-xl font-bold tracking-[.05em] text-[#fff8e7]">{title}</h3>
-                    <p className="mt-2 text-sm leading-6 text-white/66">{text}</p>
+                    <p className="mt-2 text-sm leading-6 text-white/72">{text}</p>
+                    <p className="mt-4 text-xs font-bold uppercase tracking-[.1em] text-[#f1c96c]/0 transition group-hover:text-[#f1c96c]">
+                      Выбрать цех
+                    </p>
                   </div>
-                  <span className="mt-1 text-lg text-white/62 transition group-hover:text-[#69e4ee]/55">↗</span>
+                  <span className="mt-1 text-xl text-white/62 transition group-hover:translate-x-1 group-hover:text-[#69e4ee]">↗</span>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </section>
