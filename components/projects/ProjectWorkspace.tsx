@@ -3,6 +3,7 @@ import { ProjectDocuments } from '@/components/projects/ProjectDocuments';
 import { ProjectExecutions } from '@/components/projects/ProjectExecutions';
 import { ProjectGoals } from '@/components/projects/ProjectGoals';
 import { ProjectHeader } from '@/components/projects/ProjectHeader';
+import { ProjectFactoryHistory } from '@/components/projects/ProjectFactoryHistory';
 import { ProjectKnowledge } from '@/components/projects/ProjectKnowledge';
 import { ProjectMembers } from '@/components/projects/ProjectMembers';
 import { ProjectMedia } from '@/components/projects/ProjectMedia';
@@ -10,18 +11,29 @@ import { ProjectModules } from '@/components/projects/ProjectModules';
 import { ProjectOverview } from '@/components/projects/ProjectOverview';
 import { ProjectQuickActions } from '@/components/projects/ProjectQuickActions';
 import { ProjectTimeline } from '@/components/projects/ProjectTimeline';
+import type { FactoryArtifact } from '@/lib/factory-chain/persistence';
 import type { ProjectMediaItem } from '@/utils/projects/project-media-loader';
 import type { ProjectWorkspaceData } from '@/utils/projects/project-types';
 
 type ProjectWorkspaceProps = {
   workspace: ProjectWorkspaceData;
   media: ProjectMediaItem[];
+  factoryArtifacts: FactoryArtifact[];
 };
 
-export function ProjectWorkspace({ workspace, media }: ProjectWorkspaceProps) {
+export function ProjectWorkspace({
+  workspace,
+  media,
+  factoryArtifacts,
+}: ProjectWorkspaceProps) {
   return (
     <div className="space-y-6">
       <ProjectHeader project={workspace.project} />
+
+      <ProjectFactoryHistory
+        projectId={workspace.project.id}
+        artifacts={factoryArtifacts}
+      />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <ProjectOverview overview={workspace.overview} />
