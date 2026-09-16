@@ -92,21 +92,23 @@ export function WelcomeScreen() {
               Не чат. Не каталог AI. Рабочий завод.
             </div>
 
-            <p className="text-[10px] font-black uppercase tracking-[0.26em] text-[#f1c96c]">
-              INPUT → ORCHESTRATE → BUILD → VERIFY → RESULT
+            <p className="text-[10px] font-black uppercase tracking-[0.26em] text-[#69e4ee]">
+              AI-ПЛАТФОРМА ДЛЯ РЕАЛЬНОГО БИЗНЕСА
             </p>
 
-            <h1 className="mt-4 max-w-[760px] text-[clamp(3.8rem,7vw,7.7rem)] font-semibold leading-[.82] tracking-[-0.075em] text-[#fff8e7]">
-              Задача
-              <span className="block text-white/26">входит.</span>
-              <span className="block bg-[linear-gradient(90deg,#fff7de_0%,#f1c96c_43%,#69e4ee_100%)] bg-clip-text text-transparent">
-                Результат выходит.
+            <h1 className="mt-4 max-w-[760px] text-[clamp(3.8rem,7vw,7.7rem)] font-black leading-[.82] tracking-[-0.075em] text-[#fff8e7]">
+              Превращаем
+              <span className="block bg-[linear-gradient(180deg,#fff0ad_0%,#f4cf6a_34%,#d99a2d_78%,#f7d575_100%)] bg-clip-text text-transparent">
+                идеи в готовый
+              </span>
+              <span className="block bg-[linear-gradient(180deg,#fff0ad_0%,#f4cf6a_34%,#d99a2d_78%,#f7d575_100%)] bg-clip-text text-transparent">
+                результат
               </span>
             </h1>
 
-            <p className="mt-7 max-w-2xl text-sm leading-6 text-white/40 sm:text-base sm:leading-7">
-              OSA сама собирает AI-команду, подключает инструменты, ведёт производство и
-              возвращает готовую работу. Без выбора нейросетей и ручной сборки цепочки.
+            <p className="mt-7 max-w-2xl text-sm leading-6 text-white/48 sm:text-base sm:leading-7">
+              OSA сама собирает нужный цех: стратегия, аналитика, визуал, видео, продажи и
+              автоматизация. Вы ставите задачу — завод возвращает готовый результат.
             </p>
 
             <form
