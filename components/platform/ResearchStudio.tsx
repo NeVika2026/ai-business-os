@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { getFactoryArtifactAction } from '@/app/(dashboard)/modules/factory-chain/actions';
 import {
   runResearchAction,
   type PriorResearchContext,
@@ -15,6 +16,7 @@ type ResearchStudioProps = {
   mode: ResearchMode;
   initialQuery?: string;
   initialProjectId?: string | null;
+  initialArtifactId?: string | null;
 };
 
 const RESEARCH_HANDOFF_KEY = 'business-zavod:research-handoff';
@@ -31,6 +33,7 @@ export function ResearchStudio({
   mode,
   initialQuery = '',
   initialProjectId = null,
+  initialArtifactId = null,
 }: ResearchStudioProps) {
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
@@ -75,29 +78,68 @@ export function ResearchStudio({
   };
 
   useEffect(() => {
-    if (mode !== 'analyze') return;
+    const restore = async () => {
+      if (mode === 'analyze') {
+        const raw = window.sessionStorage.getItem(RESEARCH_HANDOFF_KEY);
 
-    const raw = window.sessionStorage.getItem(RESEARCH_HANDOFF_KEY);
-    if (!raw) return;
+        if (raw) {
+          window.sessionStorage.removeItem(RESEARCH_HANDOFF_KEY);
 
-    window.sessionStorage.removeItem(RESEARCH_HANDOFF_KEY);
+          try {
+            const prior = JSON.parse(raw) as PriorResearchContext;
+            if (prior.query?.trim() && Array.isArray(prior.sources) && prior.sources.length) {
+              setQuery(prior.query);
+              setSources(prior.sources);
+              setHandoffMessage('Результат из цеха поиска принят. Анализ запущен автоматически.');
+              executeResearch(prior.query, prior);
+              return;
+            }
+          } catch {
+            setHandoffMessage('');
+          }
+        }
+      }
 
-    try {
-      const prior = JSON.parse(raw) as PriorResearchContext;
-      if (!prior.query?.trim() || !Array.isArray(prior.sources) || !prior.sources.length) {
+      if (!initialProjectId || !initialArtifactId) return;
+
+      const artifact = await getFactoryArtifactAction(initialProjectId, initialArtifactId);
+      if (!artifact) return;
+
+      const artifactQuery =
+        typeof artifact.metadata.query === 'string' && artifact.metadata.query.trim()
+          ? artifact.metadata.query.trim()
+          : initialQuery || artifact.title;
+
+      const restoredSources: ResearchSource[] = artifact.sources.map((source) => ({
+        title: source.title,
+        url: source.url,
+        description: source.description ?? '',
+        source: null,
+        age: null,
+      }));
+
+      setProjectId(initialProjectId);
+      setQuery(artifactQuery);
+      setSources(restoredSources);
+
+      if (mode === 'analyze' && artifact.stage === 'find' && restoredSources.length) {
+        setHandoffMessage('Сохранённый результат поиска восстановлен. Анализ запущен автоматически.');
+        executeResearch(artifactQuery, {
+          query: artifactQuery,
+          summary: artifact.content,
+          sources: restoredSources,
+        });
         return;
       }
 
-      setQuery(prior.query);
-      setSources(prior.sources);
-      setHandoffMessage('Результат из цеха поиска принят. Анализ запущен автоматически.');
-      executeResearch(prior.query, prior);
-    } catch {
-      setHandoffMessage('');
-    }
-    // Handoff is intentionally consumed once on entry.
+      setSummary(artifact.content);
+      setHandoffMessage('Сохранённый результат проекта восстановлен.');
+    };
+
+    void restore();
+    // Restore is intentionally consumed once on entry.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
+  }, [mode, initialArtifactId, initialProjectId]);
 
   const runResearch = () => {
     executeResearch(query);
