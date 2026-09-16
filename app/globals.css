@@ -3837,3 +3837,38 @@
     }
   }
 }
+
+
+/* First-result factory preview */
+.osa-fe-canvas--factory-result {
+  --osa-home-blue: #69e4ee;
+  --osa-home-purple: #d5a23d;
+  --osa-home-coral: #ffbd5a;
+  --osa-home-graphite: #f8f3e8;
+  min-height: 100dvh;
+  background:
+    radial-gradient(circle at 50% 8%, rgba(105,228,238,.10), transparent 32%),
+    radial-gradient(circle at 78% 22%, rgba(241,201,108,.10), transparent 28%),
+    linear-gradient(165deg, #020407 0%, #071019 48%, #020407 100%) !important;
+}
+
+.osa-fe-canvas--factory-result .osa-fe-depth {
+  opacity: .22;
+  background:
+    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: radial-gradient(circle at 50% 28%, #000 0 38%, transparent 82%);
+}
+
+.osa-fe-canvas--factory-result .osa-fe-glow {
+  opacity: .8;
+  filter: blur(52px);
+  background:
+    radial-gradient(circle at 42% 18%, rgba(105,228,238,.13), transparent 34%),
+    radial-gradient(circle at 72% 28%, rgba(241,201,108,.10), transparent 34%);
+}
+
+.osa-fe-canvas--factory-result .osa-fe-blob {
+  opacity: .16;
+}
