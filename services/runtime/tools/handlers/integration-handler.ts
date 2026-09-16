@@ -51,21 +51,67 @@ export class WebSearchHandler extends BaseToolHandler {
   ): Promise<Record<string, unknown>> {
     const query = typeof args.query === 'string' ? args.query.trim() : '';
     const limit = typeof args.limit === 'number' && args.limit > 0 ? Math.min(args.limit, 10) : 5;
+    const apiKey = process.env.BRAVE_SEARCH_API_KEY?.trim();
     void ctx;
 
     if (!query) {
-      return { results: [], count: 0 };
+      return { results: [], count: 0, available: Boolean(apiKey) };
     }
 
+    if (!apiKey) {
+      return {
+        results: [],
+        count: 0,
+        query,
+        available: false,
+        message: 'Веб-поиск не подключён. Нужен BRAVE_SEARCH_API_KEY.',
+      };
+    }
+
+    const url = new URL('https://api.search.brave.com/res/v1/web/search');
+    url.searchParams.set('q', query);
+    url.searchParams.set('count', String(limit));
+    url.searchParams.set('safesearch', 'moderate');
+
+    const response = await fetch(url, {
+      headers: {
+        Accept: 'application/json',
+        'Accept-Encoding': 'gzip',
+        'X-Subscription-Token': apiKey,
+      },
+      cache: 'no-store',
+      signal: ctx.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Brave Search error: ${response.status}`);
+    }
+
+    const data = (await response.json()) as {
+      web?: {
+        results?: Array<{
+          title?: string;
+          url?: string;
+          description?: string;
+          age?: string;
+          profile?: { long_name?: string };
+        }>;
+      };
+    };
+
+    const results = (data.web?.results ?? []).slice(0, limit).map((item) => ({
+      title: item.title ?? '',
+      url: item.url ?? '',
+      description: item.description ?? '',
+      age: item.age ?? null,
+      source: item.profile?.long_name ?? null,
+    }));
+
     return {
-      results: [
-        {
-          title: `Result for ${query}`,
-          url: `https://example.com/search?q=${encodeURIComponent(query)}`,
-        },
-      ],
-      count: Math.min(1, limit),
+      results,
+      count: results.length,
       query,
+      available: true,
     };
   }
 }
