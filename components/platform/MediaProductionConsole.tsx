@@ -81,6 +81,11 @@ export function MediaProductionConsole({
   const [isLoadingVoices, startVoiceTransition] = useTransition();
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const artifactDraftKey = useMemo(
+    () => `business-zavod:create-artifact:${projectId ?? 'general'}:${modeId}`,
+    [modeId, projectId],
+  );
+
   const promptText = useMemo(() => {
     return [goal.trim(), format.trim() ? 'Формат: ' + format.trim() : '', context.trim() ? 'Важно: ' + context.trim() : '']
       .filter(Boolean)
@@ -92,6 +97,12 @@ export function MediaProductionConsole({
     isStarting ||
     jobStatus?.status === 'pending' ||
     jobStatus?.status === 'running';
+
+  useEffect(() => {
+    if (isLiveMode) return;
+    const saved = window.localStorage.getItem(artifactDraftKey);
+    setArtifactContent(saved ?? '');
+  }, [artifactDraftKey, isLiveMode]);
 
   useEffect(() => {
     if (modeId !== 'voice' || voices.length > 0 || isLoadingVoices) {
@@ -150,7 +161,33 @@ export function MediaProductionConsole({
         }
 
         setArtifactContent(result.content);
+        window.localStorage.setItem(artifactDraftKey, result.content);
       });
+    };
+
+    const copyArtifact = async () => {
+      if (!artifactContent) return;
+      try {
+        await navigator.clipboard.writeText(artifactContent);
+      } catch {
+        setError('Не удалось скопировать результат автоматически.');
+      }
+    };
+
+    const downloadArtifact = () => {
+      if (!artifactContent) return;
+      const blob = new Blob([artifactContent], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download =
+        modeId === 'presentation'
+          ? 'presentation.txt'
+          : modeId === 'stories'
+            ? 'stories.txt'
+            : 'document.txt';
+      anchor.click();
+      URL.revokeObjectURL(url);
     };
 
     return (
@@ -207,8 +244,36 @@ export function MediaProductionConsole({
             </div>
 
             {artifactContent ? (
-              <div className="mt-4 whitespace-pre-wrap text-base leading-7 text-white/82">
-                {artifactContent}
+              <div>
+                <div className="mt-4 whitespace-pre-wrap text-base leading-7 text-white/82">
+                  {artifactContent}
+                </div>
+                <div className="mt-5 flex flex-wrap gap-2 border-t border-white/[0.07] pt-4">
+                  <button
+                    type="button"
+                    onClick={copyArtifact}
+                    className="rounded-xl border border-white/[0.10] bg-white/[0.03] px-3 py-2 text-xs font-bold text-white/74 hover:border-[#69e4ee]/24 hover:text-white"
+                  >
+                    Скопировать
+                  </button>
+                  <button
+                    type="button"
+                    onClick={downloadArtifact}
+                    className="rounded-xl border border-white/[0.10] bg-white/[0.03] px-3 py-2 text-xs font-bold text-white/74 hover:border-[#f1c96c]/24 hover:text-white"
+                  >
+                    Скачать TXT
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      window.localStorage.removeItem(artifactDraftKey);
+                      setArtifactContent('');
+                    }}
+                    className="rounded-xl border border-white/[0.08] px-3 py-2 text-xs font-bold text-white/48 hover:text-white/72"
+                  >
+                    Очистить
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="flex min-h-[240px] items-center justify-center text-center">
