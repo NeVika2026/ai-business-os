@@ -73,7 +73,7 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
         '--osa-hero-light': heroLightIntensity('ready', isTyping),
         '--osa-hero-warmth': heroLightWarmth('ready', isTyping),
       }) as CSSProperties,
-    [heroReady, isTyping],
+    [isTyping],
   );
 
   const resetToInput = () => {
