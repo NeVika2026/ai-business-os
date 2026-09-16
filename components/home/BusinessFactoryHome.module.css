@@ -200,13 +200,23 @@
   gap:.45rem;
 }
 
-.quickFormats span {
-  border:1px solid rgba(255,255,255,.06);
+.quickFormats button {
+  border:1px solid rgba(255,255,255,.10);
   border-radius:999px;
-  padding:.4rem .65rem;
-  color:rgba(255,255,255,.32);
-  font-size:9px;
-  font-weight:700;
+  padding:.5rem .75rem;
+  color:rgba(255,255,255,.72);
+  background:rgba(255,255,255,.025);
+  font-size:12px;
+  font-weight:750;
+  cursor:pointer;
+  transition:border-color .2s ease,color .2s ease,background .2s ease,transform .2s ease;
+}
+
+.quickFormats button:hover {
+  transform:translateY(-1px);
+  border-color:rgba(66,231,255,.34);
+  color:#c9faff;
+  background:rgba(66,231,255,.07);
 }
 
 .launchButton {
