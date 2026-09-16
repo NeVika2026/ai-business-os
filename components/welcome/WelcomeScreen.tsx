@@ -85,7 +85,7 @@ export function WelcomeScreen() {
           </Link>
         </header>
 
-        <section className="grid min-h-[800px] items-center gap-8 py-10 xl:grid-cols-[.9fr_1.1fr] xl:gap-12 xl:py-14">
+        <section className="grid min-h-[720px] items-center gap-8 py-8 xl:grid-cols-[.92fr_1.08fr] xl:gap-10 xl:py-10">
           <div className="relative z-[2] max-w-[740px]">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#69e4ee]/18 bg-[#69e4ee]/[0.055] px-4 py-2.5 text-[12px] font-bold uppercase tracking-[0.12em] text-[#a8f2f7]">
               <span className="h-1.5 w-1.5 rounded-full bg-[#69e4ee] shadow-[0_0_12px_rgba(105,228,238,.8)]" />
@@ -96,7 +96,7 @@ export function WelcomeScreen() {
               AI-ПЛАТФОРМА ДЛЯ РЕАЛЬНОГО БИЗНЕСА
             </p>
 
-            <h1 className="mt-4 max-w-[760px] text-[clamp(3.8rem,7vw,7.7rem)] font-black leading-[.82] tracking-[-0.075em] text-[#fff8e7]">
+            <h1 className="mt-4 max-w-[760px] text-[clamp(3.65rem,6.35vw,7.05rem)] font-black leading-[.86] tracking-[-0.07em] text-[#fff8e7]">
               Превращаем
               <span className="block bg-[linear-gradient(180deg,#fff0ad_0%,#f4cf6a_34%,#d99a2d_78%,#f7d575_100%)] bg-clip-text text-transparent">
                 идеи в готовый
@@ -106,14 +106,14 @@ export function WelcomeScreen() {
               </span>
             </h1>
 
-            <p className="mt-7 max-w-2xl text-lg leading-8 text-white/76 sm:text-xl sm:leading-8">
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-white/78 sm:text-[1.15rem] sm:leading-8">
               OSA сама собирает нужный цех: стратегия, аналитика, визуал, видео, продажи и
               автоматизация. Вы ставите задачу — завод возвращает готовый результат.
             </p>
 
             <form
               action={generateFirstPlan}
-              className="mt-8 overflow-hidden rounded-[26px] border border-[#69e4ee]/18 bg-[#090d14]/94 p-3.5 shadow-[0_0_0_1px_rgba(105,228,238,.035),0_28px_90px_-40px_rgba(0,0,0,.98),0_0_55px_-30px_rgba(105,228,238,.5)] backdrop-blur-2xl"
+              className="mt-7 overflow-hidden rounded-[26px] border border-[#69e4ee]/18 bg-[#090d14]/94 p-3.5 shadow-[0_0_0_1px_rgba(105,228,238,.035),0_28px_90px_-40px_rgba(0,0,0,.98),0_0_55px_-30px_rgba(105,228,238,.5)] backdrop-blur-2xl"
             >
               <div className="flex items-center justify-between px-2 pb-2">
                 <span className="text-[12px] font-bold uppercase tracking-[0.14em] text-white/72">
@@ -161,7 +161,7 @@ export function WelcomeScreen() {
               ))}
             </div>
 
-            <div className="mt-8 grid max-w-2xl grid-cols-3 gap-2">
+            <div className="mt-6 grid max-w-2xl grid-cols-3 gap-2">
               {[
                 ['7', 'цехов'],
                 ['1', 'AI-директор'],
