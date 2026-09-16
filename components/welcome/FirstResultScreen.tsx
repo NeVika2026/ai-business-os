@@ -26,6 +26,8 @@ function isHeading(line: string): boolean {
 
   const known = [
     'первый экран',
+    'подзаголовок',
+    'cta',
     'hero',
     'проблема',
     'решение',
@@ -54,6 +56,129 @@ function isHeading(line: string): boolean {
 function isFormPlaceholder(line: string): boolean {
   const normalized = cleanLine(line).toLowerCase().replace(/ё/g, 'е');
   return normalized.includes('форма заявки') && (line.includes('[') || normalized.includes('имя') || normalized.includes('телефон'));
+}
+
+
+type ArtifactBlock = {
+  heading: string | null;
+  body: string[];
+  listLike: boolean;
+};
+
+function parseArtifactBlocks(content: string): ArtifactBlock[] {
+  return content
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .map((block) => {
+      const lines = block
+        .split('\n')
+        .filter((line) => !isFormPlaceholder(line))
+        .map(cleanLine)
+        .filter(Boolean);
+
+      if (!lines.length) return null;
+
+      const heading = isHeading(lines[0]!) ? lines[0]!.replace(/:$/, '') : null;
+      const body = heading ? lines.slice(1) : lines;
+      const listLike =
+        body.length > 0 &&
+        body.every((line) => /^(?:[-•]|\d+[.)])\s*/.test(line));
+
+      return { heading, body, listLike };
+    })
+    .filter((block): block is ArtifactBlock => Boolean(block));
+}
+
+function blockMatches(block: ArtifactBlock, tokens: string[]): boolean {
+  const heading = (block.heading ?? '').toLowerCase().replace(/ё/g, 'е');
+  return tokens.some((token) => heading.includes(token));
+}
+
+function renderLandingPreview(content: string) {
+  const blocks = parseArtifactBlocks(content);
+  const hero = blocks.find((block) => blockMatches(block, ['первый экран', 'hero']));
+  const subtitle = blocks.find((block) => blockMatches(block, ['подзаголов']));
+  const cta = blocks.find((block) => blockMatches(block, ['cta', 'призыв']));
+  const excluded = new Set([hero, subtitle, cta].filter(Boolean));
+  const rest = blocks.filter((block) => !excluded.has(block));
+
+  const heroTitle = hero?.body[0] ?? 'Управление недвижимостью без расстояния';
+  const heroSubtitle =
+    subtitle?.body.join(' ') ??
+    hero?.body.slice(1).join(' ') ??
+    'Контроль объекта, арендаторов и расходов — в одном сервисе.';
+  const ctaText = cta?.body[0] ?? 'Оставить заявку';
+
+  return (
+    <article className="overflow-hidden rounded-[32px] border border-white/[0.10] bg-[#080d13] shadow-[0_30px_90px_-40px_rgba(0,0,0,.9)]">
+      <div className="flex items-center gap-2 border-b border-white/[0.08] bg-white/[0.025] px-5 py-3">
+        <span className="h-2.5 w-2.5 rounded-full bg-[#ff6f61]/80" />
+        <span className="h-2.5 w-2.5 rounded-full bg-[#f1c96c]/80" />
+        <span className="h-2.5 w-2.5 rounded-full bg-[#69e4ee]/80" />
+        <div className="ml-3 rounded-full border border-white/[0.06] bg-black/20 px-4 py-1.5 text-[11px] text-white/45">
+          предпросмотр готового лендинга
+        </div>
+      </div>
+
+      <section className="relative overflow-hidden px-6 py-12 sm:px-10 sm:py-16">
+        <div className="pointer-events-none absolute right-[-8%] top-[-22%] h-[360px] w-[360px] rounded-full bg-[#69e4ee]/10 blur-[90px]" />
+        <div className="pointer-events-none absolute bottom-[-30%] left-[20%] h-[320px] w-[320px] rounded-full bg-[#f1c96c]/10 blur-[100px]" />
+        <p className="relative text-[11px] font-black uppercase tracking-[.2em] text-[#69e4ee]">
+          УПРАВЛЕНИЕ НЕДВИЖИМОСТЬЮ
+        </p>
+        <h2 className="relative mt-4 max-w-[14ch] text-4xl font-black leading-[.96] tracking-[-.055em] text-[#fff8e7] sm:text-6xl">
+          {heroTitle}
+        </h2>
+        <p className="relative mt-5 max-w-2xl text-base leading-7 text-white/72 sm:text-lg">
+          {heroSubtitle}
+        </p>
+        <button
+          type="button"
+          className="relative mt-7 inline-flex min-h-12 items-center rounded-2xl bg-[linear-gradient(135deg,#ffe08a,#d79a30)] px-6 text-sm font-black text-[#1b1105]"
+        >
+          {ctaText}
+        </button>
+      </section>
+
+      <div className="grid gap-px bg-white/[0.06] md:grid-cols-2">
+        {rest.map((block, index) => (
+          <section
+            key={`landing-${index}`}
+            className="min-h-[190px] bg-[#090f16] p-6 sm:p-8"
+          >
+            {block.heading ? (
+              <h3 className="text-xl font-black tracking-[-.025em] text-[#fff1bf]">
+                {block.heading}
+              </h3>
+            ) : null}
+
+            {block.listLike ? (
+              <ul className="mt-4 grid gap-3">
+                {block.body.map((line, lineIndex) => (
+                  <li
+                    key={lineIndex}
+                    className="flex gap-3 text-sm leading-6 text-white/74 sm:text-base"
+                  >
+                    <span className="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-[#69e4ee]" />
+                    <span>{line.replace(/^(?:[-•]|\d+[.)])\s*/, '')}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className={block.heading ? 'mt-4 grid gap-3' : 'grid gap-3'}>
+                {block.body.map((line, lineIndex) => (
+                  <p key={lineIndex} className="text-sm leading-6 text-white/74 sm:text-base sm:leading-7">
+                    {line}
+                  </p>
+                ))}
+              </div>
+            )}
+          </section>
+        ))}
+      </div>
+    </article>
+  );
 }
 
 function renderArtifact(content: string) {
@@ -209,7 +334,7 @@ export function FirstResultScreen({ entry }: FirstResultScreenProps) {
         </header>
 
         <div className="relative mt-8 grid gap-5">
-          {renderArtifact(safeContent)}
+          {isLandingTask ? renderLandingPreview(safeContent) : renderArtifact(safeContent)}
 
           {isLandingTask ? (
             <section className="rounded-[26px] border border-[#f1c96c]/18 bg-[linear-gradient(145deg,rgba(241,201,108,.055),rgba(105,228,238,.025))] p-5 sm:p-7">
