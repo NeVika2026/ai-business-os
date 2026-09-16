@@ -14,10 +14,6 @@ import { OsaClarifyPanel } from '@/components/home/OsaClarifyPanel';
 import { OsaDirectorPlanPanel } from '@/components/home/OsaDirectorPlanPanel';
 import { BusinessFactoryHero } from '@/components/home/BusinessFactoryHero';
 import homeStyles from '@/components/home/BusinessFactoryHome.module.css';
-import {
-  OsaHeroPresence,
-  type OsaHeroPresenceHandle,
-} from '@/components/home/OsaHeroPresence';
 import { OsaSkillModeLine } from '@/components/home/OsaSkillModeLine';
 import { OsaRealWorkResult } from '@/components/home/OsaRealWorkResult';
 import { OsaErrorState } from '@/components/osa/OsaErrorState';
@@ -26,7 +22,6 @@ import { VoiceInputButton } from '@/components/platform/VoiceInputButton';
 import { buildCreateStudioHref, detectCreateStudioMode } from '@/utils/platform/create-studio';
 import type { HomeQuickActionId } from '@/utils/home/home-action';
 import {
-  HERO_HOME_GREETING,
   HERO_HOME_PLACEHOLDER,
   heroLightIntensity,
   heroLightWarmth,
@@ -52,11 +47,8 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialPrompt = searchParams.get('prompt')?.trim() ?? '';
-  const heroRef = useRef<OsaHeroPresenceHandle>(null);
-  const [introPlayed, setIntroPlayed] = useState(Boolean(initialPrompt));
   const [prompt, setPrompt] = useState(initialPrompt);
   const [phase, setPhase] = useState<ScreenPhase>('input');
-  const [heroReady, setHeroReady] = useState(Boolean(initialPrompt));
   const [taskType, setTaskType] = useState<RealWorkTaskType | null>(null);
   const [skillModeLabel, setSkillModeLabel] = useState<string | null>(null);
   const [clarifyQuestions, setClarifyQuestions] = useState<string[]>([]);
@@ -73,23 +65,16 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
 
   const isTyping = prompt.trim().length > 0;
   const showCompose = phase === 'input' || phase === 'error';
-  const companionPhase =
-    phase === 'working' || phase === 'clarify' || phase === 'plan' || phase === 'error';
   const isThinking = phase === 'working';
 
   const canvasStyle = useMemo(
     () =>
       ({
-        '--osa-hero-light': heroLightIntensity(heroReady ? 'ready' : 'eyes-form', isTyping),
-        '--osa-hero-warmth': heroLightWarmth(heroReady ? 'ready' : 'eyes-form', isTyping),
+        '--osa-hero-light': heroLightIntensity('ready', isTyping),
+        '--osa-hero-warmth': heroLightWarmth('ready', isTyping),
       }) as CSSProperties,
     [heroReady, isTyping],
   );
-
-  const handleHeroReady = useCallback(() => {
-    setIntroPlayed(true);
-    setHeroReady(true);
-  }, []);
 
   const resetToInput = () => {
     orchestraLoopRef.current = false;
@@ -105,7 +90,6 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
     setDeliverable(null);
     setProjectId(null);
     setWorkspaceHref(null);
-    setHeroReady(true);
   };
 
   const runOrchestraLoop = useCallback(
@@ -264,10 +248,6 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
   };
 
   const handlePromptChange = (value: string) => {
-    if (!heroReady) {
-      heroRef.current?.skip();
-    }
-
     setPrompt(value);
   };
 
@@ -316,44 +296,33 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
       <div className="osa-home-stage relative z-[1] mx-auto w-full max-w-[1240px] flex-1 px-4 pb-8 pt-4 sm:px-6 lg:px-8">
         <div className="osa-home-grid">
           <div className="osa-home-main">
-            <div className="osa-home-hero w-full">
-              <div className="mb-5 lg:hidden">
-                <BusinessFactoryHero
-                  active={isTyping}
-                  thinking={isThinking}
-                  currentTask={prompt}
-                  agentName={orchestra?.activeAgentName}
-                  agentRole={orchestra?.activeAgentRole}
-                  activity={orchestra?.activeActivity}
-                  progress={orchestra?.overallProgress}
-                />
-              </div>
-
-              <div className="osa-home-eyes-slot">
-                <OsaHeroPresence
-                  ref={heroRef}
-                  mode={introPlayed || companionPhase ? 'companion' : 'intro'}
-                  lookStraight={phase === 'working'}
-                  skipIntro={introPlayed}
-                  onReady={handleHeroReady}
-                />
-              </div>
+            <div className={homeStyles.heroCopy}>
+              <p className={homeStyles.eyebrow}>AI-ПЛАТФОРМА ДЛЯ РЕАЛЬНОГО БИЗНЕСА</p>
+              <h1 className={homeStyles.heroTitle}>
+                <span>Превращаем</span>
+                <strong>идеи в готовый</strong>
+                <strong>результат</strong>
+              </h1>
+              <p className={homeStyles.heroLead}>
+                OSA сама собирает нужный цех: стратегия, аналитика, визуал, видео,
+                продажи и автоматизация.
+              </p>
 
               {showCompose ? (
-                <div
-                  className={`osa-home-compose ${heroReady ? 'osa-home-compose--visible' : 'osa-home-compose--waiting'}`}
-                >
-                  <h1 className="osa-home-greeting osa-home-greeting--visible">{HERO_HOME_GREETING}</h1>
+                <div className={homeStyles.commandConsole}>
+                  <div className={homeStyles.consoleHeader}>
+                    <span>DIRECTOR CONSOLE</span>
+                    <span><i /> OSA слушает</span>
+                  </div>
 
                   <div className="osa-home-input-wrap">
                     <label className="sr-only" htmlFor="osa-home-prompt">
-                      {HERO_HOME_GREETING}
+                      Опишите задачу для Бизнес-Завода
                     </label>
                     <textarea
                       id="osa-home-prompt"
                       value={prompt}
                       onChange={(event) => handlePromptChange(event.target.value)}
-                      onFocus={() => heroRef.current?.skip()}
                       onKeyDown={(event) => {
                         if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && canSubmit) {
                           event.preventDefault();
@@ -362,25 +331,32 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
                       }}
                       rows={5}
                       disabled={busy}
-                      placeholder={heroReady ? HERO_HOME_PLACEHOLDER : ''}
+                      placeholder={HERO_HOME_PLACEHOLDER}
                       className={`osa-home-input ${isTyping ? 'osa-home-input--typing' : ''}`}
                       autoFocus
                     />
-                    <div className="absolute bottom-4 right-[4.65rem]">
+                    <div className="absolute bottom-4 right-4">
                       <VoiceInputButton
                         value={prompt}
                         onChange={handlePromptChange}
                         disabled={busy}
                       />
                     </div>
+                  </div>
+
+                  <div className={homeStyles.consoleActions}>
+                    <div className={homeStyles.quickFormats}>
+                      {['Видео', 'Визуал', 'Продажи', 'Сайт'].map((label) => (
+                        <span key={label}>{label}</span>
+                      ))}
+                    </div>
                     <button
                       type="button"
                       disabled={!canSubmit}
                       onClick={() => runTask()}
-                      aria-label="Отправить"
-                      className={`osa-home-send ${canSubmit ? 'osa-home-send--ready' : ''}`}
+                      className={homeStyles.launchButton}
                     >
-                      <span aria-hidden="true">↑</span>
+                      {busy ? 'Завод работает…' : 'Запустить задачу →'}
                     </button>
                   </div>
 
@@ -421,26 +397,43 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
 
               {phase === 'working' && !orchestra ? (
                 <p className="osa-live-discovery" aria-live="polite">
-                  Думаю…
+                  OSA строит рабочий маршрут…
                 </p>
               ) : null}
             </div>
           </div>
 
           <div className="osa-home-side">
-            <div className="hidden lg:block">
-              <BusinessFactoryHero
-                active={isTyping}
-                thinking={isThinking}
-                currentTask={prompt}
-                agentName={orchestra?.activeAgentName}
-                agentRole={orchestra?.activeAgentRole}
-                activity={orchestra?.activeActivity}
-                progress={orchestra?.overallProgress}
-              />
-            </div>
+            <BusinessFactoryHero
+              active={isTyping}
+              thinking={isThinking}
+              currentTask={prompt}
+              agentName={orchestra?.activeAgentName}
+              agentRole={orchestra?.activeAgentRole}
+              activity={orchestra?.activeActivity}
+              progress={orchestra?.overallProgress}
+            />
           </div>
         </div>
+
+        {showCompose ? (
+          <div className={homeStyles.valueRail}>
+            {[
+              ['⚡', 'СОБИРАЕТ КОМАНДУ', 'Нужные AI-специалисты под каждую задачу'],
+              ['◎', 'ДЕЛАЕТ РЕЗУЛЬТАТ', 'От стратегии до готового продукта'],
+              ['▥', 'МАСШТАБИРУЕТ', 'Быстрее. Дешевле. Стабильнее.'],
+              ['∞', 'РАСШИРЯЕТ', 'Новые навыки и инструменты по мере роста'],
+            ].map(([icon, title, text]) => (
+              <div key={title} className={homeStyles.valueItem}>
+                <span>{icon}</span>
+                <div>
+                  <b>{title}</b>
+                  <p>{text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
 
         {showCompose ? <BusinessZavodHomeExperience /> : null}
       </div>
