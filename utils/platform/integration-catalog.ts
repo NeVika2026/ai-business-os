@@ -122,10 +122,10 @@ export const INTEGRATION_CATALOG: IntegrationDefinition[] = [
   {
     id: 'vk-publish',
     name: 'ВКонтакте',
-    description: 'Публикация в сообщество и адаптация под ленту.',
+    description: 'Публикация текстовых постов на стену или в сообщество.',
     category: 'publishing',
-    capabilities: ['Посты', 'Сообщество', 'Медиа'],
-    planned: true,
+    capabilities: ['Посты', 'Сообщество', 'Прямая отправка'],
+    envKeys: ['VK_ACCESS_TOKEN', 'VK_OWNER_ID'],
   },
   {
     id: 'dzen-publish',
