@@ -11,6 +11,10 @@ import {
   type MediaStudioKind,
   type MediaStudioStatusResult,
 } from '@/app/(dashboard)/modules/create/studio/actions';
+import {
+  ensureFactoryProjectAction,
+  saveFactoryArtifactAction,
+} from '@/app/(dashboard)/modules/factory-chain/actions';
 import type { CreateStudioModeId } from '@/utils/platform/create-studio';
 
 type MediaProductionConsoleProps = {
@@ -69,6 +73,7 @@ export function MediaProductionConsole({
 }: MediaProductionConsoleProps) {
   const router = useRouter();
   const kind = toMediaKind(modeId);
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(projectId);
   const [approved, setApproved] = useState(false);
   const [referenceImageUrl, setReferenceImageUrl] = useState('');
   const [duration, setDuration] = useState(5);
@@ -82,10 +87,11 @@ export function MediaProductionConsole({
   const [isStarting, startTransition] = useTransition();
   const [isLoadingVoices, startVoiceTransition] = useTransition();
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savedCompletionRef = useRef('');
 
   const artifactDraftKey = useMemo(
-    () => `business-zavod:create-artifact:${projectId ?? 'general'}:${modeId}`,
-    [modeId, projectId],
+    () => `business-zavod:create-artifact:${activeProjectId ?? 'general'}:${modeId}`,
+    [modeId, activeProjectId],
   );
 
   const promptText = useMemo(() => {
@@ -132,7 +138,7 @@ export function MediaProductionConsole({
     }
 
     pollRef.current = setTimeout(async () => {
-      const next = await getMediaGenerationStatusAction(kind, jobId, projectId);
+      const next = await getMediaGenerationStatusAction(kind, jobId, activeProjectId);
       setJobStatus(next);
       if (next.status === 'failed') {
         setError('Генерация завершилась с ошибкой: ' + next.providerStatus);
@@ -142,7 +148,34 @@ export function MediaProductionConsole({
     return () => {
       if (pollRef.current) clearTimeout(pollRef.current);
     };
-  }, [kind, jobId, jobStatus, projectId]);
+  }, [kind, jobId, jobStatus, activeProjectId]);
+
+
+  useEffect(() => {
+    if (
+      !activeProjectId ||
+      !kind ||
+      jobStatus?.status !== 'completed' ||
+      !jobStatus.outputUrl ||
+      savedCompletionRef.current === jobStatus.outputUrl
+    ) {
+      return;
+    }
+
+    savedCompletionRef.current = jobStatus.outputUrl;
+    void saveFactoryArtifactAction({
+      projectId: activeProjectId,
+      stage: 'create',
+      title: modeLabel(modeId),
+      content: [goal.trim(), jobStatus.outputUrl].filter(Boolean).join('\n\n'),
+      metadata: {
+        modeId,
+        outputUrl: jobStatus.outputUrl,
+        storagePath: jobStatus.storagePath ?? null,
+        providerStatus: jobStatus.providerStatus,
+      },
+    });
+  }, [activeProjectId, goal, jobStatus, kind, modeId]);
 
   if (!isLiveMode || !kind) {
     const buildArtifact = () => {
@@ -150,11 +183,22 @@ export function MediaProductionConsole({
 
       setError('');
       startArtifactTransition(async () => {
+        let targetProjectId = activeProjectId;
+        if (!targetProjectId) {
+          const project = await ensureFactoryProjectAction({
+            seed: goal,
+            stage: 'create',
+          });
+          targetProjectId = project.projectId;
+          setActiveProjectId(targetProjectId);
+        }
+
         const result = await generateCreateStudioArtifactAction({
           modeId,
           goal,
           format,
           context,
+          projectId: targetProjectId,
         });
 
         if (result.status === 'failed') {
@@ -162,15 +206,22 @@ export function MediaProductionConsole({
           return;
         }
 
+        setActiveProjectId(result.projectId);
         setArtifactContent(result.content);
-        window.localStorage.setItem(artifactDraftKey, result.content);
+        window.localStorage.setItem(
+          `business-zavod:create-artifact:${result.projectId}:${modeId}`,
+          result.content,
+        );
       });
     };
 
     const sendArtifactToPublish = () => {
       if (!artifactContent) return;
       window.sessionStorage.setItem('business-zavod:publish-source', artifactContent);
-      router.push('/modules/publish/studio');
+      router.push(
+        '/modules/publish/studio' +
+          (activeProjectId ? '?project=' + encodeURIComponent(activeProjectId) : ''),
+      );
     };
 
     const copyArtifact = async () => {
@@ -319,6 +370,16 @@ export function MediaProductionConsole({
     setJobStatus(null);
 
     startTransition(async () => {
+      let targetProjectId = activeProjectId;
+      if (!targetProjectId) {
+        const project = await ensureFactoryProjectAction({
+          seed: goal,
+          stage: 'create',
+        });
+        targetProjectId = project.projectId;
+        setActiveProjectId(targetProjectId);
+      }
+
       const result = await startMediaGenerationAction({
         kind,
         promptText,
@@ -552,7 +613,9 @@ export function MediaProductionConsole({
                         'Готовый файл: ' + jobStatus.outputUrl,
                       ].filter(Boolean).join('\n');
                       window.sessionStorage.setItem('business-zavod:publish-source', source);
-                      router.push('/modules/publish/studio');
+                      router.push(
+                        '/modules/publish/studio?project=' + encodeURIComponent(activeProjectId ?? ''),
+                      );
                     }}
                     className="rounded-lg border border-[#69e4ee]/18 px-2.5 py-1.5 text-[11px] font-bold text-[#a8f3f8]"
                   >
