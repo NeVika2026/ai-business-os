@@ -178,10 +178,48 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
     const trimmed = (inputOverride ?? prompt).trim();
 
     if (!quickActionId && trimmed) {
+      const normalized = trimmed.toLowerCase().replace(/ё/g, 'е');
       const studioMode = detectCreateStudioMode(trimmed);
 
       if (studioMode) {
         router.push(buildCreateStudioHref(studioMode, trimmed));
+        return;
+      }
+
+      const wantsFind =
+        /(^|\s)(найди|поиск|поищи)(\s|$)/.test(normalized) ||
+        normalized.includes('найди клиентов') ||
+        normalized.includes('найди конкурентов') ||
+        normalized.includes('найди партнер');
+
+      if (wantsFind) {
+        router.push('/modules/find/studio?prompt=' + encodeURIComponent(trimmed));
+        return;
+      }
+
+      const wantsAnalyze =
+        normalized.includes('проанализируй') ||
+        normalized.includes('анализ конкур') ||
+        normalized.includes('сравни конкур') ||
+        normalized.includes('разбери рынок') ||
+        normalized.includes('анализ рынка');
+
+      if (wantsAnalyze) {
+        router.push('/modules/analyze/studio?prompt=' + encodeURIComponent(trimmed));
+        return;
+      }
+
+      const wantsPublish =
+        normalized.includes('опубликуй') ||
+        normalized.includes('к публикации') ||
+        normalized.includes('под публикац') ||
+        normalized.includes('адаптируй под telegram') ||
+        normalized.includes('адаптируй под вк') ||
+        normalized.includes('адаптируй под дзен');
+
+      if (wantsPublish) {
+        window.sessionStorage.setItem('business-zavod:publish-source', trimmed);
+        router.push('/modules/publish/studio');
         return;
       }
     }
@@ -189,7 +227,9 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
     executeRealWork(quickActionId, undefined, trimmed);
   };
 
-  const launchFactoryPreset = (preset: 'video' | 'image' | 'sales' | 'site') => {
+  const launchFactoryPreset = (
+    preset: 'video' | 'image' | 'sales' | 'site' | 'find' | 'analyze' | 'publish',
+  ) => {
     const existing = prompt.trim();
 
     if (preset === 'video' || preset === 'image') {
@@ -198,6 +238,28 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
           ? 'Сделай сильный рекламный ролик под мою задачу.'
           : 'Создай сильный визуал под мою задачу.';
       router.push(buildCreateStudioHref(preset, existing || fallback));
+      return;
+    }
+
+    if (preset === 'find') {
+      const nextPrompt =
+        existing || 'Найди клиентов, партнёров или возможности роста для моего продукта.';
+      router.push('/modules/find/studio?prompt=' + encodeURIComponent(nextPrompt));
+      return;
+    }
+
+    if (preset === 'analyze') {
+      const nextPrompt =
+        existing || 'Проанализируй рынок и конкурентов и покажи конкретные точки усиления.';
+      router.push('/modules/analyze/studio?prompt=' + encodeURIComponent(nextPrompt));
+      return;
+    }
+
+    if (preset === 'publish') {
+      if (existing) {
+        window.sessionStorage.setItem('business-zavod:publish-source', existing);
+      }
+      router.push('/modules/publish/studio');
       return;
     }
 
@@ -317,6 +379,9 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
                       <button type="button" onClick={() => launchFactoryPreset('image')}>Визуал</button>
                       <button type="button" onClick={() => launchFactoryPreset('sales')}>Продажи</button>
                       <button type="button" onClick={() => launchFactoryPreset('site')}>Сайт</button>
+                      <button type="button" onClick={() => launchFactoryPreset('find')}>Найти</button>
+                      <button type="button" onClick={() => launchFactoryPreset('analyze')}>Анализ</button>
+                      <button type="button" onClick={() => launchFactoryPreset('publish')}>Публикация</button>
                     </div>
                     <button
                       type="button"
