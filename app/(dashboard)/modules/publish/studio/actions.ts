@@ -6,6 +6,7 @@ import { aiGateway } from '@/services/runtime/gateway/ai-gateway';
 import { createClient } from '@/services/supabase/server';
 import type { GatewayRequest } from '@/types/runtime/dto';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
+import { ensureFactoryProject, saveFactoryArtifact } from '@/lib/factory-chain/persistence';
 
 export type PublicationChannelId =
   | 'telegram'
@@ -24,7 +25,7 @@ export type PublicationVariant = {
 };
 
 export type PublicationPackResult =
-  | { status: 'completed'; variants: PublicationVariant[] }
+  | { status: 'completed'; projectId: string; variants: PublicationVariant[] }
   | { status: 'failed'; message: string };
 
 const CHANNEL_NAMES: Record<PublicationChannelId, string> = {
@@ -74,6 +75,7 @@ export async function buildPublicationPackAction(input: {
   channels: PublicationChannelId[];
   goal?: string;
   callToAction?: string;
+  projectId?: string | null;
 }): Promise<PublicationPackResult> {
   const source = input.source.trim();
   const channels = Array.from(new Set(input.channels));
@@ -85,6 +87,12 @@ export async function buildPublicationPackAction(input: {
   if (!channels.length) {
     return { status: 'failed', message: 'Выберите хотя бы одну площадку.' };
   }
+
+  const project = await ensureFactoryProject({
+    projectId: input.projectId,
+    seed: input.goal?.trim() || source.slice(0, 240),
+    stage: 'publish',
+  });
 
   const supabase = await createClient();
   const {
@@ -179,7 +187,32 @@ export async function buildPublicationPackAction(input: {
       };
     }
 
-    return { status: 'completed', variants };
+    const packText = variants
+      .map((variant) =>
+        [
+          CHANNEL_NAMES[variant.channel],
+          variant.title,
+          variant.body,
+          variant.cta ? 'CTA: ' + variant.cta : '',
+        ]
+          .filter(Boolean)
+          .join('\n'),
+      )
+      .join('\n\n---\n\n');
+
+    await saveFactoryArtifact({
+      projectId: project.projectId,
+      stage: 'publish',
+      title: 'Пакет публикаций',
+      content: packText,
+      metadata: {
+        channels,
+        variants,
+      },
+      identity: project.identity,
+    });
+
+    return { status: 'completed', projectId: project.projectId, variants };
   } catch (error) {
     return {
       status: 'failed',
@@ -253,6 +286,7 @@ export async function publishVariantAction(input: {
   title?: string;
   body: string;
   cta?: string;
+  projectId?: string | null;
 }): Promise<{ ok: true; message: string } | { ok: false; message: string }> {
   if (input.channel !== 'telegram' && input.channel !== 'vk') {
     return {
@@ -309,6 +343,20 @@ export async function publishVariantAction(input: {
         };
       }
 
+      if (input.projectId) {
+        await saveFactoryArtifact({
+          projectId: input.projectId,
+          stage: 'publish',
+          title: 'Опубликовано во ВКонтакте',
+          content: text,
+          metadata: {
+            channel: 'vk',
+            postId: data.response.post_id,
+            published: true,
+          },
+        });
+      }
+
       return {
         ok: true,
         message: `Опубликовано во ВКонтакте. Post ID: ${data.response.post_id}.`,
@@ -354,6 +402,20 @@ export async function publishVariantAction(input: {
           message: data.description || 'Telegram отклонил публикацию.',
         };
       }
+    }
+
+    if (input.projectId) {
+      await saveFactoryArtifact({
+        projectId: input.projectId,
+        stage: 'publish',
+        title: 'Опубликовано в Telegram',
+        content: text,
+        metadata: {
+          channel: 'telegram',
+          chunks: chunks.length,
+          published: true,
+        },
+      });
     }
 
     return {
