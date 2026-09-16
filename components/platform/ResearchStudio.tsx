@@ -1,41 +1,63 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 
 import {
   runResearchAction,
+  type PriorResearchContext,
   type ResearchMode,
   type ResearchSource,
 } from '@/app/(dashboard)/modules/research/actions';
+import { FactoryChainBar } from '@/components/platform/FactoryChainBar';
 
 type ResearchStudioProps = {
   mode: ResearchMode;
   initialQuery?: string;
 };
 
+const RESEARCH_HANDOFF_KEY = 'business-zavod:research-handoff';
+const CREATE_HANDOFF_KEY = 'business-zavod:create-handoff';
+const PUBLISH_HANDOFF_KEY = 'business-zavod:publish-source';
+
+function sourceList(sources: ResearchSource[]): string {
+  return sources
+    .map((source, index) => `[${index + 1}] ${source.title}\n${source.url}`)
+    .join('\n');
+}
+
 export function ResearchStudio({ mode, initialQuery = '' }: ResearchStudioProps) {
+  const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
   const [summary, setSummary] = useState('');
   const [sources, setSources] = useState<ResearchSource[]>([]);
   const [error, setError] = useState('');
+  const [handoffMessage, setHandoffMessage] = useState('');
   const [isPending, startTransition] = useTransition();
 
   const isFind = mode === 'find';
 
-  const runResearch = () => {
-    const trimmed = query.trim();
+  const executeResearch = (
+    queryValue: string,
+    priorContext?: PriorResearchContext | null,
+  ) => {
+    const trimmed = queryValue.trim();
     if (!trimmed || isPending) return;
 
     setError('');
     setSummary('');
-    setSources([]);
+    if (!priorContext) setSources([]);
 
     startTransition(async () => {
-      const result = await runResearchAction({ mode, query: trimmed });
+      const result = await runResearchAction({
+        mode,
+        query: trimmed,
+        priorContext: priorContext ?? null,
+      });
 
       if (result.status === 'failed') {
         setError(result.message);
-        setSources(result.sources ?? []);
+        setSources(result.sources ?? priorContext?.sources ?? []);
         return;
       }
 
@@ -44,8 +66,92 @@ export function ResearchStudio({ mode, initialQuery = '' }: ResearchStudioProps)
     });
   };
 
+  useEffect(() => {
+    if (mode !== 'analyze') return;
+
+    const raw = window.sessionStorage.getItem(RESEARCH_HANDOFF_KEY);
+    if (!raw) return;
+
+    window.sessionStorage.removeItem(RESEARCH_HANDOFF_KEY);
+
+    try {
+      const prior = JSON.parse(raw) as PriorResearchContext;
+      if (!prior.query?.trim() || !Array.isArray(prior.sources) || !prior.sources.length) {
+        return;
+      }
+
+      setQuery(prior.query);
+      setSources(prior.sources);
+      setHandoffMessage('Результат из цеха поиска принят. Анализ запущен автоматически.');
+      executeResearch(prior.query, prior);
+    } catch {
+      setHandoffMessage('');
+    }
+    // Handoff is intentionally consumed once on entry.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
+
+  const runResearch = () => {
+    executeResearch(query);
+  };
+
+  const continueToAnalyze = () => {
+    if (!summary || !sources.length) return;
+
+    const payload: PriorResearchContext = {
+      query,
+      summary,
+      sources,
+    };
+
+    window.sessionStorage.setItem(RESEARCH_HANDOFF_KEY, JSON.stringify(payload));
+    router.push('/modules/analyze/studio');
+  };
+
+  const continueToCreate = () => {
+    if (!summary) return;
+
+    const context = [
+      mode === 'find' ? 'Результат поиска:' : 'Результат анализа:',
+      summary,
+      sources.length ? '\nИсточники:\n' + sourceList(sources) : '',
+    ]
+      .filter(Boolean)
+      .join('\n\n');
+
+    window.sessionStorage.setItem(
+      CREATE_HANDOFF_KEY,
+      JSON.stringify({
+        goal:
+          mode === 'find'
+            ? 'Создай рабочий материал на основе результатов исследования.'
+            : 'Создай рабочий материал на основе этого анализа.',
+        context,
+        sourceStage: mode,
+      }),
+    );
+
+    router.push('/modules/create/studio?mode=document');
+  };
+
+  const continueToPublish = () => {
+    if (!summary) return;
+
+    const publicationSource = [
+      summary,
+      sources.length ? '\nИсточники:\n' + sourceList(sources) : '',
+    ]
+      .filter(Boolean)
+      .join('\n\n');
+
+    window.sessionStorage.setItem(PUBLISH_HANDOFF_KEY, publicationSource);
+    router.push('/modules/publish/studio');
+  };
+
   return (
     <main className="relative mx-auto w-full max-w-[1320px] overflow-hidden pb-16 text-[#f7f2e8]">
+      <FactoryChainBar active={isFind ? 'find' : 'analyze'} />
+
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -right-24 top-0 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,rgba(105,228,238,.10),transparent_70%)] blur-3xl"
@@ -70,10 +176,16 @@ export function ResearchStudio({ mode, initialQuery = '' }: ResearchStudioProps)
           <p className="mt-5 max-w-3xl text-lg leading-8 text-white/74">
             {isFind
               ? 'OSA ищет актуальные источники, а затем собирает из них конкретные находки и следующий шаг.'
-              : 'OSA сначала получает актуальные источники, потом отделяет факты от выводов и собирает рабочий анализ.'}
+              : 'OSA получает найденные источники, отделяет факты от выводов и собирает рабочий анализ.'}
           </p>
         </div>
       </section>
+
+      {handoffMessage ? (
+        <section className="mt-4 rounded-[20px] border border-emerald-300/12 bg-emerald-300/[0.04] px-4 py-3 text-sm font-semibold text-emerald-100/82">
+          {handoffMessage}
+        </section>
+      ) : null}
 
       <section className="relative mt-5 grid gap-5 xl:grid-cols-[.72fr_1.28fr]">
         <div className="rounded-[30px] border border-white/[0.08] bg-[#080c12] p-5 sm:p-6">
@@ -99,7 +211,7 @@ export function ResearchStudio({ mode, initialQuery = '' }: ResearchStudioProps)
             className="mt-4 w-full rounded-[18px] bg-[linear-gradient(135deg,#ffe08a,#d79a30)] px-5 py-4 text-sm font-black text-[#1b1105] shadow-[0_18px_40px_-22px_rgba(241,201,108,.6)] transition hover:-translate-y-0.5 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-35"
           >
             {isPending
-              ? 'OSA ищет и проверяет источники…'
+              ? 'OSA проверяет источники…'
               : isFind
                 ? 'Запустить поиск →'
                 : 'Запустить анализ →'}
@@ -116,8 +228,8 @@ export function ResearchStudio({ mode, initialQuery = '' }: ResearchStudioProps)
               ПОИСКОВЫЙ ДВИЖОК
             </p>
             <p className="mt-2 text-sm leading-6 text-white/62">
-              Для живого веб-поиска требуется подключённый Brave Search API. Если он не настроен,
-              цех честно покажет, что поиск недоступен, а не подставит фиктивные ссылки.
+              Живой веб-поиск использует Brave Search. Если анализ пришёл из цеха поиска,
+              найденные источники передаются дальше автоматически и второй раз вводить их не нужно.
             </p>
           </div>
         </div>
@@ -142,16 +254,47 @@ export function ResearchStudio({ mode, initialQuery = '' }: ResearchStudioProps)
                   Источники появятся здесь
                 </p>
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/54">
-                  Сначала OSA ищет данные в интернете. Только после этого собирается вывод.
+                  Сначала OSA получает источники. Только после этого собирается вывод.
                 </p>
               </div>
             </div>
           ) : (
             <>
               {summary ? (
-                <div className="mt-5 whitespace-pre-wrap rounded-[22px] border border-white/[0.08] bg-white/[0.025] p-5 text-base leading-7 text-white/82">
-                  {summary}
-                </div>
+                <>
+                  <div className="mt-5 whitespace-pre-wrap rounded-[22px] border border-white/[0.08] bg-white/[0.025] p-5 text-base leading-7 text-white/82">
+                    {summary}
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {isFind ? (
+                      <button
+                        type="button"
+                        onClick={continueToAnalyze}
+                        disabled={!sources.length}
+                        className="rounded-xl bg-[linear-gradient(135deg,#69e4ee,#399fb5)] px-4 py-2.5 text-xs font-black text-[#041015] disabled:opacity-35"
+                      >
+                        Передать в анализ →
+                      </button>
+                    ) : null}
+
+                    <button
+                      type="button"
+                      onClick={continueToCreate}
+                      className="rounded-xl bg-[linear-gradient(135deg,#ffe08a,#d79a30)] px-4 py-2.5 text-xs font-black text-[#1b1105]"
+                    >
+                      В цех создания →
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={continueToPublish}
+                      className="rounded-xl border border-white/[0.10] bg-white/[0.03] px-4 py-2.5 text-xs font-bold text-white/74 hover:border-[#69e4ee]/24 hover:text-white"
+                    >
+                      Сразу в публикацию
+                    </button>
+                  </div>
+                </>
               ) : null}
 
               {sources.length > 0 ? (
