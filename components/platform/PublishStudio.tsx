@@ -1,12 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 
 import {
   buildPublicationPackAction,
+  getPublishingConnectionStatusAction,
+  publishVariantAction,
   type PublicationChannelId,
   type PublicationVariant,
+  type PublishingConnectionStatus,
 } from '@/app/(dashboard)/modules/publish/studio/actions';
 
 const CHANNELS: Array<{
@@ -39,6 +42,15 @@ export function PublishStudio() {
   const [variants, setVariants] = useState<PublicationVariant[]>([]);
   const [message, setMessage] = useState('');
   const [copied, setCopied] = useState<PublicationChannelId | null>(null);
+  const [connections, setConnections] = useState<PublishingConnectionStatus>({
+    telegram: false,
+    vk: false,
+    dzen: false,
+    youtube: false,
+    tiktok: false,
+    max: false,
+  });
+  const [publishingChannel, setPublishingChannel] = useState<PublicationChannelId | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const canBuild = source.trim().length > 3 && selected.length > 0 && !isPending;
@@ -47,6 +59,10 @@ export function PublishStudio() {
     () => selected.map(channelName).join(' · '),
     [selected],
   );
+
+  useEffect(() => {
+    void getPublishingConnectionStatusAction().then(setConnections);
+  }, []);
 
   const toggleChannel = (id: PublicationChannelId) => {
     setSelected((current) =>
@@ -78,6 +94,23 @@ export function PublishStudio() {
       setVariants(result.variants);
       setMessage('Пакет готов. Тексты адаптированы отдельно под каждую площадку.');
     });
+  };
+
+  const publishVariant = async (variant: PublicationVariant) => {
+    if (!connections[variant.channel] || publishingChannel) return;
+
+    setPublishingChannel(variant.channel);
+    setMessage('');
+
+    const result = await publishVariantAction({
+      channel: variant.channel,
+      title: variant.title,
+      body: variant.body,
+      cta: variant.cta,
+    });
+
+    setPublishingChannel(null);
+    setMessage(result.message);
   };
 
   const copyVariant = async (variant: PublicationVariant) => {
@@ -207,6 +240,16 @@ export function PublishStudio() {
                   <span className="mt-1 block text-[12px] text-white/58">
                     {channel.hint}
                   </span>
+                  <span
+                    className={[
+                      'mt-2 inline-flex rounded-full border px-2 py-1 text-[10px] font-bold',
+                      connections[channel.id]
+                        ? 'border-emerald-300/15 bg-emerald-300/[0.05] text-emerald-200/88'
+                        : 'border-white/[0.08] bg-white/[0.02] text-white/42',
+                    ].join(' ')}
+                  >
+                    {connections[channel.id] ? 'ПОДКЛЮЧЕНО' : 'НЕ ПОДКЛЮЧЕНО'}
+                  </span>
                 </button>
               );
             })}
@@ -295,13 +338,35 @@ export function PublishStudio() {
                     </p>
                   ) : null}
 
-                  <button
-                    type="button"
-                    onClick={() => copyVariant(variant)}
-                    className="mt-4 rounded-xl border border-white/[0.10] bg-white/[0.03] px-3 py-2 text-xs font-bold text-white/72 hover:border-[#69e4ee]/24 hover:text-white"
-                  >
-                    {copied === variant.channel ? 'Скопировано ✓' : 'Скопировать'}
-                  </button>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => copyVariant(variant)}
+                      className="rounded-xl border border-white/[0.10] bg-white/[0.03] px-3 py-2 text-xs font-bold text-white/72 hover:border-[#69e4ee]/24 hover:text-white"
+                    >
+                      {copied === variant.channel ? 'Скопировано ✓' : 'Скопировать'}
+                    </button>
+
+                    {connections[variant.channel] ? (
+                      <button
+                        type="button"
+                        onClick={() => publishVariant(variant)}
+                        disabled={Boolean(publishingChannel)}
+                        className="rounded-xl bg-[linear-gradient(135deg,#69e4ee,#399fb5)] px-3 py-2 text-xs font-black text-[#041015] disabled:opacity-40"
+                      >
+                        {publishingChannel === variant.channel
+                          ? 'Публикую…'
+                          : `Опубликовать в ${channelName(variant.channel)}`}
+                      </button>
+                    ) : (
+                      <Link
+                        href="/settings"
+                        className="rounded-xl border border-[#f1c96c]/14 bg-[#f1c96c]/[0.03] px-3 py-2 text-xs font-bold text-[#f5d77c]"
+                      >
+                        Подключить канал
+                      </Link>
+                    )}
+                  </div>
                 </article>
               ))}
             </div>
@@ -314,7 +379,7 @@ export function PublishStudio() {
           ПУБЛИКАЦИЯ
         </p>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-white/62">
-          Сейчас цех готовит финальные версии и отдаёт их на копирование. Прямую отправку в каналы включим только после подключения авторизованных аккаунтов — без скрытой публикации от имени пользователя.
+          Telegram уже умеет публиковать напрямую после подключения токена и канала. Остальные площадки пока готовят финальные версии на копирование и будут подключаться по мере добавления авторизации. Никакой скрытой публикации от имени пользователя.
         </p>
       </section>
     </main>
