@@ -4,7 +4,10 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 
 import { FactoryChainBar } from '@/components/platform/FactoryChainBar';
-import { getLatestFactoryArtifactAction } from '@/app/(dashboard)/modules/factory-chain/actions';
+import {
+  getFactoryArtifactAction,
+  getLatestFactoryArtifactAction,
+} from '@/app/(dashboard)/modules/factory-chain/actions';
 
 import {
   buildPublicationPackAction,
@@ -35,9 +38,13 @@ function channelName(id: PublicationChannelId) {
 
 type PublishStudioProps = {
   initialProjectId?: string | null;
+  initialArtifactId?: string | null;
 };
 
-export function PublishStudio({ initialProjectId = null }: PublishStudioProps) {
+export function PublishStudio({
+  initialProjectId = null,
+  initialArtifactId = null,
+}: PublishStudioProps) {
   const [projectId, setProjectId] = useState<string | null>(initialProjectId);
   const [source, setSource] = useState('');
   const [goal, setGoal] = useState('');
@@ -80,6 +87,15 @@ export function PublishStudio({ initialProjectId = null }: PublishStudioProps) {
       return;
     }
 
+    if (initialProjectId && initialArtifactId) {
+      void getFactoryArtifactAction(initialProjectId, initialArtifactId).then((artifact) => {
+        if (!artifact) return;
+        setSource(artifact.content);
+        setHandoffMessage('Выбранный результат проекта восстановлен. Можно продолжать публикацию.');
+      });
+      return;
+    }
+
     if (initialProjectId) {
       void getLatestFactoryArtifactAction(initialProjectId).then((artifact) => {
         if (!artifact) return;
@@ -87,7 +103,7 @@ export function PublishStudio({ initialProjectId = null }: PublishStudioProps) {
         setHandoffMessage('Последний результат проекта восстановлен. Можно продолжать публикацию.');
       });
     }
-  }, [initialProjectId]);
+  }, [initialArtifactId, initialProjectId]);
 
   const toggleChannel = (id: PublicationChannelId) => {
     setSelected((current) =>
