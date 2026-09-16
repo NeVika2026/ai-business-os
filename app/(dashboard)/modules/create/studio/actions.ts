@@ -3,6 +3,9 @@
 import { randomUUID } from 'node:crypto';
 
 import { createClient } from '@/services/supabase/server';
+import { aiGateway } from '@/services/runtime/gateway/ai-gateway';
+import type { GatewayRequest } from '@/types/runtime/dto';
+import type { CreateStudioModeId } from '@/utils/platform/create-studio';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
 import { createProductionToolRegistry } from '@/services/runtime/tools/tool-registry';
 import { createToolExecutor } from '@/services/runtime/tools/executor/tool-executor-factory';
@@ -392,5 +395,124 @@ export async function getMediaUploadContextAction(projectId?: string | null): Pr
     };
   } catch {
     return null;
+  }
+}
+
+
+export type CreateStudioArtifactResult =
+  | { status: 'completed'; content: string }
+  | { status: 'failed'; message: string };
+
+function buildStudioArtifactPrompt(input: {
+  modeId: CreateStudioModeId;
+  goal: string;
+  audience?: string;
+  format?: string;
+  context?: string;
+}) {
+  const modeInstruction =
+    input.modeId === 'stories'
+      ? 'Создай готовую серию сторис: для каждой карточки дай номер, хук/заголовок, короткий текст, визуальную идею и CTA. Нужна связная последовательность, ведущая к заявке.'
+      : input.modeId === 'presentation'
+        ? 'Создай готовое содержание презентации: титульный слайд и далее каждый слайд с названием, ключевым текстом и визуальной идеей. Не пиши план презентации — пиши уже содержимое слайдов.'
+        : input.modeId === 'document'
+          ? 'Создай готовый документ по задаче: понятный заголовок, разделы и полный рабочий текст. Это должен быть материал, который можно сразу редактировать и использовать.'
+          : 'Создай готовый текстовый результат по задаче.';
+
+  return [
+    'Ты — производственный AI-редактор Бизнес-Завода.',
+    'Не объясняй, что нужно сделать. Сразу производи готовый результат.',
+    '',
+    'ЗАДАЧА:',
+    input.goal.trim(),
+    input.audience?.trim() ? 'Аудитория: ' + input.audience.trim() : '',
+    input.format?.trim() ? 'Формат: ' + input.format.trim() : '',
+    input.context?.trim() ? 'Важно учесть: ' + input.context.trim() : '',
+    '',
+    modeInstruction,
+    '',
+    'Правила:',
+    '- русский язык;',
+    '- без канцелярщины и пустых общих фраз;',
+    '- не выдумывай факты, цены, цифры, отзывы, гарантии или достижения, которых нет в задаче;',
+    '- если данных не хватает, используй нейтральные формулировки без выдуманных фактов;',
+    '- не используй markdown-таблицы;',
+    '- верни только готовый материал.',
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
+
+export async function generateCreateStudioArtifactAction(input: {
+  modeId: CreateStudioModeId;
+  goal: string;
+  audience?: string;
+  format?: string;
+  context?: string;
+}): Promise<CreateStudioArtifactResult> {
+  if (!input.goal.trim()) {
+    return { status: 'failed', message: 'Опишите, что нужно создать.' };
+  }
+
+  try {
+    const identity = await resolveMediaExecutionIdentity();
+    const runId = randomUUID();
+
+    const request: GatewayRequest = {
+      scope: {
+        organizationId: identity.organizationId,
+        userId: identity.userId,
+      },
+      trace: {
+        runId,
+        traceId: runId,
+        correlationId: runId,
+      },
+      providerCode: 'auto',
+      modelCode: 'auto',
+      messages: [
+        {
+          role: 'user',
+          content: buildStudioArtifactPrompt(input),
+        },
+      ],
+      tools: [],
+      parameters: {
+        temperature: 0.35,
+        maxTokens: input.modeId === 'presentation' ? 2600 : 2200,
+      },
+      timeoutMs: 45_000,
+      retryPolicy: {
+        maxAttempts: 2,
+        backoffMs: [700, 1400],
+      },
+      routing: {
+        intent: 'create_studio_artifact',
+        taskCategory: 'creative',
+        estimatedContextLength:
+          input.goal.length +
+          (input.audience?.length ?? 0) +
+          (input.format?.length ?? 0) +
+          (input.context?.length ?? 0),
+        reasoningComplexity: 'high',
+        latencyTarget: 'quality',
+        costTarget: 'balanced',
+        toolUsage: false,
+      },
+    };
+
+    const response = await aiGateway.complete(request);
+    const content = response.content?.trim();
+
+    if (!content) {
+      return { status: 'failed', message: 'OSA не вернула готовый материал. Попробуйте ещё раз.' };
+    }
+
+    return { status: 'completed', content };
+  } catch (error) {
+    return {
+      status: 'failed',
+      message: error instanceof Error ? error.message : 'Не удалось собрать материал.',
+    };
   }
 }
