@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
 import {
+  generateCreateStudioArtifactAction,
   getMediaGenerationStatusAction,
   listMediaVoicesAction,
   startMediaGenerationAction,
@@ -74,6 +75,8 @@ export function MediaProductionConsole({
   const [jobId, setJobId] = useState('');
   const [jobStatus, setJobStatus] = useState<MediaStudioStatusResult | null>(null);
   const [error, setError] = useState('');
+  const [artifactContent, setArtifactContent] = useState('');
+  const [isArtifactBuilding, startArtifactTransition] = useTransition();
   const [isStarting, startTransition] = useTransition();
   const [isLoadingVoices, startVoiceTransition] = useTransition();
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -129,19 +132,101 @@ export function MediaProductionConsole({
   }, [kind, jobId, jobStatus, projectId]);
 
   if (!isLiveMode || !kind) {
+    const buildArtifact = () => {
+      if (!goal.trim() || isArtifactBuilding) return;
+
+      setError('');
+      startArtifactTransition(async () => {
+        const result = await generateCreateStudioArtifactAction({
+          modeId,
+          goal,
+          format,
+          context,
+        });
+
+        if (result.status === 'failed') {
+          setError(result.message);
+          return;
+        }
+
+        setArtifactContent(result.content);
+      });
+    };
+
     return (
-      <section className="mt-5 rounded-[28px] border border-white/[0.07] bg-[#080b11] p-5 text-white sm:p-6">
-        <p className="text-[12px] font-black uppercase tracking-[0.14em] text-[#79eaf2]">
-          Реальное производство
-        </p>
-        <h2 className="mt-2 text-xl font-semibold tracking-[-0.04em] text-[#fff8e7]">
-          Этот цех готовится к прямому экспорту
-        </h2>
-        <p className="mt-3 max-w-3xl text-base leading-7 text-white/72">
-          Сейчас прямой запуск подключён для видео, изображений и озвучки. Для сторис,
-          презентаций и документов AI-директор продолжает собирать результат через основной
-          workflow проекта.
-        </p>
+      <section className="relative mt-5 overflow-hidden rounded-[30px] border border-[#58dbe8]/10 bg-[linear-gradient(145deg,#070a0f,#0a1018)] p-5 text-white sm:p-6">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[radial-gradient(circle,rgba(88,219,232,.10),transparent_68%)]"
+        />
+
+        <div className="relative grid gap-5 xl:grid-cols-[.78fr_1.22fr]">
+          <div>
+            <p className="text-[12px] font-black uppercase tracking-[0.14em] text-[#79eaf2]">
+              РЕАЛЬНОЕ ПРОИЗВОДСТВО
+            </p>
+            <h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-[#fff8e7]">
+              Собрать готовый материал
+            </h2>
+            <p className="mt-3 text-base leading-7 text-white/72">
+              OSA не выдаёт план действий — она сразу производит первый рабочий вариант,
+              который можно редактировать и использовать.
+            </p>
+
+            <div className="mt-5 rounded-[20px] border border-white/[0.08] bg-black/20 p-4">
+              <p className="text-sm font-bold text-white/82">Задача</p>
+              <p className="mt-2 text-sm leading-6 text-white/66">
+                {goal.trim() || 'Сначала опишите результат выше.'}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={buildArtifact}
+              disabled={!goal.trim() || isArtifactBuilding}
+              className="mt-4 w-full rounded-[18px] bg-[linear-gradient(135deg,#f2d474,#c68a26)] px-5 py-3.5 text-sm font-black text-[#181006] shadow-[0_16px_34px_-20px_rgba(241,201,108,.55)] transition hover:-translate-y-0.5 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:translate-y-0"
+            >
+              {isArtifactBuilding ? 'OSA собирает результат…' : 'Собрать готовый результат →'}
+            </button>
+
+            {error ? (
+              <p className="mt-3 rounded-2xl border border-red-300/10 bg-red-300/[0.04] px-3 py-2.5 text-sm leading-6 text-red-100/80">
+                {error}
+              </p>
+            ) : null}
+          </div>
+
+          <div className="min-h-[300px] rounded-[24px] border border-white/[0.08] bg-black/20 p-5">
+            <div className="flex items-center justify-between gap-3 border-b border-white/[0.07] pb-3">
+              <p className="text-[12px] font-black uppercase tracking-[0.14em] text-[#f1c96c]">
+                ВЫХОД ЛИНИИ
+              </p>
+              <span className="text-[12px] font-bold text-emerald-200/80">
+                {artifactContent ? 'READY' : 'WAITING'}
+              </span>
+            </div>
+
+            {artifactContent ? (
+              <div className="mt-4 whitespace-pre-wrap text-base leading-7 text-white/82">
+                {artifactContent}
+              </div>
+            ) : (
+              <div className="flex min-h-[240px] items-center justify-center text-center">
+                <div>
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.03] text-2xl text-[#79eaf2]">
+                    ✦
+                  </div>
+                  <p className="mt-4 text-base font-semibold text-white/72">
+                    Готовый материал появится здесь
+                  </p>
+                  <p className="mt-2 max-w-sm text-sm leading-6 text-white/55">
+                    Сторис, презентация или документ будут собраны как рабочий результат, а не как инструкция.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </section>
     );
   }
