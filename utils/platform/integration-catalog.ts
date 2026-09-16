@@ -32,6 +32,14 @@ export const INTEGRATION_CATALOG: IntegrationDefinition[] = [
     envKeys: ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY'],
   },
   {
+    id: 'brave-search',
+    name: 'Brave Search',
+    description: 'Актуальный веб-поиск для цехов «Найти» и «Проанализировать».',
+    category: 'infrastructure',
+    capabilities: ['Веб-поиск', 'Актуальные источники', 'Исследование'],
+    envKeys: ['BRAVE_SEARCH_API_KEY'],
+  },
+  {
     id: 'openai',
     name: 'OpenAI',
     description: 'Текстовые задачи, анализ и AI-оркестрация.',
