@@ -14,6 +14,7 @@ import { FactoryChainBar } from '@/components/platform/FactoryChainBar';
 type ResearchStudioProps = {
   mode: ResearchMode;
   initialQuery?: string;
+  initialProjectId?: string | null;
 };
 
 const RESEARCH_HANDOFF_KEY = 'business-zavod:research-handoff';
@@ -26,9 +27,14 @@ function sourceList(sources: ResearchSource[]): string {
     .join('\n');
 }
 
-export function ResearchStudio({ mode, initialQuery = '' }: ResearchStudioProps) {
+export function ResearchStudio({
+  mode,
+  initialQuery = '',
+  initialProjectId = null,
+}: ResearchStudioProps) {
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
+  const [projectId, setProjectId] = useState<string | null>(initialProjectId);
   const [summary, setSummary] = useState('');
   const [sources, setSources] = useState<ResearchSource[]>([]);
   const [error, setError] = useState('');
@@ -52,6 +58,7 @@ export function ResearchStudio({ mode, initialQuery = '' }: ResearchStudioProps)
       const result = await runResearchAction({
         mode,
         query: trimmed,
+        projectId,
         priorContext: priorContext ?? null,
       });
 
@@ -61,6 +68,7 @@ export function ResearchStudio({ mode, initialQuery = '' }: ResearchStudioProps)
         return;
       }
 
+      setProjectId(result.projectId);
       setSummary(result.summary);
       setSources(result.sources);
     });
@@ -105,7 +113,10 @@ export function ResearchStudio({ mode, initialQuery = '' }: ResearchStudioProps)
     };
 
     window.sessionStorage.setItem(RESEARCH_HANDOFF_KEY, JSON.stringify(payload));
-    router.push('/modules/analyze/studio');
+    router.push(
+      '/modules/analyze/studio' +
+        (projectId ? '?project=' + encodeURIComponent(projectId) : ''),
+    );
   };
 
   const continueToCreate = () => {
@@ -131,7 +142,9 @@ export function ResearchStudio({ mode, initialQuery = '' }: ResearchStudioProps)
       }),
     );
 
-    router.push('/modules/create/studio?mode=document');
+    const params = new URLSearchParams({ mode: 'document' });
+    if (projectId) params.set('project', projectId);
+    router.push('/modules/create/studio?' + params.toString());
   };
 
   const continueToPublish = () => {
@@ -145,12 +158,29 @@ export function ResearchStudio({ mode, initialQuery = '' }: ResearchStudioProps)
       .join('\n\n');
 
     window.sessionStorage.setItem(PUBLISH_HANDOFF_KEY, publicationSource);
-    router.push('/modules/publish/studio');
+    router.push(
+      '/modules/publish/studio' +
+        (projectId ? '?project=' + encodeURIComponent(projectId) : ''),
+    );
   };
 
   return (
     <main className="relative mx-auto w-full max-w-[1320px] overflow-hidden pb-16 text-[#f7f2e8]">
       <FactoryChainBar active={isFind ? 'find' : 'analyze'} />
+
+      {projectId ? (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[#69e4ee]/10 bg-[#69e4ee]/[0.025] px-4 py-3">
+          <p className="text-sm text-white/64">
+            Результаты сохраняются в проект автоматически.
+          </p>
+          <a
+            href={'/projects/' + projectId}
+            className="text-xs font-black uppercase tracking-[.1em] text-[#79eaf2]"
+          >
+            Открыть проект →
+          </a>
+        </div>
+      ) : null}
 
       <div
         aria-hidden="true"
