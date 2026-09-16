@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 
 import { FactoryChainBar } from '@/components/platform/FactoryChainBar';
+import { getLatestFactoryArtifactAction } from '@/app/(dashboard)/modules/factory-chain/actions';
 
 import {
   buildPublicationPackAction,
@@ -32,7 +33,12 @@ function channelName(id: PublicationChannelId) {
   return CHANNELS.find((item) => item.id === id)?.label ?? id;
 }
 
-export function PublishStudio() {
+type PublishStudioProps = {
+  initialProjectId?: string | null;
+};
+
+export function PublishStudio({ initialProjectId = null }: PublishStudioProps) {
+  const [projectId, setProjectId] = useState<string | null>(initialProjectId);
   const [source, setSource] = useState('');
   const [goal, setGoal] = useState('');
   const [callToAction, setCallToAction] = useState('');
@@ -71,8 +77,17 @@ export function PublishStudio() {
       setSource(handedOff);
       setHandoffMessage('Материал из предыдущего цеха принят. Осталось выбрать площадки и собрать версии.');
       window.sessionStorage.removeItem('business-zavod:publish-source');
+      return;
     }
-  }, []);
+
+    if (initialProjectId) {
+      void getLatestFactoryArtifactAction(initialProjectId).then((artifact) => {
+        if (!artifact) return;
+        setSource(artifact.content);
+        setHandoffMessage('Последний результат проекта восстановлен. Можно продолжать публикацию.');
+      });
+    }
+  }, [initialProjectId]);
 
   const toggleChannel = (id: PublicationChannelId) => {
     setSelected((current) =>
@@ -94,6 +109,7 @@ export function PublishStudio() {
         channels: selected,
         goal,
         callToAction,
+        projectId,
       });
 
       if (result.status === 'failed') {
@@ -101,6 +117,7 @@ export function PublishStudio() {
         return;
       }
 
+      setProjectId(result.projectId);
       setVariants(result.variants);
       setMessage('Пакет готов. Тексты адаптированы отдельно под каждую площадку.');
     });
@@ -117,6 +134,7 @@ export function PublishStudio() {
       title: variant.title,
       body: variant.body,
       cta: variant.cta,
+      projectId,
     });
 
     setPublishingChannel(null);
@@ -144,6 +162,18 @@ export function PublishStudio() {
   return (
     <main className="relative mx-auto w-full max-w-[1320px] overflow-hidden pb-16 text-[#f7f2e8]">
       <FactoryChainBar active="publish" />
+
+      {projectId ? (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[#69e4ee]/10 bg-[#69e4ee]/[0.025] px-4 py-3">
+          <p className="text-sm text-white/64">Пакеты и публикации сохраняются в проект автоматически.</p>
+          <a
+            href={'/projects/' + projectId}
+            className="text-xs font-black uppercase tracking-[.1em] text-[#79eaf2]"
+          >
+            Открыть проект →
+          </a>
+        </div>
+      ) : null}
 
       {handoffMessage ? (
         <section className="mb-4 rounded-[20px] border border-emerald-300/12 bg-emerald-300/[0.04] px-4 py-3 text-sm font-semibold text-emerald-100/82">
