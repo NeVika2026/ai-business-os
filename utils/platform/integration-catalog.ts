@@ -116,8 +116,8 @@ export const INTEGRATION_CATALOG: IntegrationDefinition[] = [
     name: 'Telegram',
     description: 'Публикация готовых материалов в канал или чат.',
     category: 'publishing',
-    capabilities: ['Посты', 'Медиа', 'Каналы'],
-    planned: true,
+    capabilities: ['Посты', 'Каналы', 'Прямая отправка'],
+    envKeys: ['TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID'],
   },
   {
     id: 'vk-publish',
