@@ -37,6 +37,13 @@ function shouldPersist(): boolean {
     return false;
   }
 
+  // Vercel/AWS Lambda application directories are read-only.
+  // Runtime state may live in memory for the lifetime of the instance,
+  // but it must never try to create process.cwd()/.data on serverless.
+  if (process.env.VERCEL === '1' || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    return false;
+  }
+
   return true;
 }
 
