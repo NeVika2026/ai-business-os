@@ -71,7 +71,7 @@
 .header small {
   display: block;
   color: #68dff0;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 900;
   letter-spacing: .18em;
 }
@@ -80,7 +80,7 @@
   display: block;
   margin-top: 5px;
   color: #fffaf0;
-  font-size: 23px;
+  font-size: 27px;
   letter-spacing: -.04em;
 }
 
@@ -94,7 +94,7 @@
   background: rgba(92,220,172,.055);
   padding: 7px 10px;
   color: #9bf2ca;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800;
   box-shadow: 0 0 24px rgba(92,240,185,.06);
 }
@@ -320,7 +320,7 @@
   display:block;
   margin-top:1px;
   color:#91ebf7;
-  font-size:7px;
+  font-size:9px;
   letter-spacing:.28em;
 }
 
@@ -386,7 +386,7 @@
 .node span {
   display:block;
   color:#d9ab4b;
-  font-size:6px;
+  font-size:8px;
   font-weight:900;
   letter-spacing:.14em;
 }
@@ -493,7 +493,7 @@
 .runtimeTop small {
   display:block;
   color:#67def0;
-  font-size:7px;
+  font-size:9px;
   font-weight:900;
   letter-spacing:.16em;
 }
@@ -502,15 +502,15 @@
   margin-top:3px;
   overflow:hidden;
   color:#fff8e7;
-  font-size:11px;
+  font-size:15px;
   text-overflow:ellipsis;
   white-space:nowrap;
 }
-.runtimeTop strong { color:#ffd06d; font-size:13px; }
+.runtimeTop strong { color:#ffd06d; font-size:15px; }
 .runtime p {
   margin:6px 0 0;
   overflow:hidden;
-  color:#8392a0;
+  color:#b4bec8;
   font-size:8px;
   line-height:1.45;
   text-overflow:ellipsis;
@@ -539,7 +539,7 @@
   grid-template-columns:auto auto auto auto auto auto auto;
   justify-content:center;
   gap:7px;
-  color:#70808f;
+  color:#9eacb7;
   font-size:8px;
   font-weight:800;
   letter-spacing:.12em;
