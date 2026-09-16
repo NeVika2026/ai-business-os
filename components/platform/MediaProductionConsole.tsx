@@ -131,13 +131,13 @@ export function MediaProductionConsole({
   if (!isLiveMode || !kind) {
     return (
       <section className="mt-5 rounded-[28px] border border-white/[0.07] bg-[#080b11] p-5 text-white sm:p-6">
-        <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#58dbe8]">
+        <p className="text-[12px] font-black uppercase tracking-[0.14em] text-[#79eaf2]">
           Реальное производство
         </p>
         <h2 className="mt-2 text-xl font-semibold tracking-[-0.04em] text-[#fff8e7]">
           Этот цех готовится к прямому экспорту
         </h2>
-        <p className="mt-3 max-w-3xl text-xs leading-5 text-white/36">
+        <p className="mt-3 max-w-3xl text-base leading-7 text-white/72">
           Сейчас прямой запуск подключён для видео, изображений и озвучки. Для сторис,
           презентаций и документов AI-директор продолжает собирать результат через основной
           workflow проекта.
@@ -195,7 +195,7 @@ export function MediaProductionConsole({
         <div>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#58dbe8]">
+              <p className="text-[12px] font-black uppercase tracking-[0.14em] text-[#79eaf2]">
                 Реальное производство
               </p>
               <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[#fff8e7]">
@@ -204,7 +204,7 @@ export function MediaProductionConsole({
             </div>
             <span
               className={[
-                'rounded-full border px-3 py-1.5 text-[9px] font-bold',
+                'rounded-full border px-3 py-1.5 text-[12px] font-bold',
                 displayStatus === 'completed'
                   ? 'border-emerald-300/15 bg-emerald-300/[0.06] text-emerald-200'
                   : displayStatus === 'failed'
@@ -216,7 +216,7 @@ export function MediaProductionConsole({
             </span>
           </div>
 
-          <p className="mt-4 text-xs leading-5 text-white/38">
+          <p className="mt-4 text-base leading-7 text-white/72">
             Это уже не демонстрация: кнопка ниже запускает внешний генератор и может расходовать
             платные кредиты. Поэтому запуск возможен только после явного подтверждения.
           </p>
@@ -224,23 +224,23 @@ export function MediaProductionConsole({
           {kind === 'video' ? (
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <label className="grid gap-2">
-                <span className="text-[11px] font-semibold text-white/55">Длительность сцены</span>
+                <span className="text-sm font-semibold text-white/78">Длительность сцены</span>
                 <select
                   value={duration}
                   onChange={(event) => setDuration(Number(event.target.value))}
-                  className="rounded-2xl border border-white/[0.08] bg-[#0a0e15] px-3 py-2.5 text-xs text-white outline-none"
+                  className="rounded-2xl border border-white/[0.08] bg-[#0a0e15] px-3.5 py-3 text-sm text-white outline-none"
                 >
                   <option value={5}>5 секунд</option>
                   <option value={10}>10 секунд</option>
                 </select>
               </label>
               <label className="grid gap-2">
-                <span className="text-[11px] font-semibold text-white/55">Референс-кадр · необязательно</span>
+                <span className="text-sm font-semibold text-white/78">Референс-кадр · необязательно</span>
                 <input
                   value={referenceImageUrl}
                   onChange={(event) => setReferenceImageUrl(event.target.value)}
                   placeholder="https://…"
-                  className="rounded-2xl border border-white/[0.08] bg-[#0a0e15] px-3 py-2.5 text-xs text-white outline-none focus:border-[#58dbe8]/25"
+                  className="rounded-2xl border border-white/[0.08] bg-[#0a0e15] px-3.5 py-3 text-sm text-white outline-none focus:border-[#58dbe8]/25"
                 />
               </label>
             </div>
@@ -249,12 +249,12 @@ export function MediaProductionConsole({
           {kind === 'voice' ? (
             <div className="mt-5">
               <label className="grid gap-2">
-                <span className="text-[11px] font-semibold text-white/55">Голос</span>
+                <span className="text-sm font-semibold text-white/78">Голос</span>
                 <select
                   value={voiceId}
                   onChange={(event) => setVoiceId(event.target.value)}
                   disabled={isLoadingVoices}
-                  className="rounded-2xl border border-white/[0.08] bg-[#0a0e15] px-3 py-2.5 text-xs text-white outline-none disabled:opacity-45"
+                  className="rounded-2xl border border-white/[0.08] bg-[#0a0e15] px-3.5 py-3 text-sm text-white outline-none disabled:opacity-45"
                 >
                   {voices.length === 0 ? (
                     <option value="">
@@ -284,7 +284,7 @@ export function MediaProductionConsole({
               onChange={(event) => setApproved(event.target.checked)}
               className="mt-0.5 h-4 w-4 accent-[#e7b952]"
             />
-            <span className="text-[11px] leading-5 text-white/48">
+            <span className="text-sm leading-6 text-white/72">
               <strong className="block text-[#f2d474]">
                 Подтверждаю запуск платной генерации
               </strong>
@@ -302,7 +302,7 @@ export function MediaProductionConsole({
           </button>
 
           {error ? (
-            <p className="mt-3 rounded-2xl border border-red-300/10 bg-red-300/[0.04] px-3 py-2.5 text-[11px] leading-5 text-red-100/70">
+            <p className="mt-3 rounded-2xl border border-red-300/10 bg-red-300/[0.04] px-3 py-2.5 text-sm leading-6 text-red-100/80">
               {error}
             </p>
           ) : null}
@@ -310,11 +310,11 @@ export function MediaProductionConsole({
 
         <div className="min-h-[250px] rounded-[24px] border border-white/[0.065] bg-black/20 p-4 sm:p-5">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/35">
+            <p className="text-[12px] font-black uppercase tracking-[0.14em] text-white/65">
               Выход линии
             </p>
             {jobId ? (
-              <span className="max-w-[180px] truncate text-[9px] text-white/20" title={jobId}>
+              <span className="max-w-[180px] truncate text-[11px] text-white/48" title={jobId}>
                 ID {jobId}
               </span>
             ) : null}
@@ -326,8 +326,8 @@ export function MediaProductionConsole({
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.07] bg-white/[0.025] text-xl text-white/20">
                   {kind === 'video' ? '▶' : kind === 'image' ? '◇' : '◉'}
                 </div>
-                <p className="mt-4 text-xs font-semibold text-white/42">Результат появится здесь</p>
-                <p className="mt-1 text-[10px] leading-5 text-white/22">
+                <p className="mt-4 text-base font-semibold text-white/72">Результат появится здесь</p>
+                <p className="mt-1 text-sm leading-6 text-white/58">
                   Сначала опиши результат слева и подтверди платный запуск.
                 </p>
               </div>
@@ -339,7 +339,7 @@ export function MediaProductionConsole({
                 <p className="mt-4 text-sm font-semibold text-[#dffbff]">
                   {jobStatus.status === 'running' ? 'Производство идёт' : 'Задача в очереди'}
                 </p>
-                <p className="mt-1 text-[10px] text-white/28">
+                <p className="mt-1 text-[12px] text-white/58">
                   Статус проверяется автоматически каждые 3 секунды.
                 </p>
               </div>
@@ -367,19 +367,19 @@ export function MediaProductionConsole({
               )}
 
               <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                <p className="text-[10px] text-emerald-200/55">Готово · {jobStatus.providerStatus}</p>
+                <p className="text-[12px] font-semibold text-emerald-200/85">Готово · {jobStatus.providerStatus}</p>
                 <a
                   href={jobStatus.outputUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-[10px] font-semibold text-[#8ceaf2] hover:text-white"
+                  className="text-[12px] font-semibold text-[#a8f3f8] hover:text-white"
                 >
                   Открыть файл ↗
                 </a>
               </div>
 
               {jobStatus.ephemeral ? (
-                <p className="mt-3 rounded-2xl border border-amber-300/10 bg-amber-300/[0.035] px-3 py-2 text-[10px] leading-5 text-amber-100/55">
+                <p className="mt-3 rounded-2xl border border-amber-300/10 bg-amber-300/[0.035] px-3 py-2 text-sm leading-6 text-amber-100/75">
                   Временная ссылка провайдера. На следующем этапе подключим постоянное сохранение
                   файла в хранилище Бизнес-Завода.
                 </p>
@@ -388,8 +388,8 @@ export function MediaProductionConsole({
           ) : (
             <div className="flex min-h-[205px] items-center justify-center text-center">
               <div>
-                <p className="text-sm font-semibold text-red-100/70">Генерация не завершена</p>
-                <p className="mt-2 text-[10px] text-white/28">{jobStatus.providerStatus}</p>
+                <p className="text-base font-semibold text-red-100/82">Генерация не завершена</p>
+                <p className="mt-2 text-[12px] text-white/58">{jobStatus.providerStatus}</p>
               </div>
             </div>
           )}
