@@ -373,13 +373,13 @@ export function VideoStoryboardStudio({
     <section className="mt-5 rounded-[30px] border border-white/[0.08] bg-[linear-gradient(145deg,#080b11,#0d1119)] p-5 text-white sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#e7b952]">
+          <p className="text-[12px] font-black uppercase tracking-[0.14em] text-[#f1c96c]">
             Многосценовый ролик
           </p>
           <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[#fff8e7]">
             Раскадровка → сцены → озвучка → предпросмотр
           </h2>
-          <p className="mt-2 max-w-3xl text-xs leading-5 text-white/38">
+          <p className="mt-2 max-w-3xl text-base leading-7 text-white/72">
             AI сначала строит связную раскадровку. После подтверждения сцены генерируются
             последовательно, чтобы было видно, на какой операции расходуются кредиты.
           </p>
@@ -390,14 +390,14 @@ export function VideoStoryboardStudio({
             type="button"
             onClick={saveDraft}
             disabled={scenes.length === 0}
-            className="rounded-xl border border-white/[0.08] px-3 py-2 text-[10px] font-semibold text-white/45 disabled:opacity-30"
+            className="rounded-xl border border-white/[0.08] px-3 py-2 text-sm font-semibold text-white/72 disabled:opacity-30"
           >
             Сохранить черновик
           </button>
           <button
             type="button"
             onClick={restoreDraft}
-            className="rounded-xl border border-white/[0.08] px-3 py-2 text-[10px] font-semibold text-white/45"
+            className="rounded-xl border border-white/[0.08] px-3 py-2 text-sm font-semibold text-white/72"
           >
             Восстановить
           </button>
@@ -406,11 +406,11 @@ export function VideoStoryboardStudio({
 
       <div className="mt-5 grid gap-4 sm:grid-cols-[180px_1fr]">
         <label className="grid gap-2">
-          <span className="text-[11px] font-semibold text-white/55">Общий хронометраж</span>
+          <span className="text-sm font-semibold text-white/78">Общий хронометраж</span>
           <select
             value={durationSeconds}
             onChange={(event) => setDurationSeconds(Number(event.target.value))}
-            className="rounded-2xl border border-white/[0.08] bg-[#0a0e15] px-3 py-3 text-xs text-white outline-none"
+            className="rounded-2xl border border-white/[0.08] bg-[#0a0e15] px-3 py-3 text-sm text-white outline-none"
           >
             {[10, 15, 20, 25, 30, 45, 60].map((seconds) => (
               <option key={seconds} value={seconds}>
@@ -437,19 +437,19 @@ export function VideoStoryboardStudio({
           <div className="mt-5 rounded-[22px] border border-[#58dbe8]/10 bg-[#58dbe8]/[0.03] p-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="grid gap-2">
-                <span className="text-[10px] font-semibold text-white/45">Название</span>
+                <span className="text-sm font-semibold text-white/72">Название</span>
                 <input
                   value={title}
                   onChange={(event) => setTitle(event.target.value)}
-                  className="rounded-xl border border-white/[0.07] bg-black/20 px-3 py-2.5 text-xs text-white outline-none"
+                  className="rounded-xl border border-white/[0.07] bg-black/20 px-3 py-2.5 text-sm text-white outline-none"
                 />
               </label>
               <label className="grid gap-2">
-                <span className="text-[10px] font-semibold text-white/45">Единый стиль</span>
+                <span className="text-sm font-semibold text-white/72">Единый стиль</span>
                 <input
                   value={style}
                   onChange={(event) => setStyle(event.target.value)}
-                  className="rounded-xl border border-white/[0.07] bg-black/20 px-3 py-2.5 text-xs text-white outline-none"
+                  className="rounded-xl border border-white/[0.07] bg-black/20 px-3 py-2.5 text-sm text-white outline-none"
                 />
               </label>
             </div>
@@ -461,7 +461,7 @@ export function VideoStoryboardStudio({
                 onChange={(event) => setApproved(event.target.checked)}
                 className="mt-0.5 h-4 w-4 accent-[#e7b952]"
               />
-              <span className="text-[11px] leading-5 text-white/48">
+              <span className="text-sm leading-6 text-white/72">
                 <strong className="block text-[#f2d474]">
                   Подтверждаю платную генерацию сцен и озвучки
                 </strong>
@@ -474,7 +474,7 @@ export function VideoStoryboardStudio({
               type="button"
               onClick={generateAllScenes}
               disabled={!approved || isGenerating}
-              className="mt-3 w-full rounded-[17px] bg-[linear-gradient(135deg,#58dbe8,#338eaa)] px-4 py-3 text-xs font-extrabold text-[#041015] disabled:opacity-30"
+              className="mt-3 w-full rounded-[17px] bg-[linear-gradient(135deg,#58dbe8,#338eaa)] px-4 py-3 text-sm font-extrabold text-[#041015] disabled:opacity-30"
             >
               {isGenerating ? 'Производство идёт…' : 'Сгенерировать все сцены по очереди'}
             </button>
@@ -488,7 +488,7 @@ export function VideoStoryboardStudio({
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/25">
+                    <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-white/60">
                       Сцена {scene.order} · {scene.durationSeconds} сек.
                     </p>
                     <input
@@ -501,7 +501,7 @@ export function VideoStoryboardStudio({
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="rounded-full border border-white/[0.07] px-2.5 py-1 text-[9px] text-white/35">
+                    <span className="rounded-full border border-white/[0.07] px-2.5 py-1 text-[11px] text-white/62">
                       {scene.status === 'completed'
                         ? 'готово'
                         : scene.status === 'running'
@@ -516,7 +516,7 @@ export function VideoStoryboardStudio({
                       type="button"
                       onClick={() => generateOneScene(scene)}
                       disabled={!approved || isGenerating}
-                      className="rounded-lg border border-[#58dbe8]/15 px-2.5 py-1 text-[9px] font-semibold text-[#8ceaf2] disabled:opacity-30"
+                      className="rounded-lg border border-[#58dbe8]/15 px-2.5 py-1 text-[11px] font-semibold text-[#a8f3f8] disabled:opacity-30"
                     >
                       {scene.videoUrl ? 'Перегенерировать' : 'Сгенерировать'}
                     </button>
@@ -525,7 +525,7 @@ export function VideoStoryboardStudio({
 
                 <div className="mt-3 grid gap-3 lg:grid-cols-[1.2fr_.8fr]">
                   <label className="grid gap-1.5">
-                    <span className="text-[9px] font-semibold text-white/30">
+                    <span className="text-[12px] font-semibold text-white/62">
                       Визуальный промпт
                     </span>
                     <textarea
@@ -534,12 +534,12 @@ export function VideoStoryboardStudio({
                         updateScene(scene.id, { visualPrompt: event.target.value })
                       }
                       rows={4}
-                      className="resize-none rounded-xl border border-white/[0.06] bg-black/20 px-3 py-2.5 text-[11px] leading-5 text-white/60 outline-none"
+                      className="resize-none rounded-xl border border-white/[0.06] bg-black/20 px-3 py-2.5 text-sm leading-6 text-white/78 outline-none"
                     />
                   </label>
 
                   <label className="grid gap-1.5">
-                    <span className="text-[9px] font-semibold text-white/30">
+                    <span className="text-[12px] font-semibold text-white/62">
                       Субтитр / озвучка
                     </span>
                     <textarea
@@ -548,7 +548,7 @@ export function VideoStoryboardStudio({
                         updateScene(scene.id, { narration: event.target.value })
                       }
                       rows={4}
-                      className="resize-none rounded-xl border border-white/[0.06] bg-black/20 px-3 py-2.5 text-[11px] leading-5 text-white/60 outline-none"
+                      className="resize-none rounded-xl border border-white/[0.06] bg-black/20 px-3 py-2.5 text-sm leading-6 text-white/78 outline-none"
                     />
                   </label>
                 </div>
@@ -560,7 +560,7 @@ export function VideoStoryboardStudio({
                     ['lighting', 'Свет'],
                   ].map(([field, label]) => (
                     <label key={field} className="grid gap-1">
-                      <span className="text-[9px] text-white/25">{label}</span>
+                      <span className="text-[11px] text-white/58">{label}</span>
                       <input
                         value={String(scene[field as 'shotType' | 'camera' | 'lighting'])}
                         onChange={(event) =>
@@ -568,7 +568,7 @@ export function VideoStoryboardStudio({
                             [field]: event.target.value,
                           } as Partial<RuntimeScene>)
                         }
-                        className="rounded-lg border border-white/[0.05] bg-black/15 px-2.5 py-2 text-[10px] text-white/45 outline-none"
+                        className="rounded-lg border border-white/[0.05] bg-black/15 px-2.5 py-2 text-[12px] text-white/70 outline-none"
                       />
                     </label>
                   ))}
@@ -601,7 +601,7 @@ export function VideoStoryboardStudio({
                   type="button"
                   onClick={loadVoices}
                   disabled={isLoadingVoices}
-                  className="rounded-xl border border-white/[0.08] px-3 py-2 text-[10px] text-white/45"
+                  className="rounded-xl border border-white/[0.08] px-3 py-2 text-[12px] text-white/70"
                 >
                   {isLoadingVoices ? 'Загружаю…' : 'Загрузить голоса'}
                 </button>
@@ -613,7 +613,7 @@ export function VideoStoryboardStudio({
                 <select
                   value={voiceId}
                   onChange={(event) => setVoiceId(event.target.value)}
-                  className="rounded-xl border border-white/[0.07] bg-[#0a0e15] px-3 py-2.5 text-xs text-white outline-none"
+                  className="rounded-xl border border-white/[0.07] bg-[#0a0e15] px-3 py-2.5 text-sm text-white outline-none"
                 >
                   {voices.map((voice) => (
                     <option key={voice.id} value={voice.id}>
@@ -639,7 +639,7 @@ export function VideoStoryboardStudio({
             ) : null}
 
             {voiceTaskId ? (
-              <p className="mt-2 truncate text-[9px] text-white/18">Voice task: {voiceTaskId}</p>
+              <p className="mt-2 truncate text-[11px] text-white/45">Voice task: {voiceTaskId}</p>
             ) : null}
 
             {voiceUrl ? (
@@ -653,17 +653,17 @@ export function VideoStoryboardStudio({
             <>
             <div className="mt-5 grid gap-4 xl:grid-cols-[.72fr_1.28fr]">
               <div>
-                <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#58dbe8]">
+                <p className="text-[12px] font-black uppercase tracking-[0.14em] text-[#79eaf2]">
                   Remotion Preview
                 </p>
                 <h3 className="mt-2 text-xl font-semibold text-[#fff8e7]">
                   Единый предпросмотр с субтитрами
                 </h3>
-                <p className="mt-2 text-xs leading-5 text-white/34">
+                <p className="mt-2 text-base leading-7 text-white/70">
                   Готовые сцены собираются на одной тайм-линии. Субтитры уже накладываются
                   поверх видео. Если создана озвучка, она подключается как общая аудиодорожка.
                 </p>
-                <p className="mt-3 text-[10px] text-white/22">
+                <p className="mt-3 text-[12px] text-white/55">
                   Готово сцен: {completedScenes.length} / {scenes.length}
                 </p>
               </div>
@@ -685,7 +685,7 @@ export function VideoStoryboardStudio({
       ) : null}
 
       {error ? (
-        <p className="mt-4 rounded-2xl border border-red-300/10 bg-red-300/[0.04] px-3 py-2.5 text-[11px] leading-5 text-red-100/70">
+        <p className="mt-4 rounded-2xl border border-red-300/10 bg-red-300/[0.04] px-3 py-2.5 text-sm leading-6 text-red-100/80">
           {error}
         </p>
       ) : null}
