@@ -65,13 +65,13 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
-  opacity:.92;
+  opacity:1;
 }
 
 .header small {
   display: block;
   color: #68dff0;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 900;
   letter-spacing: .18em;
 }
@@ -94,7 +94,7 @@
   background: rgba(92,220,172,.055);
   padding: 7px 10px;
   color: #9bf2ca;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 800;
   box-shadow: 0 0 24px rgba(92,240,185,.06);
 }
@@ -131,13 +131,13 @@
 .crossLink {
   vector-effect: non-scaling-stroke;
   stroke-width: .38;
-  stroke: rgba(89, 219, 244, .17);
+  stroke: rgba(89, 219, 244, .28);
   stroke-linecap: round;
 }
 
 .crossLink {
   stroke-width: .24;
-  stroke: rgba(255,255,255,.075);
+  stroke: rgba(255,255,255,.14);
 }
 
 .link {
@@ -320,7 +320,7 @@
   display:block;
   margin-top:1px;
   color:#91ebf7;
-  font-size:9px;
+  font-size:11px;
   letter-spacing:.28em;
 }
 
@@ -386,7 +386,7 @@
 .node span {
   display:block;
   color:#d9ab4b;
-  font-size:8px;
+  font-size:11px;
   font-weight:900;
   letter-spacing:.14em;
 }
@@ -493,7 +493,7 @@
 .runtimeTop small {
   display:block;
   color:#67def0;
-  font-size:9px;
+  font-size:11px;
   font-weight:900;
   letter-spacing:.16em;
 }
