@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 
+import { FactoryChainBar } from '@/components/platform/FactoryChainBar';
+
 import {
   buildPublicationPackAction,
   getPublishingConnectionStatusAction,
@@ -51,6 +53,7 @@ export function PublishStudio() {
     max: false,
   });
   const [publishingChannel, setPublishingChannel] = useState<PublicationChannelId | null>(null);
+  const [handoffMessage, setHandoffMessage] = useState('');
   const [isPending, startTransition] = useTransition();
 
   const canBuild = source.trim().length > 3 && selected.length > 0 && !isPending;
@@ -66,6 +69,7 @@ export function PublishStudio() {
     const handedOff = window.sessionStorage.getItem('business-zavod:publish-source');
     if (handedOff?.trim()) {
       setSource(handedOff);
+      setHandoffMessage('Материал из предыдущего цеха принят. Осталось выбрать площадки и собрать версии.');
       window.sessionStorage.removeItem('business-zavod:publish-source');
     }
   }, []);
@@ -139,6 +143,14 @@ export function PublishStudio() {
 
   return (
     <main className="relative mx-auto w-full max-w-[1320px] overflow-hidden pb-16 text-[#f7f2e8]">
+      <FactoryChainBar active="publish" />
+
+      {handoffMessage ? (
+        <section className="mb-4 rounded-[20px] border border-emerald-300/12 bg-emerald-300/[0.04] px-4 py-3 text-sm font-semibold text-emerald-100/82">
+          {handoffMessage}
+        </section>
+      ) : null}
+
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -right-24 top-0 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,rgba(241,201,108,.12),transparent_70%)] blur-3xl"
