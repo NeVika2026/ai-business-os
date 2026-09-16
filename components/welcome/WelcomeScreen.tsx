@@ -64,15 +64,15 @@ export function WelcomeScreen() {
             </span>
             <span>
               <span className="block text-[14px] font-black tracking-[0.18em] text-[#fff8e7]">БИЗНЕС ЗАВОД</span>
-              <span className="block text-[11px] uppercase tracking-[0.18em] text-white/55">OSA OPERATING SYSTEM</span>
+              <span className="block text-[12px] uppercase tracking-[0.16em] text-white/68">OSA OPERATING SYSTEM</span>
             </span>
           </Link>
 
           <div className="hidden items-center gap-2 lg:flex">
-            <span className="rounded-full border border-emerald-300/15 bg-emerald-300/[0.055] px-3.5 py-2 text-[11px] font-bold tracking-[.12em] text-emerald-200/85">
+            <span className="rounded-full border border-emerald-300/15 bg-emerald-300/[0.055] px-3.5 py-2 text-[12px] font-bold tracking-[.1em] text-emerald-200/90">
               ● FACTORY ONLINE
             </span>
-            <span className="rounded-full border border-white/[0.09] px-3.5 py-2 text-[11px] tracking-[.1em] text-white/58">
+            <span className="rounded-full border border-white/[0.09] px-3.5 py-2 text-[12px] tracking-[.08em] text-white/70">
               AI TEAM READY
             </span>
           </div>
@@ -116,10 +116,10 @@ export function WelcomeScreen() {
               className="mt-8 overflow-hidden rounded-[26px] border border-[#69e4ee]/18 bg-[#090d14]/94 p-3.5 shadow-[0_0_0_1px_rgba(105,228,238,.035),0_28px_90px_-40px_rgba(0,0,0,.98),0_0_55px_-30px_rgba(105,228,238,.5)] backdrop-blur-2xl"
             >
               <div className="flex items-center justify-between px-2 pb-2">
-                <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/60">
+                <span className="text-[12px] font-bold uppercase tracking-[0.14em] text-white/72">
                   DIRECTOR CONSOLE
                 </span>
-                <span className="text-[11px] font-semibold text-[#86edf4]/85">OSA слушает</span>
+                <span className="text-[12px] font-semibold text-[#9af1f7]">OSA слушает</span>
               </div>
               <label htmlFor="bz-task" className="sr-only">Что нужно сделать</label>
               <textarea
@@ -129,7 +129,7 @@ export function WelcomeScreen() {
                 onChange={(event) => setTask(event.target.value)}
                 rows={3}
                 placeholder="Напиши задачу обычными словами…"
-                className="min-h-[138px] w-full resize-none rounded-[18px] border border-white/[0.11] bg-black/30 px-5 py-5 text-lg leading-8 text-[#fff8e7] outline-none placeholder:text-white/48 focus:border-[#69e4ee]/35 focus:shadow-[0_0_35px_-20px_rgba(105,228,238,.65)]"
+                className="min-h-[138px] w-full resize-none rounded-[18px] border border-white/[0.11] bg-black/30 px-5 py-5 text-lg leading-8 text-[#fff8e7] outline-none placeholder:text-white/58 focus:border-[#69e4ee]/35 focus:shadow-[0_0_35px_-20px_rgba(105,228,238,.65)]"
               />
               <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-wrap gap-2 px-1">
@@ -172,7 +172,7 @@ export function WelcomeScreen() {
                   className="rounded-[16px] border border-white/[0.055] bg-white/[0.02] px-4 py-3"
                 >
                   <p className="text-2xl font-semibold text-[#fff8e7]">{value}</p>
-                  <p className="mt-1 text-[11px] uppercase tracking-[.1em] text-white/55">{label}</p>
+                  <p className="mt-1 text-[12px] uppercase tracking-[.09em] text-white/68">{label}</p>
                 </div>
               ))}
             </div>
@@ -187,7 +187,7 @@ export function WelcomeScreen() {
               <div className="rounded-[24px] border border-[#69e4ee]/18 bg-[#050a11]/88 p-5 shadow-[0_24px_80px_-42px_rgba(0,0,0,.95),0_0_46px_-24px_rgba(105,228,238,.5)] backdrop-blur-2xl">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[.16em] text-[#7beaf3]">
+                    <p className="text-[12px] font-black uppercase tracking-[.14em] text-[#87eef5]">
                       LIVE FACTORY
                     </p>
                     <p className="mt-1.5 text-base font-semibold text-[#fff8e7]">OSA собирает нужный цех</p>
@@ -203,7 +203,7 @@ export function WelcomeScreen() {
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="truncate text-[12px] font-semibold text-white/82">{name}</span>
-                        <span className={index < 2 ? 'text-[10px] font-semibold text-emerald-200/80' : 'text-[10px] font-semibold text-[#f1c96c]/80'}>
+                        <span className={index < 2 ? 'text-[11px] font-semibold text-emerald-200/88' : 'text-[11px] font-semibold text-[#f1c96c]/90'}>
                           {status}
                         </span>
                       </div>
@@ -213,12 +213,12 @@ export function WelcomeScreen() {
               </div>
 
               <div className="rounded-[24px] border border-[#f1c96c]/22 bg-[linear-gradient(145deg,rgba(241,201,108,.07),rgba(105,228,238,.025))] p-5 shadow-[0_24px_70px_-44px_rgba(0,0,0,.92),0_0_42px_-24px_rgba(241,201,108,.4)] backdrop-blur-2xl">
-                <p className="text-[11px] font-black uppercase tracking-[.16em] text-[#f1c96c]">OUTPUT</p>
+                <p className="text-[12px] font-black uppercase tracking-[.14em] text-[#f5d277]">OUTPUT</p>
                 <div className="mt-4 space-y-2">
                   {['Видео', 'Визуал', 'Продажи', 'Аналитика'].map((item, index) => (
                     <div key={item} className="flex items-center justify-between text-[12px]">
                       <span className="text-white/72">{item}</span>
-                      <span className={index < 3 ? 'font-semibold text-emerald-200/82' : 'font-semibold text-white/52'}>
+                      <span className={index < 3 ? 'font-semibold text-emerald-200/82' : 'font-semibold text-white/68'}>
                         {index < 3 ? 'READY' : 'NEXT'}
                       </span>
                     </div>
@@ -227,7 +227,7 @@ export function WelcomeScreen() {
                 <div className="mt-4 h-1 overflow-hidden rounded-full bg-white/[0.06]">
                   <div className="h-full w-[82%] bg-[linear-gradient(90deg,#69e4ee,#f1c96c)] shadow-[0_0_12px_rgba(105,228,238,.45)]" />
                 </div>
-                <p className="mt-2 text-right text-[11px] font-semibold text-white/58">82%</p>
+                <p className="mt-2 text-right text-[12px] font-semibold text-white/68">82%</p>
               </div>
             </div>
           </div>
@@ -254,18 +254,18 @@ export function WelcomeScreen() {
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <span className="text-[11px] font-black tracking-[.16em] text-[#7beaf3]/85">LINE {number}</span>
+                    <span className="text-[12px] font-black tracking-[.14em] text-[#8df0f6]">LINE {number}</span>
                     <h3 className="mt-4 text-xl font-bold tracking-[.05em] text-[#fff8e7]">{title}</h3>
                     <p className="mt-2 text-sm leading-6 text-white/66">{text}</p>
                   </div>
-                  <span className="mt-1 text-base text-white/40 transition group-hover:text-[#69e4ee]/55">↗</span>
+                  <span className="mt-1 text-lg text-white/62 transition group-hover:text-[#69e4ee]/55">↗</span>
                 </div>
               </div>
             ))}
           </div>
         </section>
 
-        <footer className="flex flex-col gap-3 border-t border-white/[0.08] py-8 text-[12px] uppercase tracking-[.1em] text-white/50 sm:flex-row sm:items-center sm:justify-between">
+        <footer className="flex flex-col gap-3 border-t border-white/[0.08] py-8 text-[13px] uppercase tracking-[.09em] text-white/65 sm:flex-row sm:items-center sm:justify-between">
           <span>BUSINESS ZAVOD · OSA INSIDE · 2026</span>
           <span>Задача → Производство → Проверка → Результат</span>
         </footer>
