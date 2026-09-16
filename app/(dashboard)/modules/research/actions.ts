@@ -8,6 +8,7 @@ import { createProductionToolRegistry } from '@/services/runtime/tools/tool-regi
 import { createToolExecutor } from '@/services/runtime/tools/executor/tool-executor-factory';
 import type { GatewayRequest } from '@/types/runtime/dto';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
+import { ensureFactoryProject, saveFactoryArtifact } from '@/lib/factory-chain/persistence';
 
 export type ResearchMode = 'find' | 'analyze';
 
@@ -22,6 +23,7 @@ export type ResearchSource = {
 export type ResearchResult =
   | {
       status: 'completed';
+      projectId: string;
       summary: string;
       sources: ResearchSource[];
     }
@@ -124,6 +126,7 @@ export type PriorResearchContext = {
 export async function runResearchAction(input: {
   mode: ResearchMode;
   query: string;
+  projectId?: string | null;
   priorContext?: PriorResearchContext | null;
 }): Promise<ResearchResult> {
   const query = input.query.trim();
@@ -133,6 +136,12 @@ export async function runResearchAction(input: {
   }
 
   try {
+    const project = await ensureFactoryProject({
+      projectId: input.projectId,
+      seed: query,
+      stage: input.mode,
+    });
+
     let identity: Awaited<ReturnType<typeof resolveResearchIdentity>>;
     let runId: string;
     let sources: ResearchSource[];
@@ -272,8 +281,26 @@ export async function runResearchAction(input: {
       };
     }
 
+    await saveFactoryArtifact({
+      projectId: project.projectId,
+      stage: input.mode,
+      title: input.mode === 'find' ? 'Результат поиска' : 'Результат анализа',
+      content: summary,
+      sources: sources.map((source) => ({
+        title: source.title,
+        url: source.url,
+        description: source.description,
+      })),
+      metadata: {
+        query,
+        mode: input.mode,
+      },
+      identity: project.identity,
+    });
+
     return {
       status: 'completed',
+      projectId: project.projectId,
       summary,
       sources,
     };
