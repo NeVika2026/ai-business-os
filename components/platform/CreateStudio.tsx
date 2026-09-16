@@ -59,13 +59,13 @@ export function CreateStudio({
         />
         <div className="relative grid gap-7 xl:grid-cols-[1.05fr_.95fr] xl:items-end">
           <div>
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.24em] text-[#e7b952]">
+            <p className="text-[13px] font-black uppercase tracking-[0.18em] text-[#f1c96c]">
               Бизнес-Завод · Цех создания
             </p>
             <h1 className="mt-4 max-w-4xl text-[clamp(2.4rem,5vw,4.9rem)] font-semibold leading-[.96] tracking-[-0.06em] text-[#fff8e7]">
               Из идеи — в готовый результат
             </h1>
-            <p className="mt-5 max-w-3xl text-sm leading-6 text-white/48 sm:text-base sm:leading-7">
+            <p className="mt-5 max-w-3xl text-lg leading-8 text-white/76">
               Идею можно описать одной фразой. AI-директор сам разложит её на производство:
               сценарий, визуал, голос, монтаж, проверку и экспорт.
             </p>
@@ -74,19 +74,19 @@ export function CreateStudio({
           <div className="rounded-[24px] border border-[#58dbe8]/10 bg-[#58dbe8]/[0.035] p-4 backdrop-blur-xl sm:p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-[9px] font-extrabold uppercase tracking-[0.18em] text-[#58dbe8]">
+                <p className="text-[12px] font-black uppercase tracking-[0.14em] text-[#79eaf2]">
                   Производственная линия
                 </p>
-                <p className="mt-1 text-sm font-semibold text-[#f7f2e8]">{mode.label}</p>
+                <p className="mt-1 text-lg font-semibold text-[#fff8e7]">{mode.label}</p>
               </div>
-              <span className="rounded-full border border-emerald-300/15 bg-emerald-300/[0.06] px-3 py-1.5 text-[9px] font-bold text-emerald-200">
+              <span className="rounded-full border border-emerald-300/15 bg-emerald-300/[0.06] px-3 py-1.5 text-[12px] font-bold text-emerald-200">
                 READY
               </span>
             </div>
             <div className="mt-4 h-1 overflow-hidden rounded-full bg-white/[0.06]">
               <div className="h-full w-full bg-[linear-gradient(90deg,#58dbe8,#e7b952)] opacity-75" />
             </div>
-            <p className="mt-3 text-[11px] leading-5 text-white/34">
+            <p className="mt-3 text-sm leading-6 text-white/68">
               Сначала план и подтверждение. Затратные действия запускаются только после согласования.
             </p>
           </div>
@@ -95,7 +95,7 @@ export function CreateStudio({
 
       <section className="relative mt-5 grid gap-5 xl:grid-cols-[1.05fr_.95fr]">
         <div className="rounded-[30px] border border-[var(--border-subtle)] bg-[var(--surface-1)] p-5 sm:p-6">
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+          <p className="text-[12px] font-black uppercase tracking-[0.14em] text-[var(--text-secondary)]">
             Что производим
           </p>
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -125,10 +125,10 @@ export function CreateStudio({
                   >
                     {item.icon}
                   </span>
-                  <span className="mt-2 block text-sm font-semibold text-[var(--text-primary)]">
+                  <span className="mt-2 block text-base font-semibold text-[var(--text-primary)]">
                     {item.label}
                   </span>
-                  <span className="mt-1 block text-[11px] leading-5 text-[var(--text-secondary)]">
+                  <span className="mt-1 block text-sm leading-6 text-[var(--text-secondary)]">
                     {item.description}
                   </span>
                 </button>
@@ -138,7 +138,7 @@ export function CreateStudio({
 
           <div className="mt-6 grid gap-4">
             <label className="grid gap-2">
-              <span className="text-sm font-semibold text-[var(--text-primary)]">
+              <span className="text-base font-semibold text-[var(--text-primary)]">
                 Опиши идею или результат
               </span>
               <textarea
@@ -146,44 +146,44 @@ export function CreateStudio({
                 onChange={(event) => setGoal(event.target.value)}
                 rows={6}
                 placeholder="Например: сделай 25-секундный ролик про страховку квартиры. Без говорящего аватара, с крупными русскими субтитрами."
-                className="resize-none rounded-[22px] border border-[var(--border-subtle)] bg-[var(--surface-0)] px-4 py-3.5 text-sm leading-6 text-[var(--text-primary)] outline-none transition focus:border-[#e7b952]/40"
+                className="resize-none rounded-[22px] border border-[var(--border-subtle)] bg-[var(--surface-0)] px-4 py-4 text-base leading-7 text-[var(--text-primary)] outline-none transition focus:border-[#e7b952]/40"
               />
             </label>
 
             <label className="grid gap-2">
-              <span className="text-sm font-semibold text-[var(--text-primary)]">
+              <span className="text-base font-semibold text-[var(--text-primary)]">
                 Для кого <span className="font-normal text-[var(--text-secondary)]">· необязательно</span>
               </span>
               <input
                 value={audience}
                 onChange={(event) => setAudience(event.target.value)}
                 placeholder="Например: владельцы ипотечных квартир"
-                className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-0)] px-4 py-3 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#58dbe8]/30"
+                className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-0)] px-4 py-3.5 text-base text-[var(--text-primary)] outline-none transition focus:border-[#58dbe8]/30"
               />
             </label>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="grid gap-2">
-                <span className="text-sm font-semibold text-[var(--text-primary)]">
+                <span className="text-base font-semibold text-[var(--text-primary)]">
                   Формат <span className="font-normal text-[var(--text-secondary)]">· необязательно</span>
                 </span>
                 <input
                   value={format}
                   onChange={(event) => setFormat(event.target.value)}
                   placeholder="9:16, 25 сек., Дзэн"
-                  className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-0)] px-4 py-3 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#58dbe8]/30"
+                  className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-0)] px-4 py-3.5 text-base text-[var(--text-primary)] outline-none transition focus:border-[#58dbe8]/30"
                 />
               </label>
 
               <label className="grid gap-2">
-                <span className="text-sm font-semibold text-[var(--text-primary)]">
+                <span className="text-base font-semibold text-[var(--text-primary)]">
                   Важно учесть <span className="font-normal text-[var(--text-secondary)]">· необязательно</span>
                 </span>
                 <input
                   value={context}
                   onChange={(event) => setContext(event.target.value)}
                   placeholder="Бренд, запреты, референсы, тон"
-                  className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-0)] px-4 py-3 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#58dbe8]/30"
+                  className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-0)] px-4 py-3.5 text-base text-[var(--text-primary)] outline-none transition focus:border-[#58dbe8]/30"
                 />
               </label>
             </div>
@@ -197,17 +197,17 @@ export function CreateStudio({
                 : 'border-[var(--border-subtle)] bg-[var(--surface-0)]',
             ].join(' ')}
           >
-            <p className="text-sm font-bold text-[var(--text-primary)]">
+            <p className="text-base font-bold text-[var(--text-primary)]">
               {canContinue ? 'Задача передана в производственную линию' : 'Опишите результат — завод выберет инструменты'}
             </p>
-            <p className="mt-1 text-[10px] leading-5 text-[var(--text-secondary)]">
+            <p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">
               {canContinue
                 ? 'Ниже уже доступен реальный генератор. Платные операции запускаются только после подтверждения.'
                 : 'Посты не создаются по умолчанию: формат определяется по самой задаче.'}
             </p>
           </div>
 
-          <p className="mt-3 text-center text-[10px] leading-5 text-[var(--text-secondary)]">
+          <p className="mt-3 text-center text-sm leading-6 text-[var(--text-secondary)]">
             Модели и инструменты выбираются внутри платформы автоматически.
           </p>
         </div>
@@ -215,14 +215,14 @@ export function CreateStudio({
         <aside className="rounded-[30px] border border-white/[0.08] bg-[#080b11] p-5 text-white sm:p-6">
           <div className="flex items-end justify-between gap-4">
             <div>
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#58dbe8]">
+              <p className="text-[12px] font-black uppercase tracking-[0.14em] text-[#79eaf2]">
                 Производственная линия
               </p>
               <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[#fff8e7]">
                 {mode.label}
               </h2>
             </div>
-            <span className="text-[10px] font-bold text-white/30">
+            <span className="text-[12px] font-bold text-white/60">
               {productionLine.length} этапов
             </span>
           </div>
@@ -237,8 +237,8 @@ export function CreateStudio({
                   {String(index + 1).padStart(2, '0')}
                 </span>
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold text-[#fff8e7]">{stage.label}</p>
-                  <p className="mt-0.5 truncate text-[10px] text-white/28">{stage.detail}</p>
+                  <p className="text-sm font-semibold text-[#fff8e7]">{stage.label}</p>
+                  <p className="mt-0.5 truncate text-[12px] text-white/62">{stage.detail}</p>
                 </div>
                 <span
                   aria-hidden="true"
@@ -249,10 +249,10 @@ export function CreateStudio({
           </div>
 
           <div className="mt-5 rounded-[20px] border border-[#e7b952]/12 bg-[#e7b952]/[0.035] p-4">
-            <p className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#e7b952]">
+            <p className="text-[12px] font-black uppercase tracking-[0.14em] text-[#f1c96c]">
               Контроль качества
             </p>
-            <p className="mt-2 text-[11px] leading-5 text-white/36">
+            <p className="mt-2 text-sm leading-6 text-white/68">
               Для видео и серий визуалов система должна сохранять одинаковых героев,
               интерьер, реквизит, свет и стиль между сценами. Перед экспортом — отдельная проверка.
             </p>
