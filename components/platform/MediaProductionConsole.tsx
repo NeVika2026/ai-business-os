@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 
 import {
   generateCreateStudioArtifactAction,
@@ -66,6 +67,7 @@ export function MediaProductionConsole({
   context,
   projectId = null,
 }: MediaProductionConsoleProps) {
+  const router = useRouter();
   const kind = toMediaKind(modeId);
   const [approved, setApproved] = useState(false);
   const [referenceImageUrl, setReferenceImageUrl] = useState('');
@@ -165,6 +167,12 @@ export function MediaProductionConsole({
       });
     };
 
+    const sendArtifactToPublish = () => {
+      if (!artifactContent) return;
+      window.sessionStorage.setItem('business-zavod:publish-source', artifactContent);
+      router.push('/modules/publish/studio');
+    };
+
     const copyArtifact = async () => {
       if (!artifactContent) return;
       try {
@@ -262,6 +270,13 @@ export function MediaProductionConsole({
                     className="rounded-xl border border-white/[0.10] bg-white/[0.03] px-3 py-2 text-xs font-bold text-white/74 hover:border-[#f1c96c]/24 hover:text-white"
                   >
                     Скачать TXT
+                  </button>
+                  <button
+                    type="button"
+                    onClick={sendArtifactToPublish}
+                    className="rounded-xl bg-[linear-gradient(135deg,#69e4ee,#399fb5)] px-3 py-2 text-xs font-black text-[#041015]"
+                  >
+                    В цех публикации →
                   </button>
                   <button
                     type="button"
@@ -518,14 +533,32 @@ export function MediaProductionConsole({
 
               <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                 <p className="text-[12px] font-semibold text-emerald-200/85">Готово · {jobStatus.providerStatus}</p>
-                <a
-                  href={jobStatus.outputUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[12px] font-semibold text-[#a8f3f8] hover:text-white"
-                >
-                  Открыть файл ↗
-                </a>
+                <div className="flex flex-wrap items-center gap-2">
+                  <a
+                    href={jobStatus.outputUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[12px] font-semibold text-[#a8f3f8] hover:text-white"
+                  >
+                    Открыть файл ↗
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const source = [
+                        goal.trim(),
+                        format.trim() ? 'Формат: ' + format.trim() : '',
+                        context.trim() ? 'Важно: ' + context.trim() : '',
+                        'Готовый файл: ' + jobStatus.outputUrl,
+                      ].filter(Boolean).join('\n');
+                      window.sessionStorage.setItem('business-zavod:publish-source', source);
+                      router.push('/modules/publish/studio');
+                    }}
+                    className="rounded-lg border border-[#69e4ee]/18 px-2.5 py-1.5 text-[11px] font-bold text-[#a8f3f8]"
+                  >
+                    Подготовить публикацию
+                  </button>
+                </div>
               </div>
 
               {jobStatus.ephemeral ? (
