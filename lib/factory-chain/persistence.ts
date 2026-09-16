@@ -204,19 +204,25 @@ export function mapFactoryArtifactEvent(event: {
 
   if (!projectId || !isFactoryStage(stage) || !content) return null;
 
-  const sources = rawSources
-    .map((source) => {
-      if (!source || typeof source !== 'object') return null;
-      const item = source as Record<string, unknown>;
-      const url = typeof item.url === 'string' ? item.url : '';
-      if (!url) return null;
-      return {
-        title: typeof item.title === 'string' ? item.title : 'Источник',
-        url,
-        description: typeof item.description === 'string' ? item.description : undefined,
-      };
-    })
-    .filter((source): source is FactoryArtifactSource => Boolean(source));
+  const sources = rawSources.reduce<FactoryArtifactSource[]>((acc, source) => {
+    if (!source || typeof source !== 'object') return acc;
+
+    const item = source as Record<string, unknown>;
+    const url = typeof item.url === 'string' ? item.url : '';
+    if (!url) return acc;
+
+    const mapped: FactoryArtifactSource = {
+      title: typeof item.title === 'string' ? item.title : 'Источник',
+      url,
+    };
+
+    if (typeof item.description === 'string') {
+      mapped.description = item.description;
+    }
+
+    acc.push(mapped);
+    return acc;
+  }, []);
 
   return {
     id: event.id,
