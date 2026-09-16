@@ -17,27 +17,27 @@ export function SignInForm({ showSentMessage, errorMessage }: SignInFormProps) {
       <div className="relative mx-auto flex min-h-[calc(100dvh-3rem)] w-full max-w-[1180px] flex-col">
         <header className="flex items-center justify-between border-b border-white/[0.06] py-4">
           <Link href="/login" className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-[14px] border border-[#f1c96c]/22 bg-white/[0.03] text-[11px] font-black tracking-[.08em] text-[#f1c96c]">
+            <span className="flex h-10 w-10 items-center justify-center rounded-[14px] border border-[#f1c96c]/22 bg-white/[0.03] text-[13px] font-black tracking-[.06em] text-[#f4d16c]">
               БЗ
             </span>
             <span>
-              <span className="block text-[12px] font-black tracking-[0.22em]">БИЗНЕС ЗАВОД</span>
-              <span className="block text-[9px] uppercase tracking-[0.2em] text-white/25">OSA OPERATING SYSTEM</span>
+              <span className="block text-[14px] font-black tracking-[0.16em]">БИЗНЕС ЗАВОД</span>
+              <span className="block text-[11px] uppercase tracking-[0.16em] text-white/58">OSA OPERATING SYSTEM</span>
             </span>
           </Link>
-          <Link href="/login" className="text-xs font-medium text-white/30 transition hover:text-white">
+          <Link href="/login" className="text-sm font-medium text-white/62 transition hover:text-white">
             ← На входной экран
           </Link>
         </header>
 
         <div className="grid flex-1 items-center gap-10 py-10 lg:grid-cols-[1fr_.85fr]">
           <div className="hidden lg:block">
-            <p className="text-[10px] font-black uppercase tracking-[.22em] text-[#69e4ee]">AUTHORIZED ZONE</p>
+            <p className="text-[12px] font-black uppercase tracking-[.18em] text-[#87eef5]">AUTHORIZED ZONE</p>
             <h1 className="mt-4 max-w-2xl text-6xl font-semibold leading-[.92] tracking-[-.06em]">
               Вернуться
-              <span className="block text-white/28">в свой завод.</span>
+              <span className="block text-white/58">в свой завод.</span>
             </h1>
-            <p className="mt-5 max-w-xl text-sm leading-6 text-white/34">
+            <p className="mt-5 max-w-xl text-base leading-7 text-white/68">
               Здесь уже лежат проекты, медиа, рабочая память OSA, результаты и контекст команды.
             </p>
 
@@ -48,8 +48,8 @@ export function SignInForm({ showSentMessage, errorMessage }: SignInFormProps) {
                 ['ORCHESTRA', 'READY'],
               ].map(([label, status]) => (
                 <div key={label} className="rounded-[16px] border border-white/[0.06] bg-white/[0.02] px-3 py-3">
-                  <p className="text-[9px] tracking-[.14em] text-white/24">{label}</p>
-                  <p className="mt-2 text-[10px] font-bold text-emerald-200/60">{status}</p>
+                  <p className="text-[11px] tracking-[.12em] text-white/60">{label}</p>
+                  <p className="mt-2 text-[12px] font-bold text-emerald-200/88">{status}</p>
                 </div>
               ))}
             </div>
@@ -57,9 +57,9 @@ export function SignInForm({ showSentMessage, errorMessage }: SignInFormProps) {
 
           <div className="mx-auto w-full max-w-md rounded-[28px] border border-white/[0.08] bg-[#0a0e15]/86 p-6 shadow-[0_35px_110px_-58px_rgba(0,0,0,.95)] backdrop-blur-2xl sm:p-8">
             <div className="mb-7">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#f1c96c]">Вход в систему</p>
+              <p className="text-[12px] font-black uppercase tracking-[0.16em] text-[#f4d16c]">Вход в систему</p>
               <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em]">Продолжить производство</h2>
-              <p className="mt-2 text-sm leading-6 text-white/32">
+              <p className="mt-2 text-base leading-7 text-white/68">
                 Пришлём безопасную ссылку на почту. Пароль не нужен.
               </p>
             </div>
@@ -78,7 +78,7 @@ export function SignInForm({ showSentMessage, errorMessage }: SignInFormProps) {
 
             <form action={sendMagicLink} className="space-y-4">
               <label className="block">
-                <span className="mb-2 block text-[10px] font-bold uppercase tracking-[.13em] text-white/34">
+                <span className="mb-2 block text-[12px] font-bold uppercase tracking-[.11em] text-white/68">
                   Email
                 </span>
                 <input
@@ -88,7 +88,7 @@ export function SignInForm({ showSentMessage, errorMessage }: SignInFormProps) {
                   autoComplete="email"
                   required
                   placeholder="you@company.com"
-                  className="h-12 w-full rounded-[16px] border border-white/[0.08] bg-black/20 px-4 text-sm text-white outline-none transition placeholder:text-white/18 focus:border-[#69e4ee]/35 focus:ring-4 focus:ring-[#69e4ee]/[0.04]"
+                  className="h-12 w-full rounded-[16px] border border-white/[0.08] bg-black/20 px-4 text-sm text-white outline-none transition placeholder:text-white/48 focus:border-[#69e4ee]/35 focus:ring-4 focus:ring-[#69e4ee]/[0.04]"
                 />
               </label>
 
@@ -100,9 +100,9 @@ export function SignInForm({ showSentMessage, errorMessage }: SignInFormProps) {
               </button>
             </form>
 
-            <div className="mt-6 flex items-center justify-between rounded-[16px] border border-white/[0.055] bg-white/[0.02] px-4 py-3 text-[10px] text-white/24">
+            <div className="mt-6 flex items-center justify-between rounded-[16px] border border-white/[0.055] bg-white/[0.02] px-4 py-3 text-[12px] text-white/58">
               <span>OSA SESSION</span>
-              <span className="text-emerald-200/55">● SECURE</span>
+              <span className="text-emerald-200/82">● SECURE</span>
             </div>
           </div>
         </div>
