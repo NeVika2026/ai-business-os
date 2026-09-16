@@ -51,6 +51,11 @@ function isHeading(line: string): boolean {
   return cleaned === cleaned.toUpperCase() && /[А-ЯA-Z]/.test(cleaned);
 }
 
+function isFormPlaceholder(line: string): boolean {
+  const normalized = cleanLine(line).toLowerCase().replace(/ё/g, 'е');
+  return normalized.includes('форма заявки') && (line.includes('[') || normalized.includes('имя') || normalized.includes('телефон'));
+}
+
 function renderArtifact(content: string) {
   const blocks = content
     .split(/\n{2,}/)
@@ -60,6 +65,7 @@ function renderArtifact(content: string) {
   return blocks.map((block, blockIndex) => {
     const lines = block
       .split('\n')
+      .filter((line) => !isFormPlaceholder(line))
       .map(cleanLine)
       .filter(Boolean);
 
@@ -160,6 +166,10 @@ export function FirstResultScreen({ entry }: FirstResultScreenProps) {
   const task = entry?.task?.trim() ?? '';
   const shortTask =
     task.length > 180 ? `${task.slice(0, 177).trim()}…` : task;
+  const normalizedTask = task.toLowerCase().replace(/ё/g, 'е');
+  const isLandingTask = ['лендинг', 'сайт', 'страниц'].some((token) =>
+    normalizedTask.includes(token),
+  );
 
   return (
     <OsaFirstExperienceLayout hero artActive className="osa-fe-canvas--factory-result">
@@ -200,6 +210,45 @@ export function FirstResultScreen({ entry }: FirstResultScreenProps) {
 
         <div className="relative mt-8 grid gap-5">
           {renderArtifact(safeContent)}
+
+          {isLandingTask ? (
+            <section className="rounded-[26px] border border-[#f1c96c]/18 bg-[linear-gradient(145deg,rgba(241,201,108,.055),rgba(105,228,238,.025))] p-5 sm:p-7">
+              <p className="text-[12px] font-black uppercase tracking-[.16em] text-[#69e4ee]">
+                ФОРМА ЗАЯВКИ
+              </p>
+              <h2 className="mt-2 text-2xl font-black tracking-[-.03em] text-[#fff4cf]">
+                Оставьте контакты — обсудим управление объектом
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/68 sm:text-base">
+                Без выдуманных обещаний и сроков: менеджер свяжется с вами после получения заявки.
+              </p>
+              <div className="mt-5 grid gap-3 md:grid-cols-2">
+                {[
+                  ['Имя', 'Как к вам обращаться'],
+                  ['Телефон', '+7 900 000-00-00'],
+                  ['Email', 'name@example.com'],
+                  ['Комментарий', 'Коротко опишите объект и задачу'],
+                ].map(([label, placeholder]) => (
+                  <label key={label} className={label === 'Комментарий' ? 'md:col-span-2' : ''}>
+                    <span className="mb-2 block text-xs font-bold uppercase tracking-[.1em] text-white/62">
+                      {label}
+                    </span>
+                    <input
+                      type={label === 'Email' ? 'email' : label === 'Телефон' ? 'tel' : 'text'}
+                      placeholder={placeholder}
+                      className="h-12 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-white outline-none placeholder:text-white/38"
+                    />
+                  </label>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="mt-4 inline-flex min-h-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#ffe08a,#d79a30)] px-6 text-sm font-black text-[#1b1105]"
+              >
+                Оставить заявку
+              </button>
+            </section>
+          ) : null}
         </div>
 
         <footer className="relative mt-10 flex flex-wrap items-center gap-3 border-t border-white/[0.08] pt-7">
