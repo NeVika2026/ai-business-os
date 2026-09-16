@@ -5,13 +5,11 @@ import { useCallback, useMemo, useRef, useState, useTransition, type CSSProperti
 
 import {
   advanceHomeRealWork,
-  prepareHomeDirectorPlan,
   startHomeRealWork,
   type HomeOrchestraSnapshot,
 } from '@/app/(dashboard)/home/actions';
 import { OsaActiveAgent } from '@/components/home/OsaActiveAgent';
 import { OsaClarifyPanel } from '@/components/home/OsaClarifyPanel';
-import { OsaDirectorPlanPanel } from '@/components/home/OsaDirectorPlanPanel';
 import { BusinessFactoryHero } from '@/components/home/BusinessFactoryHero';
 import homeStyles from '@/components/home/BusinessFactoryHome.module.css';
 import { OsaSkillModeLine } from '@/components/home/OsaSkillModeLine';
@@ -26,7 +24,6 @@ import {
   heroLightIntensity,
   heroLightWarmth,
 } from '@/utils/home/hero-experience';
-import type { HomeDirectorPlanResult } from '@/utils/home/director-plan';
 import type {
   ClarificationAnswer,
   HomeDeliverablePayload,
@@ -37,9 +34,7 @@ type OsaHomeActionScreenProps = {
   organizationName: string;
 };
 
-type ScreenPhase = 'input' | 'clarify' | 'plan' | 'working' | 'result' | 'error';
-
-type ReadyDirectorPlan = Extract<HomeDirectorPlanResult, { status: 'ready' }>;
+type ScreenPhase = 'input' | 'clarify' | 'working' | 'result' | 'error';
 
 const ORCHESTRA_POLL_MS = 900;
 
@@ -52,8 +47,6 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
   const [taskType, setTaskType] = useState<RealWorkTaskType | null>(null);
   const [skillModeLabel, setSkillModeLabel] = useState<string | null>(null);
   const [clarifyQuestions, setClarifyQuestions] = useState<string[]>([]);
-  const [directorPlan, setDirectorPlan] = useState<ReadyDirectorPlan | null>(null);
-  const [directorClarifications, setDirectorClarifications] = useState<ClarificationAnswer[]>([]);
   const [orchestra, setOrchestra] = useState<HomeOrchestraSnapshot | null>(null);
   const [deliverable, setDeliverable] = useState<HomeDeliverablePayload | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
@@ -84,8 +77,6 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
     setTaskType(null);
     setSkillModeLabel(null);
     setClarifyQuestions([]);
-    setDirectorPlan(null);
-    setDirectorClarifications([]);
     setOrchestra(null);
     setDeliverable(null);
     setProjectId(null);
@@ -129,8 +120,9 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
   const executeRealWork = (
     quickActionId?: HomeQuickActionId,
     clarifications?: ClarificationAnswer[],
+    inputOverride?: string,
   ) => {
-    const trimmed = prompt.trim();
+    const trimmed = (inputOverride ?? prompt).trim();
 
     if (!trimmed && !quickActionId) {
       return;
@@ -182,58 +174,8 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
     });
   };
 
-  const prepareDirectorPlan = (
-    quickActionId?: HomeQuickActionId,
-    clarifications: ClarificationAnswer[] = [],
-  ) => {
-    const trimmed = prompt.trim();
-
-    if (!trimmed && !quickActionId) {
-      return;
-    }
-
-    setError(null);
-    setDirectorPlan(null);
-    setLastQuickActionId(quickActionId);
-
-    startTransition(async () => {
-      const result = await prepareHomeDirectorPlan(trimmed, {
-        quickActionId,
-        clarifications,
-      });
-
-      if (result.status === 'failed') {
-        setError({ message: result.message, hint: result.hint });
-        setPhase('error');
-        return;
-      }
-
-      setTaskType(result.taskType);
-      setSkillModeLabel(result.skillModeLabel);
-
-      if (result.status === 'clarify') {
-        setClarifyQuestions(result.questions);
-        setDirectorClarifications([]);
-        setPhase('clarify');
-        return;
-      }
-
-      setDirectorPlan(result);
-      setDirectorClarifications(clarifications);
-      setPhase('plan');
-    });
-  };
-
-  const confirmDirectorPlan = () => {
-    if (!directorPlan) {
-      return;
-    }
-
-    executeRealWork(lastQuickActionId, directorClarifications);
-  };
-
-  const runTask = (quickActionId?: HomeQuickActionId) => {
-    const trimmed = prompt.trim();
+  const runTask = (quickActionId?: HomeQuickActionId, inputOverride?: string) => {
+    const trimmed = (inputOverride ?? prompt).trim();
 
     if (!quickActionId && trimmed) {
       const studioMode = detectCreateStudioMode(trimmed);
@@ -244,7 +186,32 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
       }
     }
 
-    prepareDirectorPlan(quickActionId);
+    executeRealWork(quickActionId, undefined, trimmed);
+  };
+
+  const launchFactoryPreset = (preset: 'video' | 'image' | 'sales' | 'site') => {
+    const existing = prompt.trim();
+
+    if (preset === 'video' || preset === 'image') {
+      const fallback =
+        preset === 'video'
+          ? 'Сделай сильный рекламный ролик под мою задачу.'
+          : 'Создай сильный визуал под мою задачу.';
+      router.push(buildCreateStudioHref(preset, existing || fallback));
+      return;
+    }
+
+    const presetPrompt =
+      preset === 'sales'
+        ? existing
+          ? `Продажи. ${existing}`
+          : 'Собери продающий оффер и рабочий скрипт продаж для моего продукта или услуги.'
+        : existing
+          ? `Сайт. ${existing}`
+          : 'Собери лендинг для моего продукта или услуги: структура, оффер, блоки и призыв к действию.';
+
+    setPrompt(presetPrompt);
+    runTask(undefined, presetPrompt);
   };
 
   const handlePromptChange = (value: string) => {
@@ -346,9 +313,10 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
 
                   <div className={homeStyles.consoleActions}>
                     <div className={homeStyles.quickFormats}>
-                      {['Видео', 'Визуал', 'Продажи', 'Сайт'].map((label) => (
-                        <span key={label}>{label}</span>
-                      ))}
+                      <button type="button" onClick={() => launchFactoryPreset('video')}>Видео</button>
+                      <button type="button" onClick={() => launchFactoryPreset('image')}>Визуал</button>
+                      <button type="button" onClick={() => launchFactoryPreset('sales')}>Продажи</button>
+                      <button type="button" onClick={() => launchFactoryPreset('site')}>Сайт</button>
                     </div>
                     <button
                       type="button"
@@ -371,7 +339,7 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
               ) : null}
 
               {skillModeLabel &&
-              (phase === 'clarify' || phase === 'plan' || phase === 'working') ? (
+              (phase === 'clarify' || phase === 'working') ? (
                 <OsaSkillModeLine label={skillModeLabel} />
               ) : null}
 
@@ -380,16 +348,7 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
                   taskType={taskType}
                   questions={clarifyQuestions}
                   disabled={isPending}
-                  onSubmit={(answers) => prepareDirectorPlan(lastQuickActionId, answers)}
-                />
-              ) : null}
-
-              {phase === 'plan' && directorPlan ? (
-                <OsaDirectorPlanPanel
-                  plan={directorPlan}
-                  disabled={isPending}
-                  onStart={confirmDirectorPlan}
-                  onBack={resetToInput}
+                  onSubmit={(answers) => executeRealWork(lastQuickActionId, answers)}
                 />
               ) : null}
 
