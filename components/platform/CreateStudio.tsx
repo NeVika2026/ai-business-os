@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
+import { FactoryChainBar } from '@/components/platform/FactoryChainBar';
 import { MediaProductionConsole } from '@/components/platform/MediaProductionConsole';
 import { VideoStoryboardStudio } from '@/components/platform/VideoStoryboardStudio';
 
@@ -36,6 +37,35 @@ export function CreateStudio({
   const [audience, setAudience] = useState(initialAudience);
   const [format, setFormat] = useState(initialFormat);
   const [context, setContext] = useState(initialContext);
+  const [handoffMessage, setHandoffMessage] = useState('');
+
+  useEffect(() => {
+    const raw = window.sessionStorage.getItem('business-zavod:create-handoff');
+    if (!raw) return;
+
+    window.sessionStorage.removeItem('business-zavod:create-handoff');
+
+    try {
+      const payload = JSON.parse(raw) as {
+        goal?: string;
+        context?: string;
+        sourceStage?: string;
+      };
+
+      if (payload.goal?.trim()) setGoal(payload.goal.trim());
+      if (payload.context?.trim()) setContext(payload.context.trim());
+
+      if (payload.sourceStage === 'analyze') {
+        setHandoffMessage('Анализ принят. Можно сразу выбрать формат и запускать производство.');
+      } else if (payload.sourceStage === 'find') {
+        setHandoffMessage('Результаты поиска приняты в цех создания.');
+      } else {
+        setHandoffMessage('Материал из предыдущего цеха принят.');
+      }
+    } catch {
+      setHandoffMessage('');
+    }
+  }, []);
 
   const mode = getCreateStudioMode(modeId);
   const productionLine = getCreateStudioProductionLine(modeId);
@@ -43,6 +73,14 @@ export function CreateStudio({
 
   return (
     <main className="relative mx-auto w-full max-w-[1320px] overflow-hidden pb-12">
+      <FactoryChainBar active="create" />
+
+      {handoffMessage ? (
+        <section className="mb-4 rounded-[20px] border border-emerald-300/12 bg-emerald-300/[0.04] px-4 py-3 text-sm font-semibold text-emerald-100/82">
+          {handoffMessage}
+        </section>
+      ) : null}
+
       <div
         aria-hidden="true"
         className="pointer-events-none absolute right-0 top-0 h-[380px] w-[380px] rounded-full bg-[radial-gradient(circle,rgba(231,185,82,.12),transparent_70%)] blur-3xl"
