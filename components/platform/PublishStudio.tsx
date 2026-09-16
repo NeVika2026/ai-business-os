@@ -1,0 +1,322 @@
+'use client';
+
+import Link from 'next/link';
+import { useMemo, useState, useTransition } from 'react';
+
+import {
+  buildPublicationPackAction,
+  type PublicationChannelId,
+  type PublicationVariant,
+} from '@/app/(dashboard)/modules/publish/studio/actions';
+
+const CHANNELS: Array<{
+  id: PublicationChannelId;
+  label: string;
+  short: string;
+  hint: string;
+}> = [
+  { id: 'telegram', label: 'Telegram', short: 'TG', hint: 'Пост для канала' },
+  { id: 'vk', label: 'ВКонтакте', short: 'VK', hint: 'Лента и сообщество' },
+  { id: 'dzen', label: 'Дзен', short: 'ДЗ', hint: 'Публикация / статья' },
+  { id: 'youtube', label: 'YouTube', short: 'YT', hint: 'Видео / Shorts' },
+  { id: 'tiktok', label: 'TikTok', short: 'TT', hint: 'Короткое видео' },
+  { id: 'max', label: 'MAX', short: 'MX', hint: 'Канал / лента' },
+];
+
+function channelName(id: PublicationChannelId) {
+  return CHANNELS.find((item) => item.id === id)?.label ?? id;
+}
+
+export function PublishStudio() {
+  const [source, setSource] = useState('');
+  const [goal, setGoal] = useState('');
+  const [callToAction, setCallToAction] = useState('');
+  const [selected, setSelected] = useState<PublicationChannelId[]>([
+    'telegram',
+    'vk',
+    'dzen',
+  ]);
+  const [variants, setVariants] = useState<PublicationVariant[]>([]);
+  const [message, setMessage] = useState('');
+  const [copied, setCopied] = useState<PublicationChannelId | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  const canBuild = source.trim().length > 3 && selected.length > 0 && !isPending;
+
+  const selectedLabel = useMemo(
+    () => selected.map(channelName).join(' · '),
+    [selected],
+  );
+
+  const toggleChannel = (id: PublicationChannelId) => {
+    setSelected((current) =>
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id],
+    );
+  };
+
+  const buildPack = () => {
+    if (!canBuild) return;
+
+    setMessage('');
+    setCopied(null);
+
+    startTransition(async () => {
+      const result = await buildPublicationPackAction({
+        source,
+        channels: selected,
+        goal,
+        callToAction,
+      });
+
+      if (result.status === 'failed') {
+        setMessage(result.message);
+        return;
+      }
+
+      setVariants(result.variants);
+      setMessage('Пакет готов. Тексты адаптированы отдельно под каждую площадку.');
+    });
+  };
+
+  const copyVariant = async (variant: PublicationVariant) => {
+    const text = [
+      variant.title,
+      variant.body,
+      variant.cta,
+    ]
+      .filter(Boolean)
+      .join('\n\n');
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(variant.channel);
+      window.setTimeout(() => setCopied(null), 1500);
+    } catch {
+      setMessage('Не удалось скопировать текст автоматически.');
+    }
+  };
+
+  return (
+    <main className="relative mx-auto w-full max-w-[1320px] overflow-hidden pb-16 text-[#f7f2e8]">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-24 top-0 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,rgba(241,201,108,.12),transparent_70%)] blur-3xl"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute left-[26%] top-32 h-[360px] w-[360px] rounded-full bg-[radial-gradient(circle,rgba(105,228,238,.08),transparent_70%)] blur-3xl"
+      />
+
+      <section className="relative overflow-hidden rounded-[34px] border border-white/[0.09] bg-[linear-gradient(145deg,#06090e,#0b1119_56%,#06080c)] p-6 shadow-[0_28px_90px_-55px_rgba(0,0,0,.95)] sm:p-8">
+        <div className="pointer-events-none absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(255,255,255,.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.025)_1px,transparent_1px)] [background-size:42px_42px]" />
+        <div className="relative grid gap-7 xl:grid-cols-[1fr_.72fr] xl:items-end">
+          <div>
+            <p className="text-[13px] font-black uppercase tracking-[.18em] text-[#79eaf2]">
+              БИЗНЕС ЗАВОД · ЦЕХ ПУБЛИКАЦИИ
+            </p>
+            <h1 className="mt-4 max-w-4xl text-[clamp(2.8rem,5vw,5.4rem)] font-black leading-[.94] tracking-[-.06em] text-[#fff8e7]">
+              Один материал.
+              <span className="block bg-[linear-gradient(180deg,#fff0ad,#d99a2d)] bg-clip-text text-transparent">
+                Несколько площадок.
+              </span>
+            </h1>
+            <p className="mt-5 max-w-3xl text-lg leading-8 text-white/74">
+              OSA перепаковывает исходник под формат каждой площадки, сохраняя смысл и факты.
+              Никакого одинакового текста во все каналы.
+            </p>
+          </div>
+
+          <div className="rounded-[24px] border border-[#69e4ee]/12 bg-[#69e4ee]/[0.035] p-5">
+            <p className="text-[12px] font-black uppercase tracking-[.14em] text-[#79eaf2]">
+              МАРШРУТ
+            </p>
+            <p className="mt-2 text-xl font-black text-[#fff8e7]">
+              Исходник → адаптация → проверка → выпуск
+            </p>
+            <p className="mt-3 text-sm leading-6 text-white/62">
+              Выбрано: {selectedLabel || 'площадки не выбраны'}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="relative mt-5 grid gap-5 xl:grid-cols-[.9fr_1.1fr]">
+        <div className="rounded-[30px] border border-white/[0.08] bg-[#080c12] p-5 sm:p-6">
+          <p className="text-[12px] font-black uppercase tracking-[.14em] text-[#f1c96c]">
+            ИСХОДНЫЙ МАТЕРИАЛ
+          </p>
+
+          <label className="mt-4 grid gap-2">
+            <span className="text-base font-bold text-white/84">Что публикуем</span>
+            <textarea
+              value={source}
+              onChange={(event) => setSource(event.target.value)}
+              rows={10}
+              placeholder="Вставьте пост, статью, сценарий ролика, описание продукта или готовый материал…"
+              className="resize-none rounded-[22px] border border-white/[0.09] bg-black/25 px-4 py-4 text-base leading-7 text-white outline-none placeholder:text-white/42 focus:border-[#69e4ee]/28"
+            />
+          </label>
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <label className="grid gap-2">
+              <span className="text-sm font-bold text-white/76">Цель · необязательно</span>
+              <input
+                value={goal}
+                onChange={(event) => setGoal(event.target.value)}
+                placeholder="Заявка, просмотр, подписка…"
+                className="rounded-2xl border border-white/[0.09] bg-black/20 px-4 py-3 text-sm text-white outline-none placeholder:text-white/38 focus:border-[#69e4ee]/28"
+              />
+            </label>
+            <label className="grid gap-2">
+              <span className="text-sm font-bold text-white/76">CTA · необязательно</span>
+              <input
+                value={callToAction}
+                onChange={(event) => setCallToAction(event.target.value)}
+                placeholder="Напишите мне / оставьте заявку…"
+                className="rounded-2xl border border-white/[0.09] bg-black/20 px-4 py-3 text-sm text-white outline-none placeholder:text-white/38 focus:border-[#69e4ee]/28"
+              />
+            </label>
+          </div>
+
+          <p className="mt-5 text-[12px] font-black uppercase tracking-[.14em] text-[#79eaf2]">
+            ПЛОЩАДКИ
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {CHANNELS.map((channel) => {
+              const active = selected.includes(channel.id);
+              return (
+                <button
+                  key={channel.id}
+                  type="button"
+                  onClick={() => toggleChannel(channel.id)}
+                  className={[
+                    'rounded-[18px] border p-3 text-left transition',
+                    active
+                      ? 'border-[#69e4ee]/34 bg-[#69e4ee]/[0.075]'
+                      : 'border-white/[0.08] bg-white/[0.02] hover:border-white/15',
+                  ].join(' ')}
+                >
+                  <span className="text-[11px] font-black tracking-[.12em] text-[#f1c96c]">
+                    {channel.short}
+                  </span>
+                  <span className="mt-1 block text-sm font-black text-[#fff8e7]">
+                    {channel.label}
+                  </span>
+                  <span className="mt-1 block text-[12px] text-white/58">
+                    {channel.hint}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <button
+            type="button"
+            onClick={buildPack}
+            disabled={!canBuild}
+            className="mt-5 w-full rounded-[18px] bg-[linear-gradient(135deg,#ffe08a,#d79a30)] px-5 py-4 text-sm font-black text-[#1b1105] shadow-[0_18px_40px_-22px_rgba(241,201,108,.6)] transition hover:-translate-y-0.5 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:translate-y-0"
+          >
+            {isPending ? 'OSA адаптирует публикации…' : 'Собрать пакет публикаций →'}
+          </button>
+
+          {message ? (
+            <p className="mt-3 text-sm leading-6 text-white/66">{message}</p>
+          ) : null}
+        </div>
+
+        <div className="rounded-[30px] border border-white/[0.08] bg-[#080c12] p-5 sm:p-6">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-[12px] font-black uppercase tracking-[.14em] text-[#79eaf2]">
+                ВЫХОД ЛИНИИ
+              </p>
+              <h2 className="mt-2 text-2xl font-black tracking-[-.035em] text-[#fff8e7]">
+                Готовые версии
+              </h2>
+            </div>
+            <Link
+              href="/settings"
+              className="rounded-xl border border-white/[0.10] px-3 py-2 text-xs font-bold text-white/68 hover:border-[#69e4ee]/25 hover:text-white"
+            >
+              Подключить каналы
+            </Link>
+          </div>
+
+          {variants.length === 0 ? (
+            <div className="flex min-h-[520px] items-center justify-center text-center">
+              <div>
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[20px] border border-white/[0.08] bg-white/[0.025] text-2xl text-[#79eaf2]">
+                  ↑
+                </div>
+                <p className="mt-4 text-lg font-black text-white/76">
+                  Здесь появятся версии под площадки
+                </p>
+                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/54">
+                  Сначала добавьте исходник и выберите каналы. OSA адаптирует заголовок, текст и CTA отдельно для каждого.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-5 grid gap-4">
+              {variants.map((variant) => (
+                <article
+                  key={variant.channel}
+                  className="rounded-[22px] border border-white/[0.08] bg-white/[0.025] p-5"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-[11px] font-black uppercase tracking-[.13em] text-[#79eaf2]">
+                        {channelName(variant.channel)}
+                      </p>
+                      <h3 className="mt-2 text-lg font-black text-[#fff1bf]">
+                        {variant.title || 'Без отдельного заголовка'}
+                      </h3>
+                    </div>
+                    <span className="rounded-full border border-emerald-300/14 bg-emerald-300/[0.05] px-2.5 py-1 text-[10px] font-bold text-emerald-200/86">
+                      ГОТОВО
+                    </span>
+                  </div>
+
+                  <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-white/78">
+                    {variant.body}
+                  </p>
+
+                  {variant.cta ? (
+                    <p className="mt-4 rounded-xl border border-[#f1c96c]/14 bg-[#f1c96c]/[0.035] px-3 py-2.5 text-sm font-bold text-[#f5d77c]">
+                      CTA: {variant.cta}
+                    </p>
+                  ) : null}
+
+                  {variant.notes ? (
+                    <p className="mt-3 text-xs leading-5 text-white/48">
+                      {variant.notes}
+                    </p>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    onClick={() => copyVariant(variant)}
+                    className="mt-4 rounded-xl border border-white/[0.10] bg-white/[0.03] px-3 py-2 text-xs font-bold text-white/72 hover:border-[#69e4ee]/24 hover:text-white"
+                  >
+                    {copied === variant.channel ? 'Скопировано ✓' : 'Скопировать'}
+                  </button>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="mt-5 rounded-[24px] border border-white/[0.07] bg-white/[0.02] p-5">
+        <p className="text-[12px] font-black uppercase tracking-[.14em] text-[#f1c96c]">
+          ПУБЛИКАЦИЯ
+        </p>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-white/62">
+          Сейчас цех готовит финальные версии и отдаёт их на копирование. Прямую отправку в каналы включим только после подключения авторизованных аккаунтов — без скрытой публикации от имени пользователя.
+        </p>
+      </section>
+    </main>
+  );
+}
