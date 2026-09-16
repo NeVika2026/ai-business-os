@@ -62,6 +62,12 @@ export function PublishStudio() {
 
   useEffect(() => {
     void getPublishingConnectionStatusAction().then(setConnections);
+
+    const handedOff = window.sessionStorage.getItem('business-zavod:publish-source');
+    if (handedOff?.trim()) {
+      setSource(handedOff);
+      window.sessionStorage.removeItem('business-zavod:publish-source');
+    }
   }, []);
 
   const toggleChannel = (id: PublicationChannelId) => {
