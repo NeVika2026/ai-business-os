@@ -115,9 +115,16 @@ async function runWebSearch(query: string, limit = 8) {
   };
 }
 
+export type PriorResearchContext = {
+  query: string;
+  summary: string;
+  sources: ResearchSource[];
+};
+
 export async function runResearchAction(input: {
   mode: ResearchMode;
   query: string;
+  priorContext?: PriorResearchContext | null;
 }): Promise<ResearchResult> {
   const query = input.query.trim();
 
@@ -126,24 +133,48 @@ export async function runResearchAction(input: {
   }
 
   try {
-    const search = await runWebSearch(query, 8);
+    let identity: Awaited<ReturnType<typeof resolveResearchIdentity>>;
+    let runId: string;
+    let sources: ResearchSource[];
 
-    if (search.output.available === false) {
-      return {
-        status: 'failed',
-        message: search.output.message || 'Веб-поиск не подключён.',
-      };
+    const canReusePriorResearch =
+      input.mode === 'analyze' &&
+      Boolean(input.priorContext?.sources?.length);
+
+    if (canReusePriorResearch && input.priorContext) {
+      identity = await resolveResearchIdentity();
+      runId = randomUUID();
+      sources = input.priorContext.sources
+        .map((item) => ({
+          title: item.title?.trim() || 'Источник',
+          url: item.url?.trim() || '',
+          description: item.description?.trim() || '',
+          source: item.source ?? null,
+          age: item.age ?? null,
+        }))
+        .filter((item) => Boolean(item.url));
+    } else {
+      const search = await runWebSearch(query, 8);
+
+      if (search.output.available === false) {
+        return {
+          status: 'failed',
+          message: search.output.message || 'Веб-поиск не подключён.',
+        };
+      }
+
+      identity = search.identity;
+      runId = search.runId;
+      sources = (search.output.results ?? [])
+        .map((item) => ({
+          title: item.title?.trim() || 'Источник',
+          url: item.url?.trim() || '',
+          description: item.description?.trim() || '',
+          source: item.source ?? null,
+          age: item.age ?? null,
+        }))
+        .filter((item) => Boolean(item.url));
     }
-
-    const sources: ResearchSource[] = (search.output.results ?? [])
-      .map((item) => ({
-        title: item.title?.trim() || 'Источник',
-        url: item.url?.trim() || '',
-        description: item.description?.trim() || '',
-        source: item.source ?? null,
-        age: item.age ?? null,
-      }))
-      .filter((item) => Boolean(item.url));
 
     if (!sources.length) {
       return {
@@ -164,11 +195,23 @@ export async function runResearchAction(input: {
         ? 'Найди конкретные возможности, сегменты, компании, площадки или направления, которые реально следуют из источников. Дай приоритет практическим находкам и следующему действию.'
         : 'Проанализируй найденные данные: выдели факты, различия, риски, сильные и слабые стороны и практический вывод. Не придумывай отсутствующие данные.';
 
+    const priorSummary =
+      input.mode === 'analyze' && input.priorContext?.summary?.trim()
+        ? [
+            '',
+            'ПРЕДЫДУЩИЙ РЕЗУЛЬТАТ ЦЕХА ПОИСКА:',
+            input.priorContext.summary.trim(),
+            '',
+            'Используй его только как рабочий контекст. Факты всё равно должны опираться на источники ниже.',
+          ].join('\n')
+        : '';
+
     const prompt = [
       'Ты — исследовательский цех Бизнес-Завода.',
       '',
       'ЗАПРОС:',
       query,
+      priorSummary,
       '',
       modeInstruction,
       '',
@@ -186,13 +229,13 @@ export async function runResearchAction(input: {
 
     const request: GatewayRequest = {
       scope: {
-        organizationId: search.identity.organizationId,
-        userId: search.identity.userId,
+        organizationId: identity.organizationId,
+        userId: identity.userId,
       },
       trace: {
-        runId: search.runId,
-        traceId: search.runId,
-        correlationId: search.runId,
+        runId,
+        traceId: runId,
+        correlationId: runId,
       },
       providerCode: 'auto',
       modelCode: 'auto',
