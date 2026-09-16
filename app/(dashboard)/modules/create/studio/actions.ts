@@ -7,6 +7,7 @@ import { aiGateway } from '@/services/runtime/gateway/ai-gateway';
 import type { GatewayRequest } from '@/types/runtime/dto';
 import type { CreateStudioModeId } from '@/utils/platform/create-studio';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
+import { ensureFactoryProject, saveFactoryArtifact } from '@/lib/factory-chain/persistence';
 import { createProductionToolRegistry } from '@/services/runtime/tools/tool-registry';
 import { createToolExecutor } from '@/services/runtime/tools/executor/tool-executor-factory';
 import {
@@ -400,7 +401,7 @@ export async function getMediaUploadContextAction(projectId?: string | null): Pr
 
 
 export type CreateStudioArtifactResult =
-  | { status: 'completed'; content: string }
+  | { status: 'completed'; projectId: string; content: string }
   | { status: 'failed'; message: string };
 
 function buildStudioArtifactPrompt(input: {
@@ -449,12 +450,18 @@ export async function generateCreateStudioArtifactAction(input: {
   audience?: string;
   format?: string;
   context?: string;
+  projectId?: string | null;
 }): Promise<CreateStudioArtifactResult> {
   if (!input.goal.trim()) {
     return { status: 'failed', message: 'Опишите, что нужно создать.' };
   }
 
   try {
+    const project = await ensureFactoryProject({
+      projectId: input.projectId,
+      seed: input.goal,
+      stage: 'create',
+    });
     const identity = await resolveMediaExecutionIdentity();
     const runId = randomUUID();
 
@@ -508,7 +515,26 @@ export async function generateCreateStudioArtifactAction(input: {
       return { status: 'failed', message: 'OSA не вернула готовый материал. Попробуйте ещё раз.' };
     }
 
-    return { status: 'completed', content };
+    await saveFactoryArtifact({
+      projectId: project.projectId,
+      stage: 'create',
+      title:
+        input.modeId === 'presentation'
+          ? 'Презентация'
+          : input.modeId === 'stories'
+            ? 'Серия сторис'
+            : 'Документ',
+      content,
+      metadata: {
+        modeId: input.modeId,
+        goal: input.goal,
+        audience: input.audience ?? '',
+        format: input.format ?? '',
+      },
+      identity: project.identity,
+    });
+
+    return { status: 'completed', projectId: project.projectId, content };
   } catch (error) {
     return {
       status: 'failed',
