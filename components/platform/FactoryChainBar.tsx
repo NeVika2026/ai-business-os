@@ -4,6 +4,7 @@ export type FactoryChainStage = 'find' | 'analyze' | 'create' | 'publish';
 
 type FactoryChainBarProps = {
   active: FactoryChainStage;
+  projectId?: string | null;
 };
 
 const STAGES: Array<{
@@ -17,7 +18,7 @@ const STAGES: Array<{
   { id: 'publish', label: 'Опубликовать', href: '/modules/publish/studio' },
 ];
 
-export function FactoryChainBar({ active }: FactoryChainBarProps) {
+export function FactoryChainBar({ active, projectId = null }: FactoryChainBarProps) {
   return (
     <nav
       aria-label="Производственная цепочка"
@@ -30,7 +31,7 @@ export function FactoryChainBar({ active }: FactoryChainBarProps) {
           return (
             <div key={stage.id} className="flex items-center gap-2">
               <Link
-                href={stage.href}
+                href={stage.href + (projectId ? '?project=' + encodeURIComponent(projectId) : '')}
                 aria-current={isActive ? 'step' : undefined}
                 className={[
                   'rounded-2xl border px-3.5 py-2 text-[12px] font-black uppercase tracking-[.1em] transition',
