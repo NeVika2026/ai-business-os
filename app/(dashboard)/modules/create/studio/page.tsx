@@ -8,6 +8,7 @@ type CreateStudioPageProps = {
   searchParams: Promise<{
     mode?: string;
     project?: string;
+    artifact?: string;
     goal?: string;
     audience?: string;
     format?: string;
@@ -16,7 +17,7 @@ type CreateStudioPageProps = {
 };
 
 export default async function CreateStudioPage({ searchParams }: CreateStudioPageProps) {
-  const { mode, project, goal, audience, format, context } = await searchParams;
+  const { mode, project, artifact, goal, audience, format, context } = await searchParams;
   const initialModeId = getCreateStudioMode(
     (mode ?? 'video') as CreateStudioModeId,
   ).id;
@@ -25,6 +26,7 @@ export default async function CreateStudioPage({ searchParams }: CreateStudioPag
     <CreateStudio
       initialModeId={initialModeId}
       initialProjectId={project?.trim() || null}
+      initialArtifactId={artifact?.trim() || null}
       initialGoal={goal?.trim() || ''}
       initialAudience={audience?.trim() || ''}
       initialFormat={format?.trim() || ''}
