@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import { FactoryChainBar } from '@/components/platform/FactoryChainBar';
+import { getFactoryArtifactAction } from '@/app/(dashboard)/modules/factory-chain/actions';
 import { MediaProductionConsole } from '@/components/platform/MediaProductionConsole';
 import { VideoStoryboardStudio } from '@/components/platform/VideoStoryboardStudio';
 
@@ -16,6 +17,7 @@ import {
 type CreateStudioProps = {
   initialModeId?: CreateStudioModeId;
   initialProjectId?: string | null;
+  initialArtifactId?: string | null;
   initialGoal?: string;
   initialAudience?: string;
   initialFormat?: string;
@@ -25,6 +27,7 @@ type CreateStudioProps = {
 export function CreateStudio({
   initialModeId = 'video',
   initialProjectId = null,
+  initialArtifactId = null,
   initialGoal = '',
   initialAudience = '',
   initialFormat = '',
@@ -40,32 +43,58 @@ export function CreateStudio({
   const [handoffMessage, setHandoffMessage] = useState('');
 
   useEffect(() => {
-    const raw = window.sessionStorage.getItem('business-zavod:create-handoff');
-    if (!raw) return;
+    const restore = async () => {
+      const raw = window.sessionStorage.getItem('business-zavod:create-handoff');
 
-    window.sessionStorage.removeItem('business-zavod:create-handoff');
+      if (raw) {
+        window.sessionStorage.removeItem('business-zavod:create-handoff');
 
-    try {
-      const payload = JSON.parse(raw) as {
-        goal?: string;
-        context?: string;
-        sourceStage?: string;
-      };
+        try {
+          const payload = JSON.parse(raw) as {
+            goal?: string;
+            context?: string;
+            sourceStage?: string;
+          };
 
-      if (payload.goal?.trim()) setGoal(payload.goal.trim());
-      if (payload.context?.trim()) setContext(payload.context.trim());
+          if (payload.goal?.trim()) setGoal(payload.goal.trim());
+          if (payload.context?.trim()) setContext(payload.context.trim());
 
-      if (payload.sourceStage === 'analyze') {
-        setHandoffMessage('Анализ принят. Можно сразу выбрать формат и запускать производство.');
-      } else if (payload.sourceStage === 'find') {
-        setHandoffMessage('Результаты поиска приняты в цех создания.');
-      } else {
-        setHandoffMessage('Материал из предыдущего цеха принят.');
+          if (payload.sourceStage === 'analyze') {
+            setHandoffMessage('Анализ принят. Можно сразу выбрать формат и запускать производство.');
+          } else if (payload.sourceStage === 'find') {
+            setHandoffMessage('Результаты поиска приняты в цех создания.');
+          } else {
+            setHandoffMessage('Материал из предыдущего цеха принят.');
+          }
+          return;
+        } catch {
+          setHandoffMessage('');
+        }
       }
-    } catch {
-      setHandoffMessage('');
-    }
-  }, []);
+
+      if (!initialProjectId || !initialArtifactId) return;
+
+      const artifact = await getFactoryArtifactAction(initialProjectId, initialArtifactId);
+      if (!artifact) return;
+
+      const sourcesText = artifact.sources.length
+        ? '\n\nИсточники:\n' +
+          artifact.sources
+            .map((source, index) => `[${index + 1}] ${source.title}\n${source.url}`)
+            .join('\n\n')
+        : '';
+
+      setGoal(
+        artifact.stage === 'analyze'
+          ? 'Создай рабочий материал на основе сохранённого анализа.'
+          : 'Создай рабочий материал на основе сохранённого результата.',
+      );
+      setContext(artifact.content + sourcesText);
+      setHandoffMessage('Сохранённый результат проекта восстановлен в цехе создания.');
+    };
+
+    void restore();
+  }, [initialArtifactId, initialProjectId]);
 
   const mode = getCreateStudioMode(modeId);
   const productionLine = getCreateStudioProductionLine(modeId);
