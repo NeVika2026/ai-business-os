@@ -197,7 +197,10 @@ export async function getPublishingConnectionStatusAction(): Promise<PublishingC
       process.env.TELEGRAM_BOT_TOKEN?.trim() &&
       process.env.TELEGRAM_CHAT_ID?.trim(),
     ),
-    vk: false,
+    vk: Boolean(
+      process.env.VK_ACCESS_TOKEN?.trim() &&
+      process.env.VK_OWNER_ID?.trim(),
+    ),
     dzen: false,
     youtube: false,
     tiktok: false,
@@ -251,11 +254,71 @@ export async function publishVariantAction(input: {
   body: string;
   cta?: string;
 }): Promise<{ ok: true; message: string } | { ok: false; message: string }> {
-  if (input.channel !== 'telegram') {
+  if (input.channel !== 'telegram' && input.channel !== 'vk') {
     return {
       ok: false,
       message: 'Прямая публикация для этой площадки ещё не подключена.',
     };
+  }
+
+  const text = [input.title?.trim(), input.body.trim(), input.cta?.trim()]
+    .filter(Boolean)
+    .join('\n\n');
+
+  if (!text) {
+    return { ok: false, message: 'Нет текста для публикации.' };
+  }
+
+  if (input.channel === 'vk') {
+    const accessToken = process.env.VK_ACCESS_TOKEN?.trim();
+    const ownerId = process.env.VK_OWNER_ID?.trim();
+    const apiVersion = process.env.VK_API_VERSION?.trim() || '5.199';
+
+    if (!accessToken || !ownerId) {
+      return {
+        ok: false,
+        message: 'ВКонтакте не подключён. Добавьте VK_ACCESS_TOKEN и VK_OWNER_ID в окружение проекта.',
+      };
+    }
+
+    try {
+      const params = new URLSearchParams({
+        access_token: accessToken,
+        owner_id: ownerId,
+        message: text,
+        from_group: ownerId.startsWith('-') ? '1' : '0',
+        v: apiVersion,
+      });
+
+      const response = await fetch('https://api.vk.com/method/wall.post', {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+        cache: 'no-store',
+      });
+
+      const data = (await response.json()) as {
+        response?: { post_id?: number };
+        error?: { error_msg?: string };
+      };
+
+      if (!response.ok || data.error || !data.response?.post_id) {
+        return {
+          ok: false,
+          message: data.error?.error_msg || 'ВКонтакте отклонил публикацию.',
+        };
+      }
+
+      return {
+        ok: true,
+        message: `Опубликовано во ВКонтакте. Post ID: ${data.response.post_id}.`,
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        message: error instanceof Error ? error.message : 'Не удалось отправить публикацию во ВКонтакте.',
+      };
+    }
   }
 
   const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
@@ -266,14 +329,6 @@ export async function publishVariantAction(input: {
       ok: false,
       message: 'Telegram не подключён. Добавьте TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID в окружение проекта.',
     };
-  }
-
-  const text = [input.title?.trim(), input.body.trim(), input.cta?.trim()]
-    .filter(Boolean)
-    .join('\n\n');
-
-  if (!text) {
-    return { ok: false, message: 'Нет текста для публикации.' };
   }
 
   try {
