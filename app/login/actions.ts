@@ -112,7 +112,7 @@ export async function generateFirstPlan(formData: FormData) {
     tools: [],
     parameters: {
       temperature: 0.3,
-      maxTokens: 512,
+      maxTokens: 1800,
     },
     timeoutMs: 30_000,
     retryPolicy: {
@@ -121,11 +121,11 @@ export async function generateFirstPlan(formData: FormData) {
     },
     routing: {
       intent: 'login_first_result',
-      taskCategory: 'planning',
+      taskCategory: 'creative',
       estimatedContextLength: trimmed.length,
-      reasoningComplexity: 'medium',
-      latencyTarget: 'balanced',
-      costTarget: 'balanced',
+      reasoningComplexity: 'high',
+      latencyTarget: 'quality',
+      costTarget: 'quality',
       toolUsage: false,
     },
   };
