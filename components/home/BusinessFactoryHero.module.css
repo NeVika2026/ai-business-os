@@ -65,7 +65,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
-  opacity:.72;
+  opacity:.92;
 }
 
 .header small {
@@ -394,8 +394,8 @@
 .node b {
   display:block;
   margin-top:3px;
-  color:#9bc7ce;
-  font-size:8px;
+  color:#c3e3e8;
+  font-size:10px;
   letter-spacing:.09em;
 }
 
@@ -508,10 +508,10 @@
 }
 .runtimeTop strong { color:#ffd06d; font-size:15px; }
 .runtime p {
-  margin:6px 0 0;
+  margin:7px 0 0;
   overflow:hidden;
-  color:#b4bec8;
-  font-size:8px;
+  color:#c2ccd5;
+  font-size:11px;
   line-height:1.45;
   text-overflow:ellipsis;
   white-space:nowrap;
@@ -538,9 +538,9 @@
   display:grid;
   grid-template-columns:auto auto auto auto auto auto auto;
   justify-content:center;
-  gap:7px;
-  color:#9eacb7;
-  font-size:8px;
+  gap:9px;
+  color:#bac5cd;
+  font-size:10px;
   font-weight:800;
   letter-spacing:.12em;
 }
