@@ -179,11 +179,11 @@ export function WelcomeScreen() {
           </div>
 
           <div className={styles.stage}>
-            <div className="relative z-[2] mx-auto w-full max-w-[690px]">
+            <div className="relative z-[2] mx-auto w-full max-w-[690px] pb-5">
               <BusinessFactoryHero />
             </div>
 
-            <div className="relative z-[3] -mt-7 grid gap-3 md:grid-cols-[1.12fr_.88fr] xl:gap-4">
+            <div className="relative z-[3] mt-5 grid gap-3 md:grid-cols-[1.12fr_.88fr] xl:gap-4">
               <div className="rounded-[24px] border border-[#69e4ee]/18 bg-[#050a11]/88 p-5 shadow-[0_24px_80px_-42px_rgba(0,0,0,.95),0_0_46px_-24px_rgba(105,228,238,.5)] backdrop-blur-2xl">
                 <div className="flex items-center justify-between">
                   <div>
