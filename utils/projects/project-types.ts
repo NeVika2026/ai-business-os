@@ -16,22 +16,22 @@ export const PROJECT_STATUSES = ['planning', 'active', 'paused', 'completed', 'a
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
-  general: 'General',
-  estate: 'Estate',
+  general: 'Общий',
+  estate: 'Недвижимость',
   mlm: 'MLM',
-  marketing: 'Marketing',
+  marketing: 'Маркетинг',
   crm: 'CRM',
-  automation: 'Automation',
-  knowledge: 'Knowledge',
-  finance: 'Finance',
+  automation: 'Автоматизация',
+  knowledge: 'База знаний',
+  finance: 'Финансы',
 };
 
 export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
-  planning: 'Planning',
-  active: 'Active',
-  paused: 'Paused',
-  completed: 'Completed',
-  archived: 'Archived',
+  planning: 'Планирование',
+  active: 'Активный',
+  paused: 'Пауза',
+  completed: 'Завершён',
+  archived: 'Архив',
 };
 
 export type Project = {
