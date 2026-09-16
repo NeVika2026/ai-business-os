@@ -78,7 +78,7 @@ export function BusinessZavodHomeExperience() {
                   <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#e7b952]/20 bg-[#e7b952]/[0.08] text-xl text-[#f4d77f]">
                     {module.icon}
                   </div>
-                  <span className="text-[10px] font-bold tracking-[0.16em] text-white/25">
+                  <span className="text-[12px] font-bold tracking-[0.14em] text-white/58">
                     {String(index + 1).padStart(2, '0')}
                   </span>
                 </div>
