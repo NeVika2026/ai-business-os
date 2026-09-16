@@ -44,3 +44,12 @@ export async function saveFactoryArtifactAction(input: {
 }): Promise<FactoryArtifact> {
   return saveFactoryArtifact(input);
 }
+
+
+export async function getFactoryArtifactAction(
+  projectId: string,
+  artifactId: string,
+): Promise<FactoryArtifact | null> {
+  const artifacts = await loadFactoryArtifacts(projectId);
+  return artifacts.find((artifact) => artifact.id === artifactId) ?? null;
+}
