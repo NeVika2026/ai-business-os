@@ -1,6 +1,7 @@
 import { ProjectActivity } from '@/components/projects/ProjectActivity';
 import { ProjectDocuments } from '@/components/projects/ProjectDocuments';
 import { ProjectExecutions } from '@/components/projects/ProjectExecutions';
+import { ProjectFactoryControlCenter } from '@/components/projects/ProjectFactoryControlCenter';
 import { ProjectGoals } from '@/components/projects/ProjectGoals';
 import { ProjectHeader } from '@/components/projects/ProjectHeader';
 import { ProjectFactoryHistory } from '@/components/projects/ProjectFactoryHistory';
@@ -29,6 +30,12 @@ export function ProjectWorkspace({
   return (
     <div className="space-y-6">
       <ProjectHeader project={workspace.project} />
+
+      <ProjectFactoryControlCenter
+        projectId={workspace.project.id}
+        artifacts={factoryArtifacts}
+        media={media}
+      />
 
       <ProjectFactoryHistory
         projectId={workspace.project.id}
