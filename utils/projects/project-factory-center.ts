@@ -122,23 +122,16 @@ export function buildProjectFactoryCenter(input: {
   ).length;
   const latestArtifact = artifacts[0] ?? null;
   const currentStage = latestArtifact?.stage ?? 'find';
-  const currentStageIndex = PROJECT_FACTORY_STAGE_ORDER.indexOf(currentStage);
   const continueTarget = buildContinueTarget(input.projectId, latestArtifact);
 
   const stageStates = Object.fromEntries(
-    PROJECT_FACTORY_STAGE_ORDER.map((stage, index) => {
+    PROJECT_FACTORY_STAGE_ORDER.map((stage) => {
       const hasArtifact = Boolean(newestByStage[stage]);
-      let status: ProjectFactoryStageState['status'] = 'pending';
+      let status: ProjectFactoryStageState['status'] = hasArtifact ? 'done' : 'pending';
 
-      if (hasArtifact) {
-        status = stage === currentStage ? 'current' : 'done';
-      } else if (!latestArtifact && stage === 'find') {
+      if (!latestArtifact && stage === 'find') {
         status = 'current';
-      } else if (
-        latestArtifact &&
-        continueTarget.nextStage === stage &&
-        index > currentStageIndex
-      ) {
+      } else if (continueTarget.nextStage === stage) {
         status = 'current';
       }
 
