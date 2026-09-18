@@ -1,4 +1,7 @@
-import type { CreateStudioModeId } from '@/utils/platform/create-studio';
+import {
+  buildCreateStudioHref,
+  type CreateStudioModeId,
+} from '@/utils/platform/create-studio';
 
 export type ViralPresetStatus = 'ready' | 'connector';
 
@@ -252,3 +255,45 @@ export const VIRAL_CATEGORY_LABELS = {
   voice: 'Голос',
   business: 'AI для бизнеса',
 } as const;
+
+
+const SHORTCUT_ALIASES: Record<string, string> = {
+  '/explodedview': 'exploded-view',
+  '/exploded': 'exploded-view',
+  '/blueprint': 'blueprint',
+  '/cutaway': 'cutaway',
+  '/anatomy': 'anatomy',
+  '/360view': 'turnaround',
+  '/turnaround': 'turnaround',
+  '/packshot': 'packshot',
+  '/proshot': 'packshot',
+  '/lifestyle': 'lifestyle',
+  '/interiormakeover': 'interior',
+  '/fashioncampaign': 'fashion-campaign',
+  '/retrofilm': 'retro-film',
+  '/actionfigure': 'action-figure',
+  '/productvideo': 'product-video',
+  '/cinematichook': 'cinematic-hook',
+  '/ugc': 'ugc-ad',
+  '/call': 'ai-caller',
+};
+
+export function getViralPresetByShortcut(input: string): ViralPreset | null {
+  const normalized = input.trim().toLowerCase();
+  const firstToken = normalized.split(/\s+/)[0] || '';
+  const id = SHORTCUT_ALIASES[firstToken];
+  return id ? VIRAL_PRESETS.find((item) => item.id === id) ?? null : null;
+}
+
+export function buildViralPresetHref(preset: ViralPreset, extraText = ''): string {
+  if (preset.href) return preset.href;
+  if (!preset.mode || !preset.goal) return '/modules/create/viral';
+
+  const extra = extraText.trim();
+  return buildCreateStudioHref(preset.mode, preset.goal, {
+    format: preset.format,
+    context: [preset.context, extra ? 'Дополнение пользователя: ' + extra : '']
+      .filter(Boolean)
+      .join('\n'),
+  });
+}
