@@ -9,6 +9,8 @@ export type ViralPreset = {
   id: string;
   title: string;
   description: string;
+  shortcut?: string;
+  intents?: string[];
   category: 'visual' | 'video' | 'ugc' | 'voice' | 'business';
   status: ViralPresetStatus;
   badge: string;
@@ -22,7 +24,9 @@ export type ViralPreset = {
 export const VIRAL_PRESETS: ViralPreset[] = [
   {
     id: 'exploded-view',
-    title: '/explodedview',
+    title: 'Разобрать предмет на детали',
+    shortcut: '/explodedview',
+    intents: ['разобрать предмет на детали','разложить предмет на части','показать из чего состоит','разобрать товар по деталям'],
     description: 'Разобрать предмет на детали в премиальный exploded-view.',
     category: 'visual',
     status: 'ready',
@@ -34,7 +38,9 @@ export const VIRAL_PRESETS: ViralPreset[] = [
   },
   {
     id: 'blueprint',
-    title: '/blueprint',
+    title: 'Сделать технический чертёж',
+    shortcut: '/blueprint',
+    intents: ['сделать чертеж предмета','технический чертеж','показать как инженерную схему','схема предмета'],
     description: 'Технический чертёж предмета с чистой инженерной эстетикой.',
     category: 'visual',
     status: 'ready',
@@ -45,7 +51,9 @@ export const VIRAL_PRESETS: ViralPreset[] = [
   },
   {
     id: 'cutaway',
-    title: '/cutaway',
+    title: 'Показать предмет в разрезе',
+    shortcut: '/cutaway',
+    intents: ['показать предмет в разрезе','показать что внутри','сделать разрез объекта','внутренности предмета'],
     description: 'Показать предмет в разрезе и раскрыть внутреннюю структуру.',
     category: 'visual',
     status: 'ready',
@@ -56,7 +64,9 @@ export const VIRAL_PRESETS: ViralPreset[] = [
   },
   {
     id: 'anatomy',
-    title: '/anatomy',
+    title: 'Показать, из каких частей всё состоит',
+    shortcut: '/anatomy',
+    intents: ['объяснить части объекта','показать части предмета','анатомия предмета','разобрать на функциональные зоны'],
     description: 'Разложить объект на понятные функциональные зоны.',
     category: 'visual',
     status: 'ready',
@@ -67,7 +77,9 @@ export const VIRAL_PRESETS: ViralPreset[] = [
   },
   {
     id: 'turnaround',
-    title: '/360view',
+    title: 'Показать товар со всех сторон',
+    shortcut: '/360view',
+    intents: ['показать товар со всех сторон','несколько ракурсов товара','вид 360','повороты товара'],
     description: 'Показать продукт сразу с нескольких ракурсов.',
     category: 'visual',
     status: 'ready',
@@ -78,7 +90,9 @@ export const VIRAL_PRESETS: ViralPreset[] = [
   },
   {
     id: 'packshot',
-    title: '/packshot',
+    title: 'Сделать рекламное фото товара',
+    shortcut: '/packshot',
+    intents: ['сделать рекламное фото товара','студийное фото товара','карточка товара','фото товара как в рекламе'],
     description: 'Студийная карточка товара без дорогой фотосессии.',
     category: 'visual',
     status: 'ready',
@@ -89,7 +103,9 @@ export const VIRAL_PRESETS: ViralPreset[] = [
   },
   {
     id: 'lifestyle',
-    title: '/lifestyle',
+    title: 'Поместить товар в красивую сцену',
+    shortcut: '/lifestyle',
+    intents: ['поместить товар в сцену','показать товар в использовании','товар в интерьере','лайфстайл фото товара'],
     description: 'Поместить товар в естественную продающую сцену.',
     category: 'visual',
     status: 'ready',
@@ -100,7 +116,9 @@ export const VIRAL_PRESETS: ViralPreset[] = [
   },
   {
     id: 'interior',
-    title: '/interiormakeover',
+    title: 'Переделать интерьер по фото',
+    shortcut: '/interiormakeover',
+    intents: ['переделать интерьер','редизайн комнаты','изменить дизайн комнаты','сделать новый интерьер по фото'],
     description: 'Переделать интерьер в выбранном стиле.',
     category: 'visual',
     status: 'ready',
@@ -111,7 +129,9 @@ export const VIRAL_PRESETS: ViralPreset[] = [
   },
   {
     id: 'fashion-campaign',
-    title: '/fashioncampaign',
+    title: 'Сделать fashion-рекламу из фото',
+    shortcut: '/fashioncampaign',
+    intents: ['сделать fashion рекламу','модная рекламная съемка','реклама одежды по фото','fashion campaign'],
     description: 'Превратить фото одежды в рекламную fashion-кампанию.',
     category: 'visual',
     status: 'ready',
@@ -122,7 +142,9 @@ export const VIRAL_PRESETS: ViralPreset[] = [
   },
   {
     id: 'action-figure',
-    title: 'Фигурка в упаковке',
+    title: 'Сделать человека игрушкой в упаковке',
+    shortcut: '/actionfigure',
+    intents: ['сделать человека фигуркой','игрушка в упаковке','action figure','фигурка из фото'],
     description: 'Вирусный collectible/action-figure формат.',
     category: 'visual',
     status: 'ready',
@@ -133,7 +155,9 @@ export const VIRAL_PRESETS: ViralPreset[] = [
   },
   {
     id: 'retro-film',
-    title: 'Ретро / плёнка',
+    title: 'Сделать фото как на плёнку',
+    shortcut: '/retrofilm',
+    intents: ['сделать фото как на пленку','ретро фото','винтажное фото','эффект пленочной камеры'],
     description: 'Намеренно живой, несовершенный плёночный образ.',
     category: 'visual',
     status: 'ready',
@@ -180,7 +204,9 @@ export const VIRAL_PRESETS: ViralPreset[] = [
   },
   {
     id: 'product-video',
-    title: 'Фото товара → ролик',
+    title: 'Оживить фото товара в ролик',
+    shortcut: '/productvideo',
+    intents: ['оживить фото товара','сделать ролик из фото товара','анимировать товар','товарное видео из фото'],
     description: 'Оживить один продуктовый кадр в рекламное видео.',
     category: 'video',
     status: 'ready',
@@ -192,7 +218,9 @@ export const VIRAL_PRESETS: ViralPreset[] = [
   },
   {
     id: 'cinematic-hook',
-    title: 'Cinematic hook',
+    title: 'Сделать эффектное начало ролика',
+    shortcut: '/cinematichook',
+    intents: ['сделать эффектное начало ролика','кинематографичный хук','сильное начало reels','вау начало видео'],
     description: 'Сильный 5–10 секундный кинематографичный хук.',
     category: 'video',
     status: 'ready',
@@ -214,7 +242,9 @@ export const VIRAL_PRESETS: ViralPreset[] = [
   },
   {
     id: 'ugc-ad',
-    title: 'AI UGC реклама',
+    title: 'Сделать UGC-рекламу с человеком и товаром',
+    shortcut: '/ugc',
+    intents: ['ugc реклама','реклама как отзыв человека','человек рекламирует товар','нативная реклама с человеком'],
     description: 'Фото человека + фото продукта → готовый creator-style рекламный ролик.',
     category: 'ugc',
     status: 'ready',
@@ -261,7 +291,9 @@ export const VIRAL_PRESETS: ViralPreset[] = [
   },
   {
     id: 'ai-caller',
-    title: 'AI звонит клиенту',
+    title: 'Попросить AI позвонить клиенту',
+    shortcut: '/call',
+    intents: ['позвонить клиенту','пусть ии позвонит','голосовой агент позвонит','сделать исходящий звонок'],
     description: 'Голосовой агент ведёт настоящий телефонный разговор.',
     category: 'business',
     status: 'ready',
@@ -329,4 +361,48 @@ export function buildViralPresetHref(preset: ViralPreset, extraText = ''): strin
       .filter(Boolean)
       .join('\n'),
   });
+}
+
+
+function normalizeIntentText(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/ё/g, 'е')
+    .replace(/[.,!?;:()"'«»]/g, ' ')
+    .replace(/\s+/g, ' ');
+}
+
+export function findViralPresetByIntent(input: string): ViralPreset | null {
+  const haystack = normalizeIntentText(input);
+  if (!haystack) return null;
+
+  let best: { preset: ViralPreset; score: number } | null = null;
+
+  for (const preset of VIRAL_PRESETS) {
+    const phrases = preset.intents ?? [];
+    let score = 0;
+
+    for (const phrase of phrases) {
+      const normalized = normalizeIntentText(phrase);
+      if (!normalized) continue;
+
+      if (haystack.includes(normalized)) {
+        score = Math.max(score, normalized.split(' ').length * 3);
+        continue;
+      }
+
+      const tokens = normalized.split(' ').filter((token) => token.length >= 4);
+      const matched = tokens.filter((token) => haystack.includes(token)).length;
+      if (tokens.length >= 2 && matched >= Math.ceil(tokens.length * 0.75)) {
+        score = Math.max(score, matched);
+      }
+    }
+
+    if (score > 0 && (!best || score > best.score)) {
+      best = { preset, score };
+    }
+  }
+
+  return best?.preset ?? null;
 }
