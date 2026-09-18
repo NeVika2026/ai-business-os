@@ -7,6 +7,7 @@ import { createClient } from '@/services/supabase/server';
 import type { GatewayRequest } from '@/types/runtime/dto';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
 import { ensureFactoryProject, saveFactoryArtifact } from '@/lib/factory-chain/persistence';
+import { loadProjectMemory } from '@/lib/projects/project-memory';
 
 export type PublicationChannelId =
   | 'telegram'
@@ -108,6 +109,19 @@ export async function buildPublicationPackAction(input: {
     return { status: 'failed', message: 'Организация не найдена.' };
   }
 
+  const memory = await loadProjectMemory(
+    project.identity.supabase,
+    project.identity.organizationId,
+    project.projectId,
+  );
+  const memoryContext = [
+    memory.goals ? 'Цели проекта: ' + memory.goals : '',
+    memory.audience ? 'Аудитория проекта: ' + memory.audience : '',
+    memory.style ? 'Стиль проекта: ' + memory.style : '',
+    memory.decisions ? 'Принятые решения: ' + memory.decisions : '',
+    memory.constraints ? 'Не делать / ограничения: ' + memory.constraints : '',
+  ].filter(Boolean).join('\n');
+
   const runId = randomUUID();
   const channelInstructions = channels
     .map((channel) => `- ${channel}: адаптация под ${CHANNEL_NAMES[channel]}`)
@@ -122,6 +136,7 @@ export async function buildPublicationPackAction(input: {
     '',
     input.goal?.trim() ? 'Цель публикации: ' + input.goal.trim() : '',
     input.callToAction?.trim() ? 'Желаемый CTA: ' + input.callToAction.trim() : '',
+    memoryContext ? 'ПАМЯТЬ ПРОЕКТА:\n' + memoryContext : '',
     '',
     'ПЛОЩАДКИ:',
     channelInstructions,
