@@ -20,6 +20,7 @@ import { VoiceInputButton } from '@/components/platform/VoiceInputButton';
 import { buildCreateStudioHref, detectCreateStudioMode } from '@/utils/platform/create-studio';
 import {
   buildViralPresetHref,
+  findViralPresetByIntent,
   getViralPresetByShortcut,
 } from '@/utils/platform/viral-presets';
 import type { HomeQuickActionId } from '@/utils/home/home-action';
@@ -183,11 +184,18 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
 
     if (!quickActionId && trimmed) {
       const normalized = trimmed.toLowerCase().replace(/ё/g, 'е');
-      const viralPreset = getViralPresetByShortcut(trimmed);
+      const shortcutPreset = getViralPresetByShortcut(trimmed);
 
-      if (viralPreset) {
+      if (shortcutPreset) {
         const extraText = trimmed.replace(/^\/\S+\s*/, '');
-        router.push(buildViralPresetHref(viralPreset, extraText));
+        router.push(buildViralPresetHref(shortcutPreset, extraText));
+        return;
+      }
+
+      const naturalPreset = findViralPresetByIntent(trimmed);
+
+      if (naturalPreset) {
+        router.push(buildViralPresetHref(naturalPreset, trimmed));
         return;
       }
 
