@@ -179,14 +179,11 @@ export const VIRAL_PRESETS: ViralPreset[] = [
   {
     id: 'ugc-ad',
     title: 'AI UGC реклама',
-    description: 'Скрипт, хук и UGC-подача под товар или услугу.',
+    description: 'Фото человека + фото продукта → готовый creator-style рекламный ролик.',
     category: 'ugc',
     status: 'ready',
     badge: 'HOT',
-    mode: 'video',
-    goal: 'Собери короткую UGC-рекламу: естественный разговорный хук, демонстрация проблемы и решения, нативный CTA, кадры как со смартфона, без слишком рекламной постановки.',
-    format: 'Reels/TikTok 9:16, 10–15 секунд.',
-    context: 'Если нет говорящего аватара, делай UGC через POV, руки, продукт, b-roll и закадровый голос.',
+    href: '/modules/create/ugc',
   },
   {
     id: 'talking-avatar',
