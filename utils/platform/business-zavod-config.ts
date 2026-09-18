@@ -133,6 +133,15 @@ export const BUSINESS_ZAVOD_TASKS: PlatformTask[] = [
     href: '/modules/create/studio?mode=presentation',
   },
   {
+    id: 'create-site',
+    moduleId: 'create',
+    title: 'Сайт',
+    description: 'Готовый адаптивный лендинг с HTML и визуальным предпросмотром',
+    prompt: 'Собери готовый лендинг под мою задачу.',
+    href: '/modules/create/studio?mode=site',
+    badge: 'HTML',
+  },
+  {
     id: 'create-document',
     moduleId: 'create',
     title: 'Документ',
