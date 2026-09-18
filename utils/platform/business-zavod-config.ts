@@ -6,7 +6,8 @@ export type PlatformModuleId =
   | 'find'
   | 'analyze'
   | 'automate'
-  | 'voice-agent';
+  | 'voice-agent'
+  | 'communicate';
 
 export type PlatformModule = {
   id: PlatformModuleId;
@@ -88,6 +89,13 @@ export const BUSINESS_ZAVOD_MODULES: PlatformModule[] = [
     label: 'Голосовой агент',
     description: 'Исходящие звонки, разговоры, расшифровки и записи',
     icon: '◉',
+    kind: 'work',
+  },
+  {
+    id: 'communicate',
+    label: 'Связаться',
+    description: 'WhatsApp, SMS и персональные сообщения по найденным лидам',
+    icon: '✉',
     kind: 'work',
   },
 ];
@@ -174,6 +182,33 @@ export const BUSINESS_ZAVOD_TASKS: PlatformTask[] = [
     description: 'Текст, интонация и подготовка голоса',
     prompt: 'Подготовь озвучку под мою задачу.',
     href: '/modules/create/studio?mode=voice',
+  },
+  {
+    id: 'communicate-whatsapp',
+    moduleId: 'communicate',
+    title: 'Написать в WhatsApp',
+    description: 'Персональное сообщение через Evolution Go',
+    prompt: 'Подготовь сообщение клиенту и отправь его в WhatsApp.',
+    href: '/modules/communicate/studio',
+    badge: 'WhatsApp',
+  },
+  {
+    id: 'communicate-sms',
+    moduleId: 'communicate',
+    title: 'Отправить SMS',
+    description: 'SMS через Android-телефон с httpSMS',
+    prompt: 'Подготовь короткое SMS клиенту.',
+    href: '/modules/communicate/studio',
+    badge: 'SMS',
+  },
+  {
+    id: 'communicate-leads',
+    moduleId: 'communicate',
+    title: 'Найти и обогатить лиды',
+    description: 'Scout: открытые профили, контакты, email verification и lead score',
+    prompt: 'Найди и обогати лиды под мой сегмент.',
+    href: '/modules/communicate/studio',
+    badge: 'Scout',
   },
   {
     id: 'voice-agent-call',
