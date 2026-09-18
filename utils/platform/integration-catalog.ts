@@ -96,6 +96,14 @@ export const INTEGRATION_CATALOG: IntegrationDefinition[] = [
     envKeys: ['OLLAMA_BASE_URL'],
   },
   {
+    id: 'voicyfy',
+    name: 'Voicyfy',
+    description: 'Исходящие AI-звонки, расшифровка разговора и запись.',
+    category: 'media',
+    capabilities: ['Телефония', 'AI-звонки', 'Расшифровка', 'Запись'],
+    envKeys: ['VOICYFY_ASSISTANT_ID'],
+  },
+  {
     id: 'runway',
     name: 'Runway',
     description: 'Генерация и обработка видеосцен.',
