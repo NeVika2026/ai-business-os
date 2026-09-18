@@ -1,18 +1,18 @@
 import { ProjectActivity } from '@/components/projects/ProjectActivity';
+import { ProjectCommandCenter } from '@/components/projects/ProjectCommandCenter';
 import { ProjectDocuments } from '@/components/projects/ProjectDocuments';
 import { ProjectExecutions } from '@/components/projects/ProjectExecutions';
 import { ProjectFactoryControlCenter } from '@/components/projects/ProjectFactoryControlCenter';
 import { ProjectGoals } from '@/components/projects/ProjectGoals';
-import { ProjectHeader } from '@/components/projects/ProjectHeader';
 import { ProjectFactoryHistory } from '@/components/projects/ProjectFactoryHistory';
 import { ProjectKnowledge } from '@/components/projects/ProjectKnowledge';
 import { ProjectMembers } from '@/components/projects/ProjectMembers';
 import { ProjectMedia } from '@/components/projects/ProjectMedia';
+import { ProjectMemoryPanel } from '@/components/projects/ProjectMemoryPanel';
 import { ProjectModules } from '@/components/projects/ProjectModules';
-import { ProjectOverview } from '@/components/projects/ProjectOverview';
-import { ProjectQuickActions } from '@/components/projects/ProjectQuickActions';
 import { ProjectTimeline } from '@/components/projects/ProjectTimeline';
 import type { FactoryArtifact } from '@/lib/factory-chain/persistence';
+import type { ProjectMemory } from '@/lib/projects/project-memory';
 import type { ProjectMediaItem } from '@/utils/projects/project-media-loader';
 import type { ProjectWorkspaceData } from '@/utils/projects/project-types';
 
@@ -20,6 +20,7 @@ type ProjectWorkspaceProps = {
   workspace: ProjectWorkspaceData;
   media: ProjectMediaItem[];
   factoryArtifacts: FactoryArtifact[];
+  projectMemory: ProjectMemory;
 };
 
 export function ProjectWorkspace({
