@@ -26,6 +26,7 @@ export type MediaStudioStartInput = {
   duration?: number;
   imageUrl?: string;
   voiceId?: string;
+  model?: string;
   projectId?: string | null;
 };
 
@@ -219,6 +220,7 @@ export async function startMediaGenerationAction(
       toolId = 'media.video.generate';
       args = {
         prompt_text: effectivePromptText,
+        model: input.model?.trim() || 'gen4.5',
         ratio: input.ratio || '768:1280',
         duration: input.duration ?? 5,
       };
@@ -227,9 +229,13 @@ export async function startMediaGenerationAction(
       toolId = 'media.image.generate';
       args = {
         prompt_text: effectivePromptText,
+        model: input.model?.trim() || 'gen4_image',
         ratio: input.ratio || '1080:1920',
         output_count: 1,
       };
+      if (input.imageUrl?.trim()) {
+        args.reference_images = [input.imageUrl.trim()];
+      }
     } else {
       if (!input.voiceId?.trim()) {
         return { status: 'failed', message: 'Выберите голос.' };
