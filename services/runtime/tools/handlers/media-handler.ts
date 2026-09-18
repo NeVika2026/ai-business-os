@@ -112,15 +112,26 @@ export class RunwayImageGenerateHandler extends BaseToolHandler {
     const promptText = asString(args.prompt_text);
     if (!promptText) throw new Error('prompt_text is required');
 
+    const rawReferences = Array.isArray(args.reference_images)
+      ? args.reference_images.filter((item): item is string => typeof item === 'string' && Boolean(item.trim()))
+      : [];
+    const referenceImages = rawReferences.slice(0, 3).map((uri, index) => ({
+      uri: uri.trim(),
+      tag: index === 0 ? 'reference' : 'reference' + String(index + 1),
+    }));
+
     const payload = await runwayRequest(
       '/text_to_image',
       {
         method: 'POST',
         body: JSON.stringify({
-          promptText,
+          promptText: referenceImages.length
+            ? '@reference is the primary subject/reference image. ' + promptText
+            : promptText,
           model: asString(args.model) || 'gen4_image',
           ratio: asString(args.ratio) || '1080:1920',
           outputCount: Math.min(4, Math.max(1, asNumber(args.output_count, 1))),
+          ...(referenceImages.length ? { referenceImages } : {}),
         }),
       },
       ctx.signal,
