@@ -17,6 +17,7 @@ import {
   elevenLabsVoiceListHandler,
   elevenLabsVoiceStatusHandler,
   runwayImageGenerateHandler,
+  runwayProductUgcGenerateHandler,
   runwayTaskStatusHandler,
   runwayVideoGenerateHandler,
 } from '@/services/runtime/tools/handlers/media-handler';
@@ -50,6 +51,7 @@ const PRODUCTION_HANDLERS: Record<string, BaseToolHandler> = {
   'mcp.call': mcpCallHandler,
   'files.read': filesReadHandler,
   'files.list': filesListHandler,
+  'media.product_ugc.generate': runwayProductUgcGenerateHandler,
   'media.video.generate': runwayVideoGenerateHandler,
   'media.image.generate': runwayImageGenerateHandler,
   'media.runway.status': runwayTaskStatusHandler,
