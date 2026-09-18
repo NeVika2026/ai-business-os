@@ -9,6 +9,7 @@ import { createToolExecutor } from '@/services/runtime/tools/executor/tool-execu
 import type { GatewayRequest } from '@/types/runtime/dto';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
 import { ensureFactoryProject, saveFactoryArtifact } from '@/lib/factory-chain/persistence';
+import { loadProjectMemory } from '@/lib/projects/project-memory';
 
 export type ResearchMode = 'find' | 'analyze';
 
@@ -142,6 +143,19 @@ export async function runResearchAction(input: {
       stage: input.mode,
     });
 
+    const memory = await loadProjectMemory(
+      project.identity.supabase,
+      project.identity.organizationId,
+      project.projectId,
+    );
+    const memoryContext = [
+      memory.goals ? 'Цели проекта: ' + memory.goals : '',
+      memory.audience ? 'Аудитория проекта: ' + memory.audience : '',
+      memory.style ? 'Стиль проекта: ' + memory.style : '',
+      memory.decisions ? 'Принятые решения: ' + memory.decisions : '',
+      memory.constraints ? 'Не делать / ограничения: ' + memory.constraints : '',
+    ].filter(Boolean).join('\n');
+
     let identity: Awaited<ReturnType<typeof resolveResearchIdentity>>;
     let runId: string;
     let sources: ResearchSource[];
@@ -220,6 +234,7 @@ export async function runResearchAction(input: {
       '',
       'ЗАПРОС:',
       query,
+      memoryContext ? '\nПАМЯТЬ ПРОЕКТА:\n' + memoryContext : '',
       priorSummary,
       '',
       modeInstruction,
