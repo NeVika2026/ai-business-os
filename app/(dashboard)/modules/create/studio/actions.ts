@@ -26,6 +26,7 @@ export type MediaStudioStartInput = {
   duration?: number;
   imageUrl?: string;
   voiceId?: string;
+  projectId?: string | null;
 };
 
 export type MediaStudioActionResult =
@@ -183,13 +184,41 @@ export async function startMediaGenerationAction(
   }
 
   try {
+    let effectivePromptText = promptText;
+
+    if (input.projectId?.trim()) {
+      const identity = await resolveMediaExecutionIdentity();
+      const supabase = await createClient();
+      const memory = await loadProjectMemory(
+        supabase,
+        identity.organizationId,
+        input.projectId.trim(),
+      );
+      const memoryContext = [
+        memory.goals ? 'Цели проекта: ' + memory.goals : '',
+        memory.audience ? 'Аудитория проекта: ' + memory.audience : '',
+        memory.style ? 'Стиль проекта: ' + memory.style : '',
+        memory.decisions ? 'Принятые решения: ' + memory.decisions : '',
+        memory.constraints ? 'Не делать / ограничения: ' + memory.constraints : '',
+      ].filter(Boolean).join('\n');
+
+      if (memoryContext) {
+        effectivePromptText = [
+          promptText,
+          '',
+          'ПАМЯТЬ ПРОЕКТА:',
+          memoryContext,
+        ].join('\n');
+      }
+    }
+
     let toolId: string;
     let args: Record<string, unknown>;
 
     if (input.kind === 'video') {
       toolId = 'media.video.generate';
       args = {
-        prompt_text: promptText,
+        prompt_text: effectivePromptText,
         ratio: input.ratio || '768:1280',
         duration: input.duration ?? 5,
       };
@@ -197,7 +226,7 @@ export async function startMediaGenerationAction(
     } else if (input.kind === 'image') {
       toolId = 'media.image.generate';
       args = {
-        prompt_text: promptText,
+        prompt_text: effectivePromptText,
         ratio: input.ratio || '1080:1920',
         output_count: 1,
       };
@@ -207,7 +236,7 @@ export async function startMediaGenerationAction(
       }
       toolId = 'media.voice.generate';
       args = {
-        text: promptText,
+        text: effectivePromptText,
         voice_id: input.voiceId.trim(),
         model_id: 'eleven_multilingual_v2',
       };
