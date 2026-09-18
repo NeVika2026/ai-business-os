@@ -5,7 +5,8 @@ export type PlatformModuleId =
   | 'publish'
   | 'find'
   | 'analyze'
-  | 'automate';
+  | 'automate'
+  | 'voice-agent';
 
 export type PlatformModule = {
   id: PlatformModuleId;
@@ -82,6 +83,13 @@ export const BUSINESS_ZAVOD_MODULES: PlatformModule[] = [
     icon: '⚡',
     kind: 'work',
   },
+  {
+    id: 'voice-agent',
+    label: 'Голосовой агент',
+    description: 'Исходящие звонки, разговоры, расшифровки и записи',
+    icon: '◉',
+    kind: 'work',
+  },
 ];
 
 export const BUSINESS_ZAVOD_NAVIGATION: PlatformNavigationItem[] = [
@@ -156,6 +164,23 @@ export const BUSINESS_ZAVOD_TASKS: PlatformTask[] = [
     description: 'Текст, интонация и подготовка голоса',
     prompt: 'Подготовь озвучку под мою задачу.',
     href: '/modules/create/studio?mode=voice',
+  },
+  {
+    id: 'voice-agent-call',
+    moduleId: 'voice-agent',
+    title: 'Позвонить клиенту',
+    description: 'AI-агент звонит по номеру, ведёт разговор и возвращает расшифровку',
+    prompt: 'Позвони клиенту и выполни задачу разговора.',
+    href: '/modules/voice-agent/studio',
+    badge: 'Звонок',
+  },
+  {
+    id: 'voice-agent-followup',
+    moduleId: 'voice-agent',
+    title: 'Звонок по проекту',
+    description: 'Контекст звонка можно сохранить в текущий проект',
+    prompt: 'Сделай исходящий звонок в контексте моего проекта.',
+    href: '/modules/voice-agent/studio',
   },
   {
     id: 'sell-offer',
