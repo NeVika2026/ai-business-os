@@ -101,7 +101,6 @@ function blockMatches(block: ArtifactBlock, tokens: string[]): boolean {
 
 type LandingMediaSet = {
   eyebrow: string;
-  heroVideo?: string;
   heroPoster?: string;
   gallery: string[];
   stats: Array<{ value: string; label: string }>;
@@ -119,13 +118,10 @@ function getLandingMedia(task: string): LandingMediaSet {
   ) {
     return {
       eyebrow: 'УПРАВЛЕНИЕ НЕДВИЖИМОСТЬЮ',
-      heroVideo:
-        'https://videos.pexels.com/video-files/3769951/3769951-hd_1920_1080_25fps.mp4',
-      heroPoster:
-        'https://images.pexels.com/videos/3769951/pexels-photo-3769951.jpeg?auto=compress&dpr=1&h=900&w=1600',
+      heroPoster: '/assets/landing/real-estate-hero.svg',
       gallery: [
-        'https://images.pexels.com/photos/7534563/pexels-photo-7534563.jpeg?auto=compress&dpr=1&h=900&w=1400',
-        'https://images.pexels.com/photos/7214456/pexels-photo-7214456.jpeg?auto=compress&dpr=1&h=900&w=1400',
+        '/assets/landing/real-estate-detail-1.svg',
+        '/assets/landing/real-estate-detail-2.svg',
       ],
       stats: [
         { value: '24/7', label: 'видимость состояния объекта' },
@@ -203,19 +199,14 @@ function renderLandingPreview(content: string, task: string) {
       </div>
 
       <section className="relative min-h-[660px] overflow-hidden">
-        {media.heroVideo ? (
+        {media.heroPoster ? (
           <>
-            <video
-              autoPlay
-              muted
-              loop
-              playsInline
-              poster={media.heroPoster}
-              className="absolute inset-0 h-full w-full object-cover opacity-55"
-            >
-              <source src={media.heroVideo} type="video/mp4" />
-            </video>
-            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,8,13,.97)_0%,rgba(5,8,13,.90)_42%,rgba(5,8,13,.35)_72%,rgba(5,8,13,.58)_100%)]" />
+            <img
+              src={media.heroPoster}
+              alt="Премиальный интерьер"
+              className="absolute inset-0 h-full w-full object-cover opacity-78"
+            />
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,8,13,.97)_0%,rgba(5,8,13,.88)_42%,rgba(5,8,13,.30)_72%,rgba(5,8,13,.52)_100%)]" />
           </>
         ) : (
           <div
@@ -233,12 +224,10 @@ function renderLandingPreview(content: string, task: string) {
               <p className="text-[11px] font-black uppercase tracking-[.22em] text-[#7ef1f8]">
                 {media.eyebrow}
               </p>
-              {media.heroVideo ? (
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/[0.10] bg-black/25 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.10em] text-white/68 backdrop-blur-md">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-300" />
-                  live motion
-                </span>
-              ) : null}
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/[0.10] bg-black/25 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.10em] text-white/68 backdrop-blur-md">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-300" />
+                visual motion
+              </span>
             </div>
 
             <h2 className="mt-6 max-w-[12ch] text-[clamp(3.2rem,7vw,7rem)] font-black leading-[.88] tracking-[-.07em] text-[#fff8e7] drop-shadow-[0_14px_34px_rgba(0,0,0,.38)]">
@@ -285,12 +274,12 @@ function renderLandingPreview(content: string, task: string) {
       {media.gallery.length ? (
         <section className="grid gap-px bg-white/[0.06] lg:grid-cols-[1.08fr_.92fr]">
           <div className="relative min-h-[420px] overflow-hidden bg-[#0a0f15]">
-            <div
-              className="absolute inset-0 bg-cover bg-center transition-transform duration-700 hover:scale-[1.03]"
-              style={{
-                backgroundImage: `linear-gradient(180deg,transparent 30%,rgba(5,8,13,.82) 100%),url("${media.gallery[0]}")`,
-              }}
+            <img
+              src={media.gallery[0]}
+              alt="Премиальный интерьер объекта"
+              className="absolute inset-0 h-full w-full object-cover transition duration-700 hover:scale-[1.03]"
             />
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_30%,rgba(5,8,13,.82)_100%)]" />
             <div className="relative z-[2] flex min-h-[420px] items-end p-7 sm:p-9">
               <div>
                 <p className="text-[11px] font-black uppercase tracking-[.16em] text-[#7ef1f8]">
@@ -304,12 +293,12 @@ function renderLandingPreview(content: string, task: string) {
           </div>
 
           <div className="relative min-h-[420px] overflow-hidden bg-[#0a0f15]">
-            <div
-              className="absolute inset-0 bg-cover bg-center transition-transform duration-700 hover:scale-[1.03]"
-              style={{
-                backgroundImage: `linear-gradient(180deg,transparent 25%,rgba(5,8,13,.86) 100%),url("${media.gallery[1]}")`,
-              }}
+            <img
+              src={media.gallery[1]}
+              alt="Цифровой контроль объекта"
+              className="absolute inset-0 h-full w-full object-cover transition duration-700 hover:scale-[1.03]"
             />
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_25%,rgba(5,8,13,.86)_100%)]" />
             <div className="relative z-[2] flex min-h-[420px] items-end p-7 sm:p-9">
               <div>
                 <p className="text-[11px] font-black uppercase tracking-[.16em] text-[#f1c96c]">
