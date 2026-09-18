@@ -96,6 +96,22 @@ export const INTEGRATION_CATALOG: IntegrationDefinition[] = [
     envKeys: ['OLLAMA_BASE_URL'],
   },
   {
+    id: 'heygen',
+    name: 'HeyGen',
+    description: 'Говорящие аватары, перевод видео и multilingual lip-sync.',
+    category: 'media',
+    capabilities: ['Аватары', 'Lip-sync', 'Перевод видео', 'Дубляж'],
+    planned: true,
+  },
+  {
+    id: 'higgsfield',
+    name: 'Higgsfield',
+    description: 'UGC-видео, выразительные аватары и lip-sync для коротких рекламных роликов.',
+    category: 'media',
+    capabilities: ['UGC', 'Lip-sync', 'Аватары'],
+    planned: true,
+  },
+  {
     id: 'voicyfy',
     name: 'Voicyfy',
     description: 'Исходящие AI-звонки, расшифровка разговора и запись.',
