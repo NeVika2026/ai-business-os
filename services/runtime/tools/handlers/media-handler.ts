@@ -80,6 +80,40 @@ async function elevenLabsRequest(
   return parseJsonResponse(response);
 }
 
+export class RunwayProductUgcGenerateHandler extends BaseToolHandler {
+  async execute(args: Record<string, unknown>, ctx: ToolHandlerContext) {
+    const characterImage = asString(args.character_image);
+    const productImage = asString(args.product_image);
+    const productInfo = asString(args.product_info);
+    const concept = asString(args.concept);
+
+    if (!characterImage || !productImage || !productInfo || !concept) {
+      throw new Error('character_image, product_image, product_info and concept are required');
+    }
+
+    const payload = await runwayRequest(
+      '/recipes/product_ugc',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          version: '2026-06',
+          characterImage: { uri: characterImage },
+          productImage: { uri: productImage },
+          productInfo,
+          userConcept: concept,
+          duration: Math.min(30, Math.max(5, asNumber(args.duration, 15))),
+        }),
+      },
+      ctx.signal,
+    );
+
+    const taskId = asString(payload.id);
+    if (!taskId) throw new Error('Runway did not return a task id');
+
+    return { taskId, status: 'pending', kind: 'video' };
+  }
+}
+
 export class RunwayVideoGenerateHandler extends BaseToolHandler {
   async execute(args: Record<string, unknown>, ctx: ToolHandlerContext) {
     const promptText = asString(args.prompt_text);
@@ -247,6 +281,7 @@ export class ElevenLabsVoiceStatusHandler extends BaseToolHandler {
   }
 }
 
+export const runwayProductUgcGenerateHandler = new RunwayProductUgcGenerateHandler();
 export const runwayVideoGenerateHandler = new RunwayVideoGenerateHandler();
 export const runwayImageGenerateHandler = new RunwayImageGenerateHandler();
 export const runwayTaskStatusHandler = new RunwayTaskStatusHandler();
