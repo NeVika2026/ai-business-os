@@ -398,7 +398,7 @@ export function FirstResultScreen({
           {isDev ? (
             <p className="mt-3 text-xs text-white/35">
               {buildDevSourceLabel(view.source)}
-              {resolvedEntry?.failureReason ? ` · ${entry.failureReason}` : ''}
+              {resolvedEntry?.failureReason ? ` · ${resolvedEntry.failureReason}` : ''}
             </p>
           ) : null}
         </header>
