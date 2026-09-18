@@ -80,6 +80,126 @@ async function elevenLabsRequest(
   return parseJsonResponse(response);
 }
 
+export class RunwayProductAdGenerateHandler extends BaseToolHandler {
+  async execute(args: Record<string, unknown>, ctx: ToolHandlerContext) {
+    const images = Array.isArray(args.product_images)
+      ? args.product_images.filter((item): item is string => typeof item === 'string' && Boolean(item.trim()))
+      : [];
+    const productInfo = asString(args.product_info);
+    const concept = asString(args.concept);
+
+    if (!images.length || !productInfo || !concept) {
+      throw new Error('product_images, product_info and concept are required');
+    }
+
+    const payload = await runwayRequest(
+      '/recipes/product_ad',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          version: '2026-07',
+          productImages: images.slice(0, 10).map((uri) => ({ uri: uri.trim() })),
+          productInfo,
+          userConcept: concept,
+          duration: Math.min(15, Math.max(4, asNumber(args.duration, 10))),
+        }),
+      },
+      ctx.signal,
+    );
+
+    const taskId = asString(payload.id);
+    if (!taskId) throw new Error('Runway did not return a task id');
+    return { taskId, status: 'pending', kind: 'video' };
+  }
+}
+
+export class RunwayAdLocalizationGenerateHandler extends BaseToolHandler {
+  async execute(args: Record<string, unknown>, ctx: ToolHandlerContext) {
+    const referenceImage = asString(args.reference_image);
+    const targetLanguage = asString(args.target_language);
+    if (!referenceImage || !targetLanguage) {
+      throw new Error('reference_image and target_language are required');
+    }
+
+    const payload = await runwayRequest(
+      '/recipes/ad_localization',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          version: '2026-06',
+          referenceImage: { uri: referenceImage },
+          targetLanguage,
+        }),
+      },
+      ctx.signal,
+    );
+
+    const taskId = asString(payload.id);
+    if (!taskId) throw new Error('Runway did not return a task id');
+    return { taskId, status: 'pending', kind: 'image' };
+  }
+}
+
+export class RunwayProductCampaignGenerateHandler extends BaseToolHandler {
+  async execute(args: Record<string, unknown>, ctx: ToolHandlerContext) {
+    const image = asString(args.image);
+    const prompt = asString(args.prompt);
+    if (!image || !prompt) throw new Error('image and prompt are required');
+
+    const payload = await runwayRequest(
+      '/recipes/product_campaign_image',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          version: '2026-06',
+          image: { uri: image },
+          prompt,
+        }),
+      },
+      ctx.signal,
+    );
+
+    const taskId = asString(payload.id);
+    if (!taskId) throw new Error('Runway did not return a task id');
+    return { taskId, status: 'pending', kind: 'image' };
+  }
+}
+
+export class RunwayMultiShotGenerateHandler extends BaseToolHandler {
+  async execute(args: Record<string, unknown>, ctx: ToolHandlerContext) {
+    const rawShots = Array.isArray(args.shots) ? args.shots : [];
+    const shots = rawShots
+      .map((item) => item as Record<string, unknown>)
+      .map((item) => ({
+        prompt: asString(item.prompt),
+        duration: Math.max(1, Math.min(15, asNumber(item.duration, 3))),
+      }))
+      .filter((item) => Boolean(item.prompt));
+
+    if (shots.length < 2) throw new Error('At least two shots are required');
+
+    const totalDuration = shots.reduce((sum, shot) => sum + shot.duration, 0);
+    const payload = await runwayRequest(
+      '/recipes/multi_shot_video',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          version: '2026-06',
+          mode: 'custom',
+          duration: Math.max(5, Math.min(15, totalDuration)),
+          ratio: asString(args.ratio) || '720:1280',
+          shots,
+        }),
+      },
+      ctx.signal,
+    );
+
+    const taskId = asString(payload.id);
+    if (!taskId) throw new Error('Runway did not return a task id');
+    return { taskId, status: 'pending', kind: 'video' };
+  }
+}
+
 export class RunwayProductUgcGenerateHandler extends BaseToolHandler {
   async execute(args: Record<string, unknown>, ctx: ToolHandlerContext) {
     const characterImage = asString(args.character_image);
@@ -281,6 +401,10 @@ export class ElevenLabsVoiceStatusHandler extends BaseToolHandler {
   }
 }
 
+export const runwayProductAdGenerateHandler = new RunwayProductAdGenerateHandler();
+export const runwayAdLocalizationGenerateHandler = new RunwayAdLocalizationGenerateHandler();
+export const runwayProductCampaignGenerateHandler = new RunwayProductCampaignGenerateHandler();
+export const runwayMultiShotGenerateHandler = new RunwayMultiShotGenerateHandler();
 export const runwayProductUgcGenerateHandler = new RunwayProductUgcGenerateHandler();
 export const runwayVideoGenerateHandler = new RunwayVideoGenerateHandler();
 export const runwayImageGenerateHandler = new RunwayImageGenerateHandler();
