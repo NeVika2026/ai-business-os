@@ -13,6 +13,42 @@ const externalPermissions = {
 
 export const mediaTools: RegisteredToolInput[] = [
   {
+    id: 'media.product_ugc.generate',
+    name: 'Generate Product UGC',
+    description: 'Create a UGC-style product ad video from a creator image, product image and concept.',
+    version: '1.0.0',
+    category: 'media',
+    permissions: externalPermissions,
+    approvalPolicy: {
+      ...DEFAULT_EXTERNAL_APPROVAL,
+      reason: 'Product UGC generation may consume paid credits and requires explicit approval.',
+    },
+    timeoutMs: 30_000,
+    retryPolicy: DEFAULT_WRITE_RETRY_POLICY,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        character_image: { type: 'string', minLength: 1 },
+        product_image: { type: 'string', minLength: 1 },
+        product_info: { type: 'string', minLength: 1, maxLength: 3000 },
+        concept: { type: 'string', minLength: 1, maxLength: 5000 },
+        duration: { type: 'number', minimum: 5, maximum: 30 },
+      },
+      required: ['character_image', 'product_image', 'product_info', 'concept'],
+      additionalProperties: false,
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string' },
+        status: { type: 'string' },
+        kind: { type: 'string' },
+      },
+      required: ['taskId', 'status', 'kind'],
+    },
+    enabled: true,
+  },
+  {
     id: 'media.video.generate',
     name: 'Generate Video',
     description: 'Start a paid video generation job from text and an optional reference image.',
