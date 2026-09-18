@@ -3,11 +3,10 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
-import { buildCreateStudioHref } from '@/utils/platform/create-studio';
 import {
+  buildViralPresetHref,
   VIRAL_CATEGORY_LABELS,
   VIRAL_PRESETS,
-  type ViralPreset,
 } from '@/utils/platform/viral-presets';
 
 type FilterId = 'all' | keyof typeof VIRAL_CATEGORY_LABELS;
@@ -20,16 +19,6 @@ const FILTERS: Array<{ id: FilterId; label: string }> = [
   { id: 'voice', label: 'Голос' },
   { id: 'business', label: 'Бизнес' },
 ];
-
-function presetHref(preset: ViralPreset) {
-  if (preset.href) return preset.href;
-  if (!preset.mode || !preset.goal) return '/settings';
-
-  return buildCreateStudioHref(preset.mode, preset.goal, {
-    format: preset.format,
-    context: preset.context,
-  });
-}
 
 export function ViralTrendLab() {
   const [filter, setFilter] = useState<FilterId>('all');
@@ -113,7 +102,7 @@ export function ViralTrendLab() {
           {items.map((preset, index) => (
             <Link
               key={preset.id}
-              href={presetHref(preset)}
+              href={buildViralPresetHref(preset)}
               className="group relative min-h-[220px] overflow-hidden rounded-[26px] border border-white/[0.085] bg-[linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.015))] p-5 transition duration-300 hover:-translate-y-1 hover:border-[#69e4ee]/28 hover:bg-[#69e4ee]/[0.035]"
             >
               <div className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-[radial-gradient(circle,rgba(241,201,108,.09),transparent_70%)] transition duration-300 group-hover:scale-125" />
