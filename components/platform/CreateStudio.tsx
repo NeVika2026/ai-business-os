@@ -6,6 +6,7 @@ import { FactoryChainBar } from '@/components/platform/FactoryChainBar';
 import { getFactoryArtifactAction } from '@/app/(dashboard)/modules/factory-chain/actions';
 import { MediaProductionConsole } from '@/components/platform/MediaProductionConsole';
 import { VideoStoryboardStudio } from '@/components/platform/VideoStoryboardStudio';
+import { WebsiteProductionConsole } from '@/components/platform/WebsiteProductionConsole';
 
 import {
   CREATE_STUDIO_MODES,
@@ -327,14 +328,26 @@ export function CreateStudio({
         </aside>
       </section>
 
-      <MediaProductionConsole
-        key={modeId}
-        modeId={modeId}
-        goal={goal}
-        format={format}
-        context={context}
-        projectId={initialProjectId}
-      />
+      {modeId === 'site' ? (
+        <WebsiteProductionConsole
+          key={modeId}
+          goal={goal}
+          audience={audience}
+          format={format}
+          context={context}
+          projectId={initialProjectId}
+          artifactId={initialArtifactId}
+        />
+      ) : (
+        <MediaProductionConsole
+          key={modeId}
+          modeId={modeId}
+          goal={goal}
+          format={format}
+          context={context}
+          projectId={initialProjectId}
+        />
+      )}
 
       {modeId === 'video' ? (
         <VideoStoryboardStudio
