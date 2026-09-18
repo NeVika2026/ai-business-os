@@ -4,6 +4,7 @@ export type CreateStudioModeId =
   | 'stories'
   | 'presentation'
   | 'document'
+  | 'site'
   | 'voice';
 
 export type CreateStudioMode = {
@@ -65,6 +66,13 @@ export const CREATE_STUDIO_MODES: CreateStudioMode[] = [
     noun: 'документ',
   },
   {
+    id: 'site',
+    label: 'Сайт',
+    description: 'Готовый адаптивный лендинг с визуальным предпросмотром и HTML-файлом',
+    icon: '◈',
+    noun: 'сайт',
+  },
+  {
     id: 'voice',
     label: 'Озвучка',
     description: 'Текст, интонация и подготовка голоса под задачу',
@@ -119,6 +127,15 @@ const CREATE_STUDIO_PRODUCTION_LINES: Record<CreateStudioModeId, CreateStudioPro
     { id: 'review', label: 'Проверка', detail: 'Факты, логика и язык' },
     { id: 'layout', label: 'Оформление', detail: 'Читаемая структура' },
     { id: 'export', label: 'Экспорт', detail: 'Готовый документ' },
+  ],
+  site: [
+    { id: 'goal', label: 'Цель', detail: 'Оффер и главное действие' },
+    { id: 'structure', label: 'Структура', detail: 'Блоки и логика страницы' },
+    { id: 'copy', label: 'Тексты', detail: 'Готовый продающий контент' },
+    { id: 'visual', label: 'Дизайн', detail: 'Типографика, сетка и атмосфера' },
+    { id: 'build', label: 'Сборка', detail: 'Адаптивный HTML/CSS' },
+    { id: 'qa', label: 'QA', detail: 'Читаемость и мобильная версия' },
+    { id: 'export', label: 'Экспорт', detail: 'Готовый index.html' },
   ],
   voice: [
     { id: 'script', label: 'Текст', detail: 'Что именно произносить' },
@@ -198,6 +215,10 @@ const STUDIO_INTENT_SIGNALS: Array<{
     signals: ['презентац', 'слайды', 'слайд', 'pitch deck', 'питч-дек', 'deck'],
   },
   {
+    mode: 'site',
+    signals: ['сайт', 'лендинг', 'landing page', 'landing', 'одностраничник', 'веб-страниц'],
+  },
+  {
     mode: 'document',
     signals: [
       'коммерческое предложение',
@@ -256,7 +277,7 @@ export function detectCreateStudioMode(input: string): CreateStudioModeId | null
   if (!matched) return null;
 
   const textOnly = TEXT_ONLY_SIGNALS.some((signal) => haystack.includes(signal));
-  const hasStrongMediaIntent = ['video', 'stories', 'voice', 'image'].includes(matched.mode);
+  const hasStrongMediaIntent = ['video', 'stories', 'voice', 'image', 'site'].includes(matched.mode);
 
   if (textOnly && !hasStrongMediaIntent) {
     return null;
