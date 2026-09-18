@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#081018"/><stop offset="1" stop-color="#11161d"/></linearGradient>
+    <radialGradient id="glow"><stop stop-color="#69e4ee" stop-opacity=".35"/><stop offset="1" stop-color="#69e4ee" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="1200" height="900" fill="url(#bg)"/>
+  <circle cx="920" cy="170" r="300" fill="url(#glow)" opacity=".55"/>
+  <rect x="90" y="90" width="1020" height="720" rx="44" fill="#0c141d" stroke="#d8faff" stroke-opacity=".10"/>
+  <rect x="135" y="145" width="420" height="575" rx="30" fill="#111d28"/>
+  <rect x="600" y="145" width="465" height="170" rx="28" fill="#121a22"/>
+  <rect x="600" y="345" width="220" height="375" rx="28" fill="#111922"/>
+  <rect x="845" y="345" width="220" height="375" rx="28" fill="#111922"/>
+  <circle cx="345" cy="350" r="128" fill="#f1c96c" opacity=".12"/>
+  <circle cx="345" cy="350" r="82" fill="#69e4ee" opacity=".10"/>
+  <circle cx="345" cy="350" r="38" fill="#f7dd90"/>
+  <g stroke="#69e4ee" stroke-opacity=".75" fill="none" stroke-width="5">
+    <path d="M345 312v78M306 351h78"/><circle cx="345" cy="350" r="105"/>
+  </g>
+  <g fill="#fff" opacity=".82">
+    <rect x="178" y="535" width="240" height="18" rx="9"/><rect x="178" y="570" width="300" height="12" rx="6" opacity=".35"/><rect x="178" y="596" width="275" height="12" rx="6" opacity=".25"/>
+  </g>
+  <g fill="#f1c96c"><rect x="650" y="198" width="138" height="18" rx="9"/><rect x="650" y="230" width="295" height="12" rx="6" opacity=".35"/></g>
+  <g fill="#69e4ee">
+    <circle cx="650" cy="410" r="12"/><rect x="680" y="400" width="95" height="18" rx="9" opacity=".8"/>
+    <circle cx="650" cy="472" r="12"/><rect x="680" y="462" width="110" height="18" rx="9" opacity=".55"/>
+    <circle cx="650" cy="534" r="12"/><rect x="680" y="524" width="82" height="18" rx="9" opacity=".4"/>
+  </g>
+  <g fill="#f1c96c">
+    <rect x="890" y="405" width="130" height="58" rx="18" opacity=".9"/>
+    <rect x="890" y="490" width="130" height="15" rx="8" opacity=".42"/>
+    <rect x="890" y="520" width="105" height="15" rx="8" opacity=".28"/>
+  </g>
+</svg>
