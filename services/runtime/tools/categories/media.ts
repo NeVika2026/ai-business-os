@@ -13,6 +13,158 @@ const externalPermissions = {
 
 export const mediaTools: RegisteredToolInput[] = [
   {
+    id: 'media.product_ad.generate',
+    name: 'Generate Product Ad',
+    description: 'Create a cinematic product ad video from one or more product reference images.',
+    version: '1.0.0',
+    category: 'media',
+    permissions: externalPermissions,
+    approvalPolicy: {
+      ...DEFAULT_EXTERNAL_APPROVAL,
+      reason: 'Product ad generation may consume paid credits and requires explicit approval.',
+    },
+    timeoutMs: 30_000,
+    retryPolicy: DEFAULT_WRITE_RETRY_POLICY,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        product_images: {
+          type: 'array',
+          items: { type: 'string' },
+          minItems: 1,
+          maxItems: 10,
+        },
+        product_info: { type: 'string', minLength: 1, maxLength: 3000 },
+        concept: { type: 'string', minLength: 1, maxLength: 5000 },
+        duration: { type: 'number', minimum: 4, maximum: 15 },
+      },
+      required: ['product_images', 'product_info', 'concept'],
+      additionalProperties: false,
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string' },
+        status: { type: 'string' },
+        kind: { type: 'string' },
+      },
+      required: ['taskId', 'status', 'kind'],
+    },
+    enabled: true,
+  },
+  {
+    id: 'media.ad_localization.generate',
+    name: 'Localize Ad Image',
+    description: 'Localize on-image ad text while preserving the original creative and layout.',
+    version: '1.0.0',
+    category: 'media',
+    permissions: externalPermissions,
+    approvalPolicy: {
+      ...DEFAULT_EXTERNAL_APPROVAL,
+      reason: 'Ad localization may consume paid credits and requires explicit approval.',
+    },
+    timeoutMs: 30_000,
+    retryPolicy: DEFAULT_WRITE_RETRY_POLICY,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        reference_image: { type: 'string', minLength: 1 },
+        target_language: { type: 'string', minLength: 2, maxLength: 12 },
+      },
+      required: ['reference_image', 'target_language'],
+      additionalProperties: false,
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string' },
+        status: { type: 'string' },
+        kind: { type: 'string' },
+      },
+      required: ['taskId', 'status', 'kind'],
+    },
+    enabled: true,
+  },
+  {
+    id: 'media.product_campaign.generate',
+    name: 'Generate Product Campaign Images',
+    description: 'Create a campaign image set from a product reference and a creative brief.',
+    version: '1.0.0',
+    category: 'media',
+    permissions: externalPermissions,
+    approvalPolicy: {
+      ...DEFAULT_EXTERNAL_APPROVAL,
+      reason: 'Campaign image generation may consume paid credits and requires explicit approval.',
+    },
+    timeoutMs: 30_000,
+    retryPolicy: DEFAULT_WRITE_RETRY_POLICY,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        image: { type: 'string', minLength: 1 },
+        prompt: { type: 'string', minLength: 1, maxLength: 5000 },
+      },
+      required: ['image', 'prompt'],
+      additionalProperties: false,
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string' },
+        status: { type: 'string' },
+        kind: { type: 'string' },
+      },
+      required: ['taskId', 'status', 'kind'],
+    },
+    enabled: true,
+  },
+  {
+    id: 'media.multi_shot.generate',
+    name: 'Generate Multi-Shot Video',
+    description: 'Create a multi-shot video from a sequence of shot prompts and durations.',
+    version: '1.0.0',
+    category: 'media',
+    permissions: externalPermissions,
+    approvalPolicy: {
+      ...DEFAULT_EXTERNAL_APPROVAL,
+      reason: 'Multi-shot video generation may consume paid credits and requires explicit approval.',
+    },
+    timeoutMs: 30_000,
+    retryPolicy: DEFAULT_WRITE_RETRY_POLICY,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        ratio: { type: 'string' },
+        shots: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              prompt: { type: 'string', minLength: 1, maxLength: 1500 },
+              duration: { type: 'number', minimum: 1, maximum: 15 },
+            },
+            required: ['prompt', 'duration'],
+            additionalProperties: false,
+          },
+          minItems: 2,
+          maxItems: 8,
+        },
+      },
+      required: ['shots'],
+      additionalProperties: false,
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string' },
+        status: { type: 'string' },
+        kind: { type: 'string' },
+      },
+      required: ['taskId', 'status', 'kind'],
+    },
+    enabled: true,
+  },
+  {
     id: 'media.product_ugc.generate',
     name: 'Generate Product UGC',
     description: 'Create a UGC-style product ad video from a creator image, product image and concept.',
