@@ -209,6 +209,18 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
         return;
       }
 
+      const wantsVoiceAgent =
+        normalized.includes('позвони') ||
+        normalized.includes('обзвони') ||
+        normalized.includes('голосовой агент') ||
+        normalized.includes('голосовой ассистент') ||
+        normalized.includes('исходящий звонок');
+
+      if (wantsVoiceAgent) {
+        router.push('/modules/voice-agent/studio');
+        return;
+      }
+
       const wantsPublish =
         normalized.includes('опубликуй') ||
         normalized.includes('к публикации') ||
@@ -228,7 +240,7 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
   };
 
   const launchFactoryPreset = (
-    preset: 'video' | 'image' | 'sales' | 'site' | 'find' | 'analyze' | 'publish',
+    preset: 'video' | 'image' | 'sales' | 'site' | 'find' | 'analyze' | 'publish' | 'voice-agent',
   ) => {
     const existing = prompt.trim();
 
@@ -262,6 +274,11 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
         window.sessionStorage.setItem('business-zavod:publish-source', existing);
       }
       router.push('/modules/publish/studio');
+      return;
+    }
+
+    if (preset === 'voice-agent') {
+      router.push('/modules/voice-agent/studio');
       return;
     }
 
@@ -384,6 +401,7 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
                       <button type="button" onClick={() => launchFactoryPreset('find')}>Найти</button>
                       <button type="button" onClick={() => launchFactoryPreset('analyze')}>Анализ</button>
                       <button type="button" onClick={() => launchFactoryPreset('publish')}>Публикация</button>
+                      <button type="button" onClick={() => launchFactoryPreset('voice-agent')}>Позвонить</button>
                     </div>
                     <button
                       type="button"
