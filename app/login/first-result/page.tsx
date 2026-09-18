@@ -18,6 +18,7 @@ export default async function FirstResultPage({ searchParams }: FirstResultPageP
 
   return (
     <FirstResultScreen
+      resultId={params.id ?? null}
       entry={
         content
           ? {
