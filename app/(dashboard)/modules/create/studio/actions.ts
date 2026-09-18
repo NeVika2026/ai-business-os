@@ -8,6 +8,7 @@ import type { GatewayRequest } from '@/types/runtime/dto';
 import type { CreateStudioModeId } from '@/utils/platform/create-studio';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
 import { ensureFactoryProject, saveFactoryArtifact } from '@/lib/factory-chain/persistence';
+import { loadProjectMemory } from '@/lib/projects/project-memory';
 import { createProductionToolRegistry } from '@/services/runtime/tools/tool-registry';
 import { createToolExecutor } from '@/services/runtime/tools/executor/tool-executor-factory';
 import {
@@ -463,6 +464,21 @@ export async function generateCreateStudioArtifactAction(input: {
       stage: 'create',
     });
     const identity = await resolveMediaExecutionIdentity();
+    const memory = await loadProjectMemory(
+      project.identity.supabase,
+      project.identity.organizationId,
+      project.projectId,
+    );
+    const memoryContext = [
+      memory.goals ? 'Цели проекта: ' + memory.goals : '',
+      memory.audience ? 'Аудитория проекта: ' + memory.audience : '',
+      memory.style ? 'Стиль проекта: ' + memory.style : '',
+      memory.decisions ? 'Принятые решения: ' + memory.decisions : '',
+      memory.constraints ? 'Не делать / ограничения: ' + memory.constraints : '',
+    ].filter(Boolean).join('\n');
+    const effectiveContext = [input.context?.trim(), memoryContext]
+      .filter(Boolean)
+      .join('\n\n');
     const runId = randomUUID();
 
     const request: GatewayRequest = {
@@ -480,7 +496,10 @@ export async function generateCreateStudioArtifactAction(input: {
       messages: [
         {
           role: 'user',
-          content: buildStudioArtifactPrompt(input),
+          content: buildStudioArtifactPrompt({
+            ...input,
+            context: effectiveContext,
+          }),
         },
       ],
       tools: [],
@@ -500,7 +519,7 @@ export async function generateCreateStudioArtifactAction(input: {
           input.goal.length +
           (input.audience?.length ?? 0) +
           (input.format?.length ?? 0) +
-          (input.context?.length ?? 0),
+          effectiveContext.length,
         reasoningComplexity: 'high',
         latencyTarget: 'quality',
         costTarget: 'balanced',
