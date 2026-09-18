@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 import { OsaFirstExperienceLayout } from '@/components/first-experience/OsaFirstExperienceLayout';
 import {
@@ -9,6 +12,7 @@ import {
 
 type FirstResultScreenProps = {
   entry: LoginFirstResultInput | null;
+  resultId?: string | null;
 };
 
 function cleanLine(value: string): string {
@@ -253,9 +257,75 @@ function renderArtifact(content: string) {
   });
 }
 
-export function FirstResultScreen({ entry }: FirstResultScreenProps) {
+export function FirstResultScreen({
+  entry,
+  resultId = null,
+}: FirstResultScreenProps) {
   const isDev = process.env.NODE_ENV === 'development';
-  const safeContent = entry?.content?.trim() ?? '';
+  const [resolvedEntry, setResolvedEntry] = useState<LoginFirstResultInput | null>(entry);
+  const [clientRecoveryChecked, setClientRecoveryChecked] = useState(Boolean(entry) || !resultId);
+
+  useEffect(() => {
+    if (entry) {
+      setResolvedEntry(entry);
+      setClientRecoveryChecked(true);
+      return;
+    }
+
+    if (!resultId) {
+      setClientRecoveryChecked(true);
+      return;
+    }
+
+    try {
+      const raw = window.localStorage.getItem(`business-zavod:first-result:${resultId}`);
+
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<LoginFirstResultInput>;
+
+        if (
+          typeof parsed.content === 'string' &&
+          typeof parsed.task === 'string' &&
+          parsed.content.trim()
+        ) {
+          setResolvedEntry({
+            task: parsed.task,
+            content: parsed.content,
+            usedFallback:
+              typeof parsed.usedFallback === 'boolean' ? parsed.usedFallback : undefined,
+            failureReason:
+              typeof parsed.failureReason === 'string' || parsed.failureReason === null
+                ? parsed.failureReason
+                : undefined,
+          });
+        }
+      }
+    } catch {
+      // Corrupt or unavailable browser storage falls through to the normal error state.
+    } finally {
+      setClientRecoveryChecked(true);
+    }
+  }, [entry, resultId]);
+
+  if (!clientRecoveryChecked) {
+    return (
+      <OsaFirstExperienceLayout hero className="osa-fe-canvas--factory-result">
+        <main className="mx-auto flex min-h-dvh w-full max-w-5xl items-center px-5 py-12 sm:px-8">
+          <div className="w-full rounded-[30px] border border-white/10 bg-white/[0.035] p-7 text-white backdrop-blur-xl sm:p-10">
+            <p className="text-sm font-bold uppercase tracking-[.16em] text-[#69e4ee]">OSA</p>
+            <h1 className="mt-3 text-3xl font-black tracking-[-.04em] sm:text-5xl">
+              Загружаю готовый результат…
+            </h1>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-white/70">
+              Восстанавливаю результат из локального хранилища браузера.
+            </p>
+          </div>
+        </main>
+      </OsaFirstExperienceLayout>
+    );
+  }
+
+  const safeContent = resolvedEntry?.content?.trim() ?? '';
 
   if (!safeContent) {
     return (
@@ -282,13 +352,13 @@ export function FirstResultScreen({ entry }: FirstResultScreenProps) {
   }
 
   const view = buildLoginFirstResultView({
-    task: entry?.task ?? '',
+    task: resolvedEntry?.task ?? '',
     content: safeContent,
-    usedFallback: entry?.usedFallback,
-    failureReason: entry?.failureReason,
+    usedFallback: resolvedEntry?.usedFallback,
+    failureReason: resolvedEntry?.failureReason,
   });
 
-  const task = entry?.task?.trim() ?? '';
+  const task = resolvedEntry?.task?.trim() ?? '';
   const shortTask =
     task.length > 180 ? `${task.slice(0, 177).trim()}…` : task;
   const normalizedTask = task.toLowerCase().replace(/ё/g, 'е');
@@ -328,7 +398,7 @@ export function FirstResultScreen({ entry }: FirstResultScreenProps) {
           {isDev ? (
             <p className="mt-3 text-xs text-white/35">
               {buildDevSourceLabel(view.source)}
-              {entry?.failureReason ? ` · ${entry.failureReason}` : ''}
+              {resolvedEntry?.failureReason ? ` · ${entry.failureReason}` : ''}
             </p>
           ) : null}
         </header>
