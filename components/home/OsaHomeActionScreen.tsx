@@ -18,6 +18,10 @@ import { OsaErrorState } from '@/components/osa/OsaErrorState';
 import { BusinessZavodHomeExperience } from '@/components/platform/BusinessZavodHomeExperience';
 import { VoiceInputButton } from '@/components/platform/VoiceInputButton';
 import { buildCreateStudioHref, detectCreateStudioMode } from '@/utils/platform/create-studio';
+import {
+  buildViralPresetHref,
+  getViralPresetByShortcut,
+} from '@/utils/platform/viral-presets';
 import type { HomeQuickActionId } from '@/utils/home/home-action';
 import {
   HERO_HOME_PLACEHOLDER,
@@ -179,6 +183,14 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
 
     if (!quickActionId && trimmed) {
       const normalized = trimmed.toLowerCase().replace(/ё/g, 'е');
+      const viralPreset = getViralPresetByShortcut(trimmed);
+
+      if (viralPreset) {
+        const extraText = trimmed.replace(/^\/\S+\s*/, '');
+        router.push(buildViralPresetHref(viralPreset, extraText));
+        return;
+      }
+
       const studioMode = detectCreateStudioMode(trimmed);
 
       if (studioMode) {
