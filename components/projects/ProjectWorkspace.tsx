@@ -2,12 +2,11 @@ import { ProjectActivity } from '@/components/projects/ProjectActivity';
 import { ProjectCommandCenter } from '@/components/projects/ProjectCommandCenter';
 import { ProjectDocuments } from '@/components/projects/ProjectDocuments';
 import { ProjectExecutions } from '@/components/projects/ProjectExecutions';
-import { ProjectFactoryControlCenter } from '@/components/projects/ProjectFactoryControlCenter';
-import { ProjectGoals } from '@/components/projects/ProjectGoals';
 import { ProjectFactoryHistory } from '@/components/projects/ProjectFactoryHistory';
+import { ProjectGoals } from '@/components/projects/ProjectGoals';
 import { ProjectKnowledge } from '@/components/projects/ProjectKnowledge';
-import { ProjectMembers } from '@/components/projects/ProjectMembers';
 import { ProjectMedia } from '@/components/projects/ProjectMedia';
+import { ProjectMembers } from '@/components/projects/ProjectMembers';
 import { ProjectMemoryPanel } from '@/components/projects/ProjectMemoryPanel';
 import { ProjectModules } from '@/components/projects/ProjectModules';
 import { ProjectTimeline } from '@/components/projects/ProjectTimeline';
@@ -27,26 +26,25 @@ export function ProjectWorkspace({
   workspace,
   media,
   factoryArtifacts,
+  projectMemory,
 }: ProjectWorkspaceProps) {
   return (
     <div className="space-y-6">
-      <ProjectHeader project={workspace.project} />
-
-      <ProjectFactoryControlCenter
-        projectId={workspace.project.id}
-        artifacts={factoryArtifacts}
+      <ProjectCommandCenter
+        workspace={workspace}
         media={media}
+        artifacts={factoryArtifacts}
+      />
+
+      <ProjectMemoryPanel
+        projectId={workspace.project.id}
+        initialMemory={projectMemory}
       />
 
       <ProjectFactoryHistory
         projectId={workspace.project.id}
         artifacts={factoryArtifacts}
       />
-
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <ProjectOverview overview={workspace.overview} />
-        <ProjectQuickActions actions={workspace.quickActions} />
-      </div>
 
       <ProjectModules modules={workspace.modules} />
 
