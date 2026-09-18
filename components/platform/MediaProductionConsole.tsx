@@ -388,6 +388,7 @@ export function MediaProductionConsole({
         duration,
         imageUrl: kind === 'video' ? referenceImageUrl : undefined,
         voiceId: kind === 'voice' ? voiceId : undefined,
+        projectId: targetProjectId,
       });
 
       if (result.status !== 'started') {
