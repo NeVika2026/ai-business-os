@@ -232,11 +232,13 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
   ) => {
     const existing = prompt.trim();
 
-    if (preset === 'video' || preset === 'image') {
+    if (preset === 'video' || preset === 'image' || preset === 'site') {
       const fallback =
         preset === 'video'
           ? 'Сделай сильный рекламный ролик под мою задачу.'
-          : 'Создай сильный визуал под мою задачу.';
+          : preset === 'image'
+            ? 'Создай сильный визуал под мою задачу.'
+            : 'Собери готовый адаптивный лендинг под мою задачу.';
       router.push(buildCreateStudioHref(preset, existing || fallback));
       return;
     }
