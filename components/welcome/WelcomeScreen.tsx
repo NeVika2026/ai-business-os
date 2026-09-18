@@ -1,12 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useActionState, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 
-import { generateFirstPlan } from '@/app/login/actions';
+import {
+  generateFirstPlanState,
+  type GenerateFirstPlanState,
+} from '@/app/login/actions';
 import { BusinessFactoryHero } from '@/components/home/BusinessFactoryHero';
 import styles from '@/components/welcome/WelcomeScreen.module.css';
+
+const INITIAL_FIRST_PLAN_STATE: GenerateFirstPlanState = { status: 'idle' };
 
 const QUICK_TASKS = [
   'Сделай рекламный ролик для моего продукта',
@@ -47,10 +53,30 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
 }
 
 export function WelcomeScreen() {
+  const router = useRouter();
   const [task, setTask] = useState('');
+  const [state, formAction] = useActionState(
+    generateFirstPlanState,
+    INITIAL_FIRST_PLAN_STATE,
+  );
   const consoleRef = useRef<HTMLFormElement | null>(null);
   const examples = useMemo(() => QUICK_TASKS, []);
   const canSubmit = task.trim().length > 2;
+
+  useEffect(() => {
+    if (state.status !== 'completed') return;
+
+    try {
+      window.localStorage.setItem(
+        `business-zavod:first-result:${state.id}`,
+        JSON.stringify(state.entry),
+      );
+    } catch {
+      // Browser storage is a recovery layer for serverless navigation.
+    }
+
+    router.push(`/login/first-result?id=${encodeURIComponent(state.id)}`);
+  }, [router, state]);
 
   const chooseProductionLine = (prompt: string) => {
     setTask(prompt);
@@ -123,7 +149,7 @@ export function WelcomeScreen() {
 
             <form
               ref={consoleRef}
-              action={generateFirstPlan}
+              action={formAction}
               className="mt-7 overflow-hidden rounded-[26px] border border-[#69e4ee]/18 bg-[#090d14]/94 p-3.5 shadow-[0_0_0_1px_rgba(105,228,238,.035),0_28px_90px_-40px_rgba(0,0,0,.98),0_0_55px_-30px_rgba(105,228,238,.5)] backdrop-blur-2xl"
             >
               <div className="flex items-center justify-between px-2 pb-2">
