@@ -868,3 +868,164 @@ export async function startProductUgcAction(input: {
     };
   }
 }
+
+
+export type CampaignRecipeKind =
+  | 'product_ad'
+  | 'ad_localization'
+  | 'product_campaign'
+  | 'multi_shot';
+
+export type CampaignRecipeStartResult =
+  | { status: 'started'; id: string; projectId: string; mediaKind: 'video' | 'image' }
+  | { status: 'approval_required'; message: string }
+  | { status: 'failed'; message: string };
+
+export async function startCampaignRecipeAction(input: {
+  kind: CampaignRecipeKind;
+  approved: boolean;
+  projectId?: string | null;
+  productImages?: string[];
+  productInfo?: string;
+  concept?: string;
+  duration?: number;
+  referenceImage?: string;
+  targetLanguage?: string;
+  image?: string;
+  prompt?: string;
+  shots?: Array<{ prompt: string; duration: number }>;
+}): Promise<CampaignRecipeStartResult> {
+  if (!input.approved) {
+    return {
+      status: 'approval_required',
+      message: 'Подтвердите запуск платной генерации.',
+    };
+  }
+
+  const seed =
+    input.productInfo?.trim() ||
+    input.prompt?.trim() ||
+    input.concept?.trim() ||
+    'AI campaign';
+
+  try {
+    const project = await ensureFactoryProject({
+      projectId: input.projectId,
+      seed,
+      stage: 'create',
+    });
+
+    let toolId: string;
+    let args: Record<string, unknown>;
+    let mediaKind: 'video' | 'image';
+
+    if (input.kind === 'product_ad') {
+      const images = (input.productImages ?? []).map((item) => item.trim()).filter(Boolean);
+      const productInfo = input.productInfo?.trim() ?? '';
+      const concept = input.concept?.trim() ?? '';
+
+      if (!images.length || !productInfo || !concept) {
+        return {
+          status: 'failed',
+          message: 'Добавьте хотя бы одно фото продукта, описание и концепцию рекламы.',
+        };
+      }
+
+      toolId = 'media.product_ad.generate';
+      args = {
+        product_images: images,
+        product_info: productInfo,
+        concept,
+        duration: input.duration ?? 10,
+      };
+      mediaKind = 'video';
+    } else if (input.kind === 'ad_localization') {
+      const referenceImage = input.referenceImage?.trim() ?? '';
+      const targetLanguage = input.targetLanguage?.trim() ?? '';
+
+      if (!referenceImage || !targetLanguage) {
+        return {
+          status: 'failed',
+          message: 'Нужны исходный рекламный креатив и язык локализации.',
+        };
+      }
+
+      toolId = 'media.ad_localization.generate';
+      args = {
+        reference_image: referenceImage,
+        target_language: targetLanguage,
+      };
+      mediaKind = 'image';
+    } else if (input.kind === 'product_campaign') {
+      const image = input.image?.trim() ?? '';
+      const prompt = input.prompt?.trim() ?? '';
+
+      if (!image || !prompt) {
+        return {
+          status: 'failed',
+          message: 'Нужны фото продукта и креативный бриф кампании.',
+        };
+      }
+
+      toolId = 'media.product_campaign.generate';
+      args = { image, prompt };
+      mediaKind = 'image';
+    } else {
+      const shots = (input.shots ?? [])
+        .map((shot) => ({
+          prompt: shot.prompt.trim(),
+          duration: shot.duration,
+        }))
+        .filter((shot) => Boolean(shot.prompt));
+
+      if (shots.length < 2) {
+        return {
+          status: 'failed',
+          message: 'Для multi-shot видео нужно минимум две сцены.',
+        };
+      }
+
+      toolId = 'media.multi_shot.generate';
+      args = {
+        ratio: '720:1280',
+        shots,
+      };
+      mediaKind = 'video';
+    }
+
+    const result = await executeMediaTool(toolId, args, { alreadyApproved: true });
+
+    if (!result.success || !result.output) {
+      if (result.error?.code === 'TOOL_APPROVAL_REQUIRED') {
+        return {
+          status: 'approval_required',
+          message: result.error.message,
+        };
+      }
+
+      return {
+        status: 'failed',
+        message: result.error?.message ?? 'Не удалось запустить генерацию.',
+      };
+    }
+
+    const output = result.output as Record<string, unknown>;
+    const id = typeof output.taskId === 'string' ? output.taskId : '';
+
+    if (!id) {
+      return { status: 'failed', message: 'Провайдер не вернул ID задачи.' };
+    }
+
+    return {
+      status: 'started',
+      id,
+      projectId: project.projectId,
+      mediaKind,
+    };
+  } catch (error) {
+    return {
+      status: 'failed',
+      message: error instanceof Error ? error.message : 'Не удалось запустить генерацию.',
+    };
+  }
+}
