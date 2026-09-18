@@ -101,12 +101,22 @@ export const BUSINESS_ZAVOD_NAVIGATION: PlatformNavigationItem[] = [
     moduleId: module.id,
   })),
   { label: 'Проекты', href: '/projects', icon: 'projects' },
+  { label: 'Trend Lab', href: '/modules/create/viral', icon: '✺' },
   { label: 'Медиа', href: '/media', icon: '◫' },
   { label: 'Файлы', href: '/knowledge', icon: '📁' },
   { label: 'Интеграции', href: '/settings', icon: '⌘' },
 ];
 
 export const BUSINESS_ZAVOD_TASKS: PlatformTask[] = [
+  {
+    id: 'create-viral-lab',
+    moduleId: 'create',
+    title: 'Trend Lab',
+    description: 'Вирусные AI-механики из Reels и creator-инструментов: визуалы, UGC, product-video и новые форматы',
+    prompt: 'Открой Trend Lab и выбери вирусную AI-механику.',
+    href: '/modules/create/viral',
+    badge: 'NEW',
+  },
   {
     id: 'create-video',
     moduleId: 'create',
