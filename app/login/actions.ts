@@ -10,7 +10,7 @@ import {
   buildFirstResultFallbackPlan,
   resolveFirstPlanContent,
 } from '@/lib/login/first-result-plan';
-import { saveFirstResult } from '@/lib/login/first-result-store';
+import { saveFirstResult, type StoredFirstResult } from '@/lib/login/first-result-store';
 import { RUNTIME_EVENT_TYPES } from '@/types/event-runtime';
 import type { GatewayRequest } from '@/types/runtime/dto';
 import { createClient } from '@/services/supabase/server';
@@ -77,12 +77,20 @@ export async function sendMagicLink(formData: FormData) {
   redirect('/login/sign-in?sent=1');
 }
 
-export async function generateFirstPlan(formData: FormData) {
+export type GenerateFirstPlanState =
+  | { status: 'idle' }
+  | { status: 'invalid' }
+  | { status: 'completed'; id: string; entry: StoredFirstResult };
+
+async function buildGeneratedFirstPlan(formData: FormData): Promise<{
+  id: string;
+  entry: StoredFirstResult;
+} | null> {
   const task = formData.get('task');
   const trimmed = typeof task === 'string' ? task.trim() : '';
 
   if (!trimmed) {
-    redirect('/login/intro');
+    return null;
   }
 
   const runId = crypto.randomUUID();
@@ -145,20 +153,57 @@ export async function generateFirstPlan(formData: FormData) {
   }
 
   const resolved = resolveFirstPlanContent(trimmed, gatewayContent);
-  const content = resolved.content;
+  const entry: StoredFirstResult = {
+    content: resolved.content,
+    task: trimmed,
+    usedFallback: resolved.usedFallback,
+    failureReason: failureReason ?? null,
+  };
 
   logFirstResultEvent({
     runId,
     status: 'completed',
     usedFallback: resolved.usedFallback,
     reason: failureReason,
-    contentLength: content.length,
+    contentLength: entry.content.length,
   });
 
   const id = crypto.randomUUID();
-  saveFirstResult(id, content, trimmed, {
-    usedFallback: resolved.usedFallback,
-    failureReason: failureReason ?? null,
+
+  // Best-effort server cache for same-instance navigation.
+  // The browser also persists this result locally before opening the result page,
+  // because Vercel serverless requests are not guaranteed to hit the same instance.
+  saveFirstResult(id, entry.content, entry.task, {
+    usedFallback: entry.usedFallback,
+    failureReason: entry.failureReason,
   });
-  redirect(`/login/first-result?id=${encodeURIComponent(id)}`);
+
+  return { id, entry };
+}
+
+export async function generateFirstPlan(formData: FormData) {
+  const result = await buildGeneratedFirstPlan(formData);
+
+  if (!result) {
+    redirect('/login/intro');
+  }
+
+  redirect(`/login/first-result?id=${encodeURIComponent(result.id)}`);
+}
+
+export async function generateFirstPlanState(
+  _previousState: GenerateFirstPlanState,
+  formData: FormData,
+): Promise<GenerateFirstPlanState> {
+  const result = await buildGeneratedFirstPlan(formData);
+
+  if (!result) {
+    return { status: 'invalid' };
+  }
+
+  return {
+    status: 'completed',
+    id: result.id,
+    entry: result.entry,
+  };
 }
