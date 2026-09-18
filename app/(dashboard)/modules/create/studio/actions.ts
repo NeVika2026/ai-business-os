@@ -590,3 +590,188 @@ export async function generateCreateStudioArtifactAction(input: {
     };
   }
 }
+
+
+export type WebsiteArtifactResult =
+  | { status: 'completed'; projectId: string; html: string; title: string }
+  | { status: 'failed'; message: string };
+
+function stripWebsiteFence(value: string): string {
+  return value
+    .trim()
+    .replace(/^\`\`\`(?:html)?\s*/i, '')
+    .replace(/\s*\`\`\`$/, '')
+    .trim();
+}
+
+function sanitizeGeneratedWebsite(value: string): string {
+  let html = stripWebsiteFence(value);
+
+  html = html
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe>/gi, '')
+    .replace(/<(?:object|embed)\b[^>]*>[\s\S]*?<\/(?:object|embed)>/gi, '')
+    .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/javascript:/gi, '');
+
+  if (!/<html\b/i.test(html)) {
+    html =
+      '<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>' +
+      html +
+      '</body></html>';
+  }
+
+  return html;
+}
+
+function extractWebsiteTitle(html: string): string {
+  const match = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+  return match?.[1]?.trim() || 'Готовый лендинг';
+}
+
+export async function generateWebsiteArtifactAction(input: {
+  goal: string;
+  audience?: string;
+  format?: string;
+  context?: string;
+  projectId?: string | null;
+}): Promise<WebsiteArtifactResult> {
+  const goal = input.goal.trim();
+
+  if (!goal) {
+    return { status: 'failed', message: 'Опишите, какой сайт нужно собрать.' };
+  }
+
+  try {
+    const project = await ensureFactoryProject({
+      projectId: input.projectId,
+      seed: goal,
+      stage: 'create',
+    });
+    const identity = await resolveMediaExecutionIdentity();
+    const memory = await loadProjectMemory(
+      project.identity.supabase,
+      project.identity.organizationId,
+      project.projectId,
+    );
+
+    const memoryContext = [
+      memory.goals ? 'Цели проекта: ' + memory.goals : '',
+      memory.audience ? 'Аудитория проекта: ' + memory.audience : '',
+      memory.style ? 'Стиль проекта: ' + memory.style : '',
+      memory.decisions ? 'Принятые решения: ' + memory.decisions : '',
+      memory.constraints ? 'Не делать / ограничения: ' + memory.constraints : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    const prompt = [
+      'Ты — senior web designer и frontend-разработчик Бизнес-Завода.',
+      'Собери ГОТОВЫЙ одностраничный адаптивный сайт, а не план и не рекомендации.',
+      '',
+      'ЗАДАЧА:',
+      goal,
+      input.audience?.trim() ? 'Аудитория: ' + input.audience.trim() : '',
+      input.format?.trim() ? 'Формат / пожелания: ' + input.format.trim() : '',
+      input.context?.trim() ? 'Контекст: ' + input.context.trim() : '',
+      memoryContext ? 'ПАМЯТЬ ПРОЕКТА:\n' + memoryContext : '',
+      '',
+      'Технические требования:',
+      '- верни только один полный HTML-документ от <!doctype html> до </html>;',
+      '- весь CSS только внутри <style>, без внешних библиотек и без CDN;',
+      '- никакого JavaScript;',
+      '- адаптивная верстка для телефона и десктопа;',
+      '- современная дорогая визуальная подача, сильная типографика и ясная иерархия;',
+      '- реальные секции по смыслу задачи: первый экран, проблема, решение, услуги/выгоды, доверие, тарифы или условия если уместно, FAQ, финальный CTA;',
+      '- если пользователь просил форму, сделай визуально готовую форму с полями Имя, Телефон, Email, Комментарий и кнопкой, но без фиктивного backend;',
+      '- не выдумывай количество клиентов, годы работы, отзывы, гарантии, цены, проценты, сроки ответа и другие факты, которых нет в задаче;',
+      '- если цены не даны, используй нейтральную формулировку вроде «Стоимость после оценки задачи»;',
+      '- никакого lorem ipsum, TODO, placeholder-блоков и квадратных скобок;',
+      '- русский язык, если пользователь не попросил другой.',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    const runId = randomUUID();
+    const request: GatewayRequest = {
+      scope: {
+        organizationId: identity.organizationId,
+        userId: identity.userId,
+      },
+      trace: {
+        runId,
+        traceId: runId,
+        correlationId: runId,
+      },
+      providerCode: 'auto',
+      modelCode: 'auto',
+      messages: [{ role: 'user', content: prompt }],
+      tools: [],
+      parameters: {
+        temperature: 0.3,
+        maxTokens: 6500,
+      },
+      timeoutMs: 60_000,
+      retryPolicy: {
+        maxAttempts: 2,
+        backoffMs: [800, 1600],
+      },
+      routing: {
+        intent: 'website_artifact',
+        taskCategory: 'creative',
+        estimatedContextLength: prompt.length,
+        reasoningComplexity: 'high',
+        latencyTarget: 'quality',
+        costTarget: 'balanced',
+        toolUsage: false,
+      },
+    };
+
+    const response = await aiGateway.complete(request);
+    const raw = response.content?.trim();
+
+    if (!raw) {
+      return {
+        status: 'failed',
+        message: 'OSA не вернула HTML сайта. Попробуйте ещё раз.',
+      };
+    }
+
+    const html = sanitizeGeneratedWebsite(raw);
+    const title = extractWebsiteTitle(html);
+
+    if (html.length < 500 || !/<body\b/i.test(html)) {
+      return {
+        status: 'failed',
+        message: 'Получился неполный HTML. Повторите сборку сайта.',
+      };
+    }
+
+    await saveFactoryArtifact({
+      projectId: project.projectId,
+      stage: 'create',
+      title: 'Сайт · ' + title,
+      content: html,
+      metadata: {
+        modeId: 'site',
+        goal,
+        audience: input.audience ?? '',
+        format: input.format ?? '',
+        artifactType: 'website_html',
+      },
+      identity: project.identity,
+    });
+
+    return {
+      status: 'completed',
+      projectId: project.projectId,
+      html,
+      title,
+    };
+  } catch (error) {
+    return {
+      status: 'failed',
+      message: error instanceof Error ? error.message : 'Не удалось собрать сайт.',
+    };
+  }
+}
