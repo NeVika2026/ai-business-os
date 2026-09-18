@@ -635,6 +635,29 @@ function extractWebsiteTitle(html: string): string {
   return match?.[1]?.trim() || 'Готовый лендинг';
 }
 
+function websiteMediaContext(goal: string): string {
+  const normalized = goal.toLowerCase().replace(/ё/g, 'е');
+
+  if (
+    normalized.includes('недвиж') ||
+    normalized.includes('квартир') ||
+    normalized.includes('аренд') ||
+    normalized.includes('риелт') ||
+    normalized.includes('объект')
+  ) {
+    return [
+      'ДОСТУПНЫЕ МЕДИА-АКТИВЫ ДЛЯ ЭТОГО САЙТА:',
+      'Hero video (MP4): https://videos.pexels.com/video-files/3769951/3769951-hd_1920_1080_25fps.mp4',
+      'Hero poster: https://images.pexels.com/videos/3769951/pexels-photo-3769951.jpeg?auto=compress&dpr=1&h=900&w=1600',
+      'Interior image 1: https://images.pexels.com/photos/7534563/pexels-photo-7534563.jpeg?auto=compress&dpr=1&h=900&w=1400',
+      'Interior image 2: https://images.pexels.com/photos/7214456/pexels-photo-7214456.jpeg?auto=compress&dpr=1&h=900&w=1400',
+      'Используй видео или изображения как крупные композиционные элементы сайта, а не как маленькие декоративные картинки.',
+    ].join('\n');
+  }
+
+  return '';
+}
+
 export async function generateWebsiteArtifactAction(input: {
   goal: string;
   audience?: string;
@@ -681,6 +704,7 @@ export async function generateWebsiteArtifactAction(input: {
       input.format?.trim() ? 'Формат / пожелания: ' + input.format.trim() : '',
       input.context?.trim() ? 'Контекст: ' + input.context.trim() : '',
       memoryContext ? 'ПАМЯТЬ ПРОЕКТА:\n' + memoryContext : '',
+      websiteMediaContext(goal),
       '',
       'Технические требования:',
       '- верни только один полный HTML-документ от <!doctype html> до </html>;',
@@ -688,6 +712,10 @@ export async function generateWebsiteArtifactAction(input: {
       '- никакого JavaScript;',
       '- адаптивная верстка для телефона и десктопа;',
       '- современная дорогая визуальная подача, сильная типографика и ясная иерархия;',
+      '- если выше даны медиа-активы, ОБЯЗАТЕЛЬНО используй их: hero-video или hero-image, крупные визуальные секции и галерею;',
+      '- hero-video делай autoplay muted loop playsinline с poster, поверх — затемняющий gradient-overlay и читаемый текст;',
+      '- не делай страницу сеткой из одинаковых текстовых прямоугольников; чередуй полноэкранные media-секции, карточки, крупную типографику, воздух и разные ритмы;',
+      '- премиальность должна быть видна визуально: композиция, фото/видео, масштаб, глубина, свет, hover-эффекты — а не только слово premium;',
       '- реальные секции по смыслу задачи: первый экран, проблема, решение, услуги/выгоды, доверие, тарифы или условия если уместно, FAQ, финальный CTA;',
       '- если пользователь просил форму, сделай визуально готовую форму с полями Имя, Телефон, Email, Комментарий и кнопкой, но без фиктивного backend;',
       '- не выдумывай количество клиентов, годы работы, отзывы, гарантии, цены, проценты, сроки ответа и другие факты, которых нет в задаче;',
