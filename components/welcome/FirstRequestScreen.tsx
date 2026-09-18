@@ -1,13 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useActionState, useEffect, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 
-import { generateFirstPlan } from '@/app/login/actions';
+import {
+  generateFirstPlanState,
+  type GenerateFirstPlanState,
+} from '@/app/login/actions';
 import { OsaEyes } from '@/components/home/OsaEyes';
 import { IntroProcessingView } from '@/components/first-experience/IntroProcessingView';
 import { OsaFirstExperienceLayout } from '@/components/first-experience/OsaFirstExperienceLayout';
+
+const INITIAL_FIRST_PLAN_STATE: GenerateFirstPlanState = { status: 'idle' };
 
 const TASK_EXAMPLES = [
   'Найти первых клиентов на новостройки',
@@ -76,8 +82,28 @@ function IntroFormContent({ request, setRequest }: IntroFormContentProps) {
 }
 
 export function FirstRequestScreen() {
+  const router = useRouter();
   const [request, setRequest] = useState('');
+  const [state, formAction] = useActionState(
+    generateFirstPlanState,
+    INITIAL_FIRST_PLAN_STATE,
+  );
   const isTyping = request.trim().length > 0;
+
+  useEffect(() => {
+    if (state.status !== 'completed') return;
+
+    try {
+      window.localStorage.setItem(
+        `business-zavod:first-result:${state.id}`,
+        JSON.stringify(state.entry),
+      );
+    } catch {
+      // Local browser persistence is best-effort; same-instance server cache may still work.
+    }
+
+    router.push(`/login/first-result?id=${encodeURIComponent(state.id)}`);
+  }, [router, state]);
 
   return (
     <OsaFirstExperienceLayout artActive={isTyping}>
@@ -92,7 +118,7 @@ export function FirstRequestScreen() {
           Опишите задачу своими словами — я подготовлю первый набросок.
         </p>
 
-        <form action={generateFirstPlan}>
+        <form action={formAction}>
           <IntroFormContent request={request} setRequest={setRequest} />
         </form>
       </div>
