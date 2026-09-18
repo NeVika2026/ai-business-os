@@ -781,3 +781,90 @@ export async function generateWebsiteArtifactAction(input: {
     };
   }
 }
+
+
+export type ProductUgcStartResult =
+  | { status: 'started'; id: string; projectId: string }
+  | { status: 'approval_required'; message: string }
+  | { status: 'failed'; message: string };
+
+export async function startProductUgcAction(input: {
+  characterImage: string;
+  productImage: string;
+  productInfo: string;
+  concept: string;
+  duration?: number;
+  approved: boolean;
+  projectId?: string | null;
+}): Promise<ProductUgcStartResult> {
+  if (!input.approved) {
+    return {
+      status: 'approval_required',
+      message: 'Подтвердите запуск платной UGC-генерации.',
+    };
+  }
+
+  const characterImage = input.characterImage.trim();
+  const productImage = input.productImage.trim();
+  const productInfo = input.productInfo.trim();
+  const concept = input.concept.trim();
+
+  if (!characterImage || !productImage || !productInfo || !concept) {
+    return {
+      status: 'failed',
+      message: 'Нужны фото персонажа, фото продукта, описание продукта и концепция.',
+    };
+  }
+
+  try {
+    const project = await ensureFactoryProject({
+      projectId: input.projectId,
+      seed: productInfo,
+      stage: 'create',
+    });
+
+    const result = await executeMediaTool(
+      'media.product_ugc.generate',
+      {
+        character_image: characterImage,
+        product_image: productImage,
+        product_info: productInfo,
+        concept,
+        duration: input.duration ?? 15,
+      },
+      { alreadyApproved: true },
+    );
+
+    if (!result.success || !result.output) {
+      if (result.error?.code === 'TOOL_APPROVAL_REQUIRED') {
+        return {
+          status: 'approval_required',
+          message: result.error.message,
+        };
+      }
+
+      return {
+        status: 'failed',
+        message: result.error?.message ?? 'Не удалось запустить UGC-генерацию.',
+      };
+    }
+
+    const output = result.output as Record<string, unknown>;
+    const id = typeof output.taskId === 'string' ? output.taskId : '';
+
+    if (!id) {
+      return { status: 'failed', message: 'Провайдер не вернул ID UGC-задачи.' };
+    }
+
+    return {
+      status: 'started',
+      id,
+      projectId: project.projectId,
+    };
+  } catch (error) {
+    return {
+      status: 'failed',
+      message: error instanceof Error ? error.message : 'Не удалось запустить UGC-генерацию.',
+    };
+  }
+}
