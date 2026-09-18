@@ -229,6 +229,20 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
         return;
       }
 
+      const wantsCommunicate =
+        normalized.includes('напиши в whatsapp') ||
+        normalized.includes('напиши в ватсап') ||
+        normalized.includes('отправь whatsapp') ||
+        normalized.includes('отправь ватсап') ||
+        normalized.includes('отправь sms') ||
+        normalized.includes('отправь смс') ||
+        normalized.includes('свяжись с клиентом');
+
+      if (wantsCommunicate) {
+        router.push('/modules/communicate/studio');
+        return;
+      }
+
       const wantsVoiceAgent =
         normalized.includes('позвони') ||
         normalized.includes('обзвони') ||
@@ -260,7 +274,7 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
   };
 
   const launchFactoryPreset = (
-    preset: 'video' | 'image' | 'sales' | 'site' | 'find' | 'analyze' | 'publish' | 'voice-agent',
+    preset: 'video' | 'image' | 'sales' | 'site' | 'find' | 'analyze' | 'publish' | 'voice-agent' | 'communicate',
   ) => {
     const existing = prompt.trim();
 
@@ -299,6 +313,11 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
 
     if (preset === 'voice-agent') {
       router.push('/modules/voice-agent/studio');
+      return;
+    }
+
+    if (preset === 'communicate') {
+      router.push('/modules/communicate/studio');
       return;
     }
 
@@ -422,6 +441,7 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
                       <button type="button" onClick={() => launchFactoryPreset('analyze')}>Анализ</button>
                       <button type="button" onClick={() => launchFactoryPreset('publish')}>Публикация</button>
                       <button type="button" onClick={() => launchFactoryPreset('voice-agent')}>Позвонить</button>
+                      <button type="button" onClick={() => launchFactoryPreset('communicate')}>Написать</button>
                     </div>
                     <button
                       type="button"
