@@ -2,9 +2,11 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 import {
   buildViralPresetHref,
+  findViralPresetByIntent,
   VIRAL_CATEGORY_LABELS,
   VIRAL_PRESETS,
 } from '@/utils/platform/viral-presets';
@@ -21,7 +23,10 @@ const FILTERS: Array<{ id: FilterId; label: string }> = [
 ];
 
 export function ViralTrendLab() {
+  const router = useRouter();
   const [filter, setFilter] = useState<FilterId>('all');
+  const [intent, setIntent] = useState('');
+  const [intentMessage, setIntentMessage] = useState('');
 
   const items = useMemo(
     () =>
@@ -32,6 +37,18 @@ export function ViralTrendLab() {
   );
 
   const readyCount = VIRAL_PRESETS.filter((item) => item.status === 'ready').length;
+
+  const launchByIntent = () => {
+    const preset = findViralPresetByIntent(intent);
+
+    if (!preset) {
+      setIntentMessage('Не нашла точное совпадение. Выберите карточку ниже — названия теперь простыми словами.');
+      return;
+    }
+
+    setIntentMessage('');
+    router.push(buildViralPresetHref(preset, intent));
+  };
 
   return (
     <main className="relative mx-auto w-full max-w-[1320px] overflow-hidden pb-16 text-[#f7f2e8]">
@@ -77,6 +94,37 @@ export function ViralTrendLab() {
             </p>
           </div>
         </div>
+      </section>
+
+      <section className="mt-5 rounded-[28px] border border-white/[0.08] bg-[#080c12] p-5 sm:p-6">
+        <div className="grid gap-4 xl:grid-cols-[1fr_auto] xl:items-end">
+          <label className="grid gap-2">
+            <span className="text-[12px] font-black uppercase tracking-[.14em] text-[#f1c96c]">
+              НЕ ЗНАЕТЕ НАЗВАНИЕ ЭФФЕКТА?
+            </span>
+            <span className="text-2xl font-black tracking-[-.03em] text-[#fff8e7]">
+              Опишите обычными словами
+            </span>
+            <textarea
+              rows={3}
+              value={intent}
+              onChange={(event) => setIntent(event.target.value)}
+              placeholder="Например: хочу разобрать кофемашину на детали, показать товар со всех сторон или сделать из фото продукта красивый рекламный ролик"
+              className="mt-1 resize-none rounded-[20px] border border-white/[0.09] bg-black/25 px-4 py-4 text-base leading-7 text-white outline-none placeholder:text-white/34 focus:border-[#69e4ee]/28"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={launchByIntent}
+            disabled={!intent.trim()}
+            className="rounded-[18px] bg-[linear-gradient(135deg,#ffe08a,#d79a30)] px-5 py-4 text-sm font-black text-[#1b1105] transition hover:-translate-y-0.5 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-35"
+          >
+            Подобрать функцию →
+          </button>
+        </div>
+        {intentMessage ? (
+          <p className="mt-3 text-sm leading-6 text-white/56">{intentMessage}</p>
+        ) : null}
       </section>
 
       <section className="mt-5">
@@ -127,6 +175,11 @@ export function ViralTrendLab() {
                 <h2 className="mt-5 text-2xl font-black tracking-[-.03em] text-[#fff8e7]">
                   {preset.title}
                 </h2>
+                {preset.shortcut ? (
+                  <p className="mt-1 text-[11px] font-bold uppercase tracking-[.10em] text-[#79eaf2]/72">
+                    Быстрая команда: {preset.shortcut}
+                  </p>
+                ) : null}
                 <p className="mt-2 text-base leading-7 text-white/66">
                   {preset.description}
                 </p>
