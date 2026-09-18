@@ -76,6 +76,7 @@ export function MediaProductionConsole({
   const [activeProjectId, setActiveProjectId] = useState<string | null>(projectId);
   const [approved, setApproved] = useState(false);
   const [referenceImageUrl, setReferenceImageUrl] = useState('');
+  const [videoModel, setVideoModel] = useState('gen4.5');
   const [duration, setDuration] = useState(5);
   const [voices, setVoices] = useState<VoiceOption[]>([]);
   const [voiceId, setVoiceId] = useState('');
@@ -384,9 +385,15 @@ export function MediaProductionConsole({
         kind,
         promptText,
         approved,
-        ratio: kind === 'video' ? '768:1280' : '1080:1920',
+        model: kind === 'video' ? videoModel : undefined,
+        ratio:
+          kind === 'video'
+            ? videoModel === 'gen4.5'
+              ? '768:1280'
+              : '720:1280'
+            : '1080:1920',
         duration,
-        imageUrl: kind === 'video' ? referenceImageUrl : undefined,
+        imageUrl: kind === 'video' || kind === 'image' ? referenceImageUrl : undefined,
         voiceId: kind === 'voice' ? voiceId : undefined,
         projectId: targetProjectId,
       });
@@ -451,6 +458,18 @@ export function MediaProductionConsole({
           {kind === 'video' ? (
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <label className="grid gap-2">
+                <span className="text-sm font-semibold text-white/78">Видео-модель</span>
+                <select
+                  value={videoModel}
+                  onChange={(event) => setVideoModel(event.target.value)}
+                  className="rounded-2xl border border-white/[0.08] bg-[#0a0e15] px-3.5 py-3 text-sm text-white outline-none"
+                >
+                  <option value="gen4.5">Runway Gen-4.5 · универсально</option>
+                  <option value="seedance2_5">Seedance 2.5 · кино + длиннее</option>
+                  <option value="seedance2_fast">Seedance 2 Fast · быстрее</option>
+                </select>
+              </label>
+              <label className="grid gap-2">
                 <span className="text-sm font-semibold text-white/78">Длительность сцены</span>
                 <select
                   value={duration}
@@ -459,18 +478,27 @@ export function MediaProductionConsole({
                 >
                   <option value={5}>5 секунд</option>
                   <option value={10}>10 секунд</option>
+                  {videoModel === 'seedance2_5' ? <option value={15}>15 секунд</option> : null}
                 </select>
               </label>
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold text-white/78">Референс-кадр · необязательно</span>
-                <input
-                  value={referenceImageUrl}
-                  onChange={(event) => setReferenceImageUrl(event.target.value)}
-                  placeholder="https://…"
-                  className="rounded-2xl border border-white/[0.08] bg-[#0a0e15] px-3.5 py-3 text-sm text-white outline-none focus:border-[#58dbe8]/25"
-                />
-              </label>
             </div>
+          ) : null}
+
+          {kind === 'video' || kind === 'image' ? (
+            <label className="mt-4 grid gap-2">
+              <span className="text-sm font-semibold text-white/78">
+                {kind === 'image' ? 'Исходное фото / референс' : 'Референс-кадр'} · необязательно
+              </span>
+              <input
+                value={referenceImageUrl}
+                onChange={(event) => setReferenceImageUrl(event.target.value)}
+                placeholder="https://…"
+                className="rounded-2xl border border-white/[0.08] bg-[#0a0e15] px-3.5 py-3 text-sm text-white outline-none focus:border-[#58dbe8]/25"
+              />
+              <span className="text-[11px] leading-5 text-white/46">
+                Вставьте прямую ссылку на изображение. Для картинки референс используется как основной объект преобразования.
+              </span>
+            </label>
           ) : null}
 
           {kind === 'voice' ? (
