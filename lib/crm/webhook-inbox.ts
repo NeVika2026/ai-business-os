@@ -1,5 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 
+import { normalizeContactPhone } from './inbox-conversations';
+
+export { normalizeContactPhone } from './inbox-conversations';
+
 type InboundChannel = 'whatsapp' | 'sms';
 
 type RecordInboundInput = {
@@ -33,12 +37,6 @@ function getAdminClient() {
   });
 }
 
-export function normalizeContactPhone(value: string) {
-  const digits = value.replace(/\D/g, '');
-  if (!digits) return '';
-  return digits.length >= 10 ? digits.slice(-10) : digits;
-}
-
 async function completeOpenFollowUps(input: {
   supabase: ReturnType<typeof getAdminClient>;
   organizationId: string;
@@ -63,15 +61,17 @@ async function completeOpenFollowUps(input: {
     .eq('organization_id', input.organizationId);
 }
 
-export async function recordInboundCommunication(input: RecordInboundInput) {
-  const supabase = getAdminClient();
+export async function recordInboundCommunication(
+  input: RecordInboundInput,
+  supabase = getAdminClient(),
+) {
   const phoneKey = normalizeContactPhone(input.phone);
 
   if (!phoneKey) {
     throw new Error('Inbound message does not contain a valid phone number.');
   }
 
-  const { data: existingEvent } = await supabase
+  const { data: existingEvent, error: duplicateCheckError } = await supabase
     .from('events')
     .select('id')
     .eq('organization_id', input.organizationId)
@@ -79,7 +79,10 @@ export async function recordInboundCommunication(input: RecordInboundInput) {
       provider_event_id: input.providerEventId,
       provider: input.provider,
     })
+    .limit(1)
     .maybeSingle();
+
+  if (duplicateCheckError) throw duplicateCheckError;
 
   if (existingEvent?.id) {
     return {

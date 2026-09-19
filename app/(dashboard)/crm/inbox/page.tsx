@@ -1,4 +1,6 @@
 import { CrmInbox } from '@/components/crm/CrmInbox';
+import { groupUnmatchedInbound } from '@/lib/crm/inbox-conversations';
+import { loadInboundClaims } from '@/services/crm/claim-inbound';
 import { createClient } from '@/services/supabase/server';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
 
@@ -56,16 +58,17 @@ export default async function CrmInboxPage() {
     ]),
   );
 
-  const claimedOriginalEventIds = new Set(
+  const inboundClaims = await loadInboundClaims(
+    supabase,
+    organizationId,
     (events ?? [])
-      .map((event) => {
-        const metadata = (event.metadata ?? {}) as Record<string, unknown>;
-        return typeof metadata.original_event_id === 'string'
-          ? metadata.original_event_id
-          : null;
-      })
-      .filter((value): value is string => Boolean(value)),
+      .filter((event) =>
+        event.type === 'crm_whatsapp_received_unmatched' ||
+        event.type === 'crm_sms_received_unmatched',
+      )
+      .map((event) => event.id),
   );
+  const claimedOriginalEventIds = new Set(inboundClaims.map((claim) => claim.originalId));
 
   const unmatched = (events ?? [])
     .filter(
@@ -162,5 +165,5 @@ export default async function CrmInboxPage() {
     });
   }
 
-  return <CrmInbox replies={replies} followUps={followUps} unmatched={unmatched} />;
+  return <CrmInbox replies={replies} followUps={followUps} unmatched={groupUnmatchedInbound(unmatched)} />;
 }

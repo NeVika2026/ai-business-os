@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
 
+import type { UnmatchedInboundConversation } from '@/lib/crm/inbox-conversations';
+
 import { claimInboundMessageAction } from '@/app/(dashboard)/crm/actions';
 
 type InboxReply = {
@@ -11,15 +13,6 @@ type InboxReply = {
   phone: string | null;
   projectId: string | null;
   channel: 'whatsapp' | 'sms';
-  text: string;
-  at: string;
-};
-
-type UnmatchedInbound = {
-  eventId: string;
-  channel: 'whatsapp' | 'sms';
-  phone: string;
-  senderName: string | null;
   text: string;
   at: string;
 };
@@ -36,7 +29,7 @@ type InboxFollowUp = {
 type CrmInboxProps = {
   replies: InboxReply[];
   followUps: InboxFollowUp[];
-  unmatched: UnmatchedInbound[];
+  unmatched: UnmatchedInboundConversation[];
 };
 
 function formatDateTime(value: string) {
@@ -103,7 +96,7 @@ export function CrmInbox({ replies, followUps, unmatched }: CrmInboxProps) {
               </span>
             </h1>
             <p className="mt-5 max-w-3xl text-lg leading-8 text-white/68">
-              Ответы клиентов, просроченные касания и ближайшие follow-up — без ручного просмотра всей CRM.
+              Ответы клиентов, просроченные касания и ближайшие напоминания — без ручного просмотра всей CRM.
             </p>
           </div>
 
@@ -134,7 +127,7 @@ export function CrmInbox({ replies, followUps, unmatched }: CrmInboxProps) {
                 Написали впервые
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-white/46">
-                Сообщение пришло, но номера ещё нет в CRM. Одной кнопкой создаём карточку и переносим сообщение в историю.
+                Все сообщения с одного номера собраны вместе. Добавьте контакт в CRM — вся переписка из WhatsApp и SMS появится в его карточке.
               </p>
             </div>
             <span className="rounded-full border border-violet-300/12 bg-violet-300/[0.03] px-3 py-1.5 text-[10px] font-black text-violet-100">
@@ -151,7 +144,7 @@ export function CrmInbox({ replies, followUps, unmatched }: CrmInboxProps) {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[.10em] text-violet-200/72">
-                      {item.channel === 'sms' ? 'SMS' : 'WHATSAPP'} · НОВЫЙ КОНТАКТ
+                      {item.channels.map((channel) => channel === 'sms' ? 'SMS' : 'WhatsApp').join(' + ')} · НОВЫЙ КОНТАКТ
                     </p>
                     <p className="mt-1 text-lg font-black text-[#fff8e7]">
                       {item.senderName || item.phone || 'Неизвестный контакт'}
@@ -169,6 +162,10 @@ export function CrmInbox({ replies, followUps, unmatched }: CrmInboxProps) {
                   {item.text || 'Получено входящее сообщение.'}
                 </p>
 
+                <p className="mt-2 text-xs text-violet-200/60">
+                  Сообщений: {item.messageCount} · Перенесём всю переписку
+                </p>
+
                 <button
                   type="button"
                   onClick={() => claimInbound(item.eventId)}
@@ -176,7 +173,7 @@ export function CrmInbox({ replies, followUps, unmatched }: CrmInboxProps) {
                   className="mt-4 w-full rounded-[14px] bg-[linear-gradient(135deg,#ddd6fe,#a78bfa)] px-3 py-2.5 text-xs font-black text-[#1b1230] disabled:opacity-35"
                 >
                   {isClaimPending && claimingEventId === item.eventId
-                    ? 'Создаю карточку…'
+                    ? 'Переношу переписку…'
                     : 'Добавить в CRM →'}
                 </button>
               </article>
@@ -184,7 +181,7 @@ export function CrmInbox({ replies, followUps, unmatched }: CrmInboxProps) {
           </div>
 
           {claimMessage ? (
-            <p className="mt-4 text-sm leading-6 text-violet-100/70">{claimMessage}</p>
+            <p role="status" className="mt-4 text-sm leading-6 text-violet-100/70">{claimMessage}</p>
           ) : null}
         </section>
       ) : null}
