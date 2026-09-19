@@ -6,6 +6,7 @@ import { useEffect, useState, useTransition } from 'react';
 import {
   generateLeadOutreachMessageAction,
   getCommunicationsStatusAction,
+  getCrmLeadContextAction,
   saveScoutLeadAction,
   scrapeScoutLeadAction,
   sendSmsMessageAction,
@@ -66,6 +67,7 @@ export function CommunicationsStudio({
   const [channel, setChannel] = useState<CommunicationChannel>(initialChannel);
   const [to, setTo] = useState(initialPhone);
   const [activeLeadId, setActiveLeadId] = useState<string | null>(initialLeadId);
+  const [activeLeadContext, setActiveLeadContext] = useState<Record<string, unknown> | null>(null);
   const [message, setMessage] = useState('');
   const [consent, setConsent] = useState(false);
   const [result, setResult] = useState('');
@@ -79,6 +81,16 @@ export function CommunicationsStudio({
   useEffect(() => {
     void getCommunicationsStatusAction().then(setStatus);
   }, []);
+
+  useEffect(() => {
+    if (!initialLeadId) return;
+    void getCrmLeadContextAction(initialLeadId).then((response) => {
+      if (response.status !== 'found') return;
+      setActiveLeadContext(response.lead);
+      const phone = getLeadString(response.lead, ['phone']);
+      if (phone && !initialPhone) setTo(phone);
+    });
+  }, [initialLeadId, initialPhone]);
 
   const connected = channel === 'sms' ? status.sms.connected : status.whatsapp.connected;
 
@@ -105,16 +117,17 @@ export function CommunicationsStudio({
   };
 
   const draftForLead = (nextChannel: CommunicationChannel) => {
-    if (!scoutResult || isPending) return;
+    const leadForDraft = scoutResult ?? activeLeadContext;
+    if (!leadForDraft || isPending) return;
 
-    const phone = getLeadString(scoutResult, ['phone']);
+    const phone = getLeadString(leadForDraft, ['phone']);
     if (phone) setTo(phone);
     setChannel(nextChannel);
     setResult('OSA готовит персональное сообщение…');
 
     startTransition(async () => {
       const response = await generateLeadOutreachMessageAction({
-        lead: scoutResult,
+        lead: leadForDraft,
         channel: nextChannel,
       });
 
@@ -164,6 +177,7 @@ export function CommunicationsStudio({
 
       setSavedProjectId(response.projectId);
       if (response.crmLeadId) setActiveLeadId(response.crmLeadId);
+      setActiveLeadContext(scoutResult);
       setScoutMessage(response.message);
     });
   };
@@ -268,6 +282,32 @@ export function CommunicationsStudio({
               </button>
             ))}
           </div>
+
+          {activeLeadContext ? (
+            <div className="mt-5 rounded-[18px] border border-violet-300/12 bg-violet-300/[0.035] p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[.11em] text-violet-200/75">
+                    CRM · КОНТЕКСТ КЛИЕНТА
+                  </p>
+                  <p className="mt-1 text-base font-black text-[#fff8e7]">
+                    {getLeadString(activeLeadContext, ['name']) || 'Клиент'}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-white/48">
+                    OSA подготовит персональный текст по карточке CRM и истории контакта.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => draftForLead(channel)}
+                  disabled={isPending}
+                  className="rounded-[14px] border border-violet-300/16 bg-violet-300/[0.05] px-4 py-2.5 text-xs font-black text-violet-100 disabled:opacity-35"
+                >
+                  OSA написать →
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           <label className="mt-5 grid gap-2">
             <span className="text-sm font-bold text-white/76">Номер получателя</span>
