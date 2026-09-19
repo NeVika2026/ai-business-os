@@ -1,0 +1,128 @@
+import { CrmInbox } from '@/components/crm/CrmInbox';
+import { createClient } from '@/services/supabase/server';
+import { getCurrentOrganizationId } from '@/utils/auth/organization';
+
+export default async function CrmInboxPage() {
+  const supabase = await createClient();
+  const organizationId = await getCurrentOrganizationId(supabase);
+
+  if (!organizationId) {
+    return <CrmInbox replies={[]} followUps={[]} />;
+  }
+
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  const [{ data: leads }, { data: events }, { data: tasks }] = await Promise.all([
+    supabase
+      .from('crm_leads')
+      .select('id, name, phone, project_id')
+      .eq('organization_id', organizationId),
+    supabase
+      .from('events')
+      .select('correlation_id, type, payload, created_at')
+      .eq('organization_id', organizationId)
+      .in('type', [
+        'crm_whatsapp_received',
+        'crm_sms_received',
+        'crm_whatsapp_sent',
+        'crm_sms_sent',
+        'crm_voice_call_completed',
+      ])
+      .gte('created_at', thirtyDaysAgo)
+      .order('created_at', { ascending: false })
+      .limit(800),
+    supabase
+      .from('tasks')
+      .select('description, due_at')
+      .eq('organization_id', organizationId)
+      .eq('status', 'todo')
+      .not('due_at', 'is', null)
+      .order('due_at', { ascending: true })
+      .limit(300),
+  ]);
+
+  const leadById = new Map(
+    (leads ?? []).map((lead) => [
+      lead.id,
+      {
+        id: lead.id,
+        name: lead.name,
+        phone: lead.phone,
+        projectId: lead.project_id,
+      },
+    ]),
+  );
+
+  const latestCommunicationSeen = new Set<string>();
+  const replies: Array<{
+    leadId: string;
+    leadName: string;
+    phone: string | null;
+    projectId: string | null;
+    channel: 'whatsapp' | 'sms';
+    text: string;
+    at: string;
+  }> = [];
+
+  for (const event of events ?? []) {
+    const leadId = event.correlation_id;
+    if (!leadId || latestCommunicationSeen.has(leadId)) continue;
+
+    latestCommunicationSeen.add(leadId);
+
+    if (
+      event.type !== 'crm_whatsapp_received' &&
+      event.type !== 'crm_sms_received'
+    ) {
+      continue;
+    }
+
+    const lead = leadById.get(leadId);
+    if (!lead) continue;
+
+    const payload = (event.payload ?? {}) as Record<string, unknown>;
+    replies.push({
+      leadId,
+      leadName: lead.name,
+      phone: lead.phone,
+      projectId: lead.projectId,
+      channel: event.type === 'crm_sms_received' ? 'sms' : 'whatsapp',
+      text: typeof payload.text === 'string' ? payload.text : '',
+      at: event.created_at,
+    });
+  }
+
+  const followUps: Array<{
+    leadId: string;
+    leadName: string;
+    phone: string | null;
+    projectId: string | null;
+    dueAt: string;
+    overdue: boolean;
+  }> = [];
+
+  const seenFollowUps = new Set<string>();
+
+  for (const task of tasks ?? []) {
+    const description = task.description ?? '';
+    const match = description.match(/CRM_LEAD_ID:([0-9a-f-]{36})/i);
+    const leadId = match?.[1];
+    if (!leadId || !task.due_at || seenFollowUps.has(leadId)) continue;
+
+    const lead = leadById.get(leadId);
+    if (!lead) continue;
+
+    seenFollowUps.add(leadId);
+    followUps.push({
+      leadId,
+      leadName: lead.name,
+      phone: lead.phone,
+      projectId: lead.projectId,
+      dueAt: task.due_at,
+      overdue: new Date(task.due_at).getTime() <= now.getTime(),
+    });
+  }
+
+  return <CrmInbox replies={replies} followUps={followUps} />;
+}
