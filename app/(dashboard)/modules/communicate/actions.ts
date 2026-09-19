@@ -1,6 +1,8 @@
 'use server';
 
 import { ensureFactoryProject, saveFactoryArtifact } from '@/lib/factory-chain/persistence';
+import { aiGateway } from '@/services/runtime/gateway/ai-gateway';
+import type { GatewayRequest } from '@/types/runtime/dto';
 
 export type CommunicationChannel = 'sms' | 'whatsapp';
 
@@ -452,6 +454,124 @@ export async function saveScoutLeadAction(input: {
     return {
       status: 'failed',
       message: error instanceof Error ? error.message : 'Не удалось сохранить лид.',
+    };
+  }
+}
+
+
+export async function generateLeadOutreachMessageAction(input: {
+  lead: Record<string, unknown>;
+  channel: CommunicationChannel;
+  objective?: string;
+}): Promise<
+  | { status: 'generated'; message: string }
+  | { status: 'failed'; message: string }
+> {
+  const lead = input.lead ?? {};
+  const channel = input.channel;
+  const objective =
+    input.objective?.trim() ||
+    'Начать деловой разговор и предложить обсудить сотрудничество без давления.';
+
+  const safeLead = Object.fromEntries(
+    Object.entries(lead)
+      .filter(([, value]) => {
+        const type = typeof value;
+        return (
+          value === null ||
+          type === 'string' ||
+          type === 'number' ||
+          type === 'boolean'
+        );
+      })
+      .slice(0, 30),
+  );
+
+  const runId = crypto.randomUUID();
+  const request: GatewayRequest = {
+    scope: {
+      organizationId: 'org-communications',
+      userId: 'user-communications',
+    },
+    trace: {
+      runId,
+      traceId: crypto.randomUUID(),
+      correlationId: crypto.randomUUID(),
+    },
+    providerCode: 'auto',
+    modelCode: 'auto',
+    messages: [
+      {
+        role: 'user',
+        content: [
+          'Ты пишешь первое персональное деловое сообщение потенциальному контакту.',
+          'Канал: ' + (channel === 'whatsapp' ? 'WhatsApp' : 'SMS') + '.',
+          'Цель: ' + objective,
+          '',
+          'Данные лида:',
+          JSON.stringify(safeLead, null, 2),
+          '',
+          'Правила:',
+          '- используй только факты из данных лида; ничего не выдумывай;',
+          '- не притворяйся знакомым человеком и не создавай ложную срочность;',
+          '- не упоминай, что данные собраны Scout или автоматически;',
+          '- сообщение должно звучать естественно, по-человечески и без канцелярщины;',
+          '- для SMS максимум 320 символов; для WhatsApp максимум 650 символов;',
+          '- один понятный повод написать и один мягкий следующий шаг;',
+          '- не добавляй markdown, заголовок, комментарии или пояснения;',
+          '- верни только готовый текст сообщения.',
+        ].join('\n'),
+      },
+    ],
+    tools: [],
+    parameters: {
+      temperature: 0.45,
+      maxTokens: 240,
+    },
+    timeoutMs: 25_000,
+    retryPolicy: {
+      maxAttempts: 2,
+      backoffMs: [500, 1000],
+    },
+    routing: {
+      intent: 'lead_outreach_message',
+      taskCategory: 'creative',
+      estimatedContextLength: JSON.stringify(safeLead).length,
+      reasoningComplexity: 'medium',
+      latencyTarget: 'balanced',
+      costTarget: 'balanced',
+      toolUsage: false,
+    },
+  };
+
+  try {
+    const response = await aiGateway.complete(request);
+    const generated = response.content?.trim() ?? '';
+
+    if (!generated) {
+      return {
+        status: 'failed',
+        message: 'OSA не вернула текст сообщения.',
+      };
+    }
+
+    const limit = channel === 'sms' ? 320 : 650;
+    const finalText =
+      generated.length <= limit
+        ? generated
+        : generated.slice(0, Math.max(0, limit - 1)).trimEnd() + '…';
+
+    return {
+      status: 'generated',
+      message: finalText,
+    };
+  } catch (error) {
+    return {
+      status: 'failed',
+      message:
+        error instanceof Error
+          ? error.message
+          : 'Не удалось подготовить сообщение.',
     };
   }
 }
