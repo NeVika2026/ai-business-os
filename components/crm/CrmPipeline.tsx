@@ -202,7 +202,9 @@ export function CrmPipeline({ leads }: CrmPipelineProps) {
                               <Link
                                 href={
                                   '/modules/voice-agent/studio?phone=' +
-                                  encodeURIComponent(lead.phone)
+                                  encodeURIComponent(lead.phone) +
+                                  '&lead=' +
+                                  encodeURIComponent(lead.id)
                                 }
                                 className="rounded-xl border border-[#69e4ee]/14 bg-[#69e4ee]/[0.035] px-2.5 py-2 text-center text-[10px] font-black text-[#a8f3f8]"
                               >
