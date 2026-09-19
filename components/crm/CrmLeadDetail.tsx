@@ -102,11 +102,23 @@ function eventPresentation(event: LeadTimelineEvent) {
         text: payloadText(event.payload, 'text'),
         tone: 'green',
       };
+    case 'crm_whatsapp_received':
+      return {
+        title: 'Ответ клиента · WhatsApp',
+        text: payloadText(event.payload, 'text'),
+        tone: 'cyan',
+      };
     case 'crm_sms_sent':
       return {
         title: 'SMS отправлено',
         text: payloadText(event.payload, 'text'),
         tone: 'green',
+      };
+    case 'crm_sms_received':
+      return {
+        title: 'Ответ клиента · SMS',
+        text: payloadText(event.payload, 'text'),
+        tone: 'cyan',
       };
     case 'crm_voice_call_completed':
       return {
