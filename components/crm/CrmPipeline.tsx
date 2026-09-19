@@ -13,6 +13,10 @@ import type { CrmLead, LeadStatus } from '@/types/crm';
 type CrmPipelineProps = {
   leads: CrmLead[];
   followUpsByLead: Record<string, string>;
+  latestRepliesByLead: Record<
+    string,
+    { at: string; text: string; channel: 'whatsapp' | 'sms' }
+  >;
 };
 
 const COLUMNS: Array<{
@@ -35,10 +39,15 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
-export function CrmPipeline({ leads, followUpsByLead }: CrmPipelineProps) {
+export function CrmPipeline({
+  leads,
+  followUpsByLead,
+  latestRepliesByLead,
+}: CrmPipelineProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [attentionOnly, setAttentionOnly] = useState(false);
+  const [repliedOnly, setRepliedOnly] = useState(false);
   const [selectedLead, setSelectedLead] = useState<CrmLead | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -53,6 +62,7 @@ export function CrmPipeline({ leads, followUpsByLead }: CrmPipelineProps) {
   const normalizedQuery = query.trim().toLowerCase();
   const visibleLeads = leads.filter((lead) => {
     if (attentionOnly && !urgentLeadIds.has(lead.id)) return false;
+    if (repliedOnly && !latestRepliesByLead[lead.id]) return false;
     if (!normalizedQuery) return true;
 
     return [lead.name, lead.phone, lead.email, lead.source]
@@ -140,7 +150,7 @@ export function CrmPipeline({ leads, followUpsByLead }: CrmPipelineProps) {
           </div>
         </div>
 
-        <div className="relative mt-7 grid gap-3 xl:grid-cols-[1fr_auto]">
+        <div className="relative mt-7 grid gap-3 xl:grid-cols-[1fr_auto_auto]">
           <label className="block">
             <span className="sr-only">Поиск по CRM</span>
             <input
@@ -150,6 +160,21 @@ export function CrmPipeline({ leads, followUpsByLead }: CrmPipelineProps) {
               className="w-full rounded-[18px] border border-white/[0.08] bg-black/22 px-4 py-3.5 text-sm text-white outline-none placeholder:text-white/30 focus:border-[#69e4ee]/20"
             />
           </label>
+
+          <button
+            type="button"
+            onClick={() => setRepliedOnly((value) => !value)}
+            className={[
+              'rounded-[18px] border px-5 py-3 text-sm font-black transition',
+              repliedOnly
+                ? 'border-emerald-300/24 bg-emerald-300/[0.07] text-emerald-200'
+                : Object.keys(latestRepliesByLead).length > 0
+                  ? 'border-emerald-300/14 bg-emerald-300/[0.035] text-emerald-200'
+                  : 'border-white/[0.08] bg-white/[0.02] text-white/48',
+            ].join(' ')}
+          >
+            Ответили · {Object.keys(latestRepliesByLead).length}
+          </button>
 
           <button
             type="button"
@@ -240,6 +265,22 @@ export function CrmPipeline({ leads, followUpsByLead }: CrmPipelineProps) {
                           <p className="mt-3 line-clamp-3 text-xs leading-5 text-white/42">
                             {lead.notes}
                           </p>
+                        ) : null}
+
+                        {latestRepliesByLead[lead.id] ? (
+                          <div className="mt-3 rounded-xl border border-emerald-300/12 bg-emerald-300/[0.035] px-3 py-2.5">
+                            <div className="flex items-center justify-between gap-3">
+                              <p className="text-[9px] font-black uppercase tracking-[.10em] text-emerald-200">
+                                ОТВЕТ КЛИЕНТА · {latestRepliesByLead[lead.id].channel === 'sms' ? 'SMS' : 'WHATSAPP'}
+                              </p>
+                              <p className="text-[9px] font-bold text-white/28">
+                                {formatDate(latestRepliesByLead[lead.id].at)}
+                              </p>
+                            </div>
+                            <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-white/66">
+                              {latestRepliesByLead[lead.id].text || 'Получено новое сообщение'}
+                            </p>
+                          </div>
                         ) : null}
 
                         {followUpsByLead[lead.id] ? (
