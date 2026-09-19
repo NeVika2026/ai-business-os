@@ -995,3 +995,175 @@ export async function generateCrmReplyMessageAction(input: {
     };
   }
 }
+
+
+export type CommunicationsDiagnostics = {
+  outbound: CommunicationsStatus;
+  evolution: {
+    health: 'connected' | 'disconnected' | 'unreachable' | 'not_configured';
+    detail: string;
+  };
+  scout: {
+    health: 'healthy' | 'unreachable' | 'not_configured';
+    detail: string;
+  };
+  inbound: {
+    ready: boolean;
+    missing: string[];
+    httpsmsWebhookReady: boolean;
+    evolutionWebhookReady: boolean;
+    webhookPaths: {
+      httpsms: string;
+      evolution: string;
+    };
+  };
+};
+
+export async function getCommunicationsDiagnosticsAction(): Promise<CommunicationsDiagnostics> {
+  const outbound = await getCommunicationsStatusAction();
+
+  const evolutionBase = process.env.EVOLUTION_GO_BASE_URL?.trim()?.replace(/\/$/, '');
+  const evolutionToken = process.env.EVOLUTION_GO_INSTANCE_TOKEN?.trim();
+
+  let evolution: CommunicationsDiagnostics['evolution'] = {
+    health: 'not_configured',
+    detail: 'Нужны EVOLUTION_GO_BASE_URL и EVOLUTION_GO_INSTANCE_TOKEN.',
+  };
+
+  if (evolutionBase && evolutionToken) {
+    try {
+      const response = await fetch(evolutionBase + '/instance/status', {
+        headers: {
+          accept: 'application/json',
+          apikey: evolutionToken,
+        },
+        cache: 'no-store',
+      });
+
+      const raw = await response.text();
+      let data: Record<string, unknown> = {};
+      try {
+        data = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+      } catch {
+        data = { raw };
+      }
+
+      const nested =
+        data.data && typeof data.data === 'object'
+          ? (data.data as Record<string, unknown>)
+          : data;
+      const loggedIn = nested.loggedIn === true;
+      const connected = nested.connected === true;
+
+      evolution = response.ok
+        ? {
+            health: loggedIn ? 'connected' : 'disconnected',
+            detail: loggedIn
+              ? 'WhatsApp подключён и авторизован.'
+              : connected
+                ? 'Инстанс отвечает, но WhatsApp ещё не авторизован.'
+                : 'Инстанс отвечает, но сейчас не подключён.',
+          }
+        : {
+            health: 'unreachable',
+            detail:
+              (typeof data.error === 'string' && data.error) ||
+              (typeof data.message === 'string' && data.message) ||
+              'Evolution Go вернул ошибку статуса.',
+          };
+    } catch (error) {
+      evolution = {
+        health: 'unreachable',
+        detail:
+          error instanceof Error
+            ? error.message
+            : 'Evolution Go недоступен.',
+      };
+    }
+  }
+
+  const scoutBase = process.env.SCOUT_API_URL?.trim()?.replace(/\/$/, '');
+  const scoutToken = process.env.SCOUT_API_TOKEN?.trim();
+
+  let scout: CommunicationsDiagnostics['scout'] = {
+    health: 'not_configured',
+    detail: 'Нужен SCOUT_API_URL.',
+  };
+
+  if (scoutBase) {
+    try {
+      const response = await fetch(scoutBase + '/health', {
+        headers: {
+          accept: 'application/json',
+          ...(scoutToken ? { authorization: 'Bearer ' + scoutToken } : {}),
+        },
+        cache: 'no-store',
+      });
+
+      scout = response.ok
+        ? {
+            health: 'healthy',
+            detail: 'Scout worker отвечает.',
+          }
+        : {
+            health: 'unreachable',
+            detail: 'Scout worker вернул HTTP ' + response.status + '.',
+          };
+    } catch (error) {
+      scout = {
+        health: 'unreachable',
+        detail:
+          error instanceof Error ? error.message : 'Scout worker недоступен.',
+      };
+    }
+  }
+
+  const inboundRequired = [
+    'SUPABASE_SERVICE_ROLE_KEY',
+    'COMMUNICATIONS_ORGANIZATION_ID',
+  ];
+
+  const missing = inboundRequired.filter(
+    (key) => !process.env[key]?.trim(),
+  );
+
+  const httpsmsWebhookReady = Boolean(
+    process.env.HTTPSMS_WEBHOOK_SECRET?.trim() &&
+      process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() &&
+      process.env.COMMUNICATIONS_ORGANIZATION_ID?.trim(),
+  );
+
+  const evolutionWebhookReady = Boolean(
+    (process.env.EVOLUTION_GO_WEBHOOK_SECRET?.trim() ||
+      process.env.EVOLUTION_GO_INSTANCE_TOKEN?.trim()) &&
+      process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() &&
+      process.env.COMMUNICATIONS_ORGANIZATION_ID?.trim(),
+  );
+
+  if (!process.env.HTTPSMS_WEBHOOK_SECRET?.trim()) {
+    missing.push('HTTPSMS_WEBHOOK_SECRET');
+  }
+
+  if (
+    !process.env.EVOLUTION_GO_WEBHOOK_SECRET?.trim() &&
+    !process.env.EVOLUTION_GO_INSTANCE_TOKEN?.trim()
+  ) {
+    missing.push('EVOLUTION_GO_WEBHOOK_SECRET');
+  }
+
+  return {
+    outbound,
+    evolution,
+    scout,
+    inbound: {
+      ready: httpsmsWebhookReady || evolutionWebhookReady,
+      missing: [...new Set(missing)],
+      httpsmsWebhookReady,
+      evolutionWebhookReady,
+      webhookPaths: {
+        httpsms: '/api/webhooks/httpsms',
+        evolution: '/api/webhooks/evolution-go',
+      },
+    },
+  };
+}

@@ -259,6 +259,12 @@ export function CommunicationsStudio({
               provider="Scout"
               connected={status.scout.connected}
             />
+            <Link
+              href="/modules/communicate/setup"
+              className="rounded-[16px] border border-white/[0.09] bg-white/[0.025] px-4 py-3 text-center text-xs font-black text-white/62 hover:border-[#69e4ee]/18 hover:text-[#bff8fb]"
+            >
+              Настройка каналов →
+            </Link>
           </div>
         </div>
       </section>
