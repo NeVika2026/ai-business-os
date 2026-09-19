@@ -229,6 +229,70 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
         return;
       }
 
+      const wantsCrmInbox =
+        normalized.includes('клиенты ответили') ||
+        normalized.includes('кто ответил') ||
+        normalized.includes('входящие лиды') ||
+        normalized.includes('входящие клиенты') ||
+        normalized.includes('кто ждет ответа') ||
+        normalized.includes('кто ждёт ответа') ||
+        normalized.includes('просроченные лиды') ||
+        normalized.includes('просроченные контакты');
+
+      if (wantsCrmInbox) {
+        router.push('/crm/inbox');
+        return;
+      }
+
+      const wantsCrmAnalytics =
+        normalized.includes('аналитика crm') ||
+        normalized.includes('аналитика продаж') ||
+        normalized.includes('воронка продаж') ||
+        normalized.includes('конверсия лидов') ||
+        normalized.includes('источники лидов');
+
+      if (wantsCrmAnalytics) {
+        router.push('/crm/analytics');
+        return;
+      }
+
+      const wantsCrmImport =
+        normalized.includes('импорт crm') ||
+        normalized.includes('импорт базы') ||
+        normalized.includes('загрузи базу') ||
+        normalized.includes('загрузить базу') ||
+        normalized.includes('импорт лидов');
+
+      if (wantsCrmImport) {
+        router.push('/crm/import');
+        return;
+      }
+
+      const wantsCrmDuplicates =
+        normalized.includes('дубли crm') ||
+        normalized.includes('дубли лидов') ||
+        normalized.includes('дубли клиентов') ||
+        normalized.includes('объедини клиентов') ||
+        normalized.includes('объединить дубли');
+
+      if (wantsCrmDuplicates) {
+        router.push('/crm/duplicates');
+        return;
+      }
+
+      const wantsCrm =
+        normalized === 'crm' ||
+        normalized.includes('открой crm') ||
+        normalized.includes('покажи crm') ||
+        normalized.includes('мои лиды') ||
+        normalized.includes('мои клиенты') ||
+        normalized.includes('база клиентов');
+
+      if (wantsCrm) {
+        router.push('/crm');
+        return;
+      }
+
       const wantsCommunicate =
         normalized.includes('напиши в whatsapp') ||
         normalized.includes('напиши в ватсап') ||
@@ -274,7 +338,7 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
   };
 
   const launchFactoryPreset = (
-    preset: 'video' | 'image' | 'sales' | 'site' | 'find' | 'analyze' | 'publish' | 'voice-agent' | 'communicate',
+    preset: 'video' | 'image' | 'sales' | 'site' | 'find' | 'analyze' | 'publish' | 'voice-agent' | 'communicate' | 'crm',
   ) => {
     const existing = prompt.trim();
 
@@ -318,6 +382,11 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
 
     if (preset === 'communicate') {
       router.push('/modules/communicate/studio');
+      return;
+    }
+
+    if (preset === 'crm') {
+      router.push('/crm/inbox');
       return;
     }
 
@@ -442,6 +511,7 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
                       <button type="button" onClick={() => launchFactoryPreset('publish')}>Публикация</button>
                       <button type="button" onClick={() => launchFactoryPreset('voice-agent')}>Позвонить</button>
                       <button type="button" onClick={() => launchFactoryPreset('communicate')}>Написать</button>
+                      <button type="button" onClick={() => launchFactoryPreset('crm')}>CRM</button>
                     </div>
                     <button
                       type="button"
