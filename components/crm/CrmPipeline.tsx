@@ -147,6 +147,12 @@ export function CrmPipeline({
             >
               Импорт CSV
             </Link>
+            <Link
+              href="/crm/duplicates"
+              className="rounded-[16px] border border-[#f1c96c]/13 bg-[#f1c96c]/[0.03] px-5 py-3 text-sm font-black text-[#f4d878]"
+            >
+              Найти дубли
+            </Link>
             <a
               href="/crm/export"
               className="rounded-[16px] border border-white/[0.09] bg-white/[0.025] px-5 py-3 text-sm font-black text-white/66"
