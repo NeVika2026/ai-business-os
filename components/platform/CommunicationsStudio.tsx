@@ -5,10 +5,12 @@ import { useEffect, useState, useTransition } from 'react';
 
 import {
   getCommunicationsStatusAction,
+  scrapeScoutLeadAction,
   sendSmsMessageAction,
   sendWhatsAppMessageAction,
   type CommunicationChannel,
   type CommunicationsStatus,
+  type ScoutPlatform,
 } from '@/app/(dashboard)/modules/communicate/actions';
 
 type CommunicationsStudioProps = {
@@ -35,6 +37,10 @@ export function CommunicationsStudio({
   const [message, setMessage] = useState('');
   const [consent, setConsent] = useState(false);
   const [result, setResult] = useState('');
+  const [scoutPlatform, setScoutPlatform] = useState<ScoutPlatform>('instagram');
+  const [scoutIdentifier, setScoutIdentifier] = useState('');
+  const [scoutResult, setScoutResult] = useState<Record<string, unknown> | null>(null);
+  const [scoutMessage, setScoutMessage] = useState('');
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -42,6 +48,28 @@ export function CommunicationsStudio({
   }, []);
 
   const connected = channel === 'sms' ? status.sms.connected : status.whatsapp.connected;
+
+  const runScout = () => {
+    if (!scoutIdentifier.trim() || isPending) return;
+
+    setScoutMessage('');
+    setScoutResult(null);
+
+    startTransition(async () => {
+      const response = await scrapeScoutLeadAction({
+        platform: scoutPlatform,
+        identifier: scoutIdentifier,
+        enrich: true,
+      });
+
+      if (response.status === 'failed') {
+        setScoutMessage(response.message);
+        return;
+      }
+
+      setScoutResult(response.lead);
+    });
+  };
 
   const send = () => {
     if (!to.trim() || !message.trim() || !consent || isPending) return;
@@ -237,6 +265,55 @@ export function CommunicationsStudio({
                 </div>
               </div>
             ))}
+          </div>
+
+          <div className="mt-6 rounded-[22px] border border-[#69e4ee]/12 bg-[#69e4ee]/[0.025] p-5">
+            <p className="text-[11px] font-black uppercase tracking-[.14em] text-[#79eaf2]">
+              ПОИСК И ОБОГАЩЕНИЕ
+            </p>
+            <h3 className="mt-2 text-xl font-black text-[#fff8e7]">
+              Проверить конкретный публичный профиль через Scout
+            </h3>
+            <div className="mt-4 grid gap-3 sm:grid-cols-[.34fr_1fr_auto]">
+              <select
+                value={scoutPlatform}
+                onChange={(event) => setScoutPlatform(event.target.value as ScoutPlatform)}
+                className="rounded-[16px] border border-white/[0.09] bg-[#0a0e15] px-3 py-3 text-sm text-white"
+              >
+                <option value="instagram">Instagram</option>
+                <option value="tiktok">TikTok</option>
+                <option value="linkedin">LinkedIn</option>
+                <option value="github">GitHub</option>
+                <option value="youtube">YouTube</option>
+                <option value="twitch">Twitch</option>
+                <option value="linkbio">Link-in-bio</option>
+                <option value="pinterest">Pinterest</option>
+              </select>
+              <input
+                value={scoutIdentifier}
+                onChange={(event) => setScoutIdentifier(event.target.value)}
+                placeholder="username, URL или идентификатор профиля"
+                className="rounded-[16px] border border-white/[0.09] bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/30"
+              />
+              <button
+                type="button"
+                onClick={runScout}
+                disabled={!status.scout.connected || !scoutIdentifier.trim() || isPending}
+                className="rounded-[16px] border border-[#69e4ee]/18 bg-[#69e4ee]/[0.05] px-4 py-3 text-sm font-black text-[#bff8fb] disabled:opacity-35"
+              >
+                Найти →
+              </button>
+            </div>
+
+            {scoutMessage ? (
+              <p className="mt-3 text-sm leading-6 text-amber-100/70">{scoutMessage}</p>
+            ) : null}
+
+            {scoutResult ? (
+              <pre className="mt-4 max-h-[320px] overflow-auto rounded-[16px] border border-white/[0.07] bg-black/25 p-4 text-xs leading-6 text-white/72">
+                {JSON.stringify(scoutResult, null, 2)}
+              </pre>
+            ) : null}
           </div>
 
           <div className="mt-6 rounded-[22px] border border-[#f1c96c]/13 bg-[#f1c96c]/[0.03] p-5">
