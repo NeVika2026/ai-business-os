@@ -13,6 +13,7 @@ import {
 
 type VoiceAgentStudioProps = {
   projectId?: string | null;
+  initialPhone?: string;
 };
 
 const EMPTY_STATUS: VoiceAgentConnectionStatus = {
@@ -22,9 +23,12 @@ const EMPTY_STATUS: VoiceAgentConnectionStatus = {
   baseUrl: 'https://voicyfy.ru',
 };
 
-export function VoiceAgentStudio({ projectId = null }: VoiceAgentStudioProps) {
+export function VoiceAgentStudio({
+  projectId = null,
+  initialPhone = '',
+}: VoiceAgentStudioProps) {
   const [connection, setConnection] = useState(EMPTY_STATUS);
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState(initialPhone);
   const [callerPhone, setCallerPhone] = useState('');
   const [firstPhrase, setFirstPhrase] = useState('Здравствуйте! Удобно сейчас говорить?');
   const [task, setTask] = useState('');
