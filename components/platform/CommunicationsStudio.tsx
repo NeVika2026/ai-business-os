@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState, useTransition } from 'react';
 
 import {
+  generateLeadOutreachMessageAction,
   getCommunicationsStatusAction,
   saveScoutLeadAction,
   scrapeScoutLeadAction,
@@ -93,6 +94,31 @@ export function CommunicationsStudio({
       }
 
       setScoutResult(response.lead);
+    });
+  };
+
+  const draftForLead = (nextChannel: CommunicationChannel) => {
+    if (!scoutResult || isPending) return;
+
+    const phone = getLeadString(scoutResult, ['phone']);
+    if (phone) setTo(phone);
+    setChannel(nextChannel);
+    setResult('OSA готовит персональное сообщение…');
+
+    startTransition(async () => {
+      const response = await generateLeadOutreachMessageAction({
+        lead: scoutResult,
+        channel: nextChannel,
+      });
+
+      if (response.status === 'failed') {
+        setResult(response.message);
+        return;
+      }
+
+      setMessage(response.message);
+      setResult('Сообщение подготовлено. Проверьте его перед отправкой.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   };
 
@@ -399,19 +425,19 @@ export function CommunicationsStudio({
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-1">
                     <button
                       type="button"
-                      onClick={() => useLeadForMessage('whatsapp')}
-                      disabled={!getLeadString(scoutResult, ['phone'])}
+                      onClick={() => draftForLead('whatsapp')}
+                      disabled={!getLeadString(scoutResult, ['phone']) || isPending}
                       className="rounded-xl border border-emerald-300/14 bg-emerald-300/[0.04] px-3 py-2 text-xs font-black text-emerald-200 disabled:opacity-30"
                     >
-                      WhatsApp
+                      OSA → WhatsApp
                     </button>
                     <button
                       type="button"
-                      onClick={() => useLeadForMessage('sms')}
-                      disabled={!getLeadString(scoutResult, ['phone'])}
+                      onClick={() => draftForLead('sms')}
+                      disabled={!getLeadString(scoutResult, ['phone']) || isPending}
                       className="rounded-xl border border-white/[0.09] px-3 py-2 text-xs font-black text-white/72 disabled:opacity-30"
                     >
-                      SMS
+                      OSA → SMS
                     </button>
                   </div>
                 </div>
@@ -439,6 +465,14 @@ export function CommunicationsStudio({
                     className="rounded-xl border border-[#f1c96c]/16 bg-[#f1c96c]/[0.04] px-3 py-2 text-xs font-black text-[#f4d878]"
                   >
                     Сохранить в проект
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => useLeadForMessage('whatsapp')}
+                    disabled={!getLeadString(scoutResult, ['phone'])}
+                    className="rounded-xl border border-white/[0.09] px-3 py-2 text-xs font-bold text-white/60 disabled:opacity-30"
+                  >
+                    Только подставить номер
                   </button>
 
                   {getLeadString(scoutResult, ['phone']) ? (
