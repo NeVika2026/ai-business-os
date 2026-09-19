@@ -113,6 +113,7 @@ export const BUSINESS_ZAVOD_NAVIGATION: PlatformNavigationItem[] = [
   { label: 'Входящие', href: '/crm/inbox', icon: '●' },
   { label: 'Аналитика CRM', href: '/crm/analytics', icon: '◫' },
   { label: 'Импорт CRM', href: '/crm/import', icon: '⇩' },
+  { label: 'Дубли CRM', href: '/crm/duplicates', icon: '≋' },
   { label: 'Trend Lab', href: '/modules/create/viral', icon: '✺' },
   { label: 'Медиа', href: '/media', icon: '◫' },
   { label: 'Файлы', href: '/knowledge', icon: '📁' },
