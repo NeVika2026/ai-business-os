@@ -42,6 +42,39 @@ function normalizeWhatsAppNumber(value: string): string | null {
   return cleaned;
 }
 
+async function logCommunicationLeadEvent(input: {
+  leadId: string;
+  type: 'crm_sms_sent' | 'crm_whatsapp_sent';
+  text: string;
+  recipient: string;
+}) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const organizationId = await getCurrentOrganizationId(supabase);
+  if (!organizationId) return;
+
+  await supabase.from('events').insert({
+    organization_id: organizationId,
+    type: input.type,
+    source: 'communications',
+    actor_type: 'user',
+    actor_id: user.id,
+    payload: {
+      lead_id: input.leadId,
+      text: input.text,
+      recipient: input.recipient,
+    },
+    metadata: {
+      crm_lead_id: input.leadId,
+    },
+    correlation_id: input.leadId,
+  });
+}
+
 function trimBaseUrl(value: string | undefined, fallback: string) {
   return (value?.trim() || fallback).replace(/\/$/, '');
 }
@@ -193,6 +226,13 @@ export async function sendSmsMessageAction(input: {
           .eq('id', input.leadId.trim())
           .eq('organization_id', organizationId);
       }
+
+      await logCommunicationLeadEvent({
+        leadId: input.leadId.trim(),
+        type: 'crm_sms_sent',
+        text: content,
+        recipient: to,
+      });
     }
 
     return {
@@ -327,6 +367,13 @@ export async function sendWhatsAppMessageAction(input: {
           .eq('id', input.leadId.trim())
           .eq('organization_id', organizationId);
       }
+
+      await logCommunicationLeadEvent({
+        leadId: input.leadId.trim(),
+        type: 'crm_whatsapp_sent',
+        text,
+        recipient: '+' + number,
+      });
     }
 
     return {
@@ -547,6 +594,25 @@ export async function saveScoutLeadAction(input: {
         })
         .eq('id', crmLeadId)
         .eq('organization_id', project.identity.organizationId);
+    }
+
+    if (crmLeadId) {
+      await project.identity.supabase.from('events').insert({
+        organization_id: project.identity.organizationId,
+        type: 'crm_lead_imported',
+        source: 'scout',
+        actor_type: 'user',
+        actor_id: project.identity.userId,
+        payload: {
+          lead_id: crmLeadId,
+          source: 'Scout',
+          profile: lead,
+        },
+        metadata: {
+          crm_lead_id: crmLeadId,
+        },
+        correlation_id: crmLeadId,
+      });
     }
 
     await saveFactoryArtifact({
