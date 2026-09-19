@@ -147,3 +147,42 @@ export async function deleteLead(formData: FormData) {
 
   revalidatePath('/crm');
 }
+
+
+export async function updateLeadStatusQuick(
+  leadId: string,
+  status: LeadStatus,
+) {
+  if (!LEAD_STATUSES.includes(status)) {
+    throw new Error('Invalid lead status');
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) throw new Error('Unauthorized');
+
+  const organizationId = await getCurrentOrganizationId(supabase);
+  if (!organizationId) throw new Error('Organization not found');
+
+  const updates: Record<string, unknown> = {
+    status,
+    updated_by: user.id,
+  };
+
+  if (status === 'contacted' || status === 'qualified') {
+    updates.last_contact_at = new Date().toISOString();
+  }
+
+  const { error } = await supabase
+    .from('crm_leads')
+    .update(updates)
+    .eq('id', leadId)
+    .eq('organization_id', organizationId);
+
+  if (error) throw error;
+
+  revalidatePath('/crm');
+}
