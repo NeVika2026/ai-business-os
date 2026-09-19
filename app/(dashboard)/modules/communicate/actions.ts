@@ -2,6 +2,8 @@
 
 import { ensureFactoryProject, saveFactoryArtifact } from '@/lib/factory-chain/persistence';
 import { aiGateway } from '@/services/runtime/gateway/ai-gateway';
+import { createClient } from '@/services/supabase/server';
+import { getCurrentOrganizationId } from '@/utils/auth/organization';
 import type { GatewayRequest } from '@/types/runtime/dto';
 
 export type CommunicationChannel = 'sms' | 'whatsapp';
