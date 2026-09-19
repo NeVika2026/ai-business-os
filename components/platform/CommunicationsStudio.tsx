@@ -17,6 +17,9 @@ import {
 
 type CommunicationsStudioProps = {
   projectId?: string | null;
+  initialPhone?: string;
+  initialChannel?: CommunicationChannel;
+  initialLeadId?: string | null;
 };
 
 function getLeadString(
@@ -55,10 +58,14 @@ const EMPTY_STATUS: CommunicationsStatus = {
 
 export function CommunicationsStudio({
   projectId = null,
+  initialPhone = '',
+  initialChannel = 'whatsapp',
+  initialLeadId = null,
 }: CommunicationsStudioProps) {
   const [status, setStatus] = useState(EMPTY_STATUS);
-  const [channel, setChannel] = useState<CommunicationChannel>('whatsapp');
-  const [to, setTo] = useState('');
+  const [channel, setChannel] = useState<CommunicationChannel>(initialChannel);
+  const [to, setTo] = useState(initialPhone);
+  const [activeLeadId, setActiveLeadId] = useState<string | null>(initialLeadId);
   const [message, setMessage] = useState('');
   const [consent, setConsent] = useState(false);
   const [result, setResult] = useState('');
@@ -156,6 +163,7 @@ export function CommunicationsStudio({
       }
 
       setSavedProjectId(response.projectId);
+      if (response.crmLeadId) setActiveLeadId(response.crmLeadId);
       setScoutMessage(response.message);
     });
   };
@@ -172,13 +180,15 @@ export function CommunicationsStudio({
               to,
               content: message,
               consentConfirmed: consent,
-              projectId,
+              projectId: savedProjectId,
+              leadId: activeLeadId,
             })
           : await sendWhatsAppMessageAction({
               to,
               text: message,
               consentConfirmed: consent,
-              projectId,
+              projectId: savedProjectId,
+              leadId: activeLeadId,
             });
 
       setResult(response.message);
