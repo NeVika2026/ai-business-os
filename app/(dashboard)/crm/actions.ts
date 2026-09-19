@@ -485,3 +485,130 @@ export async function generateLeadNextStepAction(leadId: string): Promise<
     };
   }
 }
+
+
+export type CrmImportRow = {
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  source?: string | null;
+  notes?: string | null;
+};
+
+export async function importCrmLeadsAction(rows: CrmImportRow[]): Promise<{
+  imported: number;
+  skipped: number;
+  failed: number;
+  message: string;
+}> {
+  const safeRows = rows.slice(0, 500);
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) throw new Error('Unauthorized');
+
+  const organizationId = await getCurrentOrganizationId(supabase);
+  if (!organizationId) throw new Error('Organization not found');
+
+  const { data: existing } = await supabase
+    .from('crm_leads')
+    .select('email, phone')
+    .eq('organization_id', organizationId);
+
+  const emailSet = new Set(
+    (existing ?? [])
+      .map((lead) => lead.email?.trim().toLowerCase())
+      .filter((value): value is string => Boolean(value)),
+  );
+  const phoneSet = new Set(
+    (existing ?? [])
+      .map((lead) => lead.phone?.replace(/\D/g, ''))
+      .filter((value): value is string => Boolean(value)),
+  );
+
+  let imported = 0;
+  let skipped = 0;
+  let failed = 0;
+
+  for (const row of safeRows) {
+    const name = row.name?.trim();
+    const email = row.email?.trim().toLowerCase() || null;
+    const phone = row.phone?.trim() || null;
+    const phoneKey = phone?.replace(/\D/g, '') || null;
+
+    if (!name) {
+      failed += 1;
+      continue;
+    }
+
+    const duplicate =
+      (email && emailSet.has(email)) ||
+      (phoneKey && phoneSet.has(phoneKey));
+
+    if (duplicate) {
+      skipped += 1;
+      continue;
+    }
+
+    const { data: inserted, error } = await supabase
+      .from('crm_leads')
+      .insert({
+        organization_id: organizationId,
+        name,
+        email,
+        phone,
+        source: row.source?.trim() || 'CSV import',
+        notes: row.notes?.trim() || null,
+        status: 'new',
+        created_by: user.id,
+      })
+      .select('id')
+      .single();
+
+    if (error || !inserted?.id) {
+      failed += 1;
+      continue;
+    }
+
+    imported += 1;
+    if (email) emailSet.add(email);
+    if (phoneKey) phoneSet.add(phoneKey);
+
+    await supabase.from('events').insert({
+      organization_id: organizationId,
+      type: 'crm_lead_created',
+      source: 'crm-import',
+      actor_type: 'user',
+      actor_id: user.id,
+      payload: {
+        lead_id: inserted.id,
+        name,
+        source: row.source?.trim() || 'CSV import',
+      },
+      metadata: {
+        crm_lead_id: inserted.id,
+        import: 'csv',
+      },
+      correlation_id: inserted.id,
+    });
+  }
+
+  revalidatePath('/crm');
+  revalidatePath('/crm/analytics');
+
+  return {
+    imported,
+    skipped,
+    failed,
+    message:
+      'Импортировано: ' +
+      imported +
+      '. Пропущено дублей: ' +
+      skipped +
+      '. Ошибок: ' +
+      failed +
+      '.',
+  };
+}
