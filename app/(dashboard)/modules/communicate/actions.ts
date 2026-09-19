@@ -75,6 +75,7 @@ export async function sendSmsMessageAction(input: {
   content: string;
   consentConfirmed: boolean;
   projectId?: string | null;
+  leadId?: string | null;
 }): Promise<
   | { status: 'sent'; provider: 'httpSMS'; projectId: string | null; message: string }
   | { status: 'failed'; message: string }
@@ -172,11 +173,31 @@ export async function sendSmsMessageAction(input: {
       });
     }
 
+    if (input.leadId?.trim()) {
+      const supabase = await createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const organizationId = user ? await getCurrentOrganizationId(supabase) : null;
+
+      if (user && organizationId) {
+        await supabase
+          .from('crm_leads')
+          .update({
+            status: 'contacted',
+            last_contact_at: new Date().toISOString(),
+            updated_by: user.id,
+          })
+          .eq('id', input.leadId.trim())
+          .eq('organization_id', organizationId);
+      }
+    }
+
     return {
       status: 'sent',
       provider: 'httpSMS',
       projectId,
-      message: 'SMS принято к отправке.',
+      message: 'SMS принято к отправке. CRM обновлена.',
     };
   } catch (error) {
     return {
@@ -191,6 +212,7 @@ export async function sendWhatsAppMessageAction(input: {
   text: string;
   consentConfirmed: boolean;
   projectId?: string | null;
+  leadId?: string | null;
 }): Promise<
   | { status: 'sent'; provider: 'Evolution Go'; projectId: string | null; message: string }
   | { status: 'failed'; message: string }
@@ -285,11 +307,31 @@ export async function sendWhatsAppMessageAction(input: {
       });
     }
 
+    if (input.leadId?.trim()) {
+      const supabase = await createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const organizationId = user ? await getCurrentOrganizationId(supabase) : null;
+
+      if (user && organizationId) {
+        await supabase
+          .from('crm_leads')
+          .update({
+            status: 'contacted',
+            last_contact_at: new Date().toISOString(),
+            updated_by: user.id,
+          })
+          .eq('id', input.leadId.trim())
+          .eq('organization_id', organizationId);
+      }
+    }
+
     return {
       status: 'sent',
       provider: 'Evolution Go',
       projectId,
-      message: 'Сообщение отправлено в WhatsApp.',
+      message: 'Сообщение отправлено в WhatsApp. CRM обновлена.',
     };
   } catch (error) {
     return {
@@ -399,7 +441,7 @@ export async function saveScoutLeadAction(input: {
   lead: Record<string, unknown>;
   projectId?: string | null;
 }): Promise<
-  | { status: 'saved'; projectId: string; message: string }
+  | { status: 'saved'; projectId: string; crmLeadId: string | null; message: string }
   | { status: 'failed'; message: string }
 > {
   const lead = input.lead ?? {};
@@ -431,6 +473,80 @@ export async function saveScoutLeadAction(input: {
       .map(([label, value]) => label + ': ' + String(value))
       .join('\n');
 
+    let crmLeadId: string | null = null;
+    const phone =
+      typeof lead.phone === 'string' && lead.phone.trim() ? lead.phone.trim() : null;
+    const email =
+      typeof lead.email === 'string' && lead.email.trim() ? lead.email.trim() : null;
+
+    if (email) {
+      const { data: existingByEmail } = await project.identity.supabase
+        .from('crm_leads')
+        .select('id')
+        .eq('organization_id', project.identity.organizationId)
+        .eq('email', email)
+        .maybeSingle();
+      crmLeadId = existingByEmail?.id ?? null;
+    }
+
+    if (!crmLeadId && phone) {
+      const { data: existingByPhone } = await project.identity.supabase
+        .from('crm_leads')
+        .select('id')
+        .eq('organization_id', project.identity.organizationId)
+        .eq('phone', phone)
+        .maybeSingle();
+      crmLeadId = existingByPhone?.id ?? null;
+    }
+
+    const notesParts = [
+      typeof lead.company === 'string' && lead.company.trim()
+        ? 'Компания: ' + lead.company.trim()
+        : '',
+      typeof lead.website === 'string' && lead.website.trim()
+        ? 'Сайт: ' + lead.website.trim()
+        : '',
+      typeof lead.lead_score === 'number'
+        ? 'Lead score: ' + String(lead.lead_score)
+        : '',
+    ].filter(Boolean);
+
+    if (!crmLeadId) {
+      const { data: insertedLead, error: leadError } = await project.identity.supabase
+        .from('crm_leads')
+        .insert({
+          organization_id: project.identity.organizationId,
+          project_id: project.projectId,
+          name: displayName,
+          email,
+          phone,
+          source: 'Scout',
+          status: 'new',
+          notes: notesParts.join('\n') || null,
+          created_by: project.identity.userId,
+        })
+        .select('id')
+        .single();
+
+      if (!leadError && insertedLead?.id) {
+        crmLeadId = insertedLead.id;
+      }
+    } else {
+      await project.identity.supabase
+        .from('crm_leads')
+        .update({
+          project_id: project.projectId,
+          name: displayName,
+          email,
+          phone,
+          source: 'Scout',
+          notes: notesParts.join('\n') || null,
+          updated_by: project.identity.userId,
+        })
+        .eq('id', crmLeadId)
+        .eq('organization_id', project.identity.organizationId);
+    }
+
     await saveFactoryArtifact({
       projectId: project.projectId,
       stage: 'find',
@@ -448,7 +564,10 @@ export async function saveScoutLeadAction(input: {
     return {
       status: 'saved',
       projectId: project.projectId,
-      message: 'Лид сохранён в проект.',
+      crmLeadId,
+      message: crmLeadId
+        ? 'Лид сохранён в проект и CRM.'
+        : 'Лид сохранён в проект.',
     };
   } catch (error) {
     return {
