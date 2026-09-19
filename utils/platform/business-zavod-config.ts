@@ -109,6 +109,7 @@ export const BUSINESS_ZAVOD_NAVIGATION: PlatformNavigationItem[] = [
     moduleId: module.id,
   })),
   { label: 'Проекты', href: '/projects', icon: 'projects' },
+  { label: 'CRM', href: '/crm', icon: '◆' },
   { label: 'Trend Lab', href: '/modules/create/viral', icon: '✺' },
   { label: 'Медиа', href: '/media', icon: '◫' },
   { label: 'Файлы', href: '/knowledge', icon: '📁' },
