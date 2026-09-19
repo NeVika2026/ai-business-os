@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState, useTransition } from 'react';
 
 import {
+  generateCrmReplyMessageAction,
   generateLeadOutreachMessageAction,
   getCommunicationsStatusAction,
   getCrmLeadContextAction,
@@ -126,10 +127,16 @@ export function CommunicationsStudio({
     setResult('OSA готовит персональное сообщение…');
 
     startTransition(async () => {
-      const response = await generateLeadOutreachMessageAction({
-        lead: leadForDraft,
-        channel: nextChannel,
-      });
+      const response =
+        activeLeadId && activeLeadContext && !scoutResult
+          ? await generateCrmReplyMessageAction({
+              leadId: activeLeadId,
+              channel: nextChannel,
+            })
+          : await generateLeadOutreachMessageAction({
+              lead: leadForDraft,
+              channel: nextChannel,
+            });
 
       if (response.status === 'failed') {
         setResult(response.message);
@@ -294,7 +301,7 @@ export function CommunicationsStudio({
                     {getLeadString(activeLeadContext, ['name']) || 'Клиент'}
                   </p>
                   <p className="mt-1 text-xs leading-5 text-white/48">
-                    OSA подготовит персональный текст по карточке CRM и истории контакта.
+                    OSA подготовит ответ по карточке CRM и реальной истории переписки.
                   </p>
                 </div>
                 <button
