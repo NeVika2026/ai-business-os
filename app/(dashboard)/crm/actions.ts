@@ -15,6 +15,31 @@ function parseLeadStatus(value: FormDataEntryValue | null): LeadStatus {
   return 'new';
 }
 
+async function logCrmLeadEvent(input: {
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  organizationId: string;
+  userId: string;
+  leadId: string;
+  type: string;
+  payload?: Record<string, unknown>;
+}) {
+  await input.supabase.from('events').insert({
+    organization_id: input.organizationId,
+    type: input.type,
+    source: 'crm',
+    actor_type: 'user',
+    actor_id: input.userId,
+    payload: {
+      lead_id: input.leadId,
+      ...(input.payload ?? {}),
+    },
+    metadata: {
+      crm_lead_id: input.leadId,
+    },
+    correlation_id: input.leadId,
+  });
+}
+
 function getOptionalText(value: FormDataEntryValue | null) {
   if (typeof value !== 'string') {
     return null;
@@ -46,7 +71,7 @@ export async function createLead(formData: FormData) {
     throw new Error('Name is required');
   }
 
-  const { error } = await supabase.from('crm_leads').insert({
+  const { data, error } = await supabase.from('crm_leads').insert({
     organization_id: organizationId,
     name,
     phone: getOptionalText(formData.get('phone')),
@@ -55,10 +80,24 @@ export async function createLead(formData: FormData) {
     status: parseLeadStatus(formData.get('status')),
     notes: getOptionalText(formData.get('notes')),
     created_by: user.id,
-  });
+  }).select('id').single();
 
   if (error) {
     throw error;
+  }
+
+  if (data?.id) {
+    await logCrmLeadEvent({
+      supabase,
+      organizationId,
+      userId: user.id,
+      leadId: data.id,
+      type: 'crm_lead_created',
+      payload: {
+        name,
+        source: getOptionalText(formData.get('source')),
+      },
+    });
   }
 
   revalidatePath('/crm');
@@ -176,6 +215,13 @@ export async function updateLeadStatusQuick(
     updates.last_contact_at = new Date().toISOString();
   }
 
+  const { data: previous } = await supabase
+    .from('crm_leads')
+    .select('status, name')
+    .eq('id', leadId)
+    .eq('organization_id', organizationId)
+    .maybeSingle();
+
   const { error } = await supabase
     .from('crm_leads')
     .update(updates)
@@ -184,7 +230,21 @@ export async function updateLeadStatusQuick(
 
   if (error) throw error;
 
+  await logCrmLeadEvent({
+    supabase,
+    organizationId,
+    userId: user.id,
+    leadId,
+    type: 'crm_lead_status_changed',
+    payload: {
+      from: previous?.status ?? null,
+      to: status,
+      name: previous?.name ?? null,
+    },
+  });
+
   revalidatePath('/crm');
+  revalidatePath('/crm/' + leadId);
 }
 
 
@@ -254,10 +314,171 @@ export async function scheduleLeadFollowUp(
     if (error) throw error;
   }
 
+  await logCrmLeadEvent({
+    supabase,
+    organizationId,
+    userId: user.id,
+    leadId: lead.id,
+    type: 'crm_followup_scheduled',
+    payload: {
+      due_at: dueAt.toISOString(),
+      days_from_now: daysFromNow,
+    },
+  });
+
   revalidatePath('/crm');
+  revalidatePath('/crm/' + lead.id);
 
   return {
     leadId: lead.id,
     dueAt: dueAt.toISOString(),
   };
+}
+
+
+export async function addLeadNote(leadId: string, note: string) {
+  const trimmed = note.trim();
+  if (!trimmed) throw new Error('Введите заметку.');
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) throw new Error('Unauthorized');
+
+  const organizationId = await getCurrentOrganizationId(supabase);
+  if (!organizationId) throw new Error('Organization not found');
+
+  const { data: lead, error: leadError } = await supabase
+    .from('crm_leads')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .eq('id', leadId)
+    .maybeSingle();
+
+  if (leadError) throw leadError;
+  if (!lead) throw new Error('Lead not found');
+
+  await logCrmLeadEvent({
+    supabase,
+    organizationId,
+    userId: user.id,
+    leadId,
+    type: 'crm_note_added',
+    payload: {
+      note: trimmed,
+    },
+  });
+
+  revalidatePath('/crm/' + leadId);
+}
+
+export async function generateLeadNextStepAction(leadId: string): Promise<
+  | { status: 'generated'; text: string }
+  | { status: 'failed'; message: string }
+> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { status: 'failed', message: 'Требуется авторизация.' };
+
+  const organizationId = await getCurrentOrganizationId(supabase);
+  if (!organizationId) return { status: 'failed', message: 'Организация не найдена.' };
+
+  const { data: lead } = await supabase
+    .from('crm_leads')
+    .select('id, name, email, phone, status, source, notes, last_contact_at')
+    .eq('organization_id', organizationId)
+    .eq('id', leadId)
+    .maybeSingle();
+
+  if (!lead) return { status: 'failed', message: 'Лид не найден.' };
+
+  const { data: events } = await supabase
+    .from('events')
+    .select('type, payload, created_at')
+    .eq('organization_id', organizationId)
+    .eq('correlation_id', leadId)
+    .order('created_at', { ascending: false })
+    .limit(12);
+
+  const runId = crypto.randomUUID();
+  const request: GatewayRequest = {
+    scope: {
+      organizationId,
+      userId: user.id,
+    },
+    trace: {
+      runId,
+      traceId: crypto.randomUUID(),
+      correlationId: crypto.randomUUID(),
+    },
+    providerCode: 'auto',
+    modelCode: 'auto',
+    messages: [
+      {
+        role: 'user',
+        content: [
+          'Определи один лучший следующий шаг по этому лиду.',
+          'Не выдумывай факты и не дави на клиента.',
+          'Верни 1–3 коротких предложения по-русски: что сделать сейчас и почему.',
+          '',
+          'Лид:',
+          JSON.stringify(lead, null, 2),
+          '',
+          'Последние события:',
+          JSON.stringify(events ?? [], null, 2),
+        ].join('\n'),
+      },
+    ],
+    tools: [],
+    parameters: {
+      temperature: 0.25,
+      maxTokens: 180,
+    },
+    timeoutMs: 25_000,
+    retryPolicy: {
+      maxAttempts: 2,
+      backoffMs: [500, 1000],
+    },
+    routing: {
+      intent: 'crm_next_step',
+      taskCategory: 'planning',
+      estimatedContextLength: JSON.stringify({ lead, events }).length,
+      reasoningComplexity: 'medium',
+      latencyTarget: 'balanced',
+      costTarget: 'balanced',
+      toolUsage: false,
+    },
+  };
+
+  try {
+    const response = await aiGateway.complete(request);
+    const text = response.content?.trim() ?? '';
+
+    if (!text) {
+      return { status: 'failed', message: 'OSA не вернула следующий шаг.' };
+    }
+
+    await logCrmLeadEvent({
+      supabase,
+      organizationId,
+      userId: user.id,
+      leadId,
+      type: 'crm_osa_next_step',
+      payload: { text },
+    });
+
+    revalidatePath('/crm/' + leadId);
+
+    return { status: 'generated', text };
+  } catch (error) {
+    return {
+      status: 'failed',
+      message: error instanceof Error ? error.message : 'Не удалось получить следующий шаг.',
+    };
+  }
 }
