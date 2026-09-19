@@ -186,3 +186,78 @@ export async function updateLeadStatusQuick(
 
   revalidatePath('/crm');
 }
+
+
+export async function scheduleLeadFollowUp(
+  leadId: string,
+  daysFromNow: 1 | 3 | 7,
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) throw new Error('Unauthorized');
+
+  const organizationId = await getCurrentOrganizationId(supabase);
+  if (!organizationId) throw new Error('Organization not found');
+
+  const { data: lead, error: leadError } = await supabase
+    .from('crm_leads')
+    .select('id, name, project_id')
+    .eq('organization_id', organizationId)
+    .eq('id', leadId)
+    .maybeSingle();
+
+  if (leadError) throw leadError;
+  if (!lead) throw new Error('Lead not found');
+
+  const dueAt = new Date();
+  dueAt.setDate(dueAt.getDate() + daysFromNow);
+  dueAt.setHours(11, 0, 0, 0);
+
+  const marker = 'CRM_LEAD_ID:' + lead.id;
+
+  const { data: existingTask } = await supabase
+    .from('tasks')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .eq('status', 'todo')
+    .ilike('description', '%' + marker + '%')
+    .maybeSingle();
+
+  if (existingTask?.id) {
+    const { error } = await supabase
+      .from('tasks')
+      .update({
+        title: 'Связаться: ' + lead.name,
+        due_at: dueAt.toISOString(),
+        priority: 2,
+        updated_by: user.id,
+      })
+      .eq('id', existingTask.id)
+      .eq('organization_id', organizationId);
+
+    if (error) throw error;
+  } else {
+    const { error } = await supabase.from('tasks').insert({
+      organization_id: organizationId,
+      project_id: lead.project_id,
+      title: 'Связаться: ' + lead.name,
+      description: marker + '\nCRM follow-up',
+      status: 'todo',
+      priority: 2,
+      due_at: dueAt.toISOString(),
+      created_by: user.id,
+    });
+
+    if (error) throw error;
+  }
+
+  revalidatePath('/crm');
+
+  return {
+    leadId: lead.id,
+    dueAt: dueAt.toISOString(),
+  };
+}
