@@ -28,9 +28,9 @@ export type LeadFormValues = {
 };
 
 export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
-  new: 'New',
-  contacted: 'Contacted',
-  qualified: 'Qualified',
-  won: 'Won',
-  lost: 'Lost',
+  new: 'Новый',
+  contacted: 'Связались',
+  qualified: 'Интерес',
+  won: 'Сделка',
+  lost: 'Отказ',
 };
