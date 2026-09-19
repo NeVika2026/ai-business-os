@@ -148,6 +148,12 @@ export function CrmPipeline({
               Рабочий стол →
             </Link>
             <Link
+              href="/crm/analytics"
+              className="rounded-[16px] border border-violet-300/14 bg-violet-300/[0.04] px-5 py-3 text-sm font-black text-violet-100"
+            >
+              Аналитика →
+            </Link>
+            <Link
               href="/modules/communicate/studio"
               className="rounded-[16px] border border-[#69e4ee]/16 bg-[#69e4ee]/[0.04] px-5 py-3 text-sm font-black text-[#bff8fb]"
             >
