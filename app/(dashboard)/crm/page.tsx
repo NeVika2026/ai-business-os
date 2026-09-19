@@ -32,14 +32,20 @@ export default async function CrmPage() {
     .order('due_at', { ascending: true });
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-  const { data: replyEvents } = await supabase
+  const { data: communicationEvents } = await supabase
     .from('events')
     .select('correlation_id, type, payload, created_at')
     .eq('organization_id', organizationId)
-    .in('type', ['crm_whatsapp_received', 'crm_sms_received'])
+    .in('type', [
+      'crm_whatsapp_received',
+      'crm_sms_received',
+      'crm_whatsapp_sent',
+      'crm_sms_sent',
+      'crm_voice_call_completed',
+    ])
     .gte('created_at', thirtyDaysAgo)
     .order('created_at', { ascending: false })
-    .limit(300);
+    .limit(500);
 
   const followUpsByLead: Record<string, string> = {};
   for (const task of followUpTasks ?? []) {
@@ -51,18 +57,29 @@ export default async function CrmPage() {
 
   const latestRepliesByLead: Record<
     string,
-    { at: string; text: string; channel: 'whatsapp' | 'sms' }
+    { at: string; text: string; channel: 'whatsapp' | 'sms'; needsReply: boolean }
   > = {};
 
-  for (const event of replyEvents ?? []) {
+  const latestCommunicationByLead = new Set<string>();
+
+  for (const event of communicationEvents ?? []) {
     const leadId = event.correlation_id;
-    if (!leadId || latestRepliesByLead[leadId]) continue;
+    if (!leadId || latestCommunicationByLead.has(leadId)) continue;
+
+    latestCommunicationByLead.add(leadId);
+
+    const isInbound =
+      event.type === 'crm_whatsapp_received' ||
+      event.type === 'crm_sms_received';
+
+    if (!isInbound) continue;
 
     const payload = (event.payload ?? {}) as Record<string, unknown>;
     latestRepliesByLead[leadId] = {
       at: event.created_at,
       text: typeof payload.text === 'string' ? payload.text : '',
       channel: event.type === 'crm_sms_received' ? 'sms' : 'whatsapp',
+      needsReply: true,
     };
   }
 
