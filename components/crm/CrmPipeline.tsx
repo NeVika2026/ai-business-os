@@ -15,7 +15,7 @@ type CrmPipelineProps = {
   followUpsByLead: Record<string, string>;
   latestRepliesByLead: Record<
     string,
-    { at: string; text: string; channel: 'whatsapp' | 'sms' }
+    { at: string; text: string; channel: 'whatsapp' | 'sms'; needsReply: boolean }
   >;
 };
 
@@ -173,7 +173,7 @@ export function CrmPipeline({
                   : 'border-white/[0.08] bg-white/[0.02] text-white/48',
             ].join(' ')}
           >
-            Ответили · {Object.keys(latestRepliesByLead).length}
+            Ждут ответа · {Object.keys(latestRepliesByLead).length}
           </button>
 
           <button
@@ -271,7 +271,7 @@ export function CrmPipeline({
                           <div className="mt-3 rounded-xl border border-emerald-300/12 bg-emerald-300/[0.035] px-3 py-2.5">
                             <div className="flex items-center justify-between gap-3">
                               <p className="text-[9px] font-black uppercase tracking-[.10em] text-emerald-200">
-                                ОТВЕТ КЛИЕНТА · {latestRepliesByLead[lead.id].channel === 'sms' ? 'SMS' : 'WHATSAPP'}
+                                ЖДЁТ ОТВЕТА · {latestRepliesByLead[lead.id].channel === 'sms' ? 'SMS' : 'WHATSAPP'}
                               </p>
                               <p className="text-[9px] font-bold text-white/28">
                                 {formatDate(latestRepliesByLead[lead.id].at)}
