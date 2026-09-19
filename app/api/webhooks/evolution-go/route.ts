@@ -1,130 +1,130 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { recordInboundCommunication } from '@/lib/crm/inbound-communications';
+import { recordInboundCommunication } from '@/lib/crm/webhook-inbox';
 
-export const runtime = 'nodejs';
-
-function objectValue(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object'
-    ? (value as Record<string, unknown>)
-    : {};
-}
-
-function stringValue(value: unknown) {
-  return typeof value === 'string' ? value : '';
-}
-
-function extractText(message: Record<string, unknown>) {
-  const conversation = stringValue(message.conversation);
-  if (conversation) return conversation;
-
-  const extended = objectValue(message.extendedTextMessage);
-  const extendedText = stringValue(extended.text);
-  if (extendedText) return extendedText;
-
-  const image = objectValue(message.imageMessage);
-  const imageCaption = stringValue(image.caption);
-  if (imageCaption) return imageCaption;
-
-  const video = objectValue(message.videoMessage);
-  const videoCaption = stringValue(video.caption);
-  if (videoCaption) return videoCaption;
-
-  const document = objectValue(message.documentMessage);
-  return stringValue(document.caption);
-}
+type EvolutionMessageData = {
+  key?: {
+    id?: string;
+    remoteJid?: string;
+    fromMe?: boolean;
+  };
+  pushName?: string;
+  messageTimestamp?: string | number;
+  message?: {
+    conversation?: string;
+    extendedTextMessage?: { text?: string };
+    imageMessage?: { caption?: string };
+    videoMessage?: { caption?: string };
+    documentMessage?: { caption?: string; fileName?: string };
+  };
+};
 
 function authorized(request: NextRequest) {
-  const expected = process.env.EVOLUTION_GO_WEBHOOK_SECRET?.trim();
-  if (!expected) return true;
+  const expected =
+    process.env.EVOLUTION_GO_WEBHOOK_SECRET?.trim() ||
+    process.env.EVOLUTION_GO_INSTANCE_TOKEN?.trim();
 
-  const provided =
-    request.nextUrl.searchParams.get('secret')?.trim() ||
-    request.headers.get('x-business-zavod-secret')?.trim();
+  if (!expected) return false;
 
-  return provided === expected;
+  const querySecret = request.nextUrl.searchParams.get('secret')?.trim();
+  const headerSecret =
+    request.headers.get('x-business-zavod-webhook-secret')?.trim() ||
+    request.headers.get('x-webhook-secret')?.trim();
+
+  return querySecret === expected || headerSecret === expected;
+}
+
+function getMessageText(data: EvolutionMessageData) {
+  return (
+    data.message?.conversation?.trim() ||
+    data.message?.extendedTextMessage?.text?.trim() ||
+    data.message?.imageMessage?.caption?.trim() ||
+    data.message?.videoMessage?.caption?.trim() ||
+    data.message?.documentMessage?.caption?.trim() ||
+    (data.message?.documentMessage?.fileName
+      ? '[Документ: ' + data.message.documentMessage.fileName + ']'
+      : '') ||
+    '[Входящее сообщение без текста]'
+  );
+}
+
+function senderFromJid(value: string) {
+  const left = value.split('@')[0] ?? '';
+  return left.split(':')[0] ?? '';
 }
 
 export async function POST(request: NextRequest) {
   if (!authorized(request)) {
-    return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const organizationId =
-    process.env.EVOLUTION_GO_WEBHOOK_ORGANIZATION_ID?.trim();
-
+  const organizationId = process.env.COMMUNICATIONS_ORGANIZATION_ID?.trim();
   if (!organizationId) {
     return NextResponse.json(
-      { ok: false, error: 'organization_not_configured' },
+      { error: 'COMMUNICATIONS_ORGANIZATION_ID is not configured.' },
       { status: 503 },
     );
   }
 
-  let body: Record<string, unknown>;
-  try {
-    body = objectValue(await request.json());
-  } catch {
-    return NextResponse.json({ ok: false, error: 'invalid_json' }, { status: 400 });
-  }
+  const body = (await request.json().catch(() => null)) as
+    | {
+        event?: string;
+        instanceName?: string;
+        data?: EvolutionMessageData | EvolutionMessageData[];
+      }
+    | null;
 
-  const event = stringValue(body.event).toLowerCase();
-  const acceptedEvents = new Set([
-    'message',
-    'messages.upsert',
-    'message.upsert',
-  ]);
-
-  if (!acceptedEvents.has(event)) {
+  const eventName = body?.event?.trim().toLowerCase() ?? '';
+  if (!body || (eventName !== 'messages.upsert' && eventName !== 'message')) {
     return NextResponse.json({ ok: true, ignored: true });
   }
 
-  const data = objectValue(body.data);
-  const key = objectValue(data.key);
-  const message = objectValue(data.message);
-
-  if (key.fromMe === true) {
-    return NextResponse.json({ ok: true, ignored: true, reason: 'from_me' });
+  const data = Array.isArray(body.data) ? body.data[0] : body.data;
+  if (!data?.key) {
+    return NextResponse.json({ ok: true, ignored: true });
   }
 
-  const remoteJid =
-    stringValue(key.remoteJid) ||
-    stringValue(data.remoteJid) ||
-    stringValue(body.remoteJid);
-
-  if (!remoteJid || remoteJid.includes('@g.us')) {
-    return NextResponse.json({ ok: true, ignored: true, reason: 'not_direct_chat' });
+  if (data.key.fromMe) {
+    return NextResponse.json({ ok: true, ignored: true, reason: 'fromMe' });
   }
 
-  const from = remoteJid.split('@')[0] ?? '';
-  const text =
-    extractText(message) ||
-    stringValue(data.text) ||
-    stringValue(body.text);
-
-  if (!from || !text) {
-    return NextResponse.json({ ok: true, ignored: true, reason: 'no_text' });
+  const remoteJid = data.key.remoteJid?.trim() ?? '';
+  if (!remoteJid || remoteJid.endsWith('@g.us') || remoteJid.includes('status@')) {
+    return NextResponse.json({ ok: true, ignored: true, reason: 'non-direct-chat' });
   }
 
-  const providerMessageId =
-    stringValue(key.id) ||
-    stringValue(data.id) ||
-    stringValue(body.id) ||
-    null;
+  const phone = senderFromJid(remoteJid);
+  const providerEventId =
+    data.key.id?.trim() ||
+    [body.instanceName, remoteJid, data.messageTimestamp].filter(Boolean).join(':') ||
+    crypto.randomUUID();
 
-  const providerTimestamp =
-    stringValue(data.messageTimestamp) ||
-    stringValue(body.messageTimestamp) ||
-    null;
+  try {
+    const result = await recordInboundCommunication({
+      organizationId,
+      channel: 'whatsapp',
+      phone,
+      text: getMessageText(data),
+      provider: 'Evolution Go',
+      providerEventId,
+      senderName: data.pushName?.trim() || null,
+      metadata: {
+        instance_name: body.instanceName ?? null,
+        remote_jid: remoteJid,
+        provider_timestamp: data.messageTimestamp ?? null,
+      },
+    });
 
-  const result = await recordInboundCommunication({
-    organizationId,
-    channel: 'whatsapp',
-    from,
-    text,
-    providerMessageId,
-    providerTimestamp,
-    raw: body,
-  });
-
-  return NextResponse.json({ ok: true, ...result });
+    return NextResponse.json({ ok: true, ...result });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Inbound WhatsApp processing failed.',
+      },
+      { status: 500 },
+    );
+  }
 }
