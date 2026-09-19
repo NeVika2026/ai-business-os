@@ -3,6 +3,8 @@
 import { randomUUID } from 'node:crypto';
 
 import { ensureFactoryProject, saveFactoryArtifact } from '@/lib/factory-chain/persistence';
+import { createClient } from '@/services/supabase/server';
+import { getCurrentOrganizationId } from '@/utils/auth/organization';
 
 const DEFAULT_BASE_URL = 'https://voicyfy.ru';
 
@@ -149,6 +151,7 @@ export async function startVoiceAgentCallAction(input: {
 export async function getVoiceAgentCallAction(
   sessionId: string,
   projectId?: string | null,
+  leadId?: string | null,
 ): Promise<
   | { status: 'completed'; call: VoiceAgentCallData }
   | { status: 'pending'; message: string }
@@ -245,6 +248,26 @@ export async function getVoiceAgentCallAction(
         },
         identity: project.identity,
       });
+    }
+
+    if (leadId?.trim()) {
+      const supabase = await createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const organizationId = user ? await getCurrentOrganizationId(supabase) : null;
+
+      if (user && organizationId) {
+        await supabase
+          .from('crm_leads')
+          .update({
+            status: 'contacted',
+            last_contact_at: new Date().toISOString(),
+            updated_by: user.id,
+          })
+          .eq('id', leadId.trim())
+          .eq('organization_id', organizationId);
+      }
     }
 
     return { status: 'completed', call };
