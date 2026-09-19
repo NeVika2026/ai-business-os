@@ -5,6 +5,7 @@ import { useEffect, useState, useTransition } from 'react';
 
 import {
   getCommunicationsStatusAction,
+  saveScoutLeadAction,
   scrapeScoutLeadAction,
   sendSmsMessageAction,
   sendWhatsAppMessageAction,
@@ -16,6 +17,29 @@ import {
 type CommunicationsStudioProps = {
   projectId?: string | null;
 };
+
+function getLeadString(
+  lead: Record<string, unknown> | null,
+  keys: string[],
+): string {
+  if (!lead) return '';
+  for (const key of keys) {
+    const value = lead[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+    if (typeof value === 'number') return String(value);
+    if (typeof value === 'boolean') return value ? 'Да' : 'Нет';
+  }
+  return '';
+}
+
+function getLeadNumber(
+  lead: Record<string, unknown> | null,
+  key: string,
+): number | null {
+  if (!lead) return null;
+  const value = lead[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
 
 const EMPTY_STATUS: CommunicationsStatus = {
   sms: { connected: false, provider: 'httpSMS', fromConfigured: false },
@@ -41,6 +65,7 @@ export function CommunicationsStudio({
   const [scoutIdentifier, setScoutIdentifier] = useState('');
   const [scoutResult, setScoutResult] = useState<Record<string, unknown> | null>(null);
   const [scoutMessage, setScoutMessage] = useState('');
+  const [savedProjectId, setSavedProjectId] = useState<string | null>(projectId);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -68,6 +93,44 @@ export function CommunicationsStudio({
       }
 
       setScoutResult(response.lead);
+    });
+  };
+
+  const useLeadForMessage = (nextChannel: CommunicationChannel) => {
+    const phone = getLeadString(scoutResult, ['phone']);
+    const name = getLeadString(scoutResult, ['full_name', 'name', 'username']);
+
+    setChannel(nextChannel);
+    if (phone) setTo(phone);
+    if (!message.trim()) {
+      setMessage(
+        name
+          ? 'Здравствуйте, ' + name + '! Пишу по поводу возможного сотрудничества. Удобно обсудить?'
+          : 'Здравствуйте! Пишу по поводу возможного сотрудничества. Удобно обсудить?',
+      );
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const saveLead = () => {
+    if (!scoutResult || isPending) return;
+
+    setScoutMessage('');
+
+    startTransition(async () => {
+      const response = await saveScoutLeadAction({
+        lead: scoutResult,
+        projectId: savedProjectId,
+      });
+
+      if (response.status === 'failed') {
+        setScoutMessage(response.message);
+        return;
+      }
+
+      setSavedProjectId(response.projectId);
+      setScoutMessage(response.message);
     });
   };
 
@@ -310,9 +373,99 @@ export function CommunicationsStudio({
             ) : null}
 
             {scoutResult ? (
-              <pre className="mt-4 max-h-[320px] overflow-auto rounded-[16px] border border-white/[0.07] bg-black/25 p-4 text-xs leading-6 text-white/72">
-                {JSON.stringify(scoutResult, null, 2)}
-              </pre>
+              <div className="mt-4 overflow-hidden rounded-[22px] border border-white/[0.08] bg-black/25">
+                <div className="grid gap-4 border-b border-white/[0.07] p-5 sm:grid-cols-[1fr_auto] sm:items-start">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full border border-[#69e4ee]/15 bg-[#69e4ee]/[0.05] px-2.5 py-1 text-[10px] font-black uppercase tracking-[.10em] text-[#9cf1f6]">
+                        {scoutPlatform}
+                      </span>
+                      {getLeadNumber(scoutResult, 'lead_score') !== null ? (
+                        <span className="rounded-full border border-[#f1c96c]/15 bg-[#f1c96c]/[0.04] px-2.5 py-1 text-[10px] font-black text-[#f4d878]">
+                          SCORE {getLeadNumber(scoutResult, 'lead_score')}/100
+                        </span>
+                      ) : null}
+                    </div>
+                    <h4 className="mt-3 text-2xl font-black tracking-[-.035em] text-[#fff8e7]">
+                      {getLeadString(scoutResult, ['full_name', 'name', 'username']) || 'Найденный лид'}
+                    </h4>
+                    {getLeadString(scoutResult, ['headline', 'bio', 'company']) ? (
+                      <p className="mt-2 max-w-2xl text-sm leading-6 text-white/58">
+                        {getLeadString(scoutResult, ['headline', 'bio', 'company'])}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-1">
+                    <button
+                      type="button"
+                      onClick={() => useLeadForMessage('whatsapp')}
+                      disabled={!getLeadString(scoutResult, ['phone'])}
+                      className="rounded-xl border border-emerald-300/14 bg-emerald-300/[0.04] px-3 py-2 text-xs font-black text-emerald-200 disabled:opacity-30"
+                    >
+                      WhatsApp
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => useLeadForMessage('sms')}
+                      disabled={!getLeadString(scoutResult, ['phone'])}
+                      className="rounded-xl border border-white/[0.09] px-3 py-2 text-xs font-black text-white/72 disabled:opacity-30"
+                    >
+                      SMS
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid gap-px bg-white/[0.06] sm:grid-cols-2">
+                  {[
+                    ['Email', getLeadString(scoutResult, ['email'])],
+                    ['Телефон', getLeadString(scoutResult, ['phone'])],
+                    ['Компания', getLeadString(scoutResult, ['company'])],
+                    ['Сайт', getLeadString(scoutResult, ['website'])],
+                    ['Email confidence', getLeadString(scoutResult, ['email_score'])],
+                    ['Email verified', getLeadString(scoutResult, ['email_verified'])],
+                  ].map(([label, value]) => (
+                    <div key={label} className="bg-[#0a0f15] p-4">
+                      <p className="text-[10px] font-black uppercase tracking-[.11em] text-white/34">{label}</p>
+                      <p className="mt-1 break-words text-sm font-bold text-white/78">{value || '—'}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap gap-2 p-4">
+                  <button
+                    type="button"
+                    onClick={saveLead}
+                    className="rounded-xl border border-[#f1c96c]/16 bg-[#f1c96c]/[0.04] px-3 py-2 text-xs font-black text-[#f4d878]"
+                  >
+                    Сохранить в проект
+                  </button>
+
+                  {getLeadString(scoutResult, ['phone']) ? (
+                    <Link
+                      href={
+                        '/modules/voice-agent/studio?phone=' +
+                        encodeURIComponent(getLeadString(scoutResult, ['phone'])) +
+                        (savedProjectId ? '&project=' + encodeURIComponent(savedProjectId) : '')
+                      }
+                      className="rounded-xl border border-[#69e4ee]/16 bg-[#69e4ee]/[0.04] px-3 py-2 text-xs font-black text-[#a8f3f8]"
+                    >
+                      Позвонить AI-агентом
+                    </Link>
+                  ) : null}
+
+                  {getLeadString(scoutResult, ['website']) ? (
+                    <a
+                      href={getLeadString(scoutResult, ['website'])}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-xl border border-white/[0.09] px-3 py-2 text-xs font-bold text-white/62"
+                    >
+                      Открыть сайт ↗
+                    </a>
+                  ) : null}
+                </div>
+              </div>
             ) : null}
           </div>
 
