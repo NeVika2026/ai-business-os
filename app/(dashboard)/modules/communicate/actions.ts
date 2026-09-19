@@ -762,3 +762,53 @@ export async function generateLeadOutreachMessageAction(input: {
     };
   }
 }
+
+
+export async function getCrmLeadContextAction(
+  leadId: string,
+): Promise<
+  | { status: 'found'; lead: Record<string, unknown> }
+  | { status: 'failed'; message: string }
+> {
+  const cleanId = leadId.trim();
+  if (!cleanId) return { status: 'failed', message: 'Лид не указан.' };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { status: 'failed', message: 'Требуется авторизация.' };
+
+  const organizationId = await getCurrentOrganizationId(supabase);
+  if (!organizationId) {
+    return { status: 'failed', message: 'Организация не найдена.' };
+  }
+
+  const { data: lead, error } = await supabase
+    .from('crm_leads')
+    .select(
+      'id, name, email, phone, status, source, notes, last_contact_at, project_id',
+    )
+    .eq('organization_id', organizationId)
+    .eq('id', cleanId)
+    .maybeSingle();
+
+  if (error) return { status: 'failed', message: error.message };
+  if (!lead) return { status: 'failed', message: 'Лид не найден.' };
+
+  return {
+    status: 'found',
+    lead: {
+      id: lead.id,
+      name: lead.name,
+      email: lead.email,
+      phone: lead.phone,
+      status: lead.status,
+      source: lead.source,
+      notes: lead.notes,
+      last_contact_at: lead.last_contact_at,
+      project_id: lead.project_id,
+    },
+  };
+}
