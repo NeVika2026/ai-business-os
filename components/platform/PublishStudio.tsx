@@ -81,10 +81,12 @@ export function PublishStudio({
 
     const handedOff = window.sessionStorage.getItem('business-zavod:publish-source');
     if (handedOff?.trim()) {
-      setSource(handedOff);
-      setHandoffMessage('Материал из предыдущего цеха принят. Осталось выбрать площадки и собрать версии.');
-      window.sessionStorage.removeItem('business-zavod:publish-source');
-      return;
+      const frame = window.requestAnimationFrame(() => {
+        setSource(handedOff);
+        setHandoffMessage('Материал из предыдущего цеха принят. Осталось выбрать площадки и собрать версии.');
+        window.sessionStorage.removeItem('business-zavod:publish-source');
+      });
+      return () => window.cancelAnimationFrame(frame);
     }
 
     if (initialProjectId && initialArtifactId) {

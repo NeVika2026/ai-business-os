@@ -149,7 +149,7 @@ export function CommunicationsStudio({
     });
   };
 
-  const useLeadForMessage = (nextChannel: CommunicationChannel) => {
+  const applyLeadForMessage = (nextChannel: CommunicationChannel) => {
     const phone = getLeadString(scoutResult, ['phone']);
     const name = getLeadString(scoutResult, ['full_name', 'name', 'username']);
 
@@ -531,7 +531,7 @@ export function CommunicationsStudio({
                   </button>
                   <button
                     type="button"
-                    onClick={() => useLeadForMessage('whatsapp')}
+                    onClick={() => applyLeadForMessage('whatsapp')}
                     disabled={!getLeadString(scoutResult, ['phone'])}
                     className="rounded-xl border border-white/[0.09] px-3 py-2 text-xs font-bold text-white/60 disabled:opacity-30"
                   >

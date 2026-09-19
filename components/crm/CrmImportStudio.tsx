@@ -176,12 +176,12 @@ export function CrmImportStudio() {
             </p>
           </div>
 
-          <a
+          <Link
             href="/crm/export"
             className="rounded-[16px] border border-white/[0.09] bg-white/[0.025] px-5 py-3 text-sm font-black text-white/66"
           >
             Скачать текущую CRM
-          </a>
+          </Link>
         </div>
       </section>
 

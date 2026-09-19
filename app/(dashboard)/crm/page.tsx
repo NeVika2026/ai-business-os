@@ -3,6 +3,14 @@ import { createClient } from '@/services/supabase/server';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
 import type { CrmLead, LeadStatus } from '@/types/crm';
 
+function getThirtyDaysAgoIso() {
+  return new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+}
+
+function getReferenceNowIso() {
+  return new Date().toISOString();
+}
+
 export default async function CrmPage() {
   const supabase = await createClient();
   const organizationId = await getCurrentOrganizationId(supabase);
@@ -13,6 +21,7 @@ export default async function CrmPage() {
         leads={[]}
         followUpsByLead={{}}
         latestRepliesByLead={{}}
+        referenceNow={getReferenceNowIso()}
       />
     );
   }
@@ -31,7 +40,8 @@ export default async function CrmPage() {
     .not('due_at', 'is', null)
     .order('due_at', { ascending: true });
 
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const thirtyDaysAgo = getThirtyDaysAgoIso();
+  const referenceNow = getReferenceNowIso();
   const { data: communicationEvents } = await supabase
     .from('events')
     .select('correlation_id, type, payload, created_at')
@@ -102,6 +112,7 @@ export default async function CrmPage() {
       leads={leads}
       followUpsByLead={followUpsByLead}
       latestRepliesByLead={latestRepliesByLead}
+      referenceNow={referenceNow}
     />
   );
 }

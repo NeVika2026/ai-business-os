@@ -10,10 +10,10 @@ import {
 } from '@/utils/platform/create-studio';
 
 describe('Business Zavod Create Studio', () => {
-  it('exposes six provider-neutral creation modes', () => {
+  it('exposes seven provider-neutral creation modes', () => {
     assert.deepEqual(
       CREATE_STUDIO_MODES.map((item) => item.label),
-      ['Видео', 'Картинка', 'Сторис', 'Презентация', 'Документ', 'Озвучка'],
+      ['Видео', 'Картинка', 'Сторис', 'Презентация', 'Документ', 'Сайт', 'Озвучка'],
     );
 
     assert.doesNotMatch(
@@ -74,7 +74,8 @@ describe('Business Zavod Create Studio', () => {
 
     assert.match(source, /Производственная линия/);
     assert.match(source, /getCreateStudioProductionLine/);
-    assert.match(source, /Передать AI-директору/);
+    assert.match(source, /WebsiteProductionConsole/);
+    assert.match(source, /MediaProductionConsole/);
     assert.match(source, /Идею можно описать одной фразой/);
     assert.match(source, /MediaProductionConsole/);
   });

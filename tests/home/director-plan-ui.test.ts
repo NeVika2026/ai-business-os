@@ -17,13 +17,13 @@ describe('Home DirectorPlan UI wiring', () => {
     assert.match(source, /estimatedTime/);
   });
 
-  it('prepares a plan before starting real work', () => {
+  it('starts real work, handles clarification, and advances the orchestra', () => {
     const path = join(ROOT, 'components', 'home', 'OsaHomeActionScreen.tsx');
     const source = readFileSync(path, 'utf8');
 
-    assert.match(source, /prepareHomeDirectorPlan/);
-    assert.match(source, /phase === 'plan'/);
-    assert.match(source, /OsaDirectorPlanPanel/);
-    assert.match(source, /confirmDirectorPlan/);
+    assert.match(source, /startHomeRealWork/);
+    assert.match(source, /result\.status === 'clarify'/);
+    assert.match(source, /runOrchestraLoop/);
+    assert.match(source, /BusinessFactoryHero/);
   });
 });

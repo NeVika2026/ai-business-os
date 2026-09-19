@@ -110,7 +110,11 @@ export function MediaProductionConsole({
   useEffect(() => {
     if (isLiveMode) return;
     const saved = window.localStorage.getItem(artifactDraftKey);
-    setArtifactContent(saved ?? '');
+    const frame = window.requestAnimationFrame(() => {
+      setArtifactContent(saved ?? '');
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, [artifactDraftKey, isLiveMode]);
 
   useEffect(() => {

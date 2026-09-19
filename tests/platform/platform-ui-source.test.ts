@@ -36,7 +36,7 @@ describe('Business Zavod platform discovery UI', () => {
     assert.match(builderSource, /router\.push/);
   });
 
-  it('ships the guided Create Studio and hands briefs back to Home', () => {
+  it('ships Create Studio with direct production consoles', () => {
     const studioPath = join(ROOT, 'components', 'platform', 'CreateStudio.tsx');
     const pagePath = join(
       ROOT,
@@ -53,9 +53,9 @@ describe('Business Zavod platform discovery UI', () => {
 
     const studioSource = readFileSync(studioPath, 'utf8');
     assert.match(studioSource, /CREATE_STUDIO_MODES/);
-    assert.match(studioSource, /buildCreateStudioPrompt/);
-    assert.match(studioSource, /router\.push/);
-    assert.match(studioSource, /\/home\?prompt=/);
+    assert.match(studioSource, /MediaProductionConsole/);
+    assert.match(studioSource, /WebsiteProductionConsole/);
+    assert.match(studioSource, /getCreateStudioProductionLine/);
   });
 
   it('ships a server-backed integrations dashboard without exposing env values', () => {

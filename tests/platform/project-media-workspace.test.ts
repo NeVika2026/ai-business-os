@@ -24,7 +24,7 @@ describe('Project media workspace', () => {
     );
 
     assert.match(page, /loadProjectMedia/);
-    assert.match(page, /ProjectWorkspace workspace={workspace} media={media}/);
+    assert.match(page, /ProjectWorkspace[\s\S]*workspace={workspace}[\s\S]*media={media}/);
     assert.match(workspace, /ProjectMedia/);
   });
 
