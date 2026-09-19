@@ -37,9 +37,28 @@ function formatDate(value: string) {
 
 export function CrmPipeline({ leads, followUpsByLead }: CrmPipelineProps) {
   const [formOpen, setFormOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [attentionOnly, setAttentionOnly] = useState(false);
   const [selectedLead, setSelectedLead] = useState<CrmLead | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const now = Date.now();
+  const urgentLeadIds = new Set(
+    Object.entries(followUpsByLead)
+      .filter(([, dueAt]) => new Date(dueAt).getTime() <= now)
+      .map(([leadId]) => leadId),
+  );
+
+  const normalizedQuery = query.trim().toLowerCase();
+  const visibleLeads = leads.filter((lead) => {
+    if (attentionOnly && !urgentLeadIds.has(lead.id)) return false;
+    if (!normalizedQuery) return true;
+
+    return [lead.name, lead.phone, lead.email, lead.source]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(normalizedQuery));
+  });
 
   const counts = {
     total: leads.length,
@@ -121,7 +140,34 @@ export function CrmPipeline({ leads, followUpsByLead }: CrmPipelineProps) {
           </div>
         </div>
 
-        <div className="relative mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="relative mt-7 grid gap-3 xl:grid-cols-[1fr_auto]">
+          <label className="block">
+            <span className="sr-only">Поиск по CRM</span>
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Найти по имени, телефону, email или источнику…"
+              className="w-full rounded-[18px] border border-white/[0.08] bg-black/22 px-4 py-3.5 text-sm text-white outline-none placeholder:text-white/30 focus:border-[#69e4ee]/20"
+            />
+          </label>
+
+          <button
+            type="button"
+            onClick={() => setAttentionOnly((value) => !value)}
+            className={[
+              'rounded-[18px] border px-5 py-3 text-sm font-black transition',
+              attentionOnly
+                ? 'border-[#f1c96c]/26 bg-[#f1c96c]/[0.07] text-[#f4d878]'
+                : urgentLeadIds.size > 0
+                  ? 'border-[#f1c96c]/16 bg-[#f1c96c]/[0.035] text-[#f4d878]'
+                  : 'border-white/[0.08] bg-white/[0.02] text-white/48',
+            ].join(' ')}
+          >
+            Требуют внимания · {urgentLeadIds.size}
+          </button>
+        </div>
+
+        <div className="relative mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {[
             ['Всего', counts.total],
             ['Новые', counts.new],
@@ -140,7 +186,7 @@ export function CrmPipeline({ leads, followUpsByLead }: CrmPipelineProps) {
       <section className="mt-5 overflow-x-auto pb-4">
         <div className="grid min-w-[1180px] grid-cols-5 gap-3">
           {COLUMNS.map((column) => {
-            const columnLeads = leads.filter((lead) => lead.status === column.status);
+            const columnLeads = visibleLeads.filter((lead) => lead.status === column.status);
 
             return (
               <div
