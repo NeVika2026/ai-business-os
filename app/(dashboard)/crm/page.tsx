@@ -8,7 +8,13 @@ export default async function CrmPage() {
   const organizationId = await getCurrentOrganizationId(supabase);
 
   if (!organizationId) {
-    return <CrmPipeline leads={[]} followUpsByLead={{}} />;
+    return (
+      <CrmPipeline
+        leads={[]}
+        followUpsByLead={{}}
+        latestRepliesByLead={{}}
+      />
+    );
   }
 
   const { data } = await supabase
@@ -25,12 +31,39 @@ export default async function CrmPage() {
     .not('due_at', 'is', null)
     .order('due_at', { ascending: true });
 
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: replyEvents } = await supabase
+    .from('events')
+    .select('correlation_id, type, payload, created_at')
+    .eq('organization_id', organizationId)
+    .in('type', ['crm_whatsapp_received', 'crm_sms_received'])
+    .gte('created_at', thirtyDaysAgo)
+    .order('created_at', { ascending: false })
+    .limit(300);
+
   const followUpsByLead: Record<string, string> = {};
   for (const task of followUpTasks ?? []) {
     const description = task.description ?? '';
     const match = description.match(/CRM_LEAD_ID:([0-9a-f-]{36})/i);
     if (!match || !task.due_at || followUpsByLead[match[1]]) continue;
     followUpsByLead[match[1]] = task.due_at;
+  }
+
+  const latestRepliesByLead: Record<
+    string,
+    { at: string; text: string; channel: 'whatsapp' | 'sms' }
+  > = {};
+
+  for (const event of replyEvents ?? []) {
+    const leadId = event.correlation_id;
+    if (!leadId || latestRepliesByLead[leadId]) continue;
+
+    const payload = (event.payload ?? {}) as Record<string, unknown>;
+    latestRepliesByLead[leadId] = {
+      at: event.created_at,
+      text: typeof payload.text === 'string' ? payload.text : '',
+      channel: event.type === 'crm_sms_received' ? 'sms' : 'whatsapp',
+    };
   }
 
   const leads: CrmLead[] = (data ?? []).map((lead) => ({
@@ -47,5 +80,11 @@ export default async function CrmPage() {
     assignee: null,
   }));
 
-  return <CrmPipeline leads={leads} followUpsByLead={followUpsByLead} />;
+  return (
+    <CrmPipeline
+      leads={leads}
+      followUpsByLead={followUpsByLead}
+      latestRepliesByLead={latestRepliesByLead}
+    />
+  );
 }
