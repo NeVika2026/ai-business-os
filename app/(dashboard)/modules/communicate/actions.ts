@@ -42,6 +42,34 @@ function normalizeWhatsAppNumber(value: string): string | null {
   return cleaned;
 }
 
+async function completeLeadFollowUpTask(input: {
+  leadId: string;
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  organizationId: string;
+  userId: string;
+}) {
+  const marker = 'CRM_LEAD_ID:' + input.leadId;
+
+  const { data: tasks } = await input.supabase
+    .from('tasks')
+    .select('id')
+    .eq('organization_id', input.organizationId)
+    .eq('status', 'todo')
+    .ilike('description', '%' + marker + '%');
+
+  const ids = (tasks ?? []).map((task) => task.id);
+  if (!ids.length) return;
+
+  await input.supabase
+    .from('tasks')
+    .update({
+      status: 'done',
+      updated_by: input.userId,
+    })
+    .in('id', ids)
+    .eq('organization_id', input.organizationId);
+}
+
 async function logCommunicationLeadEvent(input: {
   leadId: string;
   type: 'crm_sms_sent' | 'crm_whatsapp_sent';
@@ -225,6 +253,13 @@ export async function sendSmsMessageAction(input: {
           })
           .eq('id', input.leadId.trim())
           .eq('organization_id', organizationId);
+
+        await completeLeadFollowUpTask({
+          leadId: input.leadId.trim(),
+          supabase,
+          organizationId,
+          userId: user.id,
+        });
       }
 
       await logCommunicationLeadEvent({
