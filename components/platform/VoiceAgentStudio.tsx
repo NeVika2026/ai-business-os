@@ -14,6 +14,7 @@ import {
 type VoiceAgentStudioProps = {
   projectId?: string | null;
   initialPhone?: string;
+  initialLeadId?: string | null;
 };
 
 const EMPTY_STATUS: VoiceAgentConnectionStatus = {
@@ -26,6 +27,7 @@ const EMPTY_STATUS: VoiceAgentConnectionStatus = {
 export function VoiceAgentStudio({
   projectId = null,
   initialPhone = '',
+  initialLeadId = null,
 }: VoiceAgentStudioProps) {
   const [connection, setConnection] = useState(EMPTY_STATUS);
   const [phone, setPhone] = useState(initialPhone);
@@ -55,7 +57,7 @@ export function VoiceAgentStudio({
     if (!id || isRefreshing) return;
 
     refreshTransition(async () => {
-      const result = await getVoiceAgentCallAction(id, projectId);
+      const result = await getVoiceAgentCallAction(id, projectId, initialLeadId);
 
       if (result.status === 'completed') {
         setCall(result.call);
