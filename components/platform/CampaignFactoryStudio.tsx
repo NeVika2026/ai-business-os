@@ -83,7 +83,7 @@ export function CampaignFactoryStudio({
   const [approved, setApproved] = useState(false);
   const [jobId, setJobId] = useState('');
   const [jobStatus, setJobStatus] = useState<MediaStudioStatusResult | null>(null);
-  const [mediaKind, setMediaKind] = useState<'video' | 'image'>('video');
+  const mediaKind = TABS.find((tab) => tab.id === kind)?.mediaKind ?? 'video';
   const [message, setMessage] = useState('');
   const [isStarting, startTransition] = useTransition();
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -93,14 +93,6 @@ export function CampaignFactoryStudio({
     isStarting ||
     jobStatus?.status === 'pending' ||
     jobStatus?.status === 'running';
-
-  useEffect(() => {
-    setMediaKind(TABS.find((tab) => tab.id === kind)?.mediaKind ?? 'video');
-    setJobId('');
-    setJobStatus(null);
-    setMessage('');
-    setApproved(false);
-  }, [kind]);
 
   useEffect(() => {
     if (!jobId || !jobStatus) return;
@@ -157,6 +149,14 @@ export function CampaignFactoryStudio({
     });
   }, [activeProjectId, jobStatus, kind]);
 
+  const selectKind = (nextKind: CampaignRecipeKind) => {
+    setKind(nextKind);
+    setJobId('');
+    setJobStatus(null);
+    setMessage('');
+    setApproved(false);
+  };
+
   const canStart = (() => {
     if (!approved || busy) return false;
     if (kind === 'product_ad') {
@@ -203,7 +203,6 @@ export function CampaignFactoryStudio({
       }
 
       setActiveProjectId(result.projectId);
-      setMediaKind(result.mediaKind);
       setJobId(result.id);
       setJobStatus({
         status: 'pending',
@@ -248,7 +247,7 @@ export function CampaignFactoryStudio({
           <button
             key={tab.id}
             type="button"
-            onClick={() => setKind(tab.id)}
+            onClick={() => selectKind(tab.id)}
             className={[
               'rounded-[20px] border p-4 text-left transition',
               kind === tab.id

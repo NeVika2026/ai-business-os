@@ -543,18 +543,10 @@ export function FirstResultScreen({
   const [clientRecoveryChecked, setClientRecoveryChecked] = useState(Boolean(entry) || !resultId);
 
   useEffect(() => {
-    if (entry) {
-      setResolvedEntry(entry);
-      setClientRecoveryChecked(true);
-      return;
-    }
+    if (entry || !resultId) return;
 
-    if (!resultId) {
-      setClientRecoveryChecked(true);
-      return;
-    }
-
-    try {
+    const frame = window.requestAnimationFrame(() => {
+      try {
       const raw = window.localStorage.getItem(`business-zavod:first-result:${resultId}`);
 
       if (raw) {
@@ -577,11 +569,14 @@ export function FirstResultScreen({
           });
         }
       }
-    } catch {
-      // Corrupt or unavailable browser storage falls through to the normal error state.
-    } finally {
-      setClientRecoveryChecked(true);
-    }
+      } catch {
+        // Corrupt or unavailable browser storage falls through to the normal error state.
+      } finally {
+        setClientRecoveryChecked(true);
+      }
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, [entry, resultId]);
 
   if (!clientRecoveryChecked) {

@@ -17,6 +17,7 @@ type CrmPipelineProps = {
     string,
     { at: string; text: string; channel: 'whatsapp' | 'sms'; needsReply: boolean }
   >;
+  referenceNow: string;
 };
 
 const COLUMNS: Array<{
@@ -43,6 +44,7 @@ export function CrmPipeline({
   leads,
   followUpsByLead,
   latestRepliesByLead,
+  referenceNow,
 }: CrmPipelineProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -52,7 +54,7 @@ export function CrmPipeline({
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const now = Date.now();
+  const now = new Date(referenceNow).getTime();
   const urgentLeadIds = new Set(
     Object.entries(followUpsByLead)
       .filter(([, dueAt]) => new Date(dueAt).getTime() <= now)
@@ -153,12 +155,12 @@ export function CrmPipeline({
             >
               Найти дубли
             </Link>
-            <a
+            <Link
               href="/crm/export"
               className="rounded-[16px] border border-white/[0.09] bg-white/[0.025] px-5 py-3 text-sm font-black text-white/66"
             >
               Скачать CSV
-            </a>
+            </Link>
             <Link
               href="/crm/inbox"
               className="rounded-[16px] border border-emerald-300/14 bg-emerald-300/[0.04] px-5 py-3 text-sm font-black text-emerald-200"

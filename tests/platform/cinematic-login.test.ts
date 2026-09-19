@@ -10,12 +10,12 @@ describe('Cinematic Business Zavod entrance', () => {
       'utf8',
     );
 
-    assert.match(source, /Задача/);
-    assert.match(source, /Результат выходит/);
-    assert.match(source, /OSA<br\/>CORE/);
-    assert.match(source, /LIVE ORCHESTRA/);
+    assert.match(source, /Превращаем/);
+    assert.match(source, /идеи в готовый/);
+    assert.match(source, /BusinessFactoryHero/);
+    assert.match(source, /LIVE FACTORY/);
     assert.match(source, /PRODUCTION LINES/);
-    assert.match(source, /bg-\[#0a0e15\]/);
+    assert.match(source, /DIRECTOR CONSOLE/);
   });
 
   it('ships animated factory core styles with reduced-motion fallback', () => {
@@ -25,15 +25,15 @@ describe('Cinematic Business Zavod entrance', () => {
         '..',
         '..',
         'components',
-        'welcome',
-        'WelcomeScreen.module.css',
+        'home',
+        'BusinessFactoryHero.module.css',
       ),
       'utf8',
     );
 
-    assert.match(source, /\.cube/);
-    assert.match(source, /\.orbitA/);
-    assert.match(source, /@keyframes cubeRotate/);
+    assert.match(source, /\.reactor/);
+    assert.match(source, /\.ringOuter/);
+    assert.match(source, /@keyframes coreBreathe/);
     assert.match(source, /prefers-reduced-motion/);
   });
 });
