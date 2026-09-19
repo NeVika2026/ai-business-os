@@ -142,6 +142,12 @@ export function CrmPipeline({
               + Новый лид
             </button>
             <Link
+              href="/crm/inbox"
+              className="rounded-[16px] border border-emerald-300/14 bg-emerald-300/[0.04] px-5 py-3 text-sm font-black text-emerald-200"
+            >
+              Рабочий стол →
+            </Link>
+            <Link
               href="/modules/communicate/studio"
               className="rounded-[16px] border border-[#69e4ee]/16 bg-[#69e4ee]/[0.04] px-5 py-3 text-sm font-black text-[#bff8fb]"
             >
