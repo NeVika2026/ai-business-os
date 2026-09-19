@@ -2,6 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 
+import { aiGateway } from '@/services/runtime/gateway/ai-gateway';
+import type { GatewayRequest } from '@/types/runtime/dto';
+
 import type { LeadStatus } from '@/types/crm';
 import { LEAD_STATUSES } from '@/types/crm';
 import { createClient } from '@/services/supabase/server';
