@@ -391,3 +391,67 @@ export async function scrapeScoutLeadAction(input: {
     };
   }
 }
+
+
+export async function saveScoutLeadAction(input: {
+  lead: Record<string, unknown>;
+  projectId?: string | null;
+}): Promise<
+  | { status: 'saved'; projectId: string; message: string }
+  | { status: 'failed'; message: string }
+> {
+  const lead = input.lead ?? {};
+  const displayName =
+    (typeof lead.full_name === 'string' && lead.full_name.trim()) ||
+    (typeof lead.name === 'string' && lead.name.trim()) ||
+    (typeof lead.username === 'string' && lead.username.trim()) ||
+    'Лид';
+
+  try {
+    const project = await ensureFactoryProject({
+      projectId: input.projectId,
+      seed: 'Лид · ' + displayName,
+      stage: 'find',
+    });
+
+    const visibleFields = [
+      ['Имя', lead.full_name ?? lead.name],
+      ['Username', lead.username],
+      ['Компания', lead.company],
+      ['Email', lead.email],
+      ['Телефон', lead.phone],
+      ['Сайт', lead.website],
+      ['Lead score', lead.lead_score],
+      ['Email score', lead.email_score],
+      ['Email verified', lead.email_verified],
+    ]
+      .filter(([, value]) => value !== undefined && value !== null && String(value).trim())
+      .map(([label, value]) => label + ': ' + String(value))
+      .join('\n');
+
+    await saveFactoryArtifact({
+      projectId: project.projectId,
+      stage: 'find',
+      title: 'Лид · ' + displayName,
+      content: visibleFields || JSON.stringify(lead, null, 2),
+      metadata: {
+        artifactType: 'lead',
+        source: 'scout',
+        lead,
+        savedAt: new Date().toISOString(),
+      },
+      identity: project.identity,
+    });
+
+    return {
+      status: 'saved',
+      projectId: project.projectId,
+      message: 'Лид сохранён в проект.',
+    };
+  } catch (error) {
+    return {
+      status: 'failed',
+      message: error instanceof Error ? error.message : 'Не удалось сохранить лид.',
+    };
+  }
+}
