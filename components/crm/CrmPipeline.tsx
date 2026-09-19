@@ -171,16 +171,15 @@ export function CrmPipeline({ leads, followUpsByLead }: CrmPipelineProps) {
                         className="rounded-[20px] border border-white/[0.075] bg-[linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.015))] p-4 transition hover:border-[#69e4ee]/18"
                       >
                         <div className="flex items-start justify-between gap-3">
-                          <button
-                            type="button"
-                            onClick={() => openEdit(lead)}
+                          <Link
+                            href={'/crm/' + encodeURIComponent(lead.id)}
                             className="min-w-0 text-left"
                           >
                             <h3 className="truncate text-base font-black text-[#fff8e7]">{lead.name}</h3>
                             <p className="mt-1 truncate text-xs text-white/42">
                               {lead.source || 'Источник не указан'}
                             </p>
-                          </button>
+                          </Link>
                           <span className="shrink-0 text-[10px] font-bold text-white/28">
                             {formatDate(lead.created_at)}
                           </span>
@@ -266,6 +265,13 @@ export function CrmPipeline({ leads, followUpsByLead }: CrmPipelineProps) {
                             </button>
                           ))}
                         </div>
+
+                        <Link
+                          href={'/crm/' + encodeURIComponent(lead.id)}
+                          className="mt-3 block rounded-xl border border-white/[0.08] bg-white/[0.015] px-3 py-2 text-center text-[10px] font-black text-white/58 hover:border-[#69e4ee]/16 hover:text-[#bff8fb]"
+                        >
+                          Открыть карточку →
+                        </Link>
 
                         <label className="mt-3 block">
                           <span className="sr-only">Статус лида</span>
