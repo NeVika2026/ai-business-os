@@ -1,7 +1,7 @@
 import { CrmPipeline } from '@/components/crm/CrmPipeline';
 import { createClient } from '@/services/supabase/server';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
-import type { CrmLead } from '@/types/crm';
+import type { CrmLead, LeadStatus } from '@/types/crm';
 
 export default async function CrmPage() {
   const supabase = await createClient();
@@ -23,7 +23,7 @@ export default async function CrmPage() {
     name: lead.name,
     email: lead.email,
     phone: lead.phone,
-    status: lead.status,
+    status: lead.status as LeadStatus,
     source: lead.source,
     notes: lead.notes,
     assigned_to: lead.assigned_to,
