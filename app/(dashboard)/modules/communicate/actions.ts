@@ -297,3 +297,97 @@ export async function sendWhatsAppMessageAction(input: {
     };
   }
 }
+
+
+export type ScoutPlatform =
+  | 'instagram'
+  | 'tiktok'
+  | 'linkedin'
+  | 'github'
+  | 'youtube'
+  | 'twitch'
+  | 'linkbio'
+  | 'pinterest';
+
+export type ScoutLeadResult =
+  | { status: 'found'; lead: Record<string, unknown> }
+  | { status: 'failed'; message: string };
+
+export async function scrapeScoutLeadAction(input: {
+  platform: ScoutPlatform;
+  identifier: string;
+  enrich?: boolean;
+}): Promise<ScoutLeadResult> {
+  const baseUrl = process.env.SCOUT_API_URL?.trim()?.replace(/\/$/, '');
+  const token = process.env.SCOUT_API_TOKEN?.trim();
+  const identifier = input.identifier.trim();
+
+  if (!baseUrl) {
+    return {
+      status: 'failed',
+      message: 'Scout worker ещё не подключён: нужен SCOUT_API_URL.',
+    };
+  }
+
+  if (!identifier) {
+    return {
+      status: 'failed',
+      message: 'Укажите профиль, канал или идентификатор.',
+    };
+  }
+
+  try {
+    const response = await fetch(baseUrl + '/scrape', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        accept: 'application/json',
+        ...(token ? { authorization: 'Bearer ' + token } : {}),
+      },
+      body: JSON.stringify({
+        platform: input.platform,
+        identifier,
+        enrich: input.enrich !== false,
+      }),
+      cache: 'no-store',
+    });
+
+    const raw = await response.text();
+    let data: Record<string, unknown> = {};
+
+    try {
+      data = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+    } catch {
+      data = { raw };
+    }
+
+    if (!response.ok) {
+      return {
+        status: 'failed',
+        message:
+          (typeof data.detail === 'string' && data.detail) ||
+          (typeof data.message === 'string' && data.message) ||
+          'Scout worker вернул ошибку.',
+      };
+    }
+
+    const lead =
+      data.lead && typeof data.lead === 'object'
+        ? (data.lead as Record<string, unknown>)
+        : null;
+
+    if (!lead) {
+      return {
+        status: 'failed',
+        message: 'Scout не вернул данные профиля.',
+      };
+    }
+
+    return { status: 'found', lead };
+  } catch (error) {
+    return {
+      status: 'failed',
+      message: error instanceof Error ? error.message : 'Scout worker недоступен.',
+    };
+  }
+}
