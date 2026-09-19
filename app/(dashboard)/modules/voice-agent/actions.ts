@@ -267,6 +267,34 @@ export async function getVoiceAgentCallAction(
           })
           .eq('id', leadId.trim())
           .eq('organization_id', organizationId);
+
+        const transcript = call.dialog
+          .map((item) => `${item.role === 'assistant' ? 'Агент' : 'Клиент'}: ${item.text}`)
+          .join('\n');
+
+        await supabase.from('events').insert({
+          organization_id: organizationId,
+          type: 'crm_voice_call_completed',
+          source: 'voice-agent',
+          actor_type: 'agent',
+          actor_id: user.id,
+          payload: {
+            lead_id: leadId.trim(),
+            transcript,
+            summary:
+              call.messagesCount > 0
+                ? 'Звонок завершён, сообщений в диалоге: ' + String(call.messagesCount)
+                : 'Звонок завершён.',
+            duration_seconds: call.durationSeconds,
+            cost: call.cost,
+            record_url: call.recordUrl,
+            session_id: call.sessionHistoryId,
+          },
+          metadata: {
+            crm_lead_id: leadId.trim(),
+          },
+          correlation_id: leadId.trim(),
+        });
       }
     }
 
