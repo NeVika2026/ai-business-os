@@ -812,3 +812,144 @@ export async function getCrmLeadContextAction(
     },
   };
 }
+
+
+export async function generateCrmReplyMessageAction(input: {
+  leadId: string;
+  channel: CommunicationChannel;
+}): Promise<
+  | { status: 'generated'; message: string }
+  | { status: 'failed'; message: string }
+> {
+  const leadId = input.leadId.trim();
+  if (!leadId) return { status: 'failed', message: 'Лид не указан.' };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { status: 'failed', message: 'Требуется авторизация.' };
+
+  const organizationId = await getCurrentOrganizationId(supabase);
+  if (!organizationId) {
+    return { status: 'failed', message: 'Организация не найдена.' };
+  }
+
+  const { data: lead } = await supabase
+    .from('crm_leads')
+    .select('id, name, email, phone, status, source, notes, last_contact_at')
+    .eq('organization_id', organizationId)
+    .eq('id', leadId)
+    .maybeSingle();
+
+  if (!lead) return { status: 'failed', message: 'Лид не найден.' };
+
+  const { data: events } = await supabase
+    .from('events')
+    .select('type, payload, created_at')
+    .eq('organization_id', organizationId)
+    .eq('correlation_id', leadId)
+    .in('type', [
+      'crm_whatsapp_sent',
+      'crm_whatsapp_received',
+      'crm_sms_sent',
+      'crm_sms_received',
+      'crm_voice_call_completed',
+      'crm_note_added',
+    ])
+    .order('created_at', { ascending: false })
+    .limit(24);
+
+  const history = [...(events ?? [])].reverse().map((event) => {
+    const payload = (event.payload ?? {}) as Record<string, unknown>;
+    return {
+      type: event.type,
+      text:
+        (typeof payload.text === 'string' && payload.text) ||
+        (typeof payload.transcript === 'string' && payload.transcript) ||
+        (typeof payload.note === 'string' && payload.note) ||
+        '',
+      created_at: event.created_at,
+    };
+  });
+
+  const runId = crypto.randomUUID();
+  const request: GatewayRequest = {
+    scope: {
+      organizationId,
+      userId: user.id,
+    },
+    trace: {
+      runId,
+      traceId: crypto.randomUUID(),
+      correlationId: crypto.randomUUID(),
+    },
+    providerCode: 'auto',
+    modelCode: 'auto',
+    messages: [
+      {
+        role: 'user',
+        content: [
+          'Напиши следующий ответ клиенту по истории реального диалога.',
+          'Канал: ' + (input.channel === 'sms' ? 'SMS' : 'WhatsApp') + '.',
+          '',
+          'Карточка клиента:',
+          JSON.stringify(lead, null, 2),
+          '',
+          'История общения от старого к новому:',
+          JSON.stringify(history, null, 2),
+          '',
+          'Правила:',
+          '- отвечай на последнее сообщение клиента и учитывай предыдущий контекст;',
+          '- не выдумывай факты, цены, обещания, сроки или договорённости;',
+          '- не повторяй уже заданный вопрос, если клиент на него ответил;',
+          '- тон естественный, деловой и короткий, без канцелярщины;',
+          '- если в истории недостаточно данных, задай один уместный уточняющий вопрос;',
+          '- SMS максимум 320 символов; WhatsApp максимум 650 символов;',
+          '- верни только готовый текст, без markdown и пояснений.',
+        ].join('\n'),
+      },
+    ],
+    tools: [],
+    parameters: {
+      temperature: 0.35,
+      maxTokens: 260,
+    },
+    timeoutMs: 25_000,
+    retryPolicy: {
+      maxAttempts: 2,
+      backoffMs: [500, 1000],
+    },
+    routing: {
+      intent: 'crm_reply_message',
+      taskCategory: 'creative',
+      estimatedContextLength: JSON.stringify({ lead, history }).length,
+      reasoningComplexity: 'medium',
+      latencyTarget: 'balanced',
+      costTarget: 'balanced',
+      toolUsage: false,
+    },
+  };
+
+  try {
+    const response = await aiGateway.complete(request);
+    const generated = response.content?.trim() ?? '';
+    if (!generated) {
+      return { status: 'failed', message: 'OSA не вернула текст ответа.' };
+    }
+
+    const limit = input.channel === 'sms' ? 320 : 650;
+    const finalText =
+      generated.length <= limit
+        ? generated
+        : generated.slice(0, Math.max(0, limit - 1)).trimEnd() + '…';
+
+    return { status: 'generated', message: finalText };
+  } catch (error) {
+    return {
+      status: 'failed',
+      message: error instanceof Error ? error.message : 'Не удалось подготовить ответ.',
+    };
+  }
+}
