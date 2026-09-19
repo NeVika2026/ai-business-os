@@ -149,11 +149,7 @@ export const INTEGRATION_CATALOG: IntegrationDefinition[] = [
     description: 'Отправка и получение SMS через Android-телефон как SMS-шлюз.',
     category: 'publishing',
     capabilities: ['SMS', 'Android gateway', 'Webhooks'],
-    envKeys: [
-      'HTTPSMS_API_KEY',
-      'HTTPSMS_FROM_PHONE',
-      'HTTPSMS_WEBHOOK_ORGANIZATION_ID',
-    ],
+    envKeys: ['HTTPSMS_API_KEY', 'HTTPSMS_FROM_PHONE'],
   },
   {
     id: 'evolution-go',
@@ -161,11 +157,7 @@ export const INTEGRATION_CATALOG: IntegrationDefinition[] = [
     description: 'WhatsApp API: текст, медиа, QR-подключение и события.',
     category: 'publishing',
     capabilities: ['WhatsApp', 'Текст', 'Медиа', 'Webhooks'],
-    envKeys: [
-      'EVOLUTION_GO_BASE_URL',
-      'EVOLUTION_GO_INSTANCE_TOKEN',
-      'EVOLUTION_GO_WEBHOOK_ORGANIZATION_ID',
-    ],
+    envKeys: ['EVOLUTION_GO_BASE_URL', 'EVOLUTION_GO_INSTANCE_TOKEN'],
   },
   {
     id: 'scout',
@@ -173,7 +165,7 @@ export const INTEGRATION_CATALOG: IntegrationDefinition[] = [
     description: 'Поиск профилей и обогащение лидов с email verification и lead score.',
     category: 'infrastructure',
     capabilities: ['Lead scraping', 'Email enrichment', 'Lead score', 'CSV'],
-    envKeys: ['SCOUT_API_URL', 'SCOUT_API_TOKEN'],
+    envKeys: ['SCOUT_API_URL'],
   },
   {
     id: 'telegram-publish',
