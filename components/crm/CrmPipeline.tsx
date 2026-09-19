@@ -3,12 +3,16 @@
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
 
-import { updateLeadStatusQuick } from '@/app/(dashboard)/crm/actions';
+import {
+  scheduleLeadFollowUp,
+  updateLeadStatusQuick,
+} from '@/app/(dashboard)/crm/actions';
 import { LeadForm } from '@/components/crm/lead-form';
 import type { CrmLead, LeadStatus } from '@/types/crm';
 
 type CrmPipelineProps = {
   leads: CrmLead[];
+  followUpsByLead: Record<string, string>;
 };
 
 const COLUMNS: Array<{
@@ -31,7 +35,7 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
-export function CrmPipeline({ leads }: CrmPipelineProps) {
+export function CrmPipeline({ leads, followUpsByLead }: CrmPipelineProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<CrmLead | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -49,6 +53,14 @@ export function CrmPipeline({ leads }: CrmPipelineProps) {
     setPendingId(leadId);
     startTransition(async () => {
       await updateLeadStatusQuick(leadId, status);
+      window.location.reload();
+    });
+  };
+
+  const scheduleFollowUp = (leadId: string, days: 1 | 3 | 7) => {
+    setPendingId(leadId);
+    startTransition(async () => {
+      await scheduleLeadFollowUp(leadId, days);
       window.location.reload();
     });
   };
@@ -185,6 +197,22 @@ export function CrmPipeline({ leads }: CrmPipelineProps) {
                           </p>
                         ) : null}
 
+                        {followUpsByLead[lead.id] ? (
+                          <div className="mt-3 rounded-xl border border-[#f1c96c]/12 bg-[#f1c96c]/[0.035] px-3 py-2">
+                            <p className="text-[9px] font-black uppercase tracking-[.10em] text-[#f4d878]">
+                              СЛЕДУЮЩИЙ КОНТАКТ
+                            </p>
+                            <p className="mt-1 text-xs font-bold text-white/70">
+                              {new Intl.DateTimeFormat('ru-RU', {
+                                day: '2-digit',
+                                month: 'short',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              }).format(new Date(followUpsByLead[lead.id]))}
+                            </p>
+                          </div>
+                        ) : null}
+
                         <div className="mt-4 grid grid-cols-2 gap-2">
                           {lead.phone ? (
                             <>
@@ -220,6 +248,23 @@ export function CrmPipeline({ leads }: CrmPipelineProps) {
                               Добавить контакт
                             </button>
                           )}
+                        </div>
+
+                        <div className="mt-3 flex items-center gap-1.5">
+                          <span className="mr-1 text-[9px] font-black uppercase tracking-[.08em] text-white/30">
+                            Напомнить:
+                          </span>
+                          {([1, 3, 7] as const).map((days) => (
+                            <button
+                              key={days}
+                              type="button"
+                              disabled={isPending && pendingId === lead.id}
+                              onClick={() => scheduleFollowUp(lead.id, days)}
+                              className="rounded-lg border border-white/[0.07] bg-white/[0.02] px-2 py-1.5 text-[9px] font-black text-white/52 hover:border-[#f1c96c]/16 hover:text-[#f4d878] disabled:opacity-30"
+                            >
+                              +{days}д
+                            </button>
+                          ))}
                         </div>
 
                         <label className="mt-3 block">
