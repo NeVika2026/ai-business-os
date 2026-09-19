@@ -8,7 +8,7 @@ export default async function CrmPage() {
   const organizationId = await getCurrentOrganizationId(supabase);
 
   if (!organizationId) {
-    return <CrmPipeline leads={[]} />;
+    return <CrmPipeline leads={[]} followUpsByLead={{}} />;
   }
 
   const { data } = await supabase
@@ -16,6 +16,22 @@ export default async function CrmPage() {
     .select('id, organization_id, name, email, phone, status, source, notes, assigned_to, created_at')
     .eq('organization_id', organizationId)
     .order('created_at', { ascending: false });
+
+  const { data: followUpTasks } = await supabase
+    .from('tasks')
+    .select('id, description, due_at')
+    .eq('organization_id', organizationId)
+    .eq('status', 'todo')
+    .not('due_at', 'is', null)
+    .order('due_at', { ascending: true });
+
+  const followUpsByLead: Record<string, string> = {};
+  for (const task of followUpTasks ?? []) {
+    const description = task.description ?? '';
+    const match = description.match(/CRM_LEAD_ID:([0-9a-f-]{36})/i);
+    if (!match || !task.due_at || followUpsByLead[match[1]]) continue;
+    followUpsByLead[match[1]] = task.due_at;
+  }
 
   const leads: CrmLead[] = (data ?? []).map((lead) => ({
     id: lead.id,
@@ -31,5 +47,5 @@ export default async function CrmPage() {
     assignee: null,
   }));
 
-  return <CrmPipeline leads={leads} />;
+  return <CrmPipeline leads={leads} followUpsByLead={followUpsByLead} />;
 }
