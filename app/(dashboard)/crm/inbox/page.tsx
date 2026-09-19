@@ -7,7 +7,7 @@ export default async function CrmInboxPage() {
   const organizationId = await getCurrentOrganizationId(supabase);
 
   if (!organizationId) {
-    return <CrmInbox replies={[]} followUps={[]} />;
+    return <CrmInbox replies={[]} followUps={[]} unmatched={[]} />;
   }
 
   const now = new Date();
@@ -20,7 +20,7 @@ export default async function CrmInboxPage() {
       .eq('organization_id', organizationId),
     supabase
       .from('events')
-      .select('correlation_id, type, payload, created_at')
+      .select('id, correlation_id, type, payload, metadata, created_at')
       .eq('organization_id', organizationId)
       .in('type', [
         'crm_whatsapp_received',
@@ -28,6 +28,8 @@ export default async function CrmInboxPage() {
         'crm_whatsapp_sent',
         'crm_sms_sent',
         'crm_voice_call_completed',
+        'crm_whatsapp_received_unmatched',
+        'crm_sms_received_unmatched',
       ])
       .gte('created_at', thirtyDaysAgo)
       .order('created_at', { ascending: false })
@@ -53,6 +55,42 @@ export default async function CrmInboxPage() {
       },
     ]),
   );
+
+  const claimedOriginalEventIds = new Set(
+    (events ?? [])
+      .map((event) => {
+        const metadata = (event.metadata ?? {}) as Record<string, unknown>;
+        return typeof metadata.original_event_id === 'string'
+          ? metadata.original_event_id
+          : null;
+      })
+      .filter((value): value is string => Boolean(value)),
+  );
+
+  const unmatched = (events ?? [])
+    .filter(
+      (event) =>
+        (event.type === 'crm_whatsapp_received_unmatched' ||
+          event.type === 'crm_sms_received_unmatched') &&
+        !claimedOriginalEventIds.has(event.id),
+    )
+    .map((event) => {
+      const payload = (event.payload ?? {}) as Record<string, unknown>;
+      return {
+        eventId: event.id,
+        channel:
+          event.type === 'crm_sms_received_unmatched'
+            ? ('sms' as const)
+            : ('whatsapp' as const),
+        phone: typeof payload.phone === 'string' ? payload.phone : '',
+        senderName:
+          typeof payload.sender_name === 'string'
+            ? payload.sender_name
+            : null,
+        text: typeof payload.text === 'string' ? payload.text : '',
+        at: event.created_at,
+      };
+    });
 
   const latestCommunicationSeen = new Set<string>();
   const replies: Array<{
@@ -124,5 +162,5 @@ export default async function CrmInboxPage() {
     });
   }
 
-  return <CrmInbox replies={replies} followUps={followUps} />;
+  return <CrmInbox replies={replies} followUps={followUps} unmatched={unmatched} />;
 }

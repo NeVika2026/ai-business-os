@@ -1,6 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { useState, useTransition } from 'react';
+
+import { claimInboundMessageAction } from '@/app/(dashboard)/crm/actions';
 
 type InboxReply = {
   leadId: string;
@@ -8,6 +11,15 @@ type InboxReply = {
   phone: string | null;
   projectId: string | null;
   channel: 'whatsapp' | 'sms';
+  text: string;
+  at: string;
+};
+
+type UnmatchedInbound = {
+  eventId: string;
+  channel: 'whatsapp' | 'sms';
+  phone: string;
+  senderName: string | null;
   text: string;
   at: string;
 };
@@ -24,6 +36,7 @@ type InboxFollowUp = {
 type CrmInboxProps = {
   replies: InboxReply[];
   followUps: InboxFollowUp[];
+  unmatched: UnmatchedInbound[];
 };
 
 function formatDateTime(value: string) {
@@ -33,9 +46,32 @@ function formatDateTime(value: string) {
   }).format(new Date(value));
 }
 
-export function CrmInbox({ replies, followUps }: CrmInboxProps) {
+export function CrmInbox({ replies, followUps, unmatched }: CrmInboxProps) {
+  const [claimMessage, setClaimMessage] = useState('');
+  const [claimingEventId, setClaimingEventId] = useState<string | null>(null);
+  const [isClaimPending, startClaimTransition] = useTransition();
   const overdue = followUps.filter((item) => item.overdue);
   const upcoming = followUps.filter((item) => !item.overdue);
+
+  const claimInbound = (eventId: string) => {
+    setClaimMessage('');
+    setClaimingEventId(eventId);
+
+    startClaimTransition(async () => {
+      try {
+        const result = await claimInboundMessageAction(eventId);
+        setClaimMessage(result.message);
+        window.location.href = '/crm/' + encodeURIComponent(result.leadId);
+      } catch (error) {
+        setClaimMessage(
+          error instanceof Error
+            ? error.message
+            : 'Не удалось создать карточку клиента.',
+        );
+        setClaimingEventId(null);
+      }
+    });
+  };
 
   return (
     <main className="relative mx-auto w-full max-w-[1380px] overflow-hidden pb-16 text-[#f7f2e8]">
@@ -79,12 +115,79 @@ export function CrmInbox({ replies, followUps }: CrmInboxProps) {
           </Link>
         </div>
 
-        <div className="mt-8 grid gap-3 sm:grid-cols-3">
+        <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <Metric label="Ждут ответа" value={replies.length} tone="green" />
+          <Metric label="Новые номера" value={unmatched.length} tone="violet" />
           <Metric label="Просрочено" value={overdue.length} tone="gold" />
           <Metric label="Ближайшие" value={upcoming.length} tone="cyan" />
         </div>
       </section>
+
+      {unmatched.length ? (
+        <section className="mt-5 rounded-[30px] border border-violet-300/12 bg-[radial-gradient(circle_at_top_right,rgba(167,139,250,.08),transparent_42%),#080c12] p-5 sm:p-6">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[.14em] text-violet-200">
+                НЕИЗВЕСТНЫЕ НОМЕРА
+              </p>
+              <h2 className="mt-2 text-2xl font-black tracking-[-.035em] text-[#fff8e7]">
+                Написали впервые
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/46">
+                Сообщение пришло, но номера ещё нет в CRM. Одной кнопкой создаём карточку и переносим сообщение в историю.
+              </p>
+            </div>
+            <span className="rounded-full border border-violet-300/12 bg-violet-300/[0.03] px-3 py-1.5 text-[10px] font-black text-violet-100">
+              {unmatched.length}
+            </span>
+          </div>
+
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
+            {unmatched.map((item) => (
+              <article
+                key={item.eventId}
+                className="rounded-[22px] border border-violet-300/10 bg-black/20 p-4"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[.10em] text-violet-200/72">
+                      {item.channel === 'sms' ? 'SMS' : 'WHATSAPP'} · НОВЫЙ КОНТАКТ
+                    </p>
+                    <p className="mt-1 text-lg font-black text-[#fff8e7]">
+                      {item.senderName || item.phone || 'Неизвестный контакт'}
+                    </p>
+                    {item.senderName && item.phone ? (
+                      <p className="mt-1 text-xs text-white/38">{item.phone}</p>
+                    ) : null}
+                  </div>
+                  <time className="text-[10px] font-bold text-white/28">
+                    {formatDateTime(item.at)}
+                  </time>
+                </div>
+
+                <p className="mt-3 line-clamp-4 text-sm leading-6 text-white/66">
+                  {item.text || 'Получено входящее сообщение.'}
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => claimInbound(item.eventId)}
+                  disabled={isClaimPending}
+                  className="mt-4 w-full rounded-[14px] bg-[linear-gradient(135deg,#ddd6fe,#a78bfa)] px-3 py-2.5 text-xs font-black text-[#1b1230] disabled:opacity-35"
+                >
+                  {isClaimPending && claimingEventId === item.eventId
+                    ? 'Создаю карточку…'
+                    : 'Добавить в CRM →'}
+                </button>
+              </article>
+            ))}
+          </div>
+
+          {claimMessage ? (
+            <p className="mt-4 text-sm leading-6 text-violet-100/70">{claimMessage}</p>
+          ) : null}
+        </section>
+      ) : null}
 
       <section className="mt-5 grid gap-5 xl:grid-cols-[1.08fr_.92fr]">
         <div className="rounded-[30px] border border-white/[0.08] bg-[#080c12] p-5 sm:p-6">
@@ -225,14 +328,16 @@ function Metric({
 }: {
   label: string;
   value: number;
-  tone: 'green' | 'gold' | 'cyan';
+  tone: 'green' | 'gold' | 'cyan' | 'violet';
 }) {
   const toneClass =
     tone === 'green'
       ? 'border-emerald-300/12 bg-emerald-300/[0.03]'
       : tone === 'gold'
         ? 'border-[#f1c96c]/12 bg-[#f1c96c]/[0.03]'
-        : 'border-[#69e4ee]/12 bg-[#69e4ee]/[0.03]';
+        : tone === 'violet'
+          ? 'border-violet-300/12 bg-violet-300/[0.03]'
+          : 'border-[#69e4ee]/12 bg-[#69e4ee]/[0.03]';
 
   return (
     <div className={'rounded-[20px] border p-4 ' + toneClass}>

@@ -773,3 +773,170 @@ export async function mergeDuplicateLeadsAction(input: {
     message: 'Объединено дублей: ' + duplicateIds.length + '.',
   };
 }
+
+
+export async function claimInboundMessageAction(eventId: string): Promise<{
+  leadId: string;
+  created: boolean;
+  message: string;
+}> {
+  const cleanEventId = eventId.trim();
+  if (!cleanEventId) throw new Error('Входящее сообщение не указано.');
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) throw new Error('Unauthorized');
+
+  const organizationId = await getCurrentOrganizationId(supabase);
+  if (!organizationId) throw new Error('Organization not found');
+
+  const { data: event, error: eventError } = await supabase
+    .from('events')
+    .select('id, type, source, payload, metadata, created_at')
+    .eq('organization_id', organizationId)
+    .eq('id', cleanEventId)
+    .maybeSingle();
+
+  if (eventError) throw eventError;
+  if (!event) throw new Error('Входящее сообщение не найдено.');
+
+  if (
+    event.type !== 'crm_whatsapp_received_unmatched' &&
+    event.type !== 'crm_sms_received_unmatched'
+  ) {
+    throw new Error('Это сообщение уже привязано или не относится к CRM.');
+  }
+
+  const { data: alreadyClaimed } = await supabase
+    .from('events')
+    .select('correlation_id')
+    .eq('organization_id', organizationId)
+    .contains('metadata', { original_event_id: cleanEventId })
+    .not('correlation_id', 'is', null)
+    .limit(1)
+    .maybeSingle();
+
+  if (alreadyClaimed?.correlation_id) {
+    return {
+      leadId: alreadyClaimed.correlation_id,
+      created: false,
+      message: 'Сообщение уже привязано к карточке клиента.',
+    };
+  }
+
+  const payload = (event.payload ?? {}) as Record<string, unknown>;
+  const phone =
+    typeof payload.phone === 'string' ? payload.phone.trim() : '';
+  const senderName =
+    typeof payload.sender_name === 'string' ? payload.sender_name.trim() : '';
+  const text =
+    typeof payload.text === 'string' ? payload.text.trim() : '';
+
+  const phoneKey = phone.replace(/\D/g, '');
+  if (!phoneKey) throw new Error('У входящего сообщения нет номера телефона.');
+
+  const { data: candidates } = await supabase
+    .from('crm_leads')
+    .select('id, phone, name')
+    .eq('organization_id', organizationId)
+    .not('phone', 'is', null)
+    .limit(5000);
+
+  const existingLead =
+    (candidates ?? []).find((lead) => {
+      const candidate = (lead.phone ?? '').replace(/\D/g, '');
+      return (
+        candidate === phoneKey ||
+        (candidate.length >= 10 &&
+          phoneKey.length >= 10 &&
+          candidate.slice(-10) === phoneKey.slice(-10))
+      );
+    }) ?? null;
+
+  let leadId = existingLead?.id ?? null;
+  let created = false;
+
+  if (!leadId) {
+    const displayName = senderName || 'Контакт ' + phone;
+    const source =
+      event.type === 'crm_sms_received_unmatched'
+        ? 'Входящее SMS'
+        : 'Входящий WhatsApp';
+
+    const { data: insertedLead, error: insertError } = await supabase
+      .from('crm_leads')
+      .insert({
+        organization_id: organizationId,
+        name: displayName,
+        phone,
+        status: 'contacted',
+        source,
+        notes: text ? 'Первое входящее сообщение:\n' + text : null,
+        last_contact_at: event.created_at,
+        created_by: user.id,
+      })
+      .select('id')
+      .single();
+
+    if (insertError) throw insertError;
+    leadId = insertedLead.id;
+    created = true;
+  } else {
+    const { error: updateError } = await supabase
+      .from('crm_leads')
+      .update({
+        status: 'contacted',
+        last_contact_at: event.created_at,
+        updated_by: user.id,
+      })
+      .eq('organization_id', organizationId)
+      .eq('id', leadId);
+
+    if (updateError) throw updateError;
+  }
+
+  const matchedType =
+    event.type === 'crm_sms_received_unmatched'
+      ? 'crm_sms_received'
+      : 'crm_whatsapp_received';
+
+  const metadata = (event.metadata ?? {}) as Record<string, unknown>;
+
+  const { error: matchedEventError } = await supabase.from('events').insert({
+    organization_id: organizationId,
+    type: matchedType,
+    source: event.source,
+    actor_type: 'external',
+    actor_id: null,
+    payload: {
+      ...payload,
+      lead_id: leadId,
+    },
+    metadata: {
+      ...metadata,
+      crm_lead_id: leadId,
+      original_event_id: event.id,
+      claimed_at: new Date().toISOString(),
+    },
+    correlation_id: leadId,
+    created_at: event.created_at,
+  });
+
+  if (matchedEventError) throw matchedEventError;
+
+  revalidatePath('/crm');
+  revalidatePath('/crm/inbox');
+  revalidatePath('/crm/analytics');
+  revalidatePath('/crm/' + leadId);
+
+  return {
+    leadId,
+    created,
+    message: created
+      ? 'Создана новая карточка клиента.'
+      : 'Сообщение привязано к существующему клиенту.',
+  };
+}

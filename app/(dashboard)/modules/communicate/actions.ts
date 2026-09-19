@@ -401,6 +401,13 @@ export async function sendWhatsAppMessageAction(input: {
           })
           .eq('id', input.leadId.trim())
           .eq('organization_id', organizationId);
+
+        await completeLeadFollowUpTask({
+          leadId: input.leadId.trim(),
+          supabase,
+          organizationId,
+          userId: user.id,
+        });
       }
 
       await logCommunicationLeadEvent({
