@@ -227,6 +227,59 @@ test('mismatched phone metadata never attaches another contact history', async (
   assert.equal((await claim(db)).linkedCount, 1);
 });
 
+test('claim refuses to guess when two CRM cards share the same phone', async () => {
+  const db = database({
+    events: [incoming('first')],
+    crm_leads: [
+      lead({ id: 'duplicate-a' }),
+      lead({ id: 'duplicate-b', status: 'qualified' }),
+    ],
+  });
+
+  await assert.rejects(claim(db), /несколько карточек/);
+  assert.equal(linked(db).length, 0);
+  assert.equal(db.rows.crm_leads.length, 2);
+  assert.ok(
+    db.requests
+      .filter((request) => request.method !== 'GET')
+      .every((request) => request.table !== 'crm_leads' && request.table !== 'events'),
+  );
+});
+
+test('webhook keeps an ambiguous duplicate contact in inbox instead of choosing a card', async () => {
+  const db = database({
+    crm_leads: [
+      lead({ id: 'duplicate-a' }),
+      lead({ id: 'duplicate-b', status: 'qualified' }),
+    ],
+  });
+
+  const result = await recordInboundCommunication(
+    {
+      organizationId: org,
+      channel: 'whatsapp',
+      phone,
+      text: 'К какой карточке меня привязать?',
+      provider: 'Evolution Go',
+      providerEventId: 'ambiguous-1',
+    },
+    db.supabase,
+  );
+
+  assert.equal(result.matched, false);
+  assert.equal(result.leadId, null);
+  assert.equal(db.rows.events.length, 1);
+  assert.equal(db.rows.events[0].type, 'crm_whatsapp_received_unmatched');
+  assert.equal(db.rows.events[0].correlation_id, null);
+  assert.equal((db.rows.events[0].metadata as Row).ambiguous_duplicate_contact, true);
+  assert.deepEqual(
+    (db.rows.events[0].metadata as Row).duplicate_candidate_ids,
+    ['duplicate-a', 'duplicate-b'],
+  );
+  assert.equal(db.rows.crm_leads[0].status, 'new');
+  assert.equal(db.rows.crm_leads[1].status, 'qualified');
+});
+
 test('inbox groups formatted phone aliases across channels and keeps the latest preview', () => {
   const messages = [
     {
