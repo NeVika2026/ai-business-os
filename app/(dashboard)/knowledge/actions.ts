@@ -476,3 +476,29 @@ export async function processKnowledgeUpload(
     };
   }
 }
+
+
+export async function failKnowledgeUpload(sourceId: string, message: string): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error('Unauthorized');
+  }
+
+  const organizationId = await getCurrentOrganizationId(supabase);
+  if (!organizationId) {
+    throw new Error('Organization not found');
+  }
+
+  await failUploadedKnowledge({
+    supabase,
+    organizationId,
+    sourceId,
+    message: message || 'Ошибка загрузки файла.',
+  });
+
+  revalidatePath('/knowledge');
+}
