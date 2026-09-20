@@ -5,6 +5,8 @@ export type UnmatchedInboundMessage = {
   senderName: string | null;
   text: string;
   at: string;
+  ambiguousDuplicateContact?: boolean;
+  duplicateCandidateIds?: string[];
 };
 
 export type UnmatchedInboundConversation = UnmatchedInboundMessage & {
@@ -38,6 +40,12 @@ export function groupUnmatchedInbound(
 
     existing.messageCount += 1;
     existing.senderName ||= message.senderName;
+    existing.ambiguousDuplicateContact ||= message.ambiguousDuplicateContact;
+    if (message.duplicateCandidateIds?.length) {
+      existing.duplicateCandidateIds = [
+        ...new Set([...(existing.duplicateCandidateIds ?? []), ...message.duplicateCandidateIds]),
+      ];
+    }
     if (!existing.channels.includes(message.channel)) {
       existing.channels.push(message.channel);
     }
