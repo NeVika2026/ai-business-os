@@ -124,13 +124,13 @@ export function CrmInbox({ replies, followUps, unmatched }: CrmInboxProps) {
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="text-[11px] font-black uppercase tracking-[.14em] text-violet-200">
-                НЕИЗВЕСТНЫЕ НОМЕРА
+                НЕРАЗОБРАННЫЕ КОНТАКТЫ
               </p>
               <h2 className="mt-2 text-2xl font-black tracking-[-.035em] text-[#fff8e7]">
-                Написали впервые
+                Нужно определить карточку
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-white/46">
-                Все сообщения с одного номера собраны вместе. Добавьте контакт в CRM — вся переписка из WhatsApp и SMS появится в его карточке.
+                Все сообщения с одного номера собраны вместе. Новый контакт можно добавить в CRM, а при совпадении с несколькими карточками сначала нужно убрать дубль.
               </p>
             </div>
             <span className="rounded-full border border-violet-300/12 bg-violet-300/[0.03] px-3 py-1.5 text-[10px] font-black text-violet-100">
@@ -147,7 +147,7 @@ export function CrmInbox({ replies, followUps, unmatched }: CrmInboxProps) {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[.10em] text-violet-200/72">
-                      {item.channels.map((channel) => channel === 'sms' ? 'SMS' : 'WhatsApp').join(' + ')} · НОВЫЙ КОНТАКТ
+                      {item.channels.map((channel) => channel === 'sms' ? 'SMS' : 'WhatsApp').join(' + ')} · {item.ambiguousDuplicateContact ? 'НАЙДЕНЫ ДУБЛИ' : 'НОВЫЙ КОНТАКТ'}
                     </p>
                     <p className="mt-1 text-lg font-black text-[#fff8e7]">
                       {item.senderName || item.phone || 'Неизвестный контакт'}
@@ -166,19 +166,30 @@ export function CrmInbox({ replies, followUps, unmatched }: CrmInboxProps) {
                 </p>
 
                 <p className="mt-2 text-xs text-violet-200/60">
-                  Сообщений: {item.messageCount} · Перенесём всю переписку
+                  {item.ambiguousDuplicateContact
+                    ? 'Совпало карточек: ' + (item.duplicateCandidateIds?.length ?? 2) + ' · переписку пока не привязываю'
+                    : 'Сообщений: ' + item.messageCount + ' · перенесём всю переписку'}
                 </p>
 
-                <button
-                  type="button"
-                  onClick={() => claimInbound(item.eventId)}
-                  disabled={isClaimPending}
-                  className="mt-4 w-full rounded-[14px] bg-[linear-gradient(135deg,#ddd6fe,#a78bfa)] px-3 py-2.5 text-xs font-black text-[#1b1230] disabled:opacity-35"
-                >
-                  {isClaimPending && claimingEventId === item.eventId
-                    ? 'Переношу переписку…'
-                    : 'Добавить в CRM →'}
-                </button>
+                {item.ambiguousDuplicateContact ? (
+                  <Link
+                    href="/crm/duplicates"
+                    className="mt-4 block w-full rounded-[14px] bg-[linear-gradient(135deg,#fde68a,#d6a43b)] px-3 py-2.5 text-center text-xs font-black text-[#231604]"
+                  >
+                    Объединить карточки →
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => claimInbound(item.eventId)}
+                    disabled={isClaimPending}
+                    className="mt-4 w-full rounded-[14px] bg-[linear-gradient(135deg,#ddd6fe,#a78bfa)] px-3 py-2.5 text-xs font-black text-[#1b1230] disabled:opacity-35"
+                  >
+                    {isClaimPending && claimingEventId === item.eventId
+                      ? 'Переношу переписку…'
+                      : 'Добавить в CRM →'}
+                  </button>
+                )}
               </article>
             ))}
           </div>
