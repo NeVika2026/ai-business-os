@@ -23,7 +23,11 @@ type SourceFormProps = {
 };
 
 function getInitialFormType(source?: KnowledgeSource | null) {
-  if (source?.metadata.format) {
+  if (!source) {
+    return 'website';
+  }
+
+  if (source.metadata.format) {
     return String(source.metadata.format);
   }
 
