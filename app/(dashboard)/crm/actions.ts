@@ -635,7 +635,7 @@ export async function mergeDuplicateLeadsAction(input: {
     };
   } catch (error) {
     if (error instanceof DuplicateMergeError) throw error;
-    throw new Error('Не удалось безопасно объединить дубли. Данные не удалены без переноса истории.');
+    throw new Error('Не удалось завершить объединение. Уже перенесённые данные сохранены; обновите страницу и повторите.');
   }
 }
 
