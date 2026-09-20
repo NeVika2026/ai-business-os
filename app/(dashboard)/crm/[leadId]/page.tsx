@@ -37,10 +37,10 @@ export default async function LeadPage({ params }: LeadPageProps) {
       .limit(80),
     supabase
       .from('tasks')
-      .select('due_at, description')
+      .select('id, due_at, description')
       .eq('organization_id', organizationId)
       .eq('status', 'todo')
-      .ilike('description', '%CRM_LEAD_ID:' + leadId + '%')
+      .like('description', 'CRM\\_LEAD\\_ID:' + leadId + '\n%')
       .order('due_at', { ascending: true })
       .limit(1),
   ]);
@@ -67,7 +67,11 @@ export default async function LeadPage({ params }: LeadPageProps) {
         createdAt: lead.created_at,
       }}
       timeline={timeline}
-      nextFollowUp={tasks?.[0]?.due_at ?? null}
+      nextFollowUp={
+        tasks?.[0]?.due_at
+          ? { id: tasks[0].id, dueAt: tasks[0].due_at, description: tasks[0].description }
+          : null
+      }
     />
   );
 }

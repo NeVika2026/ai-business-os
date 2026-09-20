@@ -1,5 +1,7 @@
 'use server';
 
+import { completeAutomaticCrmFollowUps } from '@/services/crm/follow-ups';
+
 import { randomUUID } from 'node:crypto';
 
 import { ensureFactoryProject, saveFactoryArtifact } from '@/lib/factory-chain/persistence';
@@ -268,25 +270,12 @@ export async function getVoiceAgentCallAction(
           .eq('id', leadId.trim())
           .eq('organization_id', organizationId);
 
-        const marker = 'CRM_LEAD_ID:' + leadId.trim();
-        const { data: followUpTasks } = await supabase
-          .from('tasks')
-          .select('id')
-          .eq('organization_id', organizationId)
-          .eq('status', 'todo')
-          .ilike('description', '%' + marker + '%');
-
-        const taskIds = (followUpTasks ?? []).map((task) => task.id);
-        if (taskIds.length) {
-          await supabase
-            .from('tasks')
-            .update({
-              status: 'done',
-              updated_by: user.id,
-            })
-            .in('id', taskIds)
-            .eq('organization_id', organizationId);
-        }
+        await completeAutomaticCrmFollowUps({
+          supabase,
+          organizationId,
+          userId: user.id,
+          leadId: leadId.trim(),
+        });
 
         const transcript = call.dialog
           .map((item) => `${item.role === 'assistant' ? 'Агент' : 'Клиент'}: ${item.text}`)

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { LeadFollowUpControls } from '@/components/crm/LeadFollowUpControls';
 import { useState, useTransition } from 'react';
 
 import type { UnmatchedInboundConversation } from '@/lib/crm/inbox-conversations';
@@ -18,6 +19,8 @@ type InboxReply = {
 };
 
 type InboxFollowUp = {
+  taskId: string;
+  description: string | null;
   leadId: string;
   leadName: string;
   phone: string | null;
@@ -279,7 +282,7 @@ export function CrmInbox({ replies, followUps, unmatched }: CrmInboxProps) {
             <div className="mt-5 grid gap-3">
               {overdue.length ? (
                 overdue.map((item) => (
-                  <FollowUpCard key={item.leadId} item={item} overdue />
+                  <FollowUpCard key={item.taskId} item={item} overdue />
                 ))
               ) : (
                 <Empty text="Просроченных контактов нет." />
@@ -305,7 +308,7 @@ export function CrmInbox({ replies, followUps, unmatched }: CrmInboxProps) {
             <div className="mt-5 grid gap-3">
               {upcoming.length ? (
                 upcoming.slice(0, 12).map((item) => (
-                  <FollowUpCard key={item.leadId} item={item} overdue={false} />
+                  <FollowUpCard key={item.taskId} item={item} overdue={false} />
                 ))
               ) : (
                 <Empty text="Ближайшие контакты пока не назначены." />
@@ -378,6 +381,11 @@ function FollowUpCard({
           {formatDateTime(item.dueAt)}
         </time>
       </div>
+
+      <LeadFollowUpControls
+        leadId={item.leadId}
+        followUp={{ id: item.taskId, dueAt: item.dueAt, description: item.description }}
+      />
 
       <div className="mt-3 grid grid-cols-2 gap-2">
         <Link

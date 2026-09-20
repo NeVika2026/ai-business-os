@@ -1,5 +1,7 @@
 'use server';
 
+import { completeAutomaticCrmFollowUps } from '@/services/crm/follow-ups';
+
 import { ensureFactoryProject, saveFactoryArtifact } from '@/lib/factory-chain/persistence';
 import { aiGateway } from '@/services/runtime/gateway/ai-gateway';
 import { createClient } from '@/services/supabase/server';
@@ -40,34 +42,6 @@ function normalizeWhatsAppNumber(value: string): string | null {
   const cleaned = cleanPhone(value).replace(/^\+/, '');
   if (!/^[1-9]\d{7,14}$/.test(cleaned)) return null;
   return cleaned;
-}
-
-async function completeLeadFollowUpTask(input: {
-  leadId: string;
-  supabase: Awaited<ReturnType<typeof createClient>>;
-  organizationId: string;
-  userId: string;
-}) {
-  const marker = 'CRM_LEAD_ID:' + input.leadId;
-
-  const { data: tasks } = await input.supabase
-    .from('tasks')
-    .select('id')
-    .eq('organization_id', input.organizationId)
-    .eq('status', 'todo')
-    .ilike('description', '%' + marker + '%');
-
-  const ids = (tasks ?? []).map((task) => task.id);
-  if (!ids.length) return;
-
-  await input.supabase
-    .from('tasks')
-    .update({
-      status: 'done',
-      updated_by: input.userId,
-    })
-    .in('id', ids)
-    .eq('organization_id', input.organizationId);
 }
 
 async function logCommunicationLeadEvent(input: {
@@ -254,7 +228,7 @@ export async function sendSmsMessageAction(input: {
           .eq('id', input.leadId.trim())
           .eq('organization_id', organizationId);
 
-        await completeLeadFollowUpTask({
+        await completeAutomaticCrmFollowUps({
           leadId: input.leadId.trim(),
           supabase,
           organizationId,
@@ -402,7 +376,7 @@ export async function sendWhatsAppMessageAction(input: {
           .eq('id', input.leadId.trim())
           .eq('organization_id', organizationId);
 
-        await completeLeadFollowUpTask({
+        await completeAutomaticCrmFollowUps({
           leadId: input.leadId.trim(),
           supabase,
           organizationId,

@@ -2,6 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 
+import { FollowUpError, followUpPreset } from '@/lib/crm/follow-ups';
+import { scheduleCrmFollowUp, resolveCrmFollowUp } from '@/services/crm/follow-ups';
+
 import { claimInboundConversation } from '@/services/crm/claim-inbound';
 
 import { aiGateway } from '@/services/runtime/gateway/ai-gateway';
@@ -253,93 +256,73 @@ export async function updateLeadStatusQuick(
 }
 
 
-export async function scheduleLeadFollowUp(
-  leadId: string,
-  daysFromNow: 1 | 3 | 7,
-) {
+async function followUpActor(leadId: string) {
+  if (typeof leadId !== 'string' || !leadId.trim()) throw new FollowUpError('Выберите клиента.');
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  if (!user) throw new Error('Unauthorized');
-
+  if (!user) throw new FollowUpError('Войдите в аккаунт, чтобы изменить напоминание.');
   const organizationId = await getCurrentOrganizationId(supabase);
-  if (!organizationId) throw new Error('Organization not found');
-
-  const { data: lead, error: leadError } = await supabase
-    .from('crm_leads')
-    .select('id, name, project_id')
-    .eq('organization_id', organizationId)
-    .eq('id', leadId)
-    .maybeSingle();
-
-  if (leadError) throw leadError;
-  if (!lead) throw new Error('Lead not found');
-
-  const dueAt = new Date();
-  dueAt.setDate(dueAt.getDate() + daysFromNow);
-  dueAt.setHours(11, 0, 0, 0);
-
-  const marker = 'CRM_LEAD_ID:' + lead.id;
-
-  const { data: existingTask } = await supabase
-    .from('tasks')
-    .select('id')
-    .eq('organization_id', organizationId)
-    .eq('status', 'todo')
-    .ilike('description', '%' + marker + '%')
-    .maybeSingle();
-
-  if (existingTask?.id) {
-    const { error } = await supabase
-      .from('tasks')
-      .update({
-        title: 'Связаться: ' + lead.name,
-        due_at: dueAt.toISOString(),
-        priority: 2,
-        updated_by: user.id,
-      })
-      .eq('id', existingTask.id)
-      .eq('organization_id', organizationId);
-
-    if (error) throw error;
-  } else {
-    const { error } = await supabase.from('tasks').insert({
-      organization_id: organizationId,
-      project_id: lead.project_id,
-      title: 'Связаться: ' + lead.name,
-      description: marker + '\nCRM follow-up',
-      status: 'todo',
-      priority: 2,
-      due_at: dueAt.toISOString(),
-      created_by: user.id,
-    });
-
-    if (error) throw error;
-  }
-
-  await logCrmLeadEvent({
-    supabase,
-    organizationId,
-    userId: user.id,
-    leadId: lead.id,
-    type: 'crm_followup_scheduled',
-    payload: {
-      due_at: dueAt.toISOString(),
-      days_from_now: daysFromNow,
-    },
-  });
-
-  revalidatePath('/crm');
-  revalidatePath('/crm/' + lead.id);
-
-  return {
-    leadId: lead.id,
-    dueAt: dueAt.toISOString(),
-  };
+  if (!organizationId) throw new FollowUpError('Организация не найдена.');
+  return { supabase, organizationId, userId: user.id, leadId: leadId.trim() };
 }
 
+function refreshFollowUps(leadId: string) {
+  revalidatePath('/crm');
+  revalidatePath('/crm/inbox');
+  revalidatePath('/crm/analytics');
+  revalidatePath('/crm/' + leadId);
+}
+
+export async function scheduleLeadFollowUp(
+  leadId: string,
+  when: 1 | 3 | 7 | string,
+  options: { note?: string; taskId?: string; expectedDueAt?: string } = {},
+) {
+  try {
+    const actor = await followUpActor(leadId);
+    const result = await scheduleCrmFollowUp({
+      ...actor,
+      dueAt: typeof when === 'number' ? followUpPreset(when, new Date()) : when,
+      note: options.note,
+      taskId: options.taskId,
+      expectedDueAt: options.expectedDueAt,
+    });
+    refreshFollowUps(actor.leadId);
+    return { ok: true as const, ...result };
+  } catch (error) {
+    return {
+      ok: false as const,
+      message:
+        error instanceof FollowUpError
+          ? error.message
+          : 'Не удалось сохранить напоминание. Попробуйте ещё раз.',
+    };
+  }
+}
+
+export async function resolveLeadFollowUp(
+  leadId: string,
+  taskId: string,
+  expectedDueAt: string,
+  outcome: 'done' | 'cancelled',
+) {
+  try {
+    const actor = await followUpActor(leadId);
+    const result = await resolveCrmFollowUp({ ...actor, taskId, expectedDueAt, outcome });
+    refreshFollowUps(actor.leadId);
+    return { ok: true as const, ...result };
+  } catch (error) {
+    return {
+      ok: false as const,
+      message:
+        error instanceof FollowUpError
+          ? error.message
+          : 'Не удалось закрыть напоминание. Попробуйте ещё раз.',
+    };
+  }
+}
 
 export async function addLeadNote(leadId: string, note: string) {
   const trimmed = note.trim();

@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
+import { completeAutomaticCrmFollowUps } from '@/services/crm/follow-ups';
+
 import { normalizeContactPhone } from './inbox-conversations';
 
 export { normalizeContactPhone } from './inbox-conversations';
@@ -35,30 +37,6 @@ function getAdminClient() {
       autoRefreshToken: false,
     },
   });
-}
-
-async function completeOpenFollowUps(input: {
-  supabase: ReturnType<typeof getAdminClient>;
-  organizationId: string;
-  leadId: string;
-}) {
-  const marker = 'CRM_LEAD_ID:' + input.leadId;
-
-  const { data: tasks } = await input.supabase
-    .from('tasks')
-    .select('id')
-    .eq('organization_id', input.organizationId)
-    .eq('status', 'todo')
-    .ilike('description', '%' + marker + '%');
-
-  const ids = (tasks ?? []).map((task) => task.id);
-  if (!ids.length) return;
-
-  await input.supabase
-    .from('tasks')
-    .update({ status: 'done' })
-    .in('id', ids)
-    .eq('organization_id', input.organizationId);
 }
 
 export async function recordInboundCommunication(
@@ -154,7 +132,7 @@ export async function recordInboundCommunication(
 
     if (leadUpdateError) throw leadUpdateError;
 
-    await completeOpenFollowUps({
+    await completeAutomaticCrmFollowUps({
       supabase,
       organizationId: input.organizationId,
       leadId: lead.id,
