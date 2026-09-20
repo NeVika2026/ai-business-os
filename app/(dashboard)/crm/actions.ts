@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { FollowUpError, followUpPreset } from '@/lib/crm/follow-ups';
 import { scheduleCrmFollowUp, resolveCrmFollowUp } from '@/services/crm/follow-ups';
 import { DuplicateMergeError, mergeDuplicateLeads } from '@/services/crm/merge-duplicates';
+import { findCrmDuplicateCandidates } from '@/services/crm/duplicate-guard';
 
 import { claimInboundConversation } from '@/services/crm/claim-inbound';
 
@@ -80,36 +81,65 @@ export async function createLead(formData: FormData) {
     throw new Error('Name is required');
   }
 
-  const { data, error } = await supabase.from('crm_leads').insert({
-    organization_id: organizationId,
-    name,
-    phone: getOptionalText(formData.get('phone')),
-    email: getOptionalText(formData.get('email')),
-    source: getOptionalText(formData.get('source')),
-    status: parseLeadStatus(formData.get('status')),
-    notes: getOptionalText(formData.get('notes')),
-    created_by: user.id,
-  }).select('id').single();
+  const phone = getOptionalText(formData.get('phone'));
+  const email = getOptionalText(formData.get('email'));
+  const allowDuplicate = getOptionalText(formData.get('allow_duplicate')) === '1';
+
+  if (!allowDuplicate) {
+    const candidates = await findCrmDuplicateCandidates({
+      supabase,
+      organizationId,
+      email,
+      phone,
+    });
+
+    if (candidates.length) {
+      return {
+        status: 'duplicate' as const,
+        candidates,
+      };
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('crm_leads')
+    .insert({
+      organization_id: organizationId,
+      name,
+      phone,
+      email,
+      source: getOptionalText(formData.get('source')),
+      status: parseLeadStatus(formData.get('status')),
+      notes: getOptionalText(formData.get('notes')),
+      created_by: user.id,
+    })
+    .select('id')
+    .single();
 
   if (error) {
     throw error;
   }
 
-  if (data?.id) {
-    await logCrmLeadEvent({
-      supabase,
-      organizationId,
-      userId: user.id,
-      leadId: data.id,
-      type: 'crm_lead_created',
-      payload: {
-        name,
-        source: getOptionalText(formData.get('source')),
-      },
-    });
-  }
+  await logCrmLeadEvent({
+    supabase,
+    organizationId,
+    userId: user.id,
+    leadId: data.id,
+    type: 'crm_lead_created',
+    payload: {
+      name,
+      source: getOptionalText(formData.get('source')),
+      duplicate_override: allowDuplicate,
+    },
+  });
 
   revalidatePath('/crm');
+  revalidatePath('/crm/duplicates');
+
+  return {
+    status: 'saved' as const,
+    leadId: data.id as string,
+  };
 }
 
 export async function updateLead(formData: FormData) {
@@ -140,12 +170,33 @@ export async function updateLead(formData: FormData) {
     throw new Error('Name is required');
   }
 
+  const phone = getOptionalText(formData.get('phone'));
+  const email = getOptionalText(formData.get('email'));
+  const allowDuplicate = getOptionalText(formData.get('allow_duplicate')) === '1';
+
+  if (!allowDuplicate) {
+    const candidates = await findCrmDuplicateCandidates({
+      supabase,
+      organizationId,
+      email,
+      phone,
+      excludeLeadId: id,
+    });
+
+    if (candidates.length) {
+      return {
+        status: 'duplicate' as const,
+        candidates,
+      };
+    }
+  }
+
   const { error } = await supabase
     .from('crm_leads')
     .update({
       name,
-      phone: getOptionalText(formData.get('phone')),
-      email: getOptionalText(formData.get('email')),
+      phone,
+      email,
       source: getOptionalText(formData.get('source')),
       status: parseLeadStatus(formData.get('status')),
       notes: getOptionalText(formData.get('notes')),
@@ -159,6 +210,13 @@ export async function updateLead(formData: FormData) {
   }
 
   revalidatePath('/crm');
+  revalidatePath('/crm/duplicates');
+  revalidatePath('/crm/' + id);
+
+  return {
+    status: 'saved' as const,
+    leadId: id,
+  };
 }
 
 export async function deleteLead(formData: FormData) {
