@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 
 import { FollowUpError, followUpPreset } from '@/lib/crm/follow-ups';
 import { scheduleCrmFollowUp, resolveCrmFollowUp } from '@/services/crm/follow-ups';
+import { DuplicateMergeError, mergeDuplicateLeads } from '@/services/crm/merge-duplicates';
 
 import { claimInboundConversation } from '@/services/crm/claim-inbound';
 
@@ -603,15 +604,6 @@ export async function mergeDuplicateLeadsAction(input: {
   primaryLeadId: string;
   duplicateLeadIds: string[];
 }): Promise<{ merged: number; message: string }> {
-  const primaryLeadId = input.primaryLeadId.trim();
-  const duplicateLeadIds = [...new Set(input.duplicateLeadIds.map((id) => id.trim()))]
-    .filter((id) => id && id !== primaryLeadId)
-    .slice(0, 20);
-
-  if (!primaryLeadId || !duplicateLeadIds.length) {
-    return { merged: 0, message: 'Нет дублей для объединения.' };
-  }
-
   const supabase = await createClient();
   const {
     data: { user },
@@ -622,141 +614,29 @@ export async function mergeDuplicateLeadsAction(input: {
   const organizationId = await getCurrentOrganizationId(supabase);
   if (!organizationId) throw new Error('Organization not found');
 
-  const { data: leads, error: leadsError } = await supabase
-    .from('crm_leads')
-    .select(
-      'id, name, email, phone, source, notes, project_id, status, created_at, last_contact_at',
-    )
-    .eq('organization_id', organizationId)
-    .in('id', [primaryLeadId, ...duplicateLeadIds]);
+  try {
+    const result = await mergeDuplicateLeads({
+      supabase,
+      organizationId,
+      userId: user.id,
+      primaryLeadId: input.primaryLeadId,
+      duplicateLeadIds: input.duplicateLeadIds,
+    });
 
-  if (leadsError) throw leadsError;
+    revalidatePath('/crm');
+    revalidatePath('/crm/duplicates');
+    revalidatePath('/crm/analytics');
+    revalidatePath('/crm/inbox');
+    revalidatePath('/crm/' + input.primaryLeadId.trim());
 
-  const primary = (leads ?? []).find((lead) => lead.id === primaryLeadId);
-  if (!primary) throw new Error('Основной лид не найден.');
-
-  const duplicates = (leads ?? []).filter((lead) => duplicateLeadIds.includes(lead.id));
-  if (!duplicates.length) {
-    return { merged: 0, message: 'Дубли не найдены.' };
+    return {
+      merged: result.merged,
+      message: result.message,
+    };
+  } catch (error) {
+    if (error instanceof DuplicateMergeError) throw error;
+    throw new Error('Не удалось безопасно объединить дубли. Данные не удалены без переноса истории.');
   }
-
-  const firstNonEmpty = <T,>(current: T | null | undefined, values: Array<T | null | undefined>) => {
-    if (current !== null && current !== undefined && String(current).trim()) return current;
-    return values.find((value) => value !== null && value !== undefined && String(value).trim()) ?? null;
-  };
-
-  const combinedNotes = [
-    primary.notes?.trim() || '',
-    ...duplicates
-      .map((lead) => lead.notes?.trim() || '')
-      .filter(Boolean)
-      .map((note, index) => 'Из дубля ' + String(index + 1) + ':\n' + note),
-  ]
-    .filter(Boolean)
-    .join('\n\n');
-
-  const statusRank: Record<string, number> = {
-    new: 0,
-    contacted: 1,
-    qualified: 2,
-    won: 3,
-    lost: 1,
-  };
-
-  const bestStatus = [primary, ...duplicates].reduce((best, lead) => {
-    return (statusRank[lead.status] ?? 0) > (statusRank[best] ?? 0) ? lead.status : best;
-  }, primary.status);
-
-  const latestContact = [primary.last_contact_at, ...duplicates.map((lead) => lead.last_contact_at)]
-    .filter((value): value is string => Boolean(value))
-    .sort()
-    .at(-1) ?? null;
-
-  const { error: primaryUpdateError } = await supabase
-    .from('crm_leads')
-    .update({
-      email: firstNonEmpty(primary.email, duplicates.map((lead) => lead.email)),
-      phone: firstNonEmpty(primary.phone, duplicates.map((lead) => lead.phone)),
-      source: firstNonEmpty(primary.source, duplicates.map((lead) => lead.source)),
-      project_id: firstNonEmpty(primary.project_id, duplicates.map((lead) => lead.project_id)),
-      notes: combinedNotes || null,
-      status: bestStatus,
-      last_contact_at: latestContact,
-      updated_by: user.id,
-    })
-    .eq('id', primaryLeadId)
-    .eq('organization_id', organizationId);
-
-  if (primaryUpdateError) throw primaryUpdateError;
-
-  for (const duplicate of duplicates) {
-    await supabase
-      .from('events')
-      .update({
-        correlation_id: primaryLeadId,
-      })
-      .eq('organization_id', organizationId)
-      .eq('correlation_id', duplicate.id);
-
-    const marker = 'CRM_LEAD_ID:' + duplicate.id;
-    const { data: tasks } = await supabase
-      .from('tasks')
-      .select('id, description')
-      .eq('organization_id', organizationId)
-      .ilike('description', '%' + marker + '%');
-
-    for (const task of tasks ?? []) {
-      await supabase
-        .from('tasks')
-        .update({
-          description: (task.description ?? '').replace(
-            marker,
-            'CRM_LEAD_ID:' + primaryLeadId,
-          ),
-          updated_by: user.id,
-        })
-        .eq('id', task.id)
-        .eq('organization_id', organizationId);
-    }
-  }
-
-  const duplicateIds = duplicates.map((lead) => lead.id);
-
-  const { error: deleteError } = await supabase
-    .from('crm_leads')
-    .delete()
-    .eq('organization_id', organizationId)
-    .in('id', duplicateIds);
-
-  if (deleteError) throw deleteError;
-
-  await supabase.from('events').insert({
-    organization_id: organizationId,
-    type: 'crm_leads_merged',
-    source: 'crm',
-    actor_type: 'user',
-    actor_id: user.id,
-    payload: {
-      lead_id: primaryLeadId,
-      merged_ids: duplicateIds,
-      merged_count: duplicateIds.length,
-    },
-    metadata: {
-      crm_lead_id: primaryLeadId,
-    },
-    correlation_id: primaryLeadId,
-  });
-
-  revalidatePath('/crm');
-  revalidatePath('/crm/duplicates');
-  revalidatePath('/crm/analytics');
-  revalidatePath('/crm/inbox');
-  revalidatePath('/crm/' + primaryLeadId);
-
-  return {
-    merged: duplicateIds.length,
-    message: 'Объединено дублей: ' + duplicateIds.length + '.',
-  };
 }
 
 
