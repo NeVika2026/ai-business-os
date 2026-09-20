@@ -1,4 +1,5 @@
 import { CrmInbox } from '@/components/crm/CrmInbox';
+import { followUpLeadId } from '@/lib/crm/follow-ups';
 import { groupUnmatchedInbound } from '@/lib/crm/inbox-conversations';
 import { loadInboundClaims } from '@/services/crm/claim-inbound';
 import { createClient } from '@/services/supabase/server';
@@ -38,7 +39,7 @@ export default async function CrmInboxPage() {
       .limit(800),
     supabase
       .from('tasks')
-      .select('description, due_at')
+      .select('id, description, due_at')
       .eq('organization_id', organizationId)
       .eq('status', 'todo')
       .not('due_at', 'is', null)
@@ -135,6 +136,8 @@ export default async function CrmInboxPage() {
   }
 
   const followUps: Array<{
+    taskId: string;
+    description: string | null;
     leadId: string;
     leadName: string;
     phone: string | null;
@@ -143,19 +146,16 @@ export default async function CrmInboxPage() {
     overdue: boolean;
   }> = [];
 
-  const seenFollowUps = new Set<string>();
-
   for (const task of tasks ?? []) {
-    const description = task.description ?? '';
-    const match = description.match(/CRM_LEAD_ID:([0-9a-f-]{36})/i);
-    const leadId = match?.[1];
-    if (!leadId || !task.due_at || seenFollowUps.has(leadId)) continue;
+    const leadId = followUpLeadId(task.description);
+    if (!leadId || !task.due_at) continue;
 
     const lead = leadById.get(leadId);
     if (!lead) continue;
 
-    seenFollowUps.add(leadId);
     followUps.push({
+      taskId: task.id,
+      description: task.description,
       leadId,
       leadName: lead.name,
       phone: lead.phone,

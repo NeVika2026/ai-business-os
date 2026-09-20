@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { followUpPreset } from '@/lib/crm/follow-ups';
 import { useState, useTransition } from 'react';
 
 import {
@@ -46,6 +48,8 @@ export function CrmPipeline({
   latestRepliesByLead,
   referenceNow,
 }: CrmPipelineProps) {
+  const router = useRouter();
+  const [followUpError, setFollowUpError] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [attentionOnly, setAttentionOnly] = useState(false);
@@ -90,9 +94,17 @@ export function CrmPipeline({
 
   const scheduleFollowUp = (leadId: string, days: 1 | 3 | 7) => {
     setPendingId(leadId);
+    setFollowUpError('');
     startTransition(async () => {
-      await scheduleLeadFollowUp(leadId, days);
-      window.location.reload();
+      try {
+        const result = await scheduleLeadFollowUp(leadId, followUpPreset(days, new Date()));
+        if (!result.ok || !result.historySaved) setFollowUpError(result.message);
+        router.refresh();
+      } catch {
+        setFollowUpError('Не удалось сохранить напоминание. Попробуйте ещё раз.');
+      } finally {
+        setPendingId(null);
+      }
     });
   };
 
@@ -103,6 +115,14 @@ export function CrmPipeline({
 
   return (
     <main className="relative mx-auto w-full max-w-[1480px] overflow-hidden pb-16 text-[#f7f2e8]">
+      {followUpError ? (
+        <p
+          role="alert"
+          className="relative mb-4 rounded-xl border border-rose-300/20 bg-rose-300/5 p-3 text-sm text-rose-200"
+        >
+          {followUpError}
+        </p>
+      ) : null}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -right-24 top-0 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,rgba(105,228,238,.10),transparent_70%)] blur-3xl"
@@ -127,8 +147,8 @@ export function CrmPipeline({
               </span>
             </h1>
             <p className="mt-5 max-w-3xl text-lg leading-8 text-white/70">
-              Scout находит контакт, OSA готовит персональное сообщение, WhatsApp / SMS / голосовой агент
-              связываются — а статус остаётся здесь.
+              Scout находит контакт, OSA готовит персональное сообщение, WhatsApp / SMS / голосовой
+              агент связываются — а статус остаётся здесь.
             </p>
           </div>
 
@@ -233,7 +253,9 @@ export function CrmPipeline({
             ['Сделки', counts.won],
           ].map(([label, value]) => (
             <div key={label} className="rounded-[18px] border border-white/[0.07] bg-black/20 p-4">
-              <p className="text-[10px] font-black uppercase tracking-[.11em] text-white/36">{label}</p>
+              <p className="text-[10px] font-black uppercase tracking-[.11em] text-white/36">
+                {label}
+              </p>
               <p className="mt-2 text-3xl font-black tracking-[-.04em] text-[#fff8e7]">{value}</p>
             </div>
           ))}
@@ -278,7 +300,9 @@ export function CrmPipeline({
                             href={'/crm/' + encodeURIComponent(lead.id)}
                             className="min-w-0 text-left"
                           >
-                            <h3 className="truncate text-base font-black text-[#fff8e7]">{lead.name}</h3>
+                            <h3 className="truncate text-base font-black text-[#fff8e7]">
+                              {lead.name}
+                            </h3>
                             <p className="mt-1 truncate text-xs text-white/42">
                               {lead.source || 'Источник не указан'}
                             </p>
@@ -303,7 +327,10 @@ export function CrmPipeline({
                           <div className="mt-3 rounded-xl border border-emerald-300/12 bg-emerald-300/[0.035] px-3 py-2.5">
                             <div className="flex items-center justify-between gap-3">
                               <p className="text-[9px] font-black uppercase tracking-[.10em] text-emerald-200">
-                                ЖДЁТ ОТВЕТА · {latestRepliesByLead[lead.id].channel === 'sms' ? 'SMS' : 'WHATSAPP'}
+                                ЖДЁТ ОТВЕТА ·{' '}
+                                {latestRepliesByLead[lead.id].channel === 'sms'
+                                  ? 'SMS'
+                                  : 'WHATSAPP'}
                               </p>
                               <p className="text-[9px] font-bold text-white/28">
                                 {formatDate(latestRepliesByLead[lead.id].at)}

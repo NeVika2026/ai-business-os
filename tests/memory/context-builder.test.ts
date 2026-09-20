@@ -36,6 +36,7 @@ describe('OSA Memory Context Builder', () => {
     captureGatewayMemory(
       {
         task: 'Создать Navigator',
+        occurredAt: '2026-09-19T09:00:00.000Z',
         result: 'Navigator UI готов',
         intent: 'navigator_ui',
         routingCategory: 'planning',
@@ -48,6 +49,7 @@ describe('OSA Memory Context Builder', () => {
     captureGatewayMemory(
       {
         task: 'Добавить Runtime Memory',
+        occurredAt: '2026-09-19T09:01:00.000Z',
         result: 'Memory Engine foundation готов',
         intent: 'memory_foundation',
         routingCategory: 'planning',

@@ -6,9 +6,10 @@ import { useState, useTransition } from 'react';
 import {
   addLeadNote,
   generateLeadNextStepAction,
-  scheduleLeadFollowUp,
   updateLeadStatusQuick,
 } from '@/app/(dashboard)/crm/actions';
+import { LeadFollowUpControls } from '@/components/crm/LeadFollowUpControls';
+import type { CrmFollowUp } from '@/lib/crm/follow-ups';
 import type { LeadStatus } from '@/types/crm';
 import { LEAD_STATUS_LABELS } from '@/types/crm';
 
@@ -35,7 +36,7 @@ type LeadTimelineEvent = {
 type CrmLeadDetailProps = {
   lead: LeadDetail;
   timeline: LeadTimelineEvent[];
-  nextFollowUp: string | null;
+  nextFollowUp: CrmFollowUp | null;
 };
 
 const STATUS_ORDER: LeadStatus[] = ['new', 'contacted', 'qualified', 'won', 'lost'];
@@ -77,12 +78,33 @@ function eventPresentation(event: LeadTimelineEvent) {
         tone: 'gold',
       };
     case 'crm_followup_scheduled':
+    case 'crm_followup_rescheduled':
       return {
-        title: 'Назначен следующий контакт',
-        text: payloadText(event.payload, 'due_at')
-          ? formatDateTime(payloadText(event.payload, 'due_at'))
-          : 'Дата сохранена.',
+        title:
+          event.type === 'crm_followup_rescheduled'
+            ? 'Напоминание перенесено'
+            : 'Назначен следующий контакт',
+        text: [
+          payloadText(event.payload, 'due_at')
+            ? formatDateTime(payloadText(event.payload, 'due_at'))
+            : 'Дата сохранена.',
+          payloadText(event.payload, 'note'),
+        ]
+          .filter(Boolean)
+          .join(' · '),
         tone: 'gold',
+      };
+    case 'crm_followup_completed':
+      return {
+        title: 'Напоминание выполнено',
+        text: 'Запланированный контакт отмечен как выполненный.',
+        tone: 'green',
+      };
+    case 'crm_followup_cancelled':
+      return {
+        title: 'Напоминание отменено',
+        text: 'Запланированный контакт снят.',
+        tone: 'neutral',
       };
     case 'crm_note_added':
       return {
@@ -187,13 +209,6 @@ export function CrmLeadDetail({
   const changeStatus = (status: LeadStatus) => {
     startTransition(async () => {
       await updateLeadStatusQuick(lead.id, status);
-      window.location.reload();
-    });
-  };
-
-  const remind = (days: 1 | 3 | 7) => {
-    startTransition(async () => {
-      await scheduleLeadFollowUp(lead.id, days);
       window.location.reload();
     });
   };
@@ -314,21 +329,9 @@ export function CrmLeadDetail({
               СЛЕДУЮЩИЙ КОНТАКТ
             </p>
             <p className="mt-3 text-lg font-black text-[#fff8e7]">
-              {nextFollowUp ? formatDateTime(nextFollowUp) : 'Не назначен'}
+              {nextFollowUp ? formatDateTime(nextFollowUp.dueAt) : 'Не назначен'}
             </p>
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              {([1, 3, 7] as const).map((days) => (
-                <button
-                  key={days}
-                  type="button"
-                  disabled={isPending}
-                  onClick={() => remind(days)}
-                  className="rounded-[13px] border border-white/[0.08] bg-white/[0.02] px-3 py-2.5 text-xs font-black text-white/60 hover:border-[#f1c96c]/18 hover:text-[#f4d878]"
-                >
-                  +{days}д
-                </button>
-              ))}
-            </div>
+            <LeadFollowUpControls leadId={lead.id} followUp={nextFollowUp} />
           </div>
 
           <div className="rounded-[28px] border border-violet-300/12 bg-[radial-gradient(circle_at_top_right,rgba(167,139,250,.08),transparent_45%),#080c12] p-5">
