@@ -502,8 +502,8 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
 
                   <div className={homeStyles.consoleActions}>
                     <div className={homeStyles.quickFormats}>
-                      <button type="button" onClick={() => launchFactoryPreset('video')}>Видео</button>
-                      <button type="button" onClick={() => launchFactoryPreset('image')}>Визуал</button>
+                      <button className={homeStyles.quickGlassVideo} type="button" onClick={() => launchFactoryPreset('video')}>Видео</button>
+                      <button className={homeStyles.quickGlassImage} type="button" onClick={() => launchFactoryPreset('image')}>Визуал</button>
                       <button type="button" onClick={() => launchFactoryPreset('sales')}>Продажи</button>
                       <button type="button" onClick={() => launchFactoryPreset('site')}>Сайт</button>
                       <button type="button" onClick={() => launchFactoryPreset('find')}>Найти</button>
@@ -513,13 +513,68 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
                       <button type="button" onClick={() => launchFactoryPreset('communicate')}>Написать</button>
                       <button type="button" onClick={() => launchFactoryPreset('crm')}>CRM</button>
                     </div>
+                    <div className={homeStyles.launchDock}>
+                      <i aria-hidden="true" />
+                      <i aria-hidden="true" />
+                      <i aria-hidden="true" />
+                      <button
+                        type="button"
+                        disabled={!canSubmit}
+                        onClick={() => runTask()}
+                        className={homeStyles.launchButton}
+                      >
+                        {busy ? 'Завод работает…' : 'Запустить производство →'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className={homeStyles.mediaPulseDeck}>
                     <button
                       type="button"
-                      disabled={!canSubmit}
-                      onClick={() => runTask()}
-                      className={homeStyles.launchButton}
+                      onClick={() => launchFactoryPreset('video')}
+                      className={[homeStyles.mediaPortal, homeStyles.videoPortal].join(' ')}
                     >
-                      {busy ? 'Завод работает…' : 'Запустить задачу →'}
+                      <span className={homeStyles.portalTopline}>
+                        <b>ВИДЕОЦЕХ</b>
+                        <em>LIVE FILM</em>
+                      </span>
+                      <span className={homeStyles.filmWindow} aria-hidden="true">
+                        <span className={homeStyles.filmTrack}>
+                          {Array.from({ length: 10 }).map((_, index) => (
+                            <span key={index} className={homeStyles.filmFrame}>
+                              <span className={homeStyles.silentActor}>
+                                <i className={homeStyles.actorHat} />
+                                <i className={homeStyles.actorHead} />
+                                <i className={homeStyles.actorBody} />
+                                <i className={homeStyles.actorCane} />
+                              </span>
+                            </span>
+                          ))}
+                        </span>
+                      </span>
+                      <span className={homeStyles.portalCaption}>
+                        Немое кино · быстрый прогон кадров · открыть видео
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => launchFactoryPreset('image')}
+                      className={[homeStyles.mediaPortal, homeStyles.imagePortal].join(' ')}
+                    >
+                      <span className={homeStyles.portalTopline}>
+                        <b>ВИЗУАЛЬНЫЙ ЦЕХ</b>
+                        <em>MONO SLIDES</em>
+                      </span>
+                      <span className={homeStyles.slideWindow} aria-hidden="true">
+                        <i className={homeStyles.slideOne} />
+                        <i className={homeStyles.slideTwo} />
+                        <i className={homeStyles.slideThree} />
+                        <i className={homeStyles.slideFour} />
+                      </span>
+                      <span className={homeStyles.portalCaption}>
+                        Чёрно-белые слайды перелистываются как фотолаборатория
+                      </span>
                     </button>
                   </div>
 
