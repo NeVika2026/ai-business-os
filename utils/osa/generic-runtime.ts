@@ -1,3 +1,7 @@
+import {
+  routeBusinessFactoryKnowledge,
+  serializeBusinessFactoryKnowledgeForRuntime,
+} from '@/services/knowledge/business-factory-router';
 import type { PreparedOsaTaskSubmitInput } from '@/utils/osa/osa-task';
 
 export function shouldUseGenericOsaRuntime(input: {
@@ -13,6 +17,17 @@ export function buildGenericOsaRuntimePayload(input: {
   runId: string;
 }): Record<string, unknown> {
   const { preparedInput, sessionId, runId } = input;
+  const knowledgeMethods = routeBusinessFactoryKnowledge({
+    query: [
+      preparedInput.userPrompt,
+      preparedInput.businessDescription,
+      preparedInput.goalTitle ?? '',
+    ]
+      .filter(Boolean)
+      .join(' '),
+    selectedAgentIds: preparedInput.selectedAgents.map((agent) => agent.id),
+    limit: 5,
+  });
 
   return {
     run_id: runId,
@@ -24,5 +39,6 @@ export function buildGenericOsaRuntimePayload(input: {
     goal_id: preparedInput.goalId ?? null,
     goal_title: preparedInput.goalTitle ?? null,
     project_id: preparedInput.projectId ?? null,
+    business_factory_knowledge: serializeBusinessFactoryKnowledgeForRuntime(knowledgeMethods),
   };
 }
