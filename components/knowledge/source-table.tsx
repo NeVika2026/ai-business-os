@@ -51,16 +51,16 @@ export function SourceTable({ sources, showHeader = true }: SourceTableProps) {
       {showHeader ? (
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Knowledge Hub</h1>
-            <p className="text-sm text-[var(--text-secondary)]">Sources</p>
+            <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Источники знаний</h1>
+            <p className="text-sm text-[var(--text-secondary)]">Загруженные и ручные источники</p>
           </div>
           <button
             type="button"
             onClick={openCreateForm}
-            aria-label="Create new knowledge source"
+            aria-label="Add manual knowledge source"
             className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
           >
-            + Новый источник
+            + Добавить вручную
           </button>
         </div>
       ) : (
@@ -68,10 +68,10 @@ export function SourceTable({ sources, showHeader = true }: SourceTableProps) {
           <button
             type="button"
             onClick={openCreateForm}
-            aria-label="Create new knowledge source"
+            aria-label="Add manual knowledge source"
             className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
           >
-            + Новый источник
+            + Добавить вручную
           </button>
         </div>
       )}
