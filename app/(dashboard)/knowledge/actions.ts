@@ -187,6 +187,17 @@ export async function deleteKnowledgeSource(formData: FormData) {
     throw new Error('Source id is required');
   }
 
+  const { data: source, error: sourceLookupError } = await supabase
+    .from('knowledge_sources')
+    .select('source_uri')
+    .eq('id', id)
+    .eq('organization_id', organizationId)
+    .maybeSingle();
+
+  if (sourceLookupError) {
+    throw sourceLookupError;
+  }
+
   const { error } = await supabase
     .from('knowledge_sources')
     .delete()
@@ -195,6 +206,10 @@ export async function deleteKnowledgeSource(formData: FormData) {
 
   if (error) {
     throw error;
+  }
+
+  if (source?.source_uri) {
+    await supabase.storage.from('knowledge-files').remove([source.source_uri]);
   }
 
   revalidatePath('/knowledge');
