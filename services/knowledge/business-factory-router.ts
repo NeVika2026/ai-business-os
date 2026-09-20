@@ -84,10 +84,12 @@ function scoreMethod(
     }
   }
 
-  for (const tag of method.tags) {
-    const normalizedTag = normalize(tag);
-    if (normalizedTag && normalizedQuery.includes(normalizedTag)) {
-      score += 2;
+  if (score > 0) {
+    for (const tag of method.tags) {
+      const normalizedTag = normalize(tag);
+      if (normalizedTag && normalizedQuery.includes(normalizedTag)) {
+        score += 2;
+      }
     }
   }
 
