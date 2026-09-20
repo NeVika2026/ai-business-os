@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
+import { findCrmDuplicateCandidates } from '@/services/crm/duplicate-guard';
 import { completeAutomaticCrmFollowUps } from '@/services/crm/follow-ups';
 
 import { normalizeContactPhone } from './inbox-conversations';
@@ -70,19 +71,14 @@ export async function recordInboundCommunication(
     };
   }
 
-  const { data: leads, error: leadsError } = await supabase
-    .from('crm_leads')
-    .select('id, phone, status')
-    .eq('organization_id', input.organizationId)
-    .not('phone', 'is', null)
-    .limit(5000);
-
-  if (leadsError) throw leadsError;
-
-  const lead =
-    (leads ?? []).find(
-      (candidate) => normalizeContactPhone(candidate.phone ?? '') === phoneKey,
-    ) ?? null;
+  const candidates = await findCrmDuplicateCandidates({
+    supabase,
+    organizationId: input.organizationId,
+    phone: input.phone,
+    limit: 2,
+  });
+  const ambiguous = candidates.length > 1;
+  const lead = candidates.length === 1 ? candidates[0] : null;
 
   const eventType =
     input.channel === 'whatsapp'
@@ -114,6 +110,8 @@ export async function recordInboundCommunication(
       provider_event_id: input.providerEventId,
       crm_lead_id: lead?.id ?? null,
       phone_key: phoneKey,
+      ambiguous_duplicate_contact: ambiguous,
+      duplicate_candidate_ids: ambiguous ? candidates.map((candidate) => candidate.id) : [],
     },
     correlation_id: lead?.id ?? null,
   });
