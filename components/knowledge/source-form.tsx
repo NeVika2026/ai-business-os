@@ -40,6 +40,13 @@ export function SourceForm({ open, mode, source, onClose }: SourceFormProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [formType, setFormType] = useState(() => getInitialFormType(source));
   const dbType = mapFormTypeToDbType(formType) as KnowledgeSourceType;
+  const formOptions =
+    mode === 'create'
+      ? KNOWLEDGE_SOURCE_FORM_TYPES.filter((option) => {
+          const optionType = mapFormTypeToDbType(option.value) as KnowledgeSourceType;
+          return !sourceTypesWithFile(optionType);
+        })
+      : KNOWLEDGE_SOURCE_FORM_TYPES;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -130,7 +137,7 @@ export function SourceForm({ open, mode, source, onClose }: SourceFormProps) {
               onChange={(event) => setFormType(event.target.value)}
               className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-0)] px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
             >
-              {KNOWLEDGE_SOURCE_FORM_TYPES.map((option) => (
+              {formOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -151,24 +158,16 @@ export function SourceForm({ open, mode, source, onClose }: SourceFormProps) {
             </label>
           ) : null}
 
-          {sourceTypesWithFile(dbType) ? (
-            <label className="space-y-2">
-              <span className="text-sm text-[var(--text-secondary)]">Файл</span>
-              <input
-                name="file"
-                type="file"
-                className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-0)] px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-[var(--accent-soft)] file:px-3 file:py-1.5 file:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-              />
-              {source?.metadata.filename ? (
-                <p className="text-xs text-[var(--text-secondary)]">
-                  Текущий файл: {source.metadata.filename}
-                </p>
-              ) : (
-                <p className="text-xs text-[var(--text-secondary)]">
-                  Файл пока не загружается — будет сохранено только имя файла.
-                </p>
-              )}
-            </label>
+          {mode === 'edit' && sourceTypesWithFile(dbType) ? (
+            <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-0)] px-3 py-2">
+              <p className="text-sm text-[var(--text-secondary)]">Файл</p>
+              <p className="mt-1 text-sm text-[var(--text-primary)]">
+                {String(source?.metadata.filename ?? 'Загруженный файл')}
+              </p>
+              <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                Для замены файла загрузите новую версию через автоимпорт.
+              </p>
+            </div>
           ) : null}
 
           {mode === 'edit' && source ? (
