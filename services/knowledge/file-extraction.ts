@@ -416,6 +416,7 @@ export function detectKnowledgeFileType(
   ) {
     return 'zip';
   }
+  if ((extension === '.html' || extension === '.htm' || mime === 'text/html') && /messages\d*\.html$/i.test(filename)) return 'telegram';
   if (extension === '.html' || extension === '.htm' || mime === 'text/html') return 'html';
   if (extension === '.json' && /telegram|result|messages/i.test(filename)) return 'telegram';
   if (extension === '.md' || extension === '.markdown') return 'manual';
