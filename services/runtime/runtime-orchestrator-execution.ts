@@ -1,4 +1,5 @@
 import { createBusinessFactoryRuntimeKnowledgeAdapter } from '@/services/knowledge/business-factory-runtime';
+import { hydrateOrganizationKnowledge } from '@/services/knowledge/organization-runtime-knowledge';
 import type { AgentExecution, AgentResult } from '@/types/runtime/dto';
 import {
   isRuntimeBridgeEnabled,
@@ -67,12 +68,32 @@ export async function executeOrchestratorRuntimeAgent(
 ): Promise<OrchestratorRuntimeExecutionResult> {
   const { createRuntimeBridge } = await import('@/services/runtime/runtime-bridge');
   const instanceId = `orchestrator-${execution.input.payload?.trace && typeof execution.input.payload.trace === 'object' && 'runId' in execution.input.payload.trace ? String((execution.input.payload.trace as { runId: string }).runId) : 'run'}`;
+  const knowledgeAdapter = createBusinessFactoryRuntimeKnowledgeAdapter(`${instanceId}-knowledge`);
+  const payload = execution.input.payload;
+  const knowledgeQuery =
+    typeof payload.knowledgeQuery === 'string' && payload.knowledgeQuery.trim()
+      ? payload.knowledgeQuery.trim()
+      : typeof payload.user_prompt === 'string' && payload.user_prompt.trim()
+        ? payload.user_prompt.trim()
+        : execution.input.action;
+  const projectId =
+    typeof payload.project_id === 'string' && payload.project_id.trim()
+      ? payload.project_id.trim()
+      : null;
+
+  await hydrateOrganizationKnowledge({
+    adapter: knowledgeAdapter,
+    organizationId: execution.scope.organizationId,
+    query: knowledgeQuery,
+    projectId,
+  });
+
   const bridge = createRuntimeBridge({
     instanceId,
     orchestrationOnly: false,
     memoryInjectionEnabled: true,
     knowledgeInjectionEnabled: true,
-    knowledgeAdapter: createBusinessFactoryRuntimeKnowledgeAdapter(`${instanceId}-knowledge`),
+    knowledgeAdapter,
   });
 
   try {
