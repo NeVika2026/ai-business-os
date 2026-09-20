@@ -91,7 +91,7 @@ function scoreMethod(
     }
   }
 
-  if (method.agentIds.some((agentId) => selectedAgentIds.has(agentId))) {
+  if (score > 0 && method.agentIds.some((agentId) => selectedAgentIds.has(agentId))) {
     score += 2;
   }
 
