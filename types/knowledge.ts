@@ -45,28 +45,28 @@ export const KNOWLEDGE_SOURCE_FORM_TYPES = [
 export type KnowledgeSourceFormType = (typeof KNOWLEDGE_SOURCE_FORM_TYPES)[number]['value'];
 
 export const KNOWLEDGE_SOURCE_TYPE_LABELS: Record<KnowledgeSourceType, string> = {
-  telegram: 'Telegram Export',
+  telegram: 'Telegram',
   vk: 'VK',
   youtube: 'YouTube',
   pdf: 'PDF',
   docx: 'DOCX',
   html: 'HTML',
-  website: 'Website',
-  book: 'Book',
+  website: 'Сайт',
+  book: 'Книга',
   zip: 'ZIP',
-  audio: 'Audio',
-  video: 'Video',
-  manual: 'Manual',
+  audio: 'Аудио',
+  video: 'Видео',
+  manual: 'Вручную',
 };
 
 export const KNOWLEDGE_IMPORT_STATUS_LABELS: Record<KnowledgeImportStatus, string> = {
-  pending: 'Pending',
-  parsing: 'Parsing',
-  chunking: 'Chunking',
-  embedding: 'Embedding',
-  extracting: 'Extracting',
-  completed: 'Completed',
-  failed: 'Failed',
+  pending: 'Ожидает',
+  parsing: 'Разбор',
+  chunking: 'Чанки',
+  embedding: 'Индексация',
+  extracting: 'Извлечение',
+  completed: 'Готово',
+  failed: 'Ошибка',
 };
 
 export const KNOWLEDGE_ITEM_TYPE_LABELS: Record<KnowledgeItemType, string> = {
