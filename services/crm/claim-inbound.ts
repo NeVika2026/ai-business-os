@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { normalizeContactPhone } from '@/lib/crm/inbox-conversations';
+import { findCrmDuplicateCandidates } from '@/services/crm/duplicate-guard';
 
 const unmatchedTypes = ['crm_whatsapp_received_unmatched', 'crm_sms_received_unmatched'];
 const eventColumns = 'id, type, source, payload, metadata, created_at';
@@ -126,25 +127,20 @@ export async function claimInboundConversation(input: {
     if (error) throw error;
     if (!lead) throw new Error('Связанная карточка клиента больше недоступна.');
   } else {
-    for (let offset = 0; ; offset += pageSize) {
-      const { data: candidates, error } = await supabase
-        .from('crm_leads')
-        .select('id, phone')
-        .eq('organization_id', organizationId)
-        .not('phone', 'is', null)
-        .order('id', { ascending: true })
-        .range(offset, offset + pageSize - 1);
+    const candidates = await findCrmDuplicateCandidates({
+      supabase,
+      organizationId,
+      phone,
+      limit: 2,
+    });
 
-      if (error) throw error;
-      const existing = (candidates ?? []).find(
-        (lead) => normalizeContactPhone(lead.phone ?? '') === phoneKey,
+    if (candidates.length > 1) {
+      throw new Error(
+        'Найдено несколько карточек с этим номером. Сначала объедините дубли в CRM.',
       );
-      if (existing) {
-        leadId = existing.id;
-        break;
-      }
-      if ((candidates?.length ?? 0) < pageSize) break;
     }
+
+    leadId = candidates[0]?.id ?? null;
   }
 
   const firstMessage = messages[0];
