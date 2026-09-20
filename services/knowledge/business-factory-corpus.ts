@@ -282,7 +282,7 @@ tags: [video, providers, open-source, no-vpn, time-sensitive]
     title: 'Матрёшка: маркетинговый оркестратор',
     source: 'macbook:projects/skills/matreshka/SKILL.md',
     tags: ['marketing', 'orchestration', 'agents', 'routing', 'content'],
-    content: \`---
+    content: `---
 title: Матрёшка: маркетинговый оркестратор
 tags: [marketing, orchestration, agents, routing, content]
 ---
@@ -296,7 +296,7 @@ tags: [marketing, orchestration, agents, routing, content]
 
 ## Финальный контроль
 Первая строка должна останавливать внимание. В результате должна быть одна главная мысль, конкретная деталь или число, релевантный CTA и готовность к использованию без лишней правки.
-\`,
+`,
   },
   {
     sourceId: 'human-text-markers-expanded',
@@ -304,7 +304,7 @@ tags: [marketing, orchestration, agents, routing, content]
     title: 'Маркеры ИИ-текста и человеческого текста',
     source: 'macbook:nagornova/Маркеры_ИИ_и_Человеческого_текста.pdf',
     tags: ['copywriting', 'editing', 'human-style', 'anti-llm', 'quality'],
-    content: \`---
+    content: `---
 title: Маркеры ИИ-текста и человеческого текста
 tags: [copywriting, editing, human-style, anti-llm, quality]
 ---
@@ -318,7 +318,7 @@ tags: [copywriting, editing, human-style, anti-llm, quality]
 
 ## Проверка
 Текст должен звучать как речь конкретного автора, а не как безопасный универсальный шаблон. Ошибки не нужно добавлять специально: цель — естественность, а не искусственная небрежность.
-\`,
+`,
   },
   {
     sourceId: 'brand-uniqueness-strategy',
@@ -326,7 +326,7 @@ tags: [copywriting, editing, human-style, anti-llm, quality]
     title: 'Бренд-стратегия: фильтр уникальности',
     source: 'macbook:projects/skills/matreshka/skills/brand-strategy.md',
     tags: ['brand', 'positioning', 'strategy', 'messaging', 'visual'],
-    content: \`---
+    content: `---
 title: Бренд-стратегия: фильтр уникальности
 tags: [brand, positioning, strategy, messaging, visual]
 ---
@@ -346,7 +346,7 @@ tags: [brand, positioning, strategy, messaging, visual]
 
 ## Фильтр уникальности
 Можно ли заменить логотип конкурентским? Хочется ли переслать это другу? Можно ли снять по идее короткое видео? Если бренд становится взаимозаменяемым, позиционирование нужно переделать.
-\`,
+`,
   },
   {
     sourceId: 'osa-product-principles',
@@ -354,7 +354,7 @@ tags: [brand, positioning, strategy, messaging, visual]
     title: 'OSA Product Bible: продуктовые принципы',
     source: 'macbook:projects/OSA Product/07 Product Bible',
     tags: ['osa', 'product', 'operating-system', 'workflow', 'business'],
-    content: \`---
+    content: `---
 title: OSA Product Bible: продуктовые принципы
 tags: [osa, product, operating-system, workflow, business]
 ---
@@ -368,7 +368,7 @@ OSA — не AI-чат. Это операционная система для п
 
 ## Следствие для интерфейса
 Главный объект — не сообщение, а работа: проект, цель, план, агент, результат, версия, решение и следующий шаг.
-\`,
+`,
   },
   {
     sourceId: 'analytics-secure-workflow',
@@ -376,7 +376,7 @@ OSA — не AI-чат. Это операционная система для п
     title: 'Аналитика рекламы: безопасный рабочий процесс',
     source: 'macbook:projects/skills/yandex-ads-analytics/SKILL.md',
     tags: ['analytics', 'ads', 'yandex', 'cpa', 'roi', 'security'],
-    content: \`---
+    content: `---
 title: Аналитика рекламы: безопасный рабочий процесс
 tags: [analytics, ads, yandex, cpa, roi, security]
 ---
@@ -393,7 +393,7 @@ tags: [analytics, ads, yandex, cpa, roi, security]
 
 ## Свежесть
 Лимиты API, доступные поля и правила рекламных систем меняются; перед автоматизацией проверять актуальную документацию.
-\`,
+`,
   },
   {
     sourceId: 'nerieltori-brand-reference',
@@ -401,7 +401,7 @@ tags: [analytics, ads, yandex, cpa, roi, security]
     title: 'НеRиелтоRRi: брендовый референс',
     source: 'macbook:nagornova/NRR_master_summary.txt',
     tags: ['real-estate', 'brand', 'tone-of-voice', 'positioning', 'trust'],
-    content: \`---
+    content: `---
 title: НеRиелтоRRi: брендовый референс
 tags: [real-estate, brand, tone-of-voice, positioning, trust]
 ---
@@ -418,7 +418,7 @@ tags: [real-estate, brand, tone-of-voice, positioning, trust]
 
 ## Применение
 Использовать как доменный референс для задач недвижимости и инвестиционного контента, а не как универсальный стиль для всех проектов Бизнес-завода.
-\`,
+`,
   },
 ];
 
