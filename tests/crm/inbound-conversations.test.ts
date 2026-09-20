@@ -309,6 +309,34 @@ test('inbox groups formatted phone aliases across channels and keeps the latest 
   assert.equal(messages[0].eventId, 'first');
 });
 
+test('inbox grouping preserves duplicate ambiguity and candidate ids', () => {
+  const result = groupUnmatchedInbound([
+    {
+      eventId: 'newer',
+      channel: 'whatsapp',
+      phone,
+      senderName: 'Клиент',
+      text: 'Новое',
+      at: '2026-09-19T10:00:00.000Z',
+      ambiguousDuplicateContact: true,
+      duplicateCandidateIds: ['lead-a', 'lead-b'],
+    },
+    {
+      eventId: 'older',
+      channel: 'sms',
+      phone: '89991234567',
+      senderName: null,
+      text: 'Старое',
+      at: '2026-09-19T09:00:00.000Z',
+    },
+  ]);
+
+  assert.equal(result.length, 1);
+  assert.equal(result[0].ambiguousDuplicateContact, true);
+  assert.deepEqual(result[0].duplicateCandidateIds, ['lead-a', 'lead-b']);
+  assert.equal(result[0].messageCount, 2);
+});
+
 test('missing phone numbers stay separate in the inbox', () => {
   const messages = ['a', 'b'].map((eventId) => ({
     eventId,
