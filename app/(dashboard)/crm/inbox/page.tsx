@@ -80,6 +80,13 @@ export default async function CrmInboxPage() {
     )
     .map((event) => {
       const payload = (event.payload ?? {}) as Record<string, unknown>;
+      const metadata = (event.metadata ?? {}) as Record<string, unknown>;
+      const candidateIds = Array.isArray(metadata.duplicate_candidate_ids)
+        ? metadata.duplicate_candidate_ids.filter(
+            (value): value is string => typeof value === 'string',
+          )
+        : [];
+
       return {
         eventId: event.id,
         channel:
@@ -93,6 +100,8 @@ export default async function CrmInboxPage() {
             : null,
         text: typeof payload.text === 'string' ? payload.text : '',
         at: event.created_at,
+        ambiguousDuplicateContact: metadata.ambiguous_duplicate_contact === true,
+        duplicateCandidateIds: candidateIds,
       };
     });
 
