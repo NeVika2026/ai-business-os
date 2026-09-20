@@ -32,6 +32,14 @@ const nodes: FactoryNode[] = [
   { id: 'web', label: 'WEB', index: '08', x: 9, y: 53, keywords: ['сайт', 'лендинг', 'прилож', 'web'] },
 ];
 
+const floatingBadges = [
+  { id: 'video', icon: '▶', label: 'ВИДЕО' },
+  { id: 'visual', icon: '▧', label: 'ВИЗУАЛ' },
+  { id: 'voice', icon: '◉', label: 'ГОЛОС' },
+  { id: 'sales', icon: '₽', label: 'ПРОДАЖИ' },
+  { id: 'data', icon: 'Σ', label: 'ДАННЫЕ' },
+] as const;
+
 const crossLinks: Array<[string, string]> = [
   ['strategy', 'data'],
   ['data', 'research'],
@@ -184,6 +192,19 @@ export function BusinessFactoryHero({
               </div>
             );
           })}
+        </div>
+
+        <div className={styles.floatingBadges} aria-hidden="true">
+          {floatingBadges.map((badge) => (
+            <div
+              key={badge.id}
+              className={[styles.floatingBadge, styles[`badge_${badge.id}`]].join(' ')}
+            >
+              <span className={styles.badgeOrb}>{badge.icon}</span>
+              <b>{badge.label}</b>
+              <i />
+            </div>
+          ))}
         </div>
 
         <div className={styles.energyParticles} aria-hidden="true">
