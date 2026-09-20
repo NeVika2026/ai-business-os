@@ -72,7 +72,41 @@ describe('generic OSA runtime mechanics', () => {
       { id: 'content', name: 'Content' },
     ]);
 
+    assert.deepEqual(payload.business_factory_knowledge, []);
+
     const serialized = JSON.stringify(payload);
     assert.doesNotMatch(serialized, /OpenAI|Anthropic|Runway|ElevenLabs/i);
+  });
+
+  it('injects only relevant curated methods into a content runtime payload', () => {
+    const payload = buildGenericOsaRuntimePayload({
+      preparedInput: {
+        userPrompt: 'Сделай вирусный контент-план для Telegram и потом убери машинные клише',
+        businessDescription: 'Экспертный блог',
+        selectedAgents: [
+          { id: 'business-manager', name: 'Business Manager' },
+          { id: 'content', name: 'Content' },
+        ],
+        executionPlan: {
+          stages: [],
+          dependencies: {},
+          parallelGroups: [],
+          estimatedMinutes: 10,
+          risks: [],
+          executionMode: 'sequential',
+          reviewRequired: true,
+        },
+        goalId: 'create_content',
+        goalTitle: 'Создать контент',
+        projectId: 'project-1',
+      },
+      sessionId: 'session-knowledge',
+      runId: 'run-knowledge',
+    });
+
+    const methods = payload.business_factory_knowledge as Array<{ id: string }>;
+    assert.ok(methods.some((method) => method.id === 'viral-format-engine'));
+    assert.ok(methods.some((method) => method.id === 'anti-llm-editor'));
+    assert.ok(methods.length <= 5);
   });
 });
