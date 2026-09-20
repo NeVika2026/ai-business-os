@@ -120,6 +120,9 @@ export function database(seed: { events?: Row[]; crm_leads?: Row[]; tasks?: Row[
           for (const row of matching)
             Object.assign(row, JSON.parse(String(init?.body)), { updated_at: nextRevision() });
           result = matching;
+        } else if (method === 'DELETE') {
+          result = [...matching];
+          rows[table] = rows[table].filter((row) => !matching.includes(row));
         } else {
           const order = url.searchParams.get('order');
           if (order)
