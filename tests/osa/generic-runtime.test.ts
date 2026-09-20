@@ -72,7 +72,9 @@ describe('generic OSA runtime mechanics', () => {
       { id: 'content', name: 'Content' },
     ]);
 
-    assert.deepEqual(payload.business_factory_knowledge, []);
+    const baselineMethods = payload.business_factory_knowledge as Array<{ id: string }>;
+    assert.ok(baselineMethods.some((method) => method.id === 'sales-ai-system'));
+    assert.ok(!baselineMethods.some((method) => method.id === 'ethical-trigger-check'));
 
     const serialized = JSON.stringify(payload);
     assert.doesNotMatch(serialized, /OpenAI|Anthropic|Runway|ElevenLabs/i);
