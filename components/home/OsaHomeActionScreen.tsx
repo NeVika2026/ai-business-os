@@ -545,7 +545,10 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
                               <span className={homeStyles.silentActor}>
                                 <i className={homeStyles.actorHat} />
                                 <i className={homeStyles.actorHead} />
+                                <i className={homeStyles.actorMustache} />
                                 <i className={homeStyles.actorBody} />
+                                <i className={homeStyles.actorLegA} />
+                                <i className={homeStyles.actorLegB} />
                                 <i className={homeStyles.actorCane} />
                               </span>
                             </span>
@@ -553,7 +556,7 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
                         </span>
                       </span>
                       <span className={homeStyles.portalCaption}>
-                        Немое кино · быстрый прогон кадров · открыть видео
+                        Немое кино · бегущий комик с тростью · живой проектор
                       </span>
                     </button>
 
@@ -573,7 +576,7 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
                         <i className={homeStyles.slideFour} />
                       </span>
                       <span className={homeStyles.portalCaption}>
-                        Чёрно-белые слайды перелистываются как фотолаборатория
+                        Портрет · архитектура · продукт · editorial — кадры листаются сами
                       </span>
                     </button>
                   </div>
