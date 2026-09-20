@@ -9,6 +9,7 @@ export type CrmDuplicateCandidate = {
   name: string;
   email: string | null;
   phone: string | null;
+  status: string;
   reasons: CrmDuplicateReason[];
 };
 
@@ -35,7 +36,7 @@ export async function findCrmDuplicateCandidates(input: {
   for (let offset = 0; ; offset += pageSize) {
     const { data, error } = await input.supabase
       .from('crm_leads')
-      .select('id, name, email, phone')
+      .select('id, name, email, phone, status')
       .eq('organization_id', input.organizationId)
       .order('id', { ascending: true })
       .range(offset, offset + pageSize - 1);
@@ -55,6 +56,7 @@ export async function findCrmDuplicateCandidates(input: {
           name: lead.name,
           email: lead.email,
           phone: lead.phone,
+          status: lead.status,
           reasons,
         });
         if (matches.length >= limit) return matches;
