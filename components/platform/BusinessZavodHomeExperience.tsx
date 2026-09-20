@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import styles from './BusinessZavodHomeExperience.module.css';
+
 import {
   BUSINESS_ZAVOD_MODULES,
   BUSINESS_ZAVOD_TASKS,
@@ -37,6 +39,42 @@ function taskHref(task: (typeof BUSINESS_ZAVOD_TASKS)[number]) {
 const cardClass =
   'group relative overflow-hidden rounded-[24px] border border-white/[0.11] bg-white/[0.045] p-6 backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-[#e7b952]/30 hover:bg-white/[0.055] hover:shadow-[0_24px_70px_-40px_rgba(231,185,82,.35)]';
 
+function ModuleMicroVisual({ moduleId }: { moduleId: (typeof BUSINESS_ZAVOD_MODULES)[number]['id'] }) {
+  if (moduleId === 'create') {
+    return <span className={styles.createStage} aria-hidden="true"><i /><i /><i /></span>;
+  }
+
+  if (moduleId === 'sell') {
+    return <span className={styles.sellStage} aria-hidden="true"><span /><span /><span /><b /></span>;
+  }
+
+  if (moduleId === 'promote') {
+    return <span className={styles.promoteStage} aria-hidden="true" />;
+  }
+
+  if (moduleId === 'publish') {
+    return <span className={styles.publishStage} aria-hidden="true"><i /><i /><i /></span>;
+  }
+
+  if (moduleId === 'find') {
+    return <span className={styles.findStage} aria-hidden="true" />;
+  }
+
+  if (moduleId === 'analyze') {
+    return <span className={styles.analyzeStage} aria-hidden="true"><i /><i /><i /><i /><i /></span>;
+  }
+
+  if (moduleId === 'automate') {
+    return <span className={styles.automateStage} aria-hidden="true"><i /><i /><i /></span>;
+  }
+
+  if (moduleId === 'voice-agent') {
+    return <span className={styles.voiceStage} aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /><i /></span>;
+  }
+
+  return <span className={styles.communicateStage} aria-hidden="true"><i /><i /><i /></span>;
+}
+
 export function BusinessZavodHomeExperience() {
   const scenarios = BUSINESS_ZAVOD_TASKS.filter((task) =>
     SCENARIO_IDS.includes(task.id as (typeof SCENARIO_IDS)[number]),
@@ -62,36 +100,24 @@ export function BusinessZavodHomeExperience() {
           </Link>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {BUSINESS_ZAVOD_MODULES.map((module, index) => (
             <Link
               key={module.id}
               href={`/modules/${module.id}`}
-              className={cardClass}
+              className={styles.moduleCard}
             >
-              <div
-                aria-hidden="true"
-                className="absolute -right-12 -top-12 h-28 w-28 rounded-full bg-[radial-gradient(circle,rgba(231,185,82,.13),transparent_68%)] transition duration-300 group-hover:scale-125"
-              />
-              <div className="relative">
-                <div className="flex items-center justify-between">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#e7b952]/20 bg-[#e7b952]/[0.08] text-xl text-[#f4d77f]">
-                    {module.icon}
-                  </div>
-                  <span className="text-[13px] font-bold tracking-[0.12em] text-white/72">
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-                </div>
-                <h3 className="mt-5 text-xl font-semibold text-[#fff8e7]">
-                  {module.label}
-                </h3>
-                <p className="mt-2 text-base leading-7 text-white/82">
-                  {module.description}
-                </p>
-                <span className="mt-5 inline-flex text-base font-semibold text-[#f4d878]">
-                  Открыть цех →
-                </span>
-              </div>
+              <span className={styles.cardGlow} aria-hidden="true" />
+              <span className={styles.cardHead}>
+                <span className={styles.iconBubble}>{module.icon}</span>
+                <span className={styles.cardIndex}>{String(index + 1).padStart(2, '0')}</span>
+              </span>
+              <span className={styles.visual}>
+                <ModuleMicroVisual moduleId={module.id} />
+              </span>
+              <span className={styles.title}>{module.label}</span>
+              <span className={styles.description}>{module.description}</span>
+              <span className={styles.open}>Открыть цех →</span>
             </Link>
           ))}
         </div>
