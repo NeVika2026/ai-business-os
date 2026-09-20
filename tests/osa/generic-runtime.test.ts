@@ -65,6 +65,8 @@ describe('generic OSA runtime mechanics', () => {
     assert.equal(payload.business_description, 'B2B-консалтинг');
     assert.equal(payload.project_id, 'project-1');
     assert.equal(payload.goal_id, 'create_content');
+    assert.match(String(payload.knowledgeQuery), /презентацию/);
+    assert.match(String(payload.knowledgeQuery), /B2B-консалтинг/);
     assert.equal(payload.session_id, 'session-1');
     assert.equal(payload.run_id, 'run-1');
     assert.deepEqual(payload.selected_agents, [

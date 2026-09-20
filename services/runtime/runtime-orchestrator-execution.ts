@@ -1,3 +1,4 @@
+import { createBusinessFactoryRuntimeKnowledgeAdapter } from '@/services/knowledge/business-factory-runtime';
 import type { AgentExecution, AgentResult } from '@/types/runtime/dto';
 import {
   isRuntimeBridgeEnabled,
@@ -65,11 +66,13 @@ export async function executeOrchestratorRuntimeAgent(
   execution: AgentExecution,
 ): Promise<OrchestratorRuntimeExecutionResult> {
   const { createRuntimeBridge } = await import('@/services/runtime/runtime-bridge');
+  const instanceId = `orchestrator-${execution.input.payload?.trace && typeof execution.input.payload.trace === 'object' && 'runId' in execution.input.payload.trace ? String((execution.input.payload.trace as { runId: string }).runId) : 'run'}`;
   const bridge = createRuntimeBridge({
-    instanceId: `orchestrator-${execution.input.payload?.trace && typeof execution.input.payload.trace === 'object' && 'runId' in execution.input.payload.trace ? String((execution.input.payload.trace as { runId: string }).runId) : 'run'}`,
+    instanceId,
     orchestrationOnly: false,
     memoryInjectionEnabled: true,
     knowledgeInjectionEnabled: true,
+    knowledgeAdapter: createBusinessFactoryRuntimeKnowledgeAdapter(`${instanceId}-knowledge`),
   });
 
   try {

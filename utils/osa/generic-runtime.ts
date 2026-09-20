@@ -29,6 +29,14 @@ export function buildGenericOsaRuntimePayload(input: {
     limit: 5,
   });
 
+  const knowledgeQuery = [
+    preparedInput.userPrompt,
+    preparedInput.businessDescription,
+    preparedInput.goalTitle ?? '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return {
     run_id: runId,
     session_id: sessionId,
@@ -39,6 +47,7 @@ export function buildGenericOsaRuntimePayload(input: {
     goal_id: preparedInput.goalId ?? null,
     goal_title: preparedInput.goalTitle ?? null,
     project_id: preparedInput.projectId ?? null,
+    knowledgeQuery,
     business_factory_knowledge: serializeBusinessFactoryKnowledgeForRuntime(knowledgeMethods),
   };
 }

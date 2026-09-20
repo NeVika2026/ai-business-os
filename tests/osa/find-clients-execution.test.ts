@@ -33,6 +33,8 @@ describe('find clients knowledge routing', () => {
 
     const methods = payload.business_factory_knowledge as Array<{ id: string }>;
 
+    assert.match(String(payload.knowledgeQuery), /Найди клиентов/);
+    assert.match(String(payload.knowledgeQuery), /целевая аудитория/);
     assert.ok(methods.length > 0);
     assert.ok(
       methods.some((method) =>
