@@ -1,3 +1,7 @@
+import {
+  routeBusinessFactoryKnowledge,
+  serializeBusinessFactoryKnowledgeForRuntime,
+} from '@/services/knowledge/business-factory-router';
 import type { OrchestratorRuntimeExecutionResult } from '@/services/runtime/runtime-orchestrator-execution';
 import {
   buildFindClientsFallbackDeliverable,
@@ -38,6 +42,14 @@ export function buildFindClientsAgentPayload(
   sessionId: string,
   runId: string,
 ): Record<string, unknown> {
+  const knowledgeMethods = routeBusinessFactoryKnowledge({
+    query: [input.userPrompt, input.businessDescription, 'клиенты продажи целевая аудитория']
+      .filter(Boolean)
+      .join(' '),
+    selectedAgentIds: input.selectedAgents.map((agent) => agent.id),
+    limit: 5,
+  });
+
   return {
     source: 'osa_workspace',
     session_id: sessionId,
@@ -46,6 +58,7 @@ export function buildFindClientsAgentPayload(
     business_description: input.businessDescription.trim(),
     goal_id: 'find_clients',
     goal_title: 'Find Clients',
+    business_factory_knowledge: serializeBusinessFactoryKnowledgeForRuntime(knowledgeMethods),
     trace: {
       runId,
       correlationId: runId,
