@@ -50,6 +50,14 @@ export function buildFindClientsAgentPayload(
     limit: 5,
   });
 
+  const knowledgeQuery = [
+    input.userPrompt,
+    input.businessDescription,
+    'клиенты продажи целевая аудитория воронка скрипт возражения',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return {
     source: 'osa_workspace',
     session_id: sessionId,
@@ -58,6 +66,7 @@ export function buildFindClientsAgentPayload(
     business_description: input.businessDescription.trim(),
     goal_id: 'find_clients',
     goal_title: 'Find Clients',
+    knowledgeQuery,
     business_factory_knowledge: serializeBusinessFactoryKnowledgeForRuntime(knowledgeMethods),
     trace: {
       runId,
