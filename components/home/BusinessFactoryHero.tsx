@@ -4,6 +4,13 @@ import Link from 'next/link';
 
 import styles from './BusinessFactoryHero.module.css';
 
+const CHAPLIN_CLIP_START = 4;
+const CHAPLIN_CLIP_END = 12;
+const CHAPLIN_OGG_URL =
+  'https://upload.wikimedia.org/wikipedia/commons/3/38/Charlie_Chaplin%2C_The_Bond%2C_1918.ogv';
+const CHAPLIN_WEBM_FALLBACK_URL =
+  'https://upload.wikimedia.org/wikipedia/commons/7/79/The_Champion%281915%29_Charlie_Chaplin.webm';
+
 type BusinessFactoryHeroProps = {
   active?: boolean;
   thinking?: boolean;
@@ -69,22 +76,35 @@ export function BusinessFactoryHero({
         </div>
 
         <Link href="/modules/create/studio?mode=video" className={[styles.module, styles.videoModule].join(' ')}>
-          <span className={styles.moduleLabel}><b>ВИДЕОЦЕХ</b><em>LIVE FILM</em></span>
-          <span className={styles.miniFilm} aria-hidden="true">
-            <span className={styles.miniFilmTrack}>
-              {Array.from({ length: 7 }).map((_, index) => (
-                <span key={index} className={styles.miniFrame}>
-                  <i className={styles.hat} />
-                  <i className={styles.head} />
-                  <i className={styles.body} />
-                  <i className={styles.legA} />
-                  <i className={styles.legB} />
-                  <i className={styles.cane} />
-                </span>
-              ))}
-            </span>
+          <span className={styles.moduleLabel}><b>ВИДЕОЦЕХ</b><em>1918 · PUBLIC DOMAIN</em></span>
+          <span className={styles.chaplinVideoFrame}>
+            <video
+              className={styles.chaplinVideo}
+              autoPlay
+              muted
+              playsInline
+              preload="metadata"
+              aria-label="Чёрно-белый фрагмент фильма Чарли Чаплина The Bond, 1918"
+              onLoadedMetadata={(event) => {
+                event.currentTarget.currentTime = CHAPLIN_CLIP_START;
+              }}
+              onTimeUpdate={(event) => {
+                if (event.currentTarget.currentTime >= CHAPLIN_CLIP_END) {
+                  event.currentTarget.currentTime = CHAPLIN_CLIP_START;
+                  void event.currentTarget.play().catch(() => undefined);
+                }
+              }}
+            >
+              <source src={CHAPLIN_OGG_URL} type="video/ogg" />
+              <source src={CHAPLIN_WEBM_FALLBACK_URL} type="video/webm" />
+            </video>
+            <span className={styles.filmVignette} aria-hidden="true" />
+            <span className={styles.filmGrain} aria-hidden="true" />
+            <span className={styles.filmScratches} aria-hidden="true" />
+            <span className={styles.perforationTop} aria-hidden="true" />
+            <span className={styles.perforationBottom} aria-hidden="true" />
           </span>
-          <span className={styles.moduleAction}>Открыть видео →</span>
+          <span className={styles.moduleAction}>Настоящий Чаплин · открыть видео →</span>
         </Link>
 
         <Link href="/modules/create/studio?mode=image" className={[styles.module, styles.visualModule].join(' ')}>
