@@ -528,59 +528,6 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
                     </div>
                   </div>
 
-                  <div className={homeStyles.mediaPulseDeck}>
-                    <button
-                      type="button"
-                      onClick={() => launchFactoryPreset('video')}
-                      className={[homeStyles.mediaPortal, homeStyles.videoPortal].join(' ')}
-                    >
-                      <span className={homeStyles.portalTopline}>
-                        <b>ВИДЕОЦЕХ</b>
-                        <em>LIVE FILM</em>
-                      </span>
-                      <span className={homeStyles.filmWindow} aria-hidden="true">
-                        <span className={homeStyles.filmTrack}>
-                          {Array.from({ length: 10 }).map((_, index) => (
-                            <span key={index} className={homeStyles.filmFrame}>
-                              <span className={homeStyles.silentActor}>
-                                <i className={homeStyles.actorHat} />
-                                <i className={homeStyles.actorHead} />
-                                <i className={homeStyles.actorMustache} />
-                                <i className={homeStyles.actorBody} />
-                                <i className={homeStyles.actorLegA} />
-                                <i className={homeStyles.actorLegB} />
-                                <i className={homeStyles.actorCane} />
-                              </span>
-                            </span>
-                          ))}
-                        </span>
-                      </span>
-                      <span className={homeStyles.portalCaption}>
-                        Немое кино · бегущий комик с тростью · живой проектор
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => launchFactoryPreset('image')}
-                      className={[homeStyles.mediaPortal, homeStyles.imagePortal].join(' ')}
-                    >
-                      <span className={homeStyles.portalTopline}>
-                        <b>ВИЗУАЛЬНЫЙ ЦЕХ</b>
-                        <em>MONO SLIDES</em>
-                      </span>
-                      <span className={homeStyles.slideWindow} aria-hidden="true">
-                        <i className={homeStyles.slideOne} />
-                        <i className={homeStyles.slideTwo} />
-                        <i className={homeStyles.slideThree} />
-                        <i className={homeStyles.slideFour} />
-                      </span>
-                      <span className={homeStyles.portalCaption}>
-                        Портрет · архитектура · продукт · editorial — кадры листаются сами
-                      </span>
-                    </button>
-                  </div>
-
                   {phase === 'error' && error ? (
                     <OsaErrorState
                       message={error.message}

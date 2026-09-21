@@ -31,8 +31,11 @@ describe('Cinematic Business Zavod entrance', () => {
       'utf8',
     );
 
-    assert.match(source, /\.reactor/);
-    assert.match(source, /\.ringOuter/);
+    assert.match(source, /\.coreRig/);
+    assert.match(source, /\.orbitOuter/);
+    assert.match(source, /\.module/);
+    assert.match(source, /\.miniFilm/);
+    assert.match(source, /\.photoDeck/);
     assert.match(source, /@keyframes coreBreathe/);
     assert.match(source, /prefers-reduced-motion/);
   });
