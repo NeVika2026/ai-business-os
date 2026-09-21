@@ -6,10 +6,8 @@ import styles from './BusinessFactoryHero.module.css';
 
 const CHAPLIN_CLIP_START = 4;
 const CHAPLIN_CLIP_END = 12;
-const CHAPLIN_OGG_URL =
-  'https://upload.wikimedia.org/wikipedia/commons/3/38/Charlie_Chaplin%2C_The_Bond%2C_1918.ogv';
-const CHAPLIN_WEBM_FALLBACK_URL =
-  'https://upload.wikimedia.org/wikipedia/commons/7/79/The_Champion%281915%29_Charlie_Chaplin.webm';
+const CHAPLIN_WEBM_URL =
+  'https://upload.wikimedia.org/wikipedia/commons/c/c3/The_Champion_1915_CHARLIE_CHAPLIN_EDNA_PURVIANCE.webm';
 
 type BusinessFactoryHeroProps = {
   active?: boolean;
@@ -83,7 +81,7 @@ export function BusinessFactoryHero({
               autoPlay
               muted
               playsInline
-              preload="metadata"
+              preload="auto"
               aria-label="Чёрно-белый фрагмент фильма Чарли Чаплина The Bond, 1918"
               onLoadedMetadata={(event) => {
                 event.currentTarget.currentTime = CHAPLIN_CLIP_START;
@@ -95,8 +93,7 @@ export function BusinessFactoryHero({
                 }
               }}
             >
-              <source src={CHAPLIN_OGG_URL} type="video/ogg" />
-              <source src={CHAPLIN_WEBM_FALLBACK_URL} type="video/webm" />
+              <source src={CHAPLIN_WEBM_URL} type="video/webm" />
             </video>
             <span className={styles.filmVignette} aria-hidden="true" />
             <span className={styles.filmGrain} aria-hidden="true" />
