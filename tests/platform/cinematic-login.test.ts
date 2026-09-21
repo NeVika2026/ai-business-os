@@ -34,7 +34,9 @@ describe('Cinematic Business Zavod entrance', () => {
     assert.match(source, /\.coreRig/);
     assert.match(source, /\.orbitOuter/);
     assert.match(source, /\.module/);
-    assert.match(source, /\.miniFilm/);
+    assert.match(source, /\.chaplinVideoFrame/);
+    assert.match(source, /\.chaplinVideo/);
+    assert.match(source, /\.filmGrain/);
     assert.match(source, /\.photoDeck/);
     assert.match(source, /@keyframes coreBreathe/);
     assert.match(source, /prefers-reduced-motion/);
