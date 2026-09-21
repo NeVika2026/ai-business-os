@@ -333,17 +333,17 @@
 
 .videoModule {
   left:0;
-  top:18%;
-  width:210px;
-  min-height:162px;
+  top:16%;
+  width:244px;
+  min-height:190px;
   animation-delay:-.3s;
 }
 
 .visualModule {
   right:0;
-  top:15%;
-  width:202px;
-  min-height:165px;
+  top:14%;
+  width:226px;
+  min-height:188px;
   animation-delay:-1.4s;
 }
 
@@ -414,7 +414,7 @@
   position:relative;
   z-index:2;
   display:block;
-  height:112px;
+  height:132px;
   overflow:hidden;
   border:1px solid rgba(255,255,255,.28);
   border-radius:14px;
@@ -428,18 +428,20 @@
 
 .chaplinVideo {
   position:absolute;
-  inset:-5% 0 0;
+  inset:10px 0;
   width:100%;
-  height:110%;
-  object-fit:cover;
-  filter:grayscale(1) contrast(1.22) brightness(.98);
-  transform:scale(1.06);
+  height:calc(100% - 20px);
+  object-fit:contain;
+  object-position:center center;
+  background:#b8b8b2;
+  filter:grayscale(1) contrast(1.16) brightness(1.04);
+  transform:scale(.98);
   transition:transform .35s ease,filter .35s ease;
 }
 
 .videoModule:hover .chaplinVideo {
-  transform:scale(1.11);
-  filter:grayscale(1) contrast(1.28) brightness(1.06);
+  transform:scale(1.01);
+  filter:grayscale(1) contrast(1.2) brightness(1.08);
 }
 
 .filmVignette,
@@ -516,44 +518,46 @@
   position:relative;
   z-index:2;
   display:block;
-  height:100px;
-  perspective:800px;
+  height:122px;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:14px;
+  background:linear-gradient(145deg,#d9d9d4,#777772);
+  perspective:900px;
+  box-shadow:inset 0 0 24px rgba(255,255,255,.08),0 10px 24px rgba(0,0,0,.28);
 }
 
 .photoDeck i {
   position:absolute;
   left:50%;
   top:50%;
-  width:110px;
-  height:76px;
-  border:1px solid rgba(255,255,255,.75);
-  border-radius:5px;
-  box-shadow:0 13px 25px rgba(0,0,0,.44);
+  width:142px;
+  height:98px;
+  border:5px solid #f1f1ec;
+  border-bottom-width:14px;
+  border-radius:4px;
+  background-color:#d8d8d3;
+  background-position:center;
+  background-repeat:no-repeat;
+  background-size:cover;
+  box-shadow:0 14px 28px rgba(0,0,0,.42);
   transform-origin:50% 100%;
-  filter:grayscale(1) contrast(1.12);
+  filter:grayscale(1) contrast(1.05);
   animation:photoFlip 5.4s ease-in-out infinite;
 }
 
 .photoOne {
-  background:
-    radial-gradient(circle at 50% 32%,#1c1c1c 0 10px,transparent 10.5px),
-    linear-gradient(90deg,transparent 0 39%,#242424 40% 60%,transparent 61%),
-    linear-gradient(180deg,#efefea 0 61%,#9d9d98 61% 100%);
+  background-image:url('/media/mono-portrait.svg');
   animation-delay:-3.6s!important;
 }
 
 .photoTwo {
-  background:
-    linear-gradient(90deg,transparent 0 7%,#3d3d3b 8% 18%,transparent 18% 24%,#5d5d59 24% 36%,transparent 36% 44%,#292927 44% 58%,transparent 58% 67%,#686864 67% 81%,transparent 81%),
-    linear-gradient(180deg,#ecece7 0 67%,#8e8e89 67% 100%);
+  background-image:url('/media/mono-interior.svg');
   animation-delay:-1.8s!important;
 }
 
 .photoThree {
-  background:
-    radial-gradient(ellipse at 50% 59%,#252525 0 24px,transparent 25px),
-    radial-gradient(circle at 52% 36%,#d7d7d2 0 10px,#222 11px 15px,transparent 16px),
-    linear-gradient(180deg,#deded9,#8f8f8a);
+  background-image:url('/media/mono-product.svg');
 }
 
 .wave {
