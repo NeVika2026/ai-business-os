@@ -2,6 +2,10 @@
 
 import { WelcomeScreen } from '@/components/welcome/WelcomeScreen';
 
-export function LoginEntry() {
-  return <WelcomeScreen />;
+type LoginEntryProps = {
+  nextPath?: string | null;
+};
+
+export function LoginEntry({ nextPath = null }: LoginEntryProps) {
+  return <WelcomeScreen nextPath={nextPath} />;
 }
