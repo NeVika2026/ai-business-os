@@ -633,6 +633,8 @@ export function FirstResultScreen({
   const task = resolvedEntry?.task?.trim() ?? '';
   const shortTask =
     task.length > 180 ? `${task.slice(0, 177).trim()}…` : task;
+  const continueNext = task ? `/home?prompt=${encodeURIComponent(task)}` : '/home';
+  const continueHref = `/login/sign-in?next=${encodeURIComponent(continueNext)}`;
   const normalizedTask = task.toLowerCase().replace(/ё/g, 'е');
   const isLandingTask = ['лендинг', 'сайт', 'страниц'].some((token) =>
     normalizedTask.includes(token),
@@ -720,7 +722,7 @@ export function FirstResultScreen({
 
         <footer className="relative mt-10 flex flex-wrap items-center gap-3 border-t border-white/[0.08] pt-7">
           <Link
-            href="/login/sign-in"
+            href={continueHref}
             className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#ffe08a,#d79a30)] px-6 text-sm font-black text-[#1b1105] shadow-[0_16px_34px_-18px_rgba(231,185,82,.7)]"
           >
             Продолжить в Бизнес-Заводе
