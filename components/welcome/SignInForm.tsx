@@ -5,9 +5,10 @@ import { sendMagicLink } from '@/app/login/actions';
 type SignInFormProps = {
   showSentMessage: boolean;
   errorMessage: string | null;
+  nextPath: string;
 };
 
-export function SignInForm({ showSentMessage, errorMessage }: SignInFormProps) {
+export function SignInForm({ showSentMessage, errorMessage, nextPath }: SignInFormProps) {
   return (
     <main className="relative min-h-dvh overflow-hidden bg-[#05070b] px-5 py-6 text-[#fff8e7] sm:px-8">
       <div className="pointer-events-none absolute inset-0 opacity-25 [background-image:linear-gradient(rgba(255,255,255,.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.025)_1px,transparent_1px)] [background-size:52px_52px] [mask-image:radial-gradient(circle_at_50%_40%,#000,transparent_78%)]" />
@@ -77,6 +78,7 @@ export function SignInForm({ showSentMessage, errorMessage }: SignInFormProps) {
             ) : null}
 
             <form action={sendMagicLink} className="space-y-4">
+              <input type="hidden" name="next" value={nextPath} />
               <label className="block">
                 <span className="mb-2 block text-[12px] font-bold uppercase tracking-[.11em] text-white/68">
                   Email
