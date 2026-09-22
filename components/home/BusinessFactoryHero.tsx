@@ -8,6 +8,12 @@ const CHAPLIN_CLIP_START = 4;
 const CHAPLIN_CLIP_END = 12;
 const CHAPLIN_WEBM_URL =
   'https://upload.wikimedia.org/wikipedia/commons/c/c3/The_Champion_1915_CHARLIE_CHAPLIN_EDNA_PURVIANCE.webm';
+const VISUAL_PORTRAIT_URL =
+  'https://upload.wikimedia.org/wikipedia/commons/1/18/African_American_woman%2C_studio_portrait.jpg';
+const VISUAL_INTERIOR_URL =
+  'https://upload.wikimedia.org/wikipedia/commons/4/48/Interior_view_of_tearoom_in_Chinatown%2C_New_York_City%2C_N.Y._LCCN2003668345.jpg';
+const VISUAL_PRODUCT_URL =
+  'https://upload.wikimedia.org/wikipedia/commons/7/7a/Apache-still-life_restored.jpg';
 
 type BusinessFactoryHeroProps = {
   active?: boolean;
@@ -113,11 +119,11 @@ export function BusinessFactoryHero({
             </span>
             <span className={styles.photoSide}>
               <span>
-                <img src="/media/mono-interior.svg" alt="" />
+                <img src={VISUAL_INTERIOR_URL} alt="" loading="eager" referrerPolicy="no-referrer" />
                 <b>ИНТЕРЬЕР</b>
               </span>
               <span>
-                <img src="/media/mono-product.svg" alt="" />
+                <img src={VISUAL_PRODUCT_URL} alt="" loading="eager" referrerPolicy="no-referrer" />
                 <b>ПРОДУКТ</b>
               </span>
             </span>

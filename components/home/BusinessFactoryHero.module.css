@@ -551,7 +551,19 @@
   height:100%;
   object-fit:cover;
   object-position:center;
-  filter:grayscale(1) contrast(1.06);
+  filter:grayscale(1) contrast(1.08) brightness(1.02);
+}
+
+.photoHero img {
+  object-position:center 34%;
+}
+
+.photoSide > span:first-child img {
+  object-position:center 50%;
+}
+
+.photoSide > span:last-child img {
+  object-position:center 52%;
 }
 
 .photoHero::after,
