@@ -4,6 +4,7 @@ type SignInPageProps = {
   searchParams: Promise<{
     sent?: string;
     error?: string;
+    next?: string;
   }>;
 };
 
@@ -19,5 +20,16 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
           ? 'Не удалось выполнить вход. Попробуйте снова.'
           : null;
 
-  return <SignInForm showSentMessage={showSentMessage} errorMessage={errorMessage} />;
+  const nextPath =
+    params.next && params.next.startsWith('/') && !params.next.startsWith('//')
+      ? params.next
+      : '/home';
+
+  return (
+    <SignInForm
+      showSentMessage={showSentMessage}
+      errorMessage={errorMessage}
+      nextPath={nextPath}
+    />
+  );
 }
