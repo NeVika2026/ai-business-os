@@ -54,7 +54,7 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
   );
 }
 
-export function WelcomeScreen() {
+type WelcomeScreenProps = {\n  nextPath?: string | null;\n};\n\nexport function WelcomeScreen({ nextPath = null }: WelcomeScreenProps) {
   const router = useRouter();
   const [task, setTask] = useState('');
   const [state, formAction] = useActionState(
@@ -116,7 +116,7 @@ export function WelcomeScreen() {
           </div>
 
           <Link
-            href="/login/sign-in"
+            href={nextPath ? `/login/sign-in?next=${encodeURIComponent(nextPath)}` : '/login/sign-in'}
             className="rounded-[14px] border border-white/[0.12] bg-white/[0.055] px-5 py-3 text-base font-semibold text-white backdrop-blur transition hover:border-[#69e4ee]/30 hover:bg-white/[0.07] hover:text-white"
           >
             Войти
