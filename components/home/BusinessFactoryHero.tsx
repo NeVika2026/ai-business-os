@@ -6,8 +6,7 @@ import styles from './BusinessFactoryHero.module.css';
 
 const CHAPLIN_CLIP_START = 4;
 const CHAPLIN_CLIP_END = 12;
-const CHAPLIN_WEBM_URL =
-  'https://upload.wikimedia.org/wikipedia/commons/c/c3/The_Champion_1915_CHARLIE_CHAPLIN_EDNA_PURVIANCE.webm';
+const CHAPLIN_WEBM_URL = '/api/media/chaplin';
 const VISUAL_PORTRAIT_URL =
   'https://upload.wikimedia.org/wikipedia/commons/1/18/African_American_woman%2C_studio_portrait.jpg';
 const VISUAL_INTERIOR_URL =
@@ -80,7 +79,7 @@ export function BusinessFactoryHero({
         </div>
 
         <Link href="/modules/create/studio?mode=video" className={[styles.module, styles.videoModule].join(' ')}>
-          <span className={styles.moduleLabel}><b>ВИДЕОЦЕХ</b><em>1918 · PUBLIC DOMAIN</em></span>
+          <span className={styles.moduleLabel}><b>ВИДЕОЦЕХ</b><em>1915 · PUBLIC DOMAIN</em></span>
           <span className={styles.chaplinVideoFrame}>
             <video
               className={styles.chaplinVideo}
@@ -88,7 +87,7 @@ export function BusinessFactoryHero({
               muted
               playsInline
               preload="auto"
-              aria-label="Чёрно-белый фрагмент фильма Чарли Чаплина The Bond, 1918"
+              aria-label="Чёрно-белый фрагмент фильма Чарли Чаплина The Champion, 1915"
               onLoadedMetadata={(event) => {
                 event.currentTarget.currentTime = CHAPLIN_CLIP_START;
               }}
@@ -114,7 +113,7 @@ export function BusinessFactoryHero({
           <span className={styles.moduleLabel}><b>ВИЗУАЛ</b><em>MONO LAB</em></span>
           <span className={styles.photoDeck} aria-hidden="true">
             <span className={styles.photoHero}>
-              <img src="/media/mono-portrait.svg" alt="" />
+              <img src={VISUAL_PORTRAIT_URL} alt="" loading="eager" referrerPolicy="no-referrer" />
               <span>ПОРТРЕТ</span>
             </span>
             <span className={styles.photoSide}>
