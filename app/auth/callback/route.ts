@@ -30,7 +30,9 @@ export async function GET(request: Request) {
   try {
     await ensureUserOnboarding(supabase);
   } catch {
-    return NextResponse.redirect(`${origin}/login/sign-in?error=auth`);
+    return NextResponse.redirect(
+      `${origin}/login/sign-in?error=auth&next=${encodeURIComponent(next)}`,
+    );
   }
 
   return NextResponse.redirect(`${origin}${next}`);
