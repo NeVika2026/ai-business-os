@@ -54,7 +54,11 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
   );
 }
 
-type WelcomeScreenProps = {\n  nextPath?: string | null;\n};\n\nexport function WelcomeScreen({ nextPath = null }: WelcomeScreenProps) {
+type WelcomeScreenProps = {
+  nextPath?: string | null;
+};
+
+export function WelcomeScreen({ nextPath = null }: WelcomeScreenProps) {
   const router = useRouter();
   const [task, setTask] = useState('');
   const [state, formAction] = useActionState(
