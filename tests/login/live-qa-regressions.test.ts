@@ -37,15 +37,14 @@ describe('live QA regressions', () => {
     assert.match(screen, /href=\{continueHref\}/);
   });
 
-  it('uses same-origin video delivery and a real portrait source', () => {
+  it('uses a local browser-safe video asset and a real portrait source', () => {
     const hero = source('components', 'home', 'BusinessFactoryHero.tsx');
-    const mediaRoute = source('app', 'api', 'media', 'chaplin', 'route.ts');
 
-    assert.match(hero, /CHAPLIN_WEBM_URL = '\/api\/media\/chaplin'/);
+    assert.match(hero, /CHAPLIN_VIDEO_URL = '\/media\/chaplin-loop\.mp4'/);
+    assert.match(hero, /type="video\/mp4"/);
+    assert.match(hero, /\bloop\b/);
     assert.match(hero, /src=\{VISUAL_PORTRAIT_URL\}/);
     assert.doesNotMatch(hero, /src="\/media\/mono-portrait\.svg"/);
-    assert.match(mediaRoute, /range/);
-    assert.match(mediaRoute, /content-range/);
-    assert.match(mediaRoute, /The_Champion_1915/);
+    assert.doesNotMatch(hero, /api\/media\/chaplin/);
   });
 });
