@@ -107,9 +107,20 @@ export function BusinessFactoryHero({
         <Link href="/modules/create/studio?mode=image" className={[styles.module, styles.visualModule].join(' ')}>
           <span className={styles.moduleLabel}><b>ВИЗУАЛ</b><em>MONO LAB</em></span>
           <span className={styles.photoDeck} aria-hidden="true">
-            <i className={styles.photoOne} />
-            <i className={styles.photoTwo} />
-            <i className={styles.photoThree} />
+            <span className={styles.photoHero}>
+              <img src="/media/mono-portrait.svg" alt="" />
+              <span>ПОРТРЕТ</span>
+            </span>
+            <span className={styles.photoSide}>
+              <span>
+                <img src="/media/mono-interior.svg" alt="" />
+                <b>ИНТЕРЬЕР</b>
+              </span>
+              <span>
+                <img src="/media/mono-product.svg" alt="" />
+                <b>ПРОДУКТ</b>
+              </span>
+            </span>
           </span>
           <span className={styles.moduleAction}>Создать визуал →</span>
         </Link>
