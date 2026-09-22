@@ -52,11 +52,19 @@ function logFirstResultEvent(input: {
   });
 }
 
+function safeLoginNext(value: FormDataEntryValue | null): string {
+  return typeof value === 'string' && value.startsWith('/') && !value.startsWith('//')
+    ? value
+    : '/home';
+}
+
 export async function sendMagicLink(formData: FormData) {
   const email = formData.get('email');
+  const nextPath = safeLoginNext(formData.get('next'));
+  const nextQuery = encodeURIComponent(nextPath);
 
   if (typeof email !== 'string' || !email.trim()) {
-    redirect('/login/sign-in?error=invalid_email');
+    redirect(`/login/sign-in?error=invalid_email&next=${nextQuery}`);
   }
 
   const headersList = await headers();
@@ -66,15 +74,15 @@ export async function sendMagicLink(formData: FormData) {
   const { error } = await supabase.auth.signInWithOtp({
     email: email.trim(),
     options: {
-      emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent('/home')}`,
+      emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
     },
   });
 
   if (error) {
-    redirect('/login/sign-in?error=send_failed');
+    redirect(`/login/sign-in?error=send_failed&next=${nextQuery}`);
   }
 
-  redirect('/login/sign-in?sent=1');
+  redirect(`/login/sign-in?sent=1&next=${nextQuery}`);
 }
 
 export type GenerateFirstPlanState =
