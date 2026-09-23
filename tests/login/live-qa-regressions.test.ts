@@ -37,8 +37,9 @@ describe('live QA regressions', () => {
     assert.match(screen, /href=\{continueHref\}/);
   });
 
-  it('uses a local browser-safe video asset and a real portrait source', () => {
+  it('uses a local browser-safe video asset and keeps public media outside auth middleware', () => {
     const hero = source('components', 'home', 'BusinessFactoryHero.tsx');
+    const proxy = source('proxy.ts');
 
     assert.match(hero, /CHAPLIN_VIDEO_URL = '\/media\/chaplin-loop\.mp4'/);
     assert.match(hero, /type="video\/mp4"/);
@@ -46,5 +47,6 @@ describe('live QA regressions', () => {
     assert.match(hero, /src=\{VISUAL_PORTRAIT_URL\}/);
     assert.doesNotMatch(hero, /src="\/media\/mono-portrait\.svg"/);
     assert.doesNotMatch(hero, /api\/media\/chaplin/);
+    assert.match(proxy, /mp4\|webm\|ogg\|ogv/);
   });
 });
