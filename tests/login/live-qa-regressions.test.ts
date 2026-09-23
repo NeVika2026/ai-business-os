@@ -37,6 +37,16 @@ describe('live QA regressions', () => {
     assert.match(screen, /href=\{continueHref\}/);
   });
 
+
+  it('keeps the public welcome and first-result screens inside the viewport', () => {
+    const welcome = source('components', 'welcome', 'WelcomeScreen.tsx');
+    const globals = source('app', 'globals.css');
+
+    assert.match(welcome, /min-w-0 w-full max-w-\[740px\]/);
+    assert.match(welcome, /styles\.stage, 'min-w-0'/);
+    assert.match(globals, /\.osa-fe-canvas--factory-result[\s\S]*overflow-x:\s*hidden/);
+  });
+
   it('uses a local browser-safe video asset and keeps public media outside auth middleware', () => {
     const hero = source('components', 'home', 'BusinessFactoryHero.tsx');
     const proxy = source('proxy.ts');

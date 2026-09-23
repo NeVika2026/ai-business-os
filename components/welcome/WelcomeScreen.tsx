@@ -128,7 +128,7 @@ export function WelcomeScreen({ nextPath = null }: WelcomeScreenProps) {
         </header>
 
         <section className="grid min-h-[720px] items-center gap-8 py-8 xl:grid-cols-[.92fr_1.08fr] xl:gap-10 xl:py-10">
-          <div className="relative z-[2] max-w-[740px]">
+          <div className="relative z-[2] min-w-0 w-full max-w-[740px]">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#69e4ee]/18 bg-[#69e4ee]/[0.055] px-4 py-2.5 text-[13px] font-bold uppercase tracking-[0.1em] text-[#bff8fb]">
               <span className="h-1.5 w-1.5 rounded-full bg-[#69e4ee] shadow-[0_0_12px_rgba(105,228,238,.8)]" />
               Не чат. Не каталог AI. Рабочий завод.
@@ -221,7 +221,7 @@ export function WelcomeScreen({ nextPath = null }: WelcomeScreenProps) {
             </div>
           </div>
 
-          <div className={styles.stage}>
+          <div className={[styles.stage, 'min-w-0'].join(' ')}>
             <div className="relative z-[2] mx-auto w-full max-w-[690px] pb-5">
               <BusinessFactoryHero />
             </div>

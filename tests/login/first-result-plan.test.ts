@@ -3,7 +3,9 @@ import { describe, it } from 'node:test';
 
 import {
   buildFirstResultFallbackPlan,
+  buildGuardedFirstDraft,
   buildWorkspaceTaskFallback,
+  isClarificationOnlyFirstResult,
   resolveFirstPlanContent,
 } from '@/lib/login/first-result-plan';
 
@@ -21,6 +23,36 @@ describe('first result plan', () => {
 
     assert.equal(resolved.usedFallback, false);
     assert.match(resolved.content, /hero/);
+  });
+
+  it('rejects clarification-only AI output and returns a produced video draft', () => {
+    const clarification = [
+      'Для создания рекламного ролика мне необходимо больше информации.',
+      'Пожалуйста, предоставьте следующие данные:',
+      'Название продукта.',
+      'Основные преимущества.',
+      'Как только я получу эти данные, я смогу создать ролик.',
+    ].join('\n');
+
+    assert.equal(isClarificationOnlyFirstResult(clarification), true);
+
+    const resolved = resolveFirstPlanContent(
+      'Сделай рекламный ролик для моего продукта',
+      clarification,
+    );
+
+    assert.equal(resolved.usedFallback, false);
+    assert.match(resolved.content, /СЦЕНА 1 — ХУК/);
+    assert.match(resolved.content, /\[ПРОДУКТ\]/);
+    assert.doesNotMatch(resolved.content, /необходимо больше информации/i);
+  });
+
+  it('builds a deterministic guarded draft for underspecified video tasks', () => {
+    const draft = buildGuardedFirstDraft('Сделай видео для продукта');
+
+    assert.match(draft, /РЕКЛАМНЫЙ РОЛИК/);
+    assert.match(draft, /Текст|Озвучка|Титр/);
+    assert.match(draft, /CTA/);
   });
 
   it('falls back when gateway content is empty', () => {
