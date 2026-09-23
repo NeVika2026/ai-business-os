@@ -805,7 +805,7 @@
   .shell { min-height:560px; border-radius:28px; padding:12px; }
   .topbar strong { font-size:18px; }
   .online { display:none; }
-  .stage { height:425px; transform:scale(.73); transform-origin:top center; margin:-4px -120px -85px; }
+  .stage { height:425px; transform:scale(.70); transform-origin:top center; margin:-4px -124px -85px; }
   .statusPanel { margin-top:4px; }
   .statusPanel p { display:none; }
 }
