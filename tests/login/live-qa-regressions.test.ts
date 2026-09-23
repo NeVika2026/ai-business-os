@@ -47,6 +47,19 @@ describe('live QA regressions', () => {
     assert.match(globals, /\.osa-fe-canvas--factory-result[\s\S]*overflow-x:\s*hidden/);
   });
 
+  it('does not treat a repair landing as property-management showcase content', () => {
+    const screen = source('components', 'welcome', 'FirstResultScreen.tsx');
+
+    assert.match(screen, /function isPropertyManagementTask/);
+    assert.match(screen, /normalized\.includes\('управлен'\)/);
+    assert.match(screen, /Оставьте контакты — обсудим задачу/);
+    assert.match(screen, /Коротко опишите задачу/);
+    assert.doesNotMatch(
+      screen,
+      /normalized\.includes\('квартир'\)\s*\|\|\s*normalized\.includes\('аренд'\)/,
+    );
+  });
+
   it('uses a local browser-safe video asset and keeps public media outside auth middleware', () => {
     const hero = source('components', 'home', 'BusinessFactoryHero.tsx');
     const proxy = source('proxy.ts');
