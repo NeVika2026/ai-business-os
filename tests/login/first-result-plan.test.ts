@@ -57,10 +57,14 @@ describe('first result plan', () => {
   });
 
   it('uses safe deterministic artifacts for underspecified showcase prompts', () => {
+    const video = buildShowcaseSafeDraft('Сделай рекламный ролик для моего продукта');
     const leads = buildShowcaseSafeDraft('Найди клиентов для моей услуги');
     const deck = buildShowcaseSafeDraft('Собери презентацию для продажи');
     const competitors = buildShowcaseSafeDraft('Разбери конкурентов и предложи отстройку');
 
+    assert.match(video ?? '', /РЕКЛАМНЫЙ РОЛИК/);
+    assert.match(video ?? '', /\[ГЛАВНАЯ ВЫГОДА\]/);
+    assert.doesNotMatch(video ?? '', /тысяч/i);
     assert.match(leads ?? '', /ПЕРВОЕ СООБЩЕНИЕ/);
     assert.match(leads ?? '', /Компания \| Контакт \| Канал/);
     assert.match(deck ?? '', /СЛАЙД 8 — CTA/);
