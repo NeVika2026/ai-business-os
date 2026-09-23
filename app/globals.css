@@ -3842,6 +3842,7 @@
 /* First-result factory preview */
 .osa-fe-canvas--factory-result {
   --osa-home-blue: #69e4ee;
+  overflow-x: hidden;
   --osa-home-purple: #d5a23d;
   --osa-home-coral: #ffbd5a;
   --osa-home-graphite: #f8f3e8;
