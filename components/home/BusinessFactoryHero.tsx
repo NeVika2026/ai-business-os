@@ -4,9 +4,7 @@ import Link from 'next/link';
 
 import styles from './BusinessFactoryHero.module.css';
 
-const CHAPLIN_CLIP_START = 4;
-const CHAPLIN_CLIP_END = 12;
-const CHAPLIN_WEBM_URL = '/api/media/chaplin';
+const CHAPLIN_VIDEO_URL = '/media/chaplin-loop.mp4';
 const VISUAL_PORTRAIT_URL =
   'https://upload.wikimedia.org/wikipedia/commons/1/18/African_American_woman%2C_studio_portrait.jpg';
 const VISUAL_INTERIOR_URL =
@@ -85,20 +83,12 @@ export function BusinessFactoryHero({
               className={styles.chaplinVideo}
               autoPlay
               muted
+              loop
               playsInline
               preload="auto"
               aria-label="Чёрно-белый фрагмент фильма Чарли Чаплина The Champion, 1915"
-              onLoadedMetadata={(event) => {
-                event.currentTarget.currentTime = CHAPLIN_CLIP_START;
-              }}
-              onTimeUpdate={(event) => {
-                if (event.currentTarget.currentTime >= CHAPLIN_CLIP_END) {
-                  event.currentTarget.currentTime = CHAPLIN_CLIP_START;
-                  void event.currentTarget.play().catch(() => undefined);
-                }
-              }}
             >
-              <source src={CHAPLIN_WEBM_URL} type="video/webm" />
+              <source src={CHAPLIN_VIDEO_URL} type="video/mp4" />
             </video>
             <span className={styles.filmVignette} aria-hidden="true" />
             <span className={styles.filmGrain} aria-hidden="true" />
