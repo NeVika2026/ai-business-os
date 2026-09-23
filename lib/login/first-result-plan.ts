@@ -50,17 +50,20 @@ function isLandingTask(task: string): boolean {
 function hasUnsupportedCommercialClaims(task: string, content: string): boolean {
   const source = task.toLowerCase().replace(/ё/g, 'е');
   const candidate = content.toLowerCase().replace(/ё/g, 'е');
-  const risky = [
-    /тысяч\w*\s+(?:довольн\w*\s+)?клиент/,
-    /гарантир\w+/,
-    /бесплатн\w+/,
-    /рассроч\w+/,
-    /24\s*\/\s*7/,
-    /проверенн\w*\s+репутац/,
-    /в любое время/,
+  const riskyFragments = [
+    'тысяч',
+    'гарантир',
+    'бесплатн',
+    'рассроч',
+    '24/7',
+    'проверенн',
+    'репутац',
+    'в любое время',
   ];
 
-  return risky.some((pattern) => pattern.test(candidate) && !pattern.test(source));
+  return riskyFragments.some(
+    (fragment) => candidate.includes(fragment) && !source.includes(fragment),
+  );
 }
 
 export function isClarificationOnlyFirstResult(content: string): boolean {
