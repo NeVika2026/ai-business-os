@@ -106,16 +106,24 @@ type LandingMediaSet = {
   stats: Array<{ value: string; label: string }>;
 };
 
-function getLandingMedia(task: string): LandingMediaSet {
+function isPropertyManagementTask(task: string): boolean {
   const normalized = task.toLowerCase().replace(/ё/g, 'е');
+  const hasProperty = ['недвиж', 'квартир', 'аренд', 'риелт', 'объект'].some((token) =>
+    normalized.includes(token),
+  );
+  const hasManagementIntent =
+    normalized.includes('управлен') ||
+    normalized.includes('управля') ||
+    normalized.includes('сдать квартир') ||
+    normalized.includes('сдавать квартир') ||
+    normalized.includes('арендатор') ||
+    normalized.includes('контроль объект');
 
-  if (
-    normalized.includes('недвиж') ||
-    normalized.includes('квартир') ||
-    normalized.includes('аренд') ||
-    normalized.includes('риелт') ||
-    normalized.includes('объект')
-  ) {
+  return hasProperty && hasManagementIntent;
+}
+
+function getLandingMedia(task: string): LandingMediaSet {
+  if (isPropertyManagementTask(task)) {
     return {
       eyebrow: 'УПРАВЛЕНИЕ НЕДВИЖИМОСТЬЮ',
       heroPoster: '/assets/landing/real-estate-hero.svg',
@@ -155,11 +163,11 @@ function renderLandingPreview(content: string, task: string) {
   );
   const rest = blocks.filter((block) => !excluded.has(block));
 
-  const heroTitle = hero?.body[0] ?? 'Премиальный сервис без лишней сложности';
+  const heroTitle = hero?.body[0] ?? 'Решение под вашу задачу';
   const heroSubtitle =
     subtitle?.body.join(' ') ??
     hero?.body.slice(1).join(' ') ??
-    'Понятный результат, контроль и спокойствие — в одном сервисе.';
+    'Понятное предложение, ключевые преимущества и следующий шаг.';
   const ctaText = cta?.body[0] ?? 'Оставить заявку';
 
   const problemBlock = rest.find((block) => blockMatches(block, ['проблем']));
@@ -639,6 +647,16 @@ export function FirstResultScreen({
   const isLandingTask = ['лендинг', 'сайт', 'страниц'].some((token) =>
     normalizedTask.includes(token),
   );
+  const propertyManagementTask = isPropertyManagementTask(task);
+  const formTitle = propertyManagementTask
+    ? 'Оставьте контакты — обсудим управление объектом'
+    : 'Оставьте контакты — обсудим задачу';
+  const formDescription = propertyManagementTask
+    ? 'Без выдуманных обещаний и сроков: менеджер свяжется с вами после получения заявки.'
+    : 'Без выдуманных обещаний и сроков: уточним детали после заявки.';
+  const commentPlaceholder = propertyManagementTask
+    ? 'Коротко опишите объект и задачу'
+    : 'Коротко опишите задачу';
 
   return (
     <OsaFirstExperienceLayout hero artActive className="osa-fe-canvas--factory-result">
@@ -686,17 +704,17 @@ export function FirstResultScreen({
                 ФОРМА ЗАЯВКИ
               </p>
               <h2 className="mt-2 text-2xl font-black tracking-[-.03em] text-[#fff4cf]">
-                Оставьте контакты — обсудим управление объектом
+                {formTitle}
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-white/68 sm:text-base">
-                Без выдуманных обещаний и сроков: менеджер свяжется с вами после получения заявки.
+                {formDescription}
               </p>
               <div className="mt-5 grid gap-3 md:grid-cols-2">
                 {[
                   ['Имя', 'Как к вам обращаться'],
                   ['Телефон', '+7 900 000-00-00'],
                   ['Email', 'name@example.com'],
-                  ['Комментарий', 'Коротко опишите объект и задачу'],
+                  ['Комментарий', commentPlaceholder],
                 ].map(([label, placeholder]) => (
                   <label key={label} className={label === 'Комментарий' ? 'md:col-span-2' : ''}>
                     <span className="mb-2 block text-xs font-bold uppercase tracking-[.1em] text-white/62">
