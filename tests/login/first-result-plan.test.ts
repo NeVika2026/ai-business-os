@@ -83,6 +83,29 @@ describe('first result plan', () => {
     assert.doesNotMatch(resolved.content, /долго отвечает/);
   });
 
+  it('replaces unsafe landing claims with a factual guarded landing', () => {
+    const task =
+      'Сделай лендинг для ремонтной бригады: ремонт квартир под ключ, без выдуманных цен и отзывов.';
+    const resolved = resolveFirstPlanContent(
+      task,
+      [
+        'ПЕРВЫЙ ЭКРАН',
+        'Ремонт под ключ',
+        'Бесплатная консультация.',
+        'Мы гарантируем качество и соблюдение сроков.',
+        'Гибкие условия оплаты и рассрочка.',
+        'Нам доверяют тысячи довольных клиентов.',
+      ].join('\n'),
+    );
+
+    assert.match(resolved.content, /ЛЕНДИНГ — ПЕРВЫЙ ВАРИАНТ/);
+    assert.match(resolved.content, /Стоимость и сроки — после уточнения задачи/);
+    assert.doesNotMatch(resolved.content, /бесплатн/i);
+    assert.doesNotMatch(resolved.content, /гарантир/i);
+    assert.doesNotMatch(resolved.content, /рассроч/i);
+    assert.doesNotMatch(resolved.content, /тысяч/i);
+  });
+
   it('falls back when gateway content is empty', () => {
     const resolved = resolveFirstPlanContent('Launch landing', '');
 
