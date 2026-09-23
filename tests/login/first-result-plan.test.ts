@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import {
   buildFirstResultFallbackPlan,
   buildGuardedFirstDraft,
+  buildShowcaseSafeDraft,
   buildWorkspaceTaskFallback,
   isClarificationOnlyFirstResult,
   resolveFirstPlanContent,
@@ -53,6 +54,29 @@ describe('first result plan', () => {
     assert.match(draft, /РЕКЛАМНЫЙ РОЛИК/);
     assert.match(draft, /Текст|Озвучка|Титр/);
     assert.match(draft, /CTA/);
+  });
+
+  it('uses safe deterministic artifacts for underspecified showcase prompts', () => {
+    const leads = buildShowcaseSafeDraft('Найди клиентов для моей услуги');
+    const deck = buildShowcaseSafeDraft('Собери презентацию для продажи');
+    const competitors = buildShowcaseSafeDraft('Разбери конкурентов и предложи отстройку');
+
+    assert.match(leads ?? '', /ПЕРВОЕ СООБЩЕНИЕ/);
+    assert.match(leads ?? '', /Компания \| Контакт \| Канал/);
+    assert.match(deck ?? '', /СЛАЙД 8 — CTA/);
+    assert.doesNotMatch(deck ?? '', /рассрочк/i);
+    assert.match(competitors ?? '', /БЕЗ ВЫДУМАННЫХ ФАКТОВ/);
+    assert.match(competitors ?? '', /ГИПОТЕЗЫ ОТСТРОЙКИ ДЛЯ ПРОВЕРКИ/);
+  });
+
+  it('showcase drafts override unsafe provider prose', () => {
+    const resolved = resolveFirstPlanContent(
+      'Разбери конкурентов и предложи отстройку',
+      'Конкурент 1 слаб в цене, а конкурент 2 долго отвечает.',
+    );
+
+    assert.match(resolved.content, /МАТРИЦА КОНКУРЕНТОВ/);
+    assert.doesNotMatch(resolved.content, /долго отвечает/);
   });
 
   it('falls back when gateway content is empty', () => {
