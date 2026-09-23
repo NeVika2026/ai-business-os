@@ -41,6 +41,28 @@ ${formatInstruction}
 Верни только готовый материал.`;
 }
 
+
+function isLandingTask(task: string): boolean {
+  const normalized = task.toLowerCase().replace(/ё/g, 'е');
+  return ['лендинг', 'сайт', 'страниц'].some((token) => normalized.includes(token));
+}
+
+function hasUnsupportedCommercialClaims(task: string, content: string): boolean {
+  const source = task.toLowerCase().replace(/ё/g, 'е');
+  const candidate = content.toLowerCase().replace(/ё/g, 'е');
+  const risky = [
+    /тысяч\w*\s+(?:довольн\w*\s+)?клиент/,
+    /гарантир\w+/,
+    /бесплатн\w+/,
+    /рассроч\w+/,
+    /24\s*\/\s*7/,
+    /проверенн\w*\s+репутац/,
+    /в любое время/,
+  ];
+
+  return risky.some((pattern) => pattern.test(candidate) && !pattern.test(source));
+}
+
 export function isClarificationOnlyFirstResult(content: string): boolean {
   const normalized = content.toLowerCase().replace(/ё/g, 'е');
   const clarificationMarkers = [
@@ -101,6 +123,51 @@ export function buildGuardedFirstDraft(task: string): string {
       '[ПРОДУКТ] — название;',
       '[ГЛАВНАЯ ВЫГОДА] — главное преимущество;',
       '[CTA] — нужное действие.',
+    ].join('\n');
+  }
+
+  if (isLandingTask(task)) {
+    return [
+      'ЛЕНДИНГ — ПЕРВЫЙ ВАРИАНТ',
+      '',
+      'ПЕРВЫЙ ЭКРАН',
+      '[НАЗВАНИЕ УСЛУГИ]: [КЛЮЧЕВОЙ РЕЗУЛЬТАТ ДЛЯ КЛИЕНТА]',
+      'Понятное предложение без неподтверждённых обещаний и цифр.',
+      '',
+      'CTA',
+      'Обсудить задачу',
+      '',
+      'ПРОБЛЕМА',
+      'Клиенту нужен понятный результат, прозрачный процесс и возможность заранее согласовать объём работ.',
+      '',
+      'РЕШЕНИЕ',
+      '[НАЗВАНИЕ УСЛУГИ] закрывает задачу через согласованный объём работ, понятные этапы и контроль результата.',
+      '',
+      'УСЛУГИ',
+      'Добавить только реальные услуги, которые вы действительно оказываете.',
+      '',
+      'ДОВЕРИЕ',
+      'Использовать только подтверждённые кейсы, фотографии работ, документы, отзывы или факты о процессе.',
+      '',
+      'УСЛОВИЯ',
+      'Стоимость и сроки — после уточнения задачи и оценки объёма работ. Без выдуманных тарифов и обещаний.',
+      '',
+      'FAQ',
+      'Что входит в работу? — Перечень фиксируется после уточнения задачи.',
+      'Как определяется стоимость? — После оценки объёма и состава работ.',
+      'Как согласуются изменения? — До выполнения дополнительных работ.',
+      '',
+      'ФОРМА ЗАЯВКИ',
+      'Имя',
+      'Телефон',
+      'Email',
+      'Комментарий',
+      'Кнопка: «Обсудить задачу»',
+      '',
+      'Для финала заменить:',
+      '[НАЗВАНИЕ УСЛУГИ] — реальное название;',
+      '[КЛЮЧЕВОЙ РЕЗУЛЬТАТ ДЛЯ КЛИЕНТА] — подтверждаемая ценность;',
+      'добавить только реальные услуги и доказательства.',
     ].join('\n');
   }
 
@@ -293,7 +360,10 @@ export function resolveFirstPlanContent(
   const trimmed = gatewayContent?.trim();
 
   if (trimmed) {
-    if (isClarificationOnlyFirstResult(trimmed)) {
+    if (
+      isClarificationOnlyFirstResult(trimmed) ||
+      hasUnsupportedCommercialClaims(task, trimmed)
+    ) {
       return { content: buildGuardedFirstDraft(task), usedFallback: false };
     }
 
