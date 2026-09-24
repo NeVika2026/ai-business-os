@@ -23,7 +23,8 @@ export type FactoryToolId =
   | 'music'
   | 'sfx'
   | 'video-edit'
-  | 'video-expand';
+  | 'video-expand'
+  | 'video-extend';
 
 export type FactoryTool = {
   id: FactoryToolId;
@@ -55,11 +56,12 @@ export const FACTORY_TOOLS: FactoryTool[] = [
   { id:'remove-bg', title:'Удаление фона', description:'Очистить фон вокруг объекта и подготовить визуал под рекламу или карточку.', status:'live', href:'/modules/create/image-cleanup?mode=remove-bg', mark:'□' },
   { id:'object-remove', title:'Удаление объекта', description:'Убрать лишний предмет и естественно восстановить фон.', status:'live', href:'/modules/create/image-cleanup?mode=object-remove', mark:'⌫' },
   { id:'avatar', title:'AI-аватар', description:'Говорящий персонаж под сценарий и голос.', status:'planned', mark:'◎' },
-  { id:'motion', title:'Копирование движения', description:'Перенос движения из референса в новый ролик.', status:'planned', mark:'≈' },
+  { id:'motion', title:'Перенос движения', description:'Использовать движение и структуру исходного ролика для новой версии.', status:'live', href:'/modules/create/video-motion?mode=motion', mark:'≈' },
   { id:'music', title:'Музыка', description:'Фон, джингл, атмосферный bed или полноценный трек под кампанию и ролик.', status:'live', href:'/modules/create/music', mark:'♪' },
   { id:'sfx', title:'Звуковые эффекты', description:'Фоли, атмосферы, whoosh, удары и UI-звуки под сцену или ролик.', status:'live', href:'/modules/create/sound-effects', mark:'≋' },
   { id:'video-edit', title:'Редактирование видео', description:'Точечно изменить объект, цвет, фон, свет или стиль, сохранив остальной ролик.', status:'live', href:'/modules/create/video-edit?mode=edit', mark:'✎' },
   { id:'video-expand', title:'Расширить кадр видео', description:'Перевести ролик в 9:16, 16:9 или другой формат без обычного crop.', status:'live', href:'/modules/create/video-edit?mode=expand', mark:'↔' },
+  { id:'video-extend', title:'Продлить видео', description:'Продолжить существующий ролик новыми кадрами с сохранением сцены и движения.', status:'live', href:'/modules/create/video-motion?mode=extend', mark:'→' },
 ];
 
 export type FactoryRecipe = {
