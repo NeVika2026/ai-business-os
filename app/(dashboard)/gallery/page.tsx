@@ -8,6 +8,7 @@ function modeForArtifact(metadata: Record<string, unknown>): string {
   const artifactType = typeof metadata.artifactType === 'string' ? metadata.artifactType : '';
   if (artifactType.includes('video')) return 'video';
   if (artifactType.includes('image') || artifactType.includes('campaign')) return 'image';
+  if (artifactType.includes('music') || artifactType.includes('sound-effect')) return 'audio';
   return 'document';
 }
 
@@ -38,9 +39,13 @@ export default async function FactoryGalleryPage() {
             const mode = modeForArtifact(artifact.metadata);
             const media = previewUrl(artifact.metadata);
             const remixHref =
-              '/modules/create/studio?mode=' + encodeURIComponent(mode) +
-              '&project=' + encodeURIComponent(artifact.projectId) +
-              '&artifact=' + encodeURIComponent(artifact.id);
+              mode === 'audio'
+                ? artifact.metadata.artifactType === 'music'
+                  ? '/modules/create/music?project=' + encodeURIComponent(artifact.projectId)
+                  : '/modules/create/sound-effects?project=' + encodeURIComponent(artifact.projectId)
+                : '/modules/create/studio?mode=' + encodeURIComponent(mode) +
+                  '&project=' + encodeURIComponent(artifact.projectId) +
+                  '&artifact=' + encodeURIComponent(artifact.id);
 
             return (
               <article key={artifact.id} className="overflow-hidden rounded-[24px] border border-white/[0.09] bg-[#080c12]">
@@ -48,6 +53,11 @@ export default async function FactoryGalleryPage() {
                   <div className="aspect-video overflow-hidden bg-black/30">
                     {mode === 'video' ? (
                       <video src={media} muted playsInline controls className="h-full w-full object-cover" />
+                    ) : mode === 'audio' ? (
+                      <div className="flex h-full w-full flex-col items-center justify-center gap-4 px-5">
+                        <span className="text-4xl text-[#f1c96c]">♪</span>
+                        <audio src={media} controls className="w-full" />
+                      </div>
                     ) : (
                       <img src={media} alt="" className="h-full w-full object-cover" />
                     )}

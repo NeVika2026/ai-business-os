@@ -54,7 +54,7 @@ export const FACTORY_TOOLS: FactoryTool[] = [
   { id:'object-remove', title:'Удаление объекта', description:'Убрать лишний предмет и естественно восстановить фон.', status:'live', href:'/modules/create/image-cleanup?mode=object-remove', mark:'⌫' },
   { id:'avatar', title:'AI-аватар', description:'Говорящий персонаж под сценарий и голос.', status:'planned', mark:'◎' },
   { id:'motion', title:'Копирование движения', description:'Перенос движения из референса в новый ролик.', status:'planned', mark:'≈' },
-  { id:'music', title:'Музыка', description:'Музыкальная дорожка под кампанию или ролик.', status:'planned', mark:'♪' },
+  { id:'music', title:'Музыка', description:'Фон, джингл, атмосферный bed или полноценный трек под кампанию и ролик.', status:'live', href:'/modules/create/music', mark:'♪' },
   { id:'sfx', title:'Звуковые эффекты', description:'Фоли, атмосферы, whoosh, удары и UI-звуки под сцену или ролик.', status:'live', href:'/modules/create/sound-effects', mark:'≋' },
 ];
 
