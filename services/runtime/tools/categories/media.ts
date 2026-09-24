@@ -542,13 +542,12 @@ export const mediaTools: RegisteredToolInput[] = [
       type: 'object',
       properties: {
         prompt_video: { type: 'string', minLength: 1 },
-        prompt_text: { type: 'string', minLength: 1, maxLength: 15000 },
-        reference_image: { type: 'string' },
-        duration: { type: 'number', minimum: 4, maximum: 30 },
+        reference_image: { type: 'string', minLength: 1 },
         ratio: { type: 'string' },
-        audio: { type: 'boolean' },
+        body_control: { type: 'boolean' },
+        expression_intensity: { type: 'number', minimum: 1, maximum: 5 },
       },
-      required: ['prompt_video','prompt_text'],
+      required: ['prompt_video','reference_image'],
       additionalProperties: false,
     },
     outputSchema: {
