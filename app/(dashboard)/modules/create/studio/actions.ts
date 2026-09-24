@@ -12,6 +12,7 @@ import { loadProjectMemory } from '@/lib/projects/project-memory';
 import { createProductionToolRegistry } from '@/services/runtime/tools/tool-registry';
 import { createToolExecutor } from '@/services/runtime/tools/executor/tool-executor-factory';
 import {
+  persistGeneratedAssetBytes,
   persistProviderAsset,
   refreshPersistedMediaUrl,
 } from '@/services/media/persist-provider-asset';
@@ -467,6 +468,145 @@ export async function startSoundEffectAction(input: {
     return {
       status: 'failed',
       message: error instanceof Error ? error.message : 'Не удалось запустить генерацию звука.',
+    };
+  }
+}
+
+
+export type MusicGenerateResult =
+  | {
+      status: 'completed';
+      projectId: string;
+      outputUrl: string;
+      storagePath: string | null;
+    }
+  | { status: 'approval_required'; message: string }
+  | { status: 'failed'; message: string };
+
+export async function generateMusicAction(input: {
+  prompt: string;
+  approved: boolean;
+  durationSeconds?: number;
+  instrumental?: boolean;
+  projectId?: string | null;
+}): Promise<MusicGenerateResult> {
+  const prompt = input.prompt.trim();
+  if (!prompt) {
+    return { status: 'failed', message: 'Опишите, какая музыка нужна.' };
+  }
+
+  if (!input.approved) {
+    return {
+      status: 'approval_required',
+      message: 'Подтвердите запуск платной генерации музыки.',
+    };
+  }
+
+  const apiKey = process.env.ELEVENLABS_API_KEY?.trim();
+  if (!apiKey) {
+    return {
+      status: 'failed',
+      message: 'ELEVENLABS_API_KEY не настроен.',
+    };
+  }
+
+  const durationSeconds = Math.min(600, Math.max(3, input.durationSeconds ?? 15));
+
+  try {
+    const project = await ensureFactoryProject({
+      projectId: input.projectId,
+      seed: 'Музыка: ' + prompt.slice(0, 120),
+      stage: 'create',
+    });
+
+    const response = await fetch(
+      'https://api.elevenlabs.io/v1/music?output_format=mp3_44100_128',
+      {
+        method: 'POST',
+        headers: {
+          'xi-api-key': apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt,
+          music_length_ms: durationSeconds * 1000,
+          model_id: 'music_v2_5',
+          force_instrumental: Boolean(input.instrumental),
+        }),
+        cache: 'no-store',
+      },
+    );
+
+    if (!response.ok) {
+      const detail = (await response.text()).slice(0, 500);
+      return {
+        status: 'failed',
+        message:
+          'Не удалось создать музыку (' +
+          String(response.status) +
+          '): ' +
+          (detail || response.statusText),
+      };
+    }
+
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    const songId =
+      response.headers.get('song-id')?.trim() ||
+      'music-' + randomUUID();
+
+    const persisted = await persistGeneratedAssetBytes({
+      bytes,
+      contentType: response.headers.get('content-type') || 'audio/mpeg',
+      kind: 'audio',
+      provider: 'elevenlabs',
+      providerAssetId: songId,
+      projectId: project.projectId,
+      durationSeconds,
+      metadata: {
+        artifactType: 'music',
+        prompt,
+        instrumental: Boolean(input.instrumental),
+        modelId: 'music_v2_5',
+      },
+    });
+
+    if (!persisted.persisted || !persisted.url) {
+      return {
+        status: 'failed',
+        message: 'Музыка создана, но не удалось сохранить MP3 в проект.',
+      };
+    }
+
+    await saveFactoryArtifact({
+      projectId: project.projectId,
+      stage: 'create',
+      title: 'Музыкальный трек',
+      content: persisted.url,
+      metadata: {
+        artifactType: 'music',
+        provider: 'elevenlabs',
+        outputUrl: persisted.url,
+        storagePath: persisted.storagePath,
+        prompt,
+        instrumental: Boolean(input.instrumental),
+        durationSeconds,
+      },
+      identity: project.identity,
+    });
+
+    return {
+      status: 'completed',
+      projectId: project.projectId,
+      outputUrl: persisted.url,
+      storagePath: persisted.storagePath,
+    };
+  } catch (error) {
+    return {
+      status: 'failed',
+      message:
+        error instanceof Error
+          ? error.message
+          : 'Не удалось создать музыкальный трек.',
     };
   }
 }
