@@ -19,6 +19,7 @@ export type FactoryToolId =
   | 'remove-bg'
   | 'object-remove'
   | 'avatar'
+  | 'custom-avatar'
   | 'motion'
   | 'music'
   | 'sfx'
@@ -56,6 +57,7 @@ export const FACTORY_TOOLS: FactoryTool[] = [
   { id:'remove-bg', title:'Удаление фона', description:'Очистить фон вокруг объекта и подготовить визуал под рекламу или карточку.', status:'live', href:'/modules/create/image-cleanup?mode=remove-bg', mark:'□' },
   { id:'object-remove', title:'Удаление объекта', description:'Убрать лишний предмет и естественно восстановить фон.', status:'live', href:'/modules/create/image-cleanup?mode=object-remove', mark:'⌫' },
   { id:'avatar', title:'AI-аватар', description:'Говорящий AI-персонаж под текст и выбранный голос.', status:'live', href:'/modules/create/avatar?mode=text', mark:'◎' },
+  { id:'custom-avatar', title:'Мой аватар из фото', description:'Создать постоянного AI-персонажа из фотографии и использовать его в будущих роликах.', status:'live', href:'/modules/create/avatar-create', mark:'◉' },
   { id:'motion', title:'Перенос движения', description:'Использовать движение и структуру исходного ролика для новой версии.', status:'live', href:'/modules/create/video-motion?mode=motion', mark:'≈' },
   { id:'music', title:'Музыка', description:'Фон, джингл, атмосферный bed или полноценный трек под кампанию и ролик.', status:'live', href:'/modules/create/music', mark:'♪' },
   { id:'sfx', title:'Звуковые эффекты', description:'Фоли, атмосферы, whoosh, удары и UI-звуки под сцену или ролик.', status:'live', href:'/modules/create/sound-effects', mark:'≋' },

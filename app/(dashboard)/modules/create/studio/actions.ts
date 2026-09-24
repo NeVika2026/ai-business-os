@@ -927,6 +927,126 @@ export async function startVideoMotionAction(input: {
   }
 }
 
+
+export type CustomAvatarCreateResult =
+  | {
+      status: 'completed';
+      avatarId: string;
+      avatarName: string;
+      projectId: string;
+    }
+  | { status: 'approval_required'; message: string }
+  | { status: 'failed'; message: string };
+
+export async function createCustomAvatarAction(input: {
+  name: string;
+  referenceImage: string;
+  personality?: string;
+  voicePreset?: string;
+  approved: boolean;
+  rightsConfirmed: boolean;
+  projectId?: string | null;
+}): Promise<CustomAvatarCreateResult> {
+  const name = input.name.trim();
+  const referenceImage = input.referenceImage.trim();
+
+  if (!name || !referenceImage) {
+    return {
+      status: 'failed',
+      message: 'Укажите имя аватара и изображение.',
+    };
+  }
+
+  if (!input.rightsConfirmed) {
+    return {
+      status: 'failed',
+      message: 'Подтвердите право использовать изображение человека.',
+    };
+  }
+
+  if (!input.approved) {
+    return {
+      status: 'approval_required',
+      message: 'Подтвердите создание постоянного AI-аватара.',
+    };
+  }
+
+  try {
+    const project = await ensureFactoryProject({
+      projectId: input.projectId,
+      seed: 'AI-аватар: ' + name,
+      stage: 'create',
+    });
+
+    const result = await executeMediaTool(
+      'media.avatar.create',
+      {
+        name,
+        reference_image: referenceImage,
+        personality:
+          input.personality?.trim() ||
+          'Дружелюбный, уверенный и естественный ведущий.',
+        voice_preset: input.voicePreset?.trim() || 'victoria',
+      },
+      { alreadyApproved: true },
+    );
+
+    if (!result.success || !result.output) {
+      if (result.error?.code === 'TOOL_APPROVAL_REQUIRED') {
+        return {
+          status: 'approval_required',
+          message: result.error.message,
+        };
+      }
+
+      return {
+        status: 'failed',
+        message: result.error?.message ?? 'Не удалось создать AI-аватар.',
+      };
+    }
+
+    const output = result.output as Record<string, unknown>;
+    const avatarId = typeof output.avatarId === 'string' ? output.avatarId : '';
+    const avatarName =
+      typeof output.name === 'string' && output.name.trim()
+        ? output.name.trim()
+        : name;
+
+    if (!avatarId) {
+      return { status: 'failed', message: 'Провайдер не вернул ID аватара.' };
+    }
+
+    await saveFactoryArtifact({
+      projectId: project.projectId,
+      stage: 'create',
+      title: 'AI-аватар: ' + avatarName,
+      content: avatarId,
+      metadata: {
+        artifactType: 'custom-avatar',
+        provider: 'runway',
+        avatarId,
+        avatarName,
+        referenceImage,
+        voicePreset: input.voicePreset?.trim() || 'victoria',
+      },
+      identity: project.identity,
+    });
+
+    return {
+      status: 'completed',
+      avatarId,
+      avatarName,
+      projectId: project.projectId,
+    };
+  } catch (error) {
+    return {
+      status: 'failed',
+      message:
+        error instanceof Error ? error.message : 'Не удалось создать AI-аватар.',
+    };
+  }
+}
+
 export async function getMediaGenerationStatusAction(
   kind: MediaStudioKind,
   id: string,

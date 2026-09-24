@@ -11,7 +11,11 @@ import {
 } from '@/app/(dashboard)/modules/create/studio/actions';
 import { saveFactoryArtifactAction } from '@/app/(dashboard)/modules/factory-chain/actions';
 
-type Props = { initialMode: AvatarVideoMode; projectId?: string | null };
+type Props = {
+  initialMode: AvatarVideoMode;
+  projectId?: string | null;
+  initialCustomAvatarId?: string;
+};
 
 const AVATARS = [
   ['influencer','Инфлюенсер'],
@@ -32,9 +36,15 @@ const pending = (): MediaStudioStatusResult => ({
   status:'pending', providerStatus:'pending', outputUrl:null, outputUrls:[], ephemeral:false,
 });
 
-export function AvatarVideoStudio({ initialMode, projectId = null }: Props) {
+export function AvatarVideoStudio({
+  initialMode,
+  projectId = null,
+  initialCustomAvatarId = '',
+}: Props) {
   const [mode,setMode] = useState<AvatarVideoMode>(initialMode);
   const [avatarPreset,setAvatarPreset] = useState('influencer');
+  const [customAvatarId,setCustomAvatarId] = useState(initialCustomAvatarId);
+  const [useCustomAvatar,setUseCustomAvatar] = useState(Boolean(initialCustomAvatarId));
   const [text,setText] = useState('');
   const [audioUrl,setAudioUrl] = useState('');
   const [voicePreset,setVoicePreset] = useState('victoria');
@@ -86,8 +96,9 @@ export function AvatarVideoStudio({ initialMode, projectId = null }: Props) {
     startTransition(async () => {
       const result = await startAvatarVideoAction({
         mode,
-        avatarType:'preset',
+        avatarType: useCustomAvatar ? 'custom' : 'preset',
         avatarPreset,
+        avatarId: useCustomAvatar ? customAvatarId : undefined,
         text,
         audioUrl,
         voicePreset,
@@ -125,13 +136,38 @@ export function AvatarVideoStudio({ initialMode, projectId = null }: Props) {
             ))}
           </div>
 
-          <label className="mt-5 grid gap-2">
-            <span className="text-sm font-bold text-white/72">Персонаж</span>
-            <select value={avatarPreset} onChange={e=>setAvatarPreset(e.target.value)}
-              className="rounded-2xl border border-white/[0.09] bg-black/25 px-4 py-3.5 text-sm text-white">
-              {AVATARS.map(([id,label])=><option key={id} value={id}>{label}</option>)}
-            </select>
-          </label>
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            <button type="button" onClick={()=>setUseCustomAvatar(false)}
+              className={`rounded-2xl border px-3 py-2.5 text-xs font-black ${!useCustomAvatar?'border-[#f1c96c]/25 bg-[#f1c96c]/[0.06] text-[#f1c96c]':'border-white/[0.07] text-white/50'}`}>
+              Готовый персонаж
+            </button>
+            <button type="button" onClick={()=>setUseCustomAvatar(true)}
+              className={`rounded-2xl border px-3 py-2.5 text-xs font-black ${useCustomAvatar?'border-[#f1c96c]/25 bg-[#f1c96c]/[0.06] text-[#f1c96c]':'border-white/[0.07] text-white/50'}`}>
+              Мой аватар
+            </button>
+          </div>
+
+          {useCustomAvatar ? (
+            <div className="mt-4 grid gap-2">
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-white/72">ID моего аватара</span>
+                <input value={customAvatarId} onChange={e=>setCustomAvatarId(e.target.value)}
+                  placeholder="ID постоянного аватара"
+                  className="rounded-2xl border border-white/[0.09] bg-black/25 px-4 py-3.5 text-sm text-white" />
+              </label>
+              <Link href="/modules/create/avatar-create" className="text-xs font-black text-[#a8f3f8]">
+                Создать новый аватар из фото →
+              </Link>
+            </div>
+          ) : (
+            <label className="mt-4 grid gap-2">
+              <span className="text-sm font-bold text-white/72">Персонаж</span>
+              <select value={avatarPreset} onChange={e=>setAvatarPreset(e.target.value)}
+                className="rounded-2xl border border-white/[0.09] bg-black/25 px-4 py-3.5 text-sm text-white">
+                {AVATARS.map(([id,label])=><option key={id} value={id}>{label}</option>)}
+              </select>
+            </label>
+          )}
 
           {mode === 'text' ? (
             <>
@@ -163,7 +199,12 @@ export function AvatarVideoStudio({ initialMode, projectId = null }: Props) {
           </label>
 
           <button onClick={run}
-            disabled={!approved || busy || (mode==='text' ? !text.trim() : !audioUrl.trim())}
+            disabled={
+              !approved ||
+              busy ||
+              (useCustomAvatar && !customAvatarId.trim()) ||
+              (mode==='text' ? !text.trim() : !audioUrl.trim())
+            }
             className="mt-5 w-full rounded-[18px] bg-[linear-gradient(135deg,#ffe08a,#d79a30)] px-5 py-4 text-sm font-black text-[#1b1105] disabled:opacity-35">
             {busy ? 'Создаю…' : mode==='text' ? 'Создать аватарное видео →' : 'Синхронизировать с аудио →'}
           </button>

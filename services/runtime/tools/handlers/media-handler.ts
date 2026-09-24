@@ -360,6 +360,47 @@ export class RunwayMotionTransferHandler extends BaseToolHandler {
   }
 }
 
+
+export class RunwayAvatarCreateHandler extends BaseToolHandler {
+  async execute(args: Record<string, unknown>, ctx: ToolHandlerContext) {
+    const name = asString(args.name);
+    const referenceImage = asString(args.reference_image);
+    const personality = asString(args.personality) || 'Friendly, confident and natural presenter.';
+    const voicePreset = asString(args.voice_preset) || 'victoria';
+
+    if (!name) throw new Error('name is required');
+    if (!referenceImage) throw new Error('reference_image is required');
+
+    const payload = await runwayRequest(
+      '/avatars',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          name,
+          personality,
+          referenceImage,
+          voice: {
+            type: 'runway-live-preset',
+            presetId: voicePreset,
+          },
+          imageProcessing: 'optimize',
+        }),
+      },
+      ctx.signal,
+    );
+
+    const avatarId = asString(payload.id);
+    if (!avatarId) throw new Error('Runway did not return an avatar id');
+
+    return {
+      avatarId,
+      name: asString(payload.name) || name,
+      status: asString(payload.status) || 'created',
+      raw: payload,
+    };
+  }
+}
+
 export class RunwayAvatarVideoGenerateHandler extends BaseToolHandler {
   async execute(args: Record<string, unknown>, ctx: ToolHandlerContext) {
     const avatarType = asString(args.avatar_type) || 'runway-preset';
@@ -647,6 +688,7 @@ export const runwayMultiShotGenerateHandler = new RunwayMultiShotGenerateHandler
 export const runwayProductUgcGenerateHandler = new RunwayProductUgcGenerateHandler();
 export const runwayVideoGenerateHandler = new RunwayVideoGenerateHandler();
 export const runwayImageGenerateHandler = new RunwayImageGenerateHandler();
+export const runwayAvatarCreateHandler = new RunwayAvatarCreateHandler();
 export const runwayAvatarVideoGenerateHandler = new RunwayAvatarVideoGenerateHandler();
 export const runwayVideoExtendHandler = new RunwayVideoExtendHandler();
 export const runwayMotionTransferHandler = new RunwayMotionTransferHandler();
