@@ -200,7 +200,7 @@ export function VideoMotionStudio({ initialMode, projectId = null }: Props) {
           {mode === 'motion' ? (
             <label className="mt-4 grid gap-2">
               <span className="text-sm font-bold text-white/72">
-                Изображение нового персонажа/объекта — необязательно
+                Изображение персонажа
               </span>
               <input
                 value={referenceImage}
@@ -208,25 +208,22 @@ export function VideoMotionStudio({ initialMode, projectId = null }: Props) {
                 placeholder="https://…jpg"
                 className="rounded-[16px] border border-white/[0.09] bg-black/25 px-4 py-3.5 text-sm text-white outline-none"
               />
+              <span className="text-xs leading-5 text-white/42">
+                Лицо должно быть хорошо видно. Движение, мимика и жесты будут взяты из ролика выше.
+              </span>
             </label>
-          ) : null}
-
-          <label className="mt-4 grid gap-2">
-            <span className="text-sm font-bold text-white/72">
-              {mode === 'extend' ? 'Как продолжить сцену' : 'Что должно получиться'}
-            </span>
-            <textarea
-              rows={6}
-              value={promptText}
-              onChange={(event) => setPromptText(event.target.value)}
-              placeholder={
-                mode === 'extend'
-                  ? 'Например: камера продолжает движение вперёд, герой открывает дверь и выходит на террасу; свет и стиль сохраняются.'
-                  : 'Например: персонаж с референса повторяет движение из ролика; сохранить его лицо, одежду и пропорции.'
-              }
-              className="resize-none rounded-[16px] border border-white/[0.09] bg-black/25 px-4 py-3.5 text-sm leading-6 text-white outline-none"
-            />
-          </label>
+          ) : (
+            <label className="mt-4 grid gap-2">
+              <span className="text-sm font-bold text-white/72">Как продолжить сцену</span>
+              <textarea
+                rows={6}
+                value={promptText}
+                onChange={(event) => setPromptText(event.target.value)}
+                placeholder="Например: камера продолжает движение вперёд, герой открывает дверь и выходит на террасу; свет и стиль сохраняются."
+                className="resize-none rounded-[16px] border border-white/[0.09] bg-black/25 px-4 py-3.5 text-sm leading-6 text-white outline-none"
+              />
+            </label>
+          )}
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <label className="grid gap-2">
@@ -298,7 +295,12 @@ export function VideoMotionStudio({ initialMode, projectId = null }: Props) {
 
           <button
             type="button"
-            disabled={!approved || !sourceUrl.trim() || !promptText.trim() || busy}
+            disabled={
+              !approved ||
+              !sourceUrl.trim() ||
+              busy ||
+              (mode === 'extend' ? !promptText.trim() : !referenceImage.trim())
+            }
             onClick={run}
             className="mt-5 w-full rounded-[18px] bg-[linear-gradient(135deg,#ffe08a,#d79a30)] px-5 py-4 text-sm font-black text-[#1b1105] disabled:cursor-not-allowed disabled:opacity-35"
           >
