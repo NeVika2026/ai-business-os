@@ -17,6 +17,16 @@ import {
 } from '@/services/media/persist-provider-asset';
 
 export type MediaStudioKind = 'video' | 'image' | 'voice';
+export async function ensureMediaProjectAction(seed: string, projectId?: string | null) {
+  const project = await ensureFactoryProject({
+    projectId,
+    seed: seed.trim() || 'Медиа-проект',
+    stage: 'create',
+  });
+
+  return { projectId: project.projectId };
+}
+
 
 export type MediaStudioStartInput = {
   kind: MediaStudioKind;
