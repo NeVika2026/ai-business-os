@@ -708,6 +708,108 @@ export async function startVideoEditAction(input: {
   }
 }
 
+
+export type AvatarVideoMode = 'text' | 'audio';
+
+export type AvatarVideoStartResult =
+  | { status: 'started'; id: string; projectId: string }
+  | { status: 'approval_required'; message: string }
+  | { status: 'failed'; message: string };
+
+export async function startAvatarVideoAction(input: {
+  mode: AvatarVideoMode;
+  avatarType?: 'preset' | 'custom';
+  avatarPreset?: string;
+  avatarId?: string;
+  text?: string;
+  audioUrl?: string;
+  voicePreset?: string;
+  approved: boolean;
+  projectId?: string | null;
+}): Promise<AvatarVideoStartResult> {
+  const avatarType = input.avatarType ?? 'preset';
+  const avatarPreset = input.avatarPreset?.trim() || 'influencer';
+  const avatarId = input.avatarId?.trim() || '';
+  const text = input.text?.trim() || '';
+  const audioUrl = input.audioUrl?.trim() || '';
+
+  if (avatarType === 'custom' && !avatarId) {
+    return { status: 'failed', message: 'Укажите ID собственного аватара.' };
+  }
+
+  if (input.mode === 'text' && !text) {
+    return { status: 'failed', message: 'Введите текст для аватара.' };
+  }
+
+  if (input.mode === 'audio' && !audioUrl) {
+    return { status: 'failed', message: 'Добавьте ссылку на готовую аудиодорожку.' };
+  }
+
+  if (!input.approved) {
+    return {
+      status: 'approval_required',
+      message: 'Подтвердите запуск платной генерации.',
+    };
+  }
+
+  try {
+    const project = await ensureFactoryProject({
+      projectId: input.projectId,
+      seed: input.mode === 'text' ? 'AI-аватар' : 'Аватар с готовым аудио',
+      stage: 'create',
+    });
+
+    const result = await executeMediaTool(
+      'media.avatar_video.generate',
+      {
+        avatar_type: avatarType === 'custom' ? 'custom' : 'runway-preset',
+        avatar_preset: avatarPreset,
+        avatar_id: avatarId,
+        speech_type: input.mode,
+        text,
+        audio_url: audioUrl,
+        voice_preset: input.voicePreset?.trim() || 'victoria',
+      },
+      { alreadyApproved: true },
+    );
+
+    if (!result.success || !result.output) {
+      if (result.error?.code === 'TOOL_APPROVAL_REQUIRED') {
+        return {
+          status: 'approval_required',
+          message: result.error.message,
+        };
+      }
+
+      return {
+        status: 'failed',
+        message: result.error?.message ?? 'Не удалось запустить аватарное видео.',
+      };
+    }
+
+    const output = result.output as Record<string, unknown>;
+    const id = typeof output.taskId === 'string' ? output.taskId : '';
+
+    if (!id) {
+      return { status: 'failed', message: 'Провайдер не вернул ID задачи.' };
+    }
+
+    return {
+      status: 'started',
+      id,
+      projectId: project.projectId,
+    };
+  } catch (error) {
+    return {
+      status: 'failed',
+      message:
+        error instanceof Error
+          ? error.message
+          : 'Не удалось запустить аватарное видео.',
+    };
+  }
+}
+
 export async function getMediaGenerationStatusAction(
   kind: MediaStudioKind,
   id: string,
