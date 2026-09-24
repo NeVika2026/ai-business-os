@@ -611,6 +611,103 @@ export async function generateMusicAction(input: {
   }
 }
 
+
+export type VideoEditMode = 'edit' | 'expand';
+
+export type VideoEditStartResult =
+  | { status: 'started'; id: string; projectId: string }
+  | { status: 'approval_required'; message: string }
+  | { status: 'failed'; message: string };
+
+export async function startVideoEditAction(input: {
+  mode: VideoEditMode;
+  sourceUrl: string;
+  promptText?: string;
+  targetAspectRatio?: '16:9' | '9:16' | '1:1' | '4:3' | '3:4' | '21:9' | '2:3' | '3:2';
+  approved: boolean;
+  projectId?: string | null;
+}): Promise<VideoEditStartResult> {
+  const sourceUrl = input.sourceUrl.trim();
+  const promptText = input.promptText?.trim() ?? '';
+
+  if (!sourceUrl) {
+    return { status: 'failed', message: 'Добавьте ссылку на исходное видео.' };
+  }
+
+  if (input.mode === 'edit' && !promptText) {
+    return { status: 'failed', message: 'Опишите, что изменить в видео.' };
+  }
+
+  if (input.mode === 'expand' && !input.targetAspectRatio) {
+    return { status: 'failed', message: 'Выберите новый формат кадра.' };
+  }
+
+  if (!input.approved) {
+    return {
+      status: 'approval_required',
+      message: 'Подтвердите запуск платного редактирования.',
+    };
+  }
+
+  try {
+    const project = await ensureFactoryProject({
+      projectId: input.projectId,
+      seed: input.mode === 'edit' ? 'Редактирование видео' : 'Расширение видео',
+      stage: 'create',
+    });
+
+    const result = await executeMediaTool(
+      input.mode === 'edit' ? 'media.video.edit' : 'media.video.expand',
+      input.mode === 'edit'
+        ? {
+            video_uri: sourceUrl,
+            prompt_text: promptText,
+          }
+        : {
+            video_uri: sourceUrl,
+            target_aspect_ratio: input.targetAspectRatio,
+            prompt_text: promptText,
+          },
+      { alreadyApproved: true },
+    );
+
+    if (!result.success || !result.output) {
+      if (result.error?.code === 'TOOL_APPROVAL_REQUIRED') {
+        return {
+          status: 'approval_required',
+          message: result.error.message,
+        };
+      }
+
+      return {
+        status: 'failed',
+        message: result.error?.message ?? 'Не удалось запустить редактирование видео.',
+      };
+    }
+
+    const output = result.output as Record<string, unknown>;
+    const id = typeof output.taskId === 'string' ? output.taskId : '';
+
+    if (!id) {
+      return { status: 'failed', message: 'Провайдер не вернул ID задачи.' };
+    }
+
+    return {
+      status: 'started',
+      id,
+      projectId: project.projectId,
+    };
+  } catch (error) {
+    return {
+      status: 'failed',
+      message:
+        error instanceof Error
+          ? error.message
+          : 'Не удалось запустить редактирование видео.',
+    };
+  }
+}
+
 export async function getMediaGenerationStatusAction(
   kind: MediaStudioKind,
   id: string,

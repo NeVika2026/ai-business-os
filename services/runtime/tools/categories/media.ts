@@ -386,6 +386,73 @@ export const mediaTools: RegisteredToolInput[] = [
     enabled: true,
   },
   {
+    id: 'media.video.edit',
+    name: 'Edit Video',
+    description: 'Apply a targeted edit to an existing video.',
+    version: '1.0.0',
+    category: 'media',
+    permissions: externalPermissions,
+    approvalPolicy: {
+      ...DEFAULT_EXTERNAL_APPROVAL,
+      reason: 'Video editing may consume paid credits and requires explicit approval.',
+    },
+    timeoutMs: 30000,
+    retryPolicy: DEFAULT_WRITE_RETRY_POLICY,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        video_uri: { type: 'string', minLength: 1 },
+        prompt_text: { type: 'string', minLength: 1, maxLength: 5000 },
+      },
+      required: ['video_uri', 'prompt_text'],
+      additionalProperties: false,
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string' },
+        status: { type: 'string' },
+        kind: { type: 'string' },
+      },
+      required: ['taskId','status','kind'],
+    },
+    enabled: true,
+  },
+  {
+    id: 'media.video.expand',
+    name: 'Expand Video Frame',
+    description: 'Expand a video to a new aspect ratio without cropping.',
+    version: '1.0.0',
+    category: 'media',
+    permissions: externalPermissions,
+    approvalPolicy: {
+      ...DEFAULT_EXTERNAL_APPROVAL,
+      reason: 'Video expansion may consume paid credits and requires explicit approval.',
+    },
+    timeoutMs: 30000,
+    retryPolicy: DEFAULT_WRITE_RETRY_POLICY,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        video_uri: { type: 'string', minLength: 1 },
+        target_aspect_ratio: { type: 'string' },
+        prompt_text: { type: 'string', maxLength: 5000 },
+      },
+      required: ['video_uri','target_aspect_ratio'],
+      additionalProperties: false,
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string' },
+        status: { type: 'string' },
+        kind: { type: 'string' },
+      },
+      required: ['taskId','status','kind'],
+    },
+    enabled: true,
+  },
+  {
     id: 'media.runway.status',
     name: 'Media Task Status',
     description: 'Check a video or image generation task and return finished asset URLs when available.',

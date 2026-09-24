@@ -299,6 +299,62 @@ export class RunwayImageGenerateHandler extends BaseToolHandler {
 
 
 
+
+export class RunwayVideoEditHandler extends BaseToolHandler {
+  async execute(args: Record<string, unknown>, ctx: ToolHandlerContext) {
+    const videoUri = asString(args.video_uri);
+    const promptText = asString(args.prompt_text);
+    if (!videoUri) throw new Error('video_uri is required');
+    if (!promptText) throw new Error('prompt_text is required');
+
+    const payload = await runwayRequest(
+      '/video_to_video',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          model: 'aleph2',
+          videoUri,
+          promptText,
+          outputFormat: 'mp4',
+        }),
+      },
+      ctx.signal,
+    );
+
+    const taskId = asString(payload.id);
+    if (!taskId) throw new Error('Runway did not return a task id');
+    return { taskId, status: 'pending', kind: 'video' };
+  }
+}
+
+export class RunwayVideoExpandHandler extends BaseToolHandler {
+  async execute(args: Record<string, unknown>, ctx: ToolHandlerContext) {
+    const videoUri = asString(args.video_uri);
+    const targetAspectRatio = asString(args.target_aspect_ratio);
+    const promptText = asString(args.prompt_text);
+    if (!videoUri) throw new Error('video_uri is required');
+    if (!targetAspectRatio) throw new Error('target_aspect_ratio is required');
+
+    const body: Record<string, unknown> = {
+      model: 'aleph2',
+      videoUri,
+      targetAspectRatio,
+      outputFormat: 'mp4',
+    };
+    if (promptText) body.promptText = promptText;
+
+    const payload = await runwayRequest(
+      '/video_to_video',
+      { method: 'POST', body: JSON.stringify(body) },
+      ctx.signal,
+    );
+
+    const taskId = asString(payload.id);
+    if (!taskId) throw new Error('Runway did not return a task id');
+    return { taskId, status: 'pending', kind: 'video' };
+  }
+}
+
 export class RunwaySoundEffectGenerateHandler extends BaseToolHandler {
   async execute(args: Record<string, unknown>, ctx: ToolHandlerContext) {
     const promptText = asString(args.prompt_text);
@@ -497,6 +553,8 @@ export const runwayMultiShotGenerateHandler = new RunwayMultiShotGenerateHandler
 export const runwayProductUgcGenerateHandler = new RunwayProductUgcGenerateHandler();
 export const runwayVideoGenerateHandler = new RunwayVideoGenerateHandler();
 export const runwayImageGenerateHandler = new RunwayImageGenerateHandler();
+export const runwayVideoEditHandler = new RunwayVideoEditHandler();
+export const runwayVideoExpandHandler = new RunwayVideoExpandHandler();
 export const runwaySoundEffectGenerateHandler = new RunwaySoundEffectGenerateHandler();
 export const runwayImageUpscaleHandler = new RunwayImageUpscaleHandler();
 export const runwayVideoUpscaleHandler = new RunwayVideoUpscaleHandler();
