@@ -588,6 +588,7 @@ export const runwayMultiShotGenerateHandler = new RunwayMultiShotGenerateHandler
 export const runwayProductUgcGenerateHandler = new RunwayProductUgcGenerateHandler();
 export const runwayVideoGenerateHandler = new RunwayVideoGenerateHandler();
 export const runwayImageGenerateHandler = new RunwayImageGenerateHandler();
+export const runwayAvatarVideoGenerateHandler = new RunwayAvatarVideoGenerateHandler();
 export const runwayVideoEditHandler = new RunwayVideoEditHandler();
 export const runwayVideoExpandHandler = new RunwayVideoExpandHandler();
 export const runwaySoundEffectGenerateHandler = new RunwaySoundEffectGenerateHandler();
