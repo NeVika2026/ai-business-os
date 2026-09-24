@@ -294,6 +294,106 @@ export async function startMediaGenerationAction(
   }
 }
 
+
+export type UpscaleKind = 'image' | 'video';
+
+export type UpscaleStartResult =
+  | { status: 'started'; id: string; projectId: string; kind: UpscaleKind }
+  | { status: 'approval_required'; message: string }
+  | { status: 'failed'; message: string };
+
+export async function startUpscaleAction(input: {
+  kind: UpscaleKind;
+  sourceUrl: string;
+  approved: boolean;
+  projectId?: string | null;
+  scaleFactor?: 2 | 4 | 8 | 16;
+  resolution?: '720p' | '1k' | '2k' | '4k';
+  flavor?: 'sublime' | 'photo' | 'photo_denoiser';
+  sharpen?: number;
+  smartGrain?: number;
+  ultraDetail?: number;
+  creativity?: number;
+  fpsBoost?: boolean;
+}): Promise<UpscaleStartResult> {
+  const sourceUrl = input.sourceUrl.trim();
+
+  if (!sourceUrl) {
+    return { status: 'failed', message: 'Добавьте ссылку на исходный файл.' };
+  }
+
+  if (!input.approved) {
+    return {
+      status: 'approval_required',
+      message: 'Подтвердите запуск платного улучшения.',
+    };
+  }
+
+  try {
+    const project = await ensureFactoryProject({
+      projectId: input.projectId,
+      seed: input.kind === 'image' ? 'Улучшение изображения' : 'Улучшение видео',
+      stage: 'create',
+    });
+
+    const toolId = input.kind === 'image' ? 'media.image.upscale' : 'media.video.upscale';
+    const args =
+      input.kind === 'image'
+        ? {
+            image: sourceUrl,
+            scale_factor: input.scaleFactor ?? 2,
+            flavor: input.flavor ?? 'photo',
+            sharpen: input.sharpen ?? 10,
+            smart_grain: input.smartGrain ?? 10,
+            ultra_detail: input.ultraDetail ?? 30,
+          }
+        : {
+            video: sourceUrl,
+            resolution: input.resolution ?? '2k',
+            creativity: input.creativity ?? 25,
+            sharpen: input.sharpen ?? 15,
+            smart_grain: input.smartGrain ?? 10,
+            flavor: input.flavor ?? 'photo',
+            fps_boost: Boolean(input.fpsBoost),
+          };
+
+    const result = await executeMediaTool(toolId, args, { alreadyApproved: true });
+
+    if (!result.success || !result.output) {
+      if (result.error?.code === 'TOOL_APPROVAL_REQUIRED') {
+        return {
+          status: 'approval_required',
+          message: result.error.message,
+        };
+      }
+
+      return {
+        status: 'failed',
+        message: result.error?.message ?? 'Не удалось запустить улучшение.',
+      };
+    }
+
+    const output = result.output as Record<string, unknown>;
+    const id = typeof output.taskId === 'string' ? output.taskId : '';
+
+    if (!id) {
+      return { status: 'failed', message: 'Провайдер не вернул ID задачи.' };
+    }
+
+    return {
+      status: 'started',
+      id,
+      projectId: project.projectId,
+      kind: input.kind,
+    };
+  } catch (error) {
+    return {
+      status: 'failed',
+      message: error instanceof Error ? error.message : 'Не удалось запустить улучшение.',
+    };
+  }
+}
+
 export async function getMediaGenerationStatusAction(
   kind: MediaStudioKind,
   id: string,

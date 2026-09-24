@@ -15,6 +15,7 @@ export type FactoryToolId =
   | 'multi-shot'
   | 'lip-sync'
   | 'upscale'
+  | 'upscale-video'
   | 'remove-bg'
   | 'object-remove'
   | 'avatar'
@@ -47,7 +48,8 @@ export const FACTORY_TOOLS: FactoryTool[] = [
   { id:'ad-localization', title:'Локализация рекламы', description:'Адаптация текста рекламного креатива под другой язык с сохранением макета.', status:'live', href:'/modules/create/campaign?kind=ad_localization', mark:'文' },
   { id:'multi-shot', title:'Multi-shot видео', description:'Несколько связанных сцен → один цельный рекламный ролик.', status:'live', href:'/modules/create/campaign?kind=multi_shot', mark:'≋' },
   { id:'lip-sync', title:'Липсинк', description:'Синхронизация губ с новой озвучкой.', status:'planned', mark:'◌' },
-  { id:'upscale', title:'Upscale', description:'Повышение качества изображений и видео.', status:'planned', mark:'↗' },
+  { id:'upscale', title:'Upscale изображения', description:'Увеличить разрешение фото в 2×, 4×, 8× или 16×.', status:'live', href:'/modules/create/upscale?kind=image', mark:'↗' },
+  { id:'upscale-video', title:'Upscale видео', description:'Поднять разрешение ролика до 720p, 1K, 2K или 4K.', status:'live', href:'/modules/create/upscale?kind=video', mark:'⇧' },
   { id:'remove-bg', title:'Удаление фона', description:'Очистить фон вокруг объекта и подготовить визуал под рекламу или карточку.', status:'live', href:'/modules/create/image-cleanup?mode=remove-bg', mark:'□' },
   { id:'object-remove', title:'Удаление объекта', description:'Убрать лишний предмет и естественно восстановить фон.', status:'live', href:'/modules/create/image-cleanup?mode=object-remove', mark:'⌫' },
   { id:'avatar', title:'AI-аватар', description:'Говорящий персонаж под сценарий и голос.', status:'planned', mark:'◎' },

@@ -297,6 +297,65 @@ export class RunwayImageGenerateHandler extends BaseToolHandler {
   }
 }
 
+
+export class RunwayImageUpscaleHandler extends BaseToolHandler {
+  async execute(args: Record<string, unknown>, ctx: ToolHandlerContext) {
+    const image = asString(args.image);
+    if (!image) throw new Error('image is required');
+
+    const payload = await runwayRequest(
+      '/image_upscale',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          model: 'magnific_precision_upscaler_v2',
+          image,
+          scaleFactor: Math.min(16, Math.max(2, asNumber(args.scale_factor, 2))),
+          flavor: asString(args.flavor) || 'photo',
+          sharpen: Math.min(100, Math.max(0, asNumber(args.sharpen, 10))),
+          smartGrain: Math.min(100, Math.max(0, asNumber(args.smart_grain, 10))),
+          ultraDetail: Math.min(100, Math.max(0, asNumber(args.ultra_detail, 30))),
+        }),
+      },
+      ctx.signal,
+    );
+
+    const taskId = asString(payload.id);
+    if (!taskId) throw new Error('Runway did not return a task id');
+    return { taskId, status: 'pending', kind: 'image' };
+  }
+}
+
+export class RunwayVideoUpscaleHandler extends BaseToolHandler {
+  async execute(args: Record<string, unknown>, ctx: ToolHandlerContext) {
+    const video = asString(args.video);
+    if (!video) throw new Error('video is required');
+
+    const resolution = asString(args.resolution) || '2k';
+    const payload = await runwayRequest(
+      '/video_upscale',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          model: 'magnific_video_upscaler_creative',
+          video,
+          resolution,
+          creativity: Math.min(100, Math.max(0, asNumber(args.creativity, 25))),
+          sharpen: Math.min(100, Math.max(0, asNumber(args.sharpen, 15))),
+          smartGrain: Math.min(100, Math.max(0, asNumber(args.smart_grain, 10))),
+          flavor: asString(args.flavor) || 'photo',
+          fpsBoost: Boolean(args.fps_boost),
+        }),
+      },
+      ctx.signal,
+    );
+
+    const taskId = asString(payload.id);
+    if (!taskId) throw new Error('Runway did not return a task id');
+    return { taskId, status: 'pending', kind: 'video' };
+  }
+}
+
 export class RunwayTaskStatusHandler extends BaseToolHandler {
   async execute(args: Record<string, unknown>, ctx: ToolHandlerContext) {
     const taskId = asString(args.task_id);
@@ -408,6 +467,8 @@ export const runwayMultiShotGenerateHandler = new RunwayMultiShotGenerateHandler
 export const runwayProductUgcGenerateHandler = new RunwayProductUgcGenerateHandler();
 export const runwayVideoGenerateHandler = new RunwayVideoGenerateHandler();
 export const runwayImageGenerateHandler = new RunwayImageGenerateHandler();
+export const runwayImageUpscaleHandler = new RunwayImageUpscaleHandler();
+export const runwayVideoUpscaleHandler = new RunwayVideoUpscaleHandler();
 export const runwayTaskStatusHandler = new RunwayTaskStatusHandler();
 export const elevenLabsVoiceListHandler = new ElevenLabsVoiceListHandler();
 export const elevenLabsVoiceGenerateHandler = new ElevenLabsVoiceGenerateHandler();
