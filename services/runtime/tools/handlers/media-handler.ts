@@ -300,6 +300,41 @@ export class RunwayImageGenerateHandler extends BaseToolHandler {
 
 
 
+
+export class RunwayAvatarVideoGenerateHandler extends BaseToolHandler {
+  async execute(args: Record<string, unknown>, ctx: ToolHandlerContext) {
+    const avatarType = asString(args.avatar_type) || 'runway-preset';
+    const speechType = asString(args.speech_type) || 'text';
+
+    const avatar =
+      avatarType === 'custom'
+        ? { type: 'custom', avatarId: asString(args.avatar_id) }
+        : { type: 'runway-preset', presetId: asString(args.avatar_preset) || 'influencer' };
+
+    const speech =
+      speechType === 'audio'
+        ? { type: 'audio', audio: asString(args.audio_url) }
+        : {
+            type: 'text',
+            text: asString(args.text),
+            voice: { type: 'preset', presetId: asString(args.voice_preset) || 'victoria' },
+          };
+
+    const payload = await runwayRequest(
+      '/avatar_videos',
+      {
+        method: 'POST',
+        body: JSON.stringify({ model: 'gwm1_avatars', avatar, speech }),
+      },
+      ctx.signal,
+    );
+
+    const taskId = asString(payload.id);
+    if (!taskId) throw new Error('Runway did not return a task id');
+    return { taskId, status: 'pending', kind: 'video' };
+  }
+}
+
 export class RunwayVideoEditHandler extends BaseToolHandler {
   async execute(args: Record<string, unknown>, ctx: ToolHandlerContext) {
     const videoUri = asString(args.video_uri);
