@@ -301,6 +301,65 @@ export class RunwayImageGenerateHandler extends BaseToolHandler {
 
 
 
+
+export class RunwayVideoExtendHandler extends BaseToolHandler {
+  async execute(args: Record<string, unknown>, ctx: ToolHandlerContext) {
+    const promptVideo = asString(args.prompt_video);
+    const promptText = asString(args.prompt_text);
+    if (!promptVideo) throw new Error('prompt_video is required');
+    if (!promptText) throw new Error('prompt_text is required');
+
+    const payload = await runwayRequest(
+      '/video_to_video',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          model: 'seedance2_5',
+          promptVideo,
+          mode: 'extend',
+          promptText,
+          duration: Math.min(30, Math.max(4, asNumber(args.duration, 8))),
+          audio: args.audio !== false,
+        }),
+      },
+      ctx.signal,
+    );
+
+    const taskId = asString(payload.id);
+    if (!taskId) throw new Error('Runway did not return a task id');
+    return { taskId, status: 'pending', kind: 'video' };
+  }
+}
+
+export class RunwayMotionTransferHandler extends BaseToolHandler {
+  async execute(args: Record<string, unknown>, ctx: ToolHandlerContext) {
+    const motionVideo = asString(args.prompt_video);
+    const characterImage = asString(args.reference_image);
+    if (!motionVideo) throw new Error('prompt_video is required');
+    if (!characterImage) throw new Error('reference_image is required');
+
+    const payload = await runwayRequest(
+      '/character_performance',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          model: 'act_two',
+          character: { type: 'image', uri: characterImage },
+          reference: { type: 'video', uri: motionVideo },
+          bodyControl: args.body_control !== false,
+          expressionIntensity: Math.min(5, Math.max(1, asNumber(args.expression_intensity, 3))),
+          ratio: asString(args.ratio) || '720:1280',
+        }),
+      },
+      ctx.signal,
+    );
+
+    const taskId = asString(payload.id);
+    if (!taskId) throw new Error('Runway did not return a task id');
+    return { taskId, status: 'pending', kind: 'video' };
+  }
+}
+
 export class RunwayAvatarVideoGenerateHandler extends BaseToolHandler {
   async execute(args: Record<string, unknown>, ctx: ToolHandlerContext) {
     const avatarType = asString(args.avatar_type) || 'runway-preset';
@@ -589,6 +648,8 @@ export const runwayProductUgcGenerateHandler = new RunwayProductUgcGenerateHandl
 export const runwayVideoGenerateHandler = new RunwayVideoGenerateHandler();
 export const runwayImageGenerateHandler = new RunwayImageGenerateHandler();
 export const runwayAvatarVideoGenerateHandler = new RunwayAvatarVideoGenerateHandler();
+export const runwayVideoExtendHandler = new RunwayVideoExtendHandler();
+export const runwayMotionTransferHandler = new RunwayMotionTransferHandler();
 export const runwayVideoEditHandler = new RunwayVideoEditHandler();
 export const runwayVideoExpandHandler = new RunwayVideoExpandHandler();
 export const runwaySoundEffectGenerateHandler = new RunwaySoundEffectGenerateHandler();

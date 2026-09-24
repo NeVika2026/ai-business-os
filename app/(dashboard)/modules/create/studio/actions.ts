@@ -810,6 +810,123 @@ export async function startAvatarVideoAction(input: {
   }
 }
 
+
+export type VideoMotionMode = 'extend' | 'motion';
+
+export type VideoMotionStartResult =
+  | { status: 'started'; id: string; projectId: string }
+  | { status: 'approval_required'; message: string }
+  | { status: 'failed'; message: string };
+
+export async function startVideoMotionAction(input: {
+  mode: VideoMotionMode;
+  sourceUrl: string;
+  promptText: string;
+  referenceImage?: string;
+  duration?: number;
+  ratio?: string;
+  audio?: boolean;
+  approved: boolean;
+  projectId?: string | null;
+}): Promise<VideoMotionStartResult> {
+  const sourceUrl = input.sourceUrl.trim();
+  const promptText = input.promptText.trim();
+  const referenceImage = input.referenceImage?.trim() ?? '';
+
+  if (!sourceUrl) {
+    return { status: 'failed', message: 'Добавьте ссылку на исходный ролик.' };
+  }
+
+  if (input.mode === 'extend' && !promptText) {
+    return {
+      status: 'failed',
+      message: 'Опишите, как продолжить ролик.',
+    };
+  }
+
+  if (input.mode === 'motion' && !referenceImage) {
+    return {
+      status: 'failed',
+      message: 'Добавьте изображение персонажа для переноса движения.',
+    };
+  }
+
+  if (!input.approved) {
+    return {
+      status: 'approval_required',
+      message: 'Подтвердите запуск платной генерации.',
+    };
+  }
+
+  try {
+    const project = await ensureFactoryProject({
+      projectId: input.projectId,
+      seed: input.mode === 'extend' ? 'Продление видео' : 'Перенос движения',
+      stage: 'create',
+    });
+
+    const result = await executeMediaTool(
+      input.mode === 'extend'
+        ? 'media.video.extend'
+        : 'media.motion_transfer.generate',
+      input.mode === 'extend'
+        ? {
+            prompt_video: sourceUrl,
+            prompt_text: promptText,
+            duration: input.duration ?? 8,
+            audio: input.audio !== false,
+          }
+        : {
+            prompt_video: sourceUrl,
+            reference_image: referenceImage,
+            ratio: input.ratio ?? '720:1280',
+            body_control: true,
+            expression_intensity: 3,
+          },
+      { alreadyApproved: true },
+    );
+
+    if (!result.success || !result.output) {
+      if (result.error?.code === 'TOOL_APPROVAL_REQUIRED') {
+        return {
+          status: 'approval_required',
+          message: result.error.message,
+        };
+      }
+
+      return {
+        status: 'failed',
+        message:
+          result.error?.message ??
+          (input.mode === 'extend'
+            ? 'Не удалось запустить продление видео.'
+            : 'Не удалось запустить перенос движения.'),
+      };
+    }
+
+    const output = result.output as Record<string, unknown>;
+    const id = typeof output.taskId === 'string' ? output.taskId : '';
+
+    if (!id) {
+      return { status: 'failed', message: 'Провайдер не вернул ID задачи.' };
+    }
+
+    return {
+      status: 'started',
+      id,
+      projectId: project.projectId,
+    };
+  } catch (error) {
+    return {
+      status: 'failed',
+      message:
+        error instanceof Error
+          ? error.message
+          : 'Не удалось запустить обработку видео.',
+    };
+  }
+}
+
 export async function getMediaGenerationStatusAction(
   kind: MediaStudioKind,
   id: string,
