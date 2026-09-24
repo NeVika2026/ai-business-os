@@ -2,8 +2,9 @@ import Link from 'next/link';
 
 import { FACTORY_TOOLS } from '@/utils/platform/factory-library';
 
-function toolHref(mode: string) {
-  return '/modules/create/studio?mode=' + encodeURIComponent(mode);
+function toolHref(tool: { mode?: string; href?: string }) {
+  if (tool.href) return tool.href;
+  return '/modules/create/studio?mode=' + encodeURIComponent(tool.mode ?? 'video');
 }
 
 export default function ToolsPage() {
@@ -22,10 +23,10 @@ export default function ToolsPage() {
 
       <section className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {FACTORY_TOOLS.map((tool) =>
-          tool.status === 'live' && tool.mode ? (
+          tool.status === 'live' && (tool.mode || tool.href) ? (
             <Link
               key={tool.id}
-              href={toolHref(tool.mode)}
+              href={toolHref(tool)}
               className="group min-h-52 rounded-[24px] border border-white/[0.09] bg-[#080c12] p-5 transition hover:-translate-y-1 hover:border-[#69e4ee]/25"
             >
               <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#69e4ee]/15 bg-[#69e4ee]/[0.05] text-xl text-[#9af5fb]">{tool.mark}</span>
