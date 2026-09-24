@@ -272,7 +272,7 @@ export function resolveBusinessRouterPlan(input: string): BusinessRouterPlan {
       tools: toolsForOutputs(outputs),
       parallel,
       dependencies: dependenciesForOutputs(outputs),
-      directHref: null,
+      directHref: '/modules/factory?prompt=' + encodeURIComponent(trimmed),
       studioMode: null,
     };
   }
