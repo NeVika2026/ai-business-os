@@ -29,7 +29,7 @@ const STORE_ITEMS = [
   { title: 'Навыки', description: 'Готовые способности для OSA', href: '/marketplace', mark: '✦' },
   { title: 'Интеграции', description: 'Сервисы, AI-движки и коннекторы', href: '/settings', mark: '⌘' },
   { title: 'Автоматизации', description: 'Цепочки, триггеры и повторяющиеся задачи', href: '/modules/automate', mark: '⚡' },
-  { title: 'Медиа', description: 'Видео, изображения, голос и сборка', href: '/modules/create/studio', mark: '▶' },
+  { title: 'Медиа', description: 'Видео, изображения, голос и сборка', href: '/tools', mark: '▶' },
 ] as const;
 
 function taskHref(task: (typeof BUSINESS_ZAVOD_TASKS)[number]) {
@@ -166,6 +166,42 @@ export function BusinessZavodHomeExperience() {
                   Запустить →
                 </span>
               </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <div className="mb-5">
+          <p className="text-[13px] font-extrabold uppercase tracking-[0.22em] text-[#f1c96c]">
+            Библиотека Бизнес-Завода
+          </p>
+          <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#fff8e7] sm:text-4xl">
+            Не начинайте каждый раз с нуля
+          </h2>
+          <p className="mt-2 text-lg leading-8 text-white/80">
+            Инструменты, готовые линии, история результатов и повтор удачных механик — в одном месте.
+          </p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            ['Инструменты', 'Все доступные цеха и будущие мощности', '/tools', '⌘'],
+            ['Готовые заводы', 'Запуск готовой производственной линии', '/factories', '⚙'],
+            ['Галерея', 'Все результаты, которые уже произвёл завод', '/gallery', '▦'],
+            ['Повторить / ремикс', 'Возьмите удачный результат и сделайте новую версию', '/gallery', '↻'],
+          ].map(([title, description, href, mark]) => (
+            <Link
+              key={title}
+              href={href}
+              className="group rounded-[24px] border border-white/[0.09] bg-[#080c12] p-5 transition duration-300 hover:-translate-y-1 hover:border-[#f1c96c]/25"
+            >
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#f1c96c]/15 bg-[#f1c96c]/[0.05] text-xl text-[#f1c96c]">
+                {mark}
+              </span>
+              <h3 className="mt-5 text-xl font-semibold text-[#fff8e7]">{title}</h3>
+              <p className="mt-2 text-base leading-7 text-white/72">{description}</p>
+              <span className="mt-5 inline-flex text-sm font-black text-[#bff7fa]">Открыть →</span>
             </Link>
           ))}
         </div>

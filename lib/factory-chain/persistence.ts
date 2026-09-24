@@ -276,3 +276,30 @@ export async function loadLatestFactoryArtifact(projectId: string): Promise<Fact
   const artifacts = await loadFactoryArtifacts(projectId);
   return artifacts[0] ?? null;
 }
+
+
+export async function loadRecentFactoryArtifacts(limit = 40): Promise<FactoryArtifact[]> {
+  const identity = await resolveFactoryIdentity();
+  const safeLimit = Math.max(1, Math.min(limit, 100));
+
+  const { data, error } = await identity.supabase
+    .from('events')
+    .select('id, payload, created_at')
+    .eq('organization_id', identity.organizationId)
+    .eq('source', 'factory')
+    .eq('type', 'factory_artifact_saved')
+    .order('created_at', { ascending: false })
+    .limit(safeLimit);
+
+  if (error) throw error;
+
+  return (data ?? [])
+    .map((event) =>
+      mapFactoryArtifactEvent({
+        id: event.id,
+        payload: (event.payload ?? {}) as Record<string, unknown>,
+        created_at: event.created_at,
+      }),
+    )
+    .filter((artifact): artifact is FactoryArtifact => Boolean(artifact));
+}
