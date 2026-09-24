@@ -16,7 +16,7 @@ import {
   refreshPersistedMediaUrl,
 } from '@/services/media/persist-provider-asset';
 
-export type MediaStudioKind = 'video' | 'image' | 'voice';
+export type MediaStudioKind = 'video' | 'image' | 'voice' | 'audio';
 export async function ensureMediaProjectAction(seed: string, projectId?: string | null) {
   const project = await ensureFactoryProject({
     projectId,
@@ -394,6 +394,83 @@ export async function startUpscaleAction(input: {
   }
 }
 
+
+export type SoundEffectStartResult =
+  | { status: 'started'; id: string; projectId: string }
+  | { status: 'approval_required'; message: string }
+  | { status: 'failed'; message: string };
+
+export async function startSoundEffectAction(input: {
+  promptText: string;
+  approved: boolean;
+  duration?: number;
+  loop?: boolean;
+  projectId?: string | null;
+}): Promise<SoundEffectStartResult> {
+  const promptText = input.promptText.trim();
+
+  if (!promptText) {
+    return { status: 'failed', message: 'Опишите нужный звук.' };
+  }
+
+  if (!input.approved) {
+    return {
+      status: 'approval_required',
+      message: 'Подтвердите запуск платной генерации.',
+    };
+  }
+
+  try {
+    const project = await ensureFactoryProject({
+      projectId: input.projectId,
+      seed: 'Звуковой эффект: ' + promptText.slice(0, 120),
+      stage: 'create',
+    });
+
+    const result = await executeMediaTool(
+      'media.sound_effect.generate',
+      {
+        prompt_text: promptText,
+        duration: input.duration,
+        loop: Boolean(input.loop),
+      },
+      { alreadyApproved: true },
+    );
+
+    if (!result.success || !result.output) {
+      if (result.error?.code === 'TOOL_APPROVAL_REQUIRED') {
+        return {
+          status: 'approval_required',
+          message: result.error.message,
+        };
+      }
+
+      return {
+        status: 'failed',
+        message: result.error?.message ?? 'Не удалось запустить генерацию звука.',
+      };
+    }
+
+    const output = result.output as Record<string, unknown>;
+    const id = typeof output.taskId === 'string' ? output.taskId : '';
+
+    if (!id) {
+      return { status: 'failed', message: 'Провайдер не вернул ID задачи.' };
+    }
+
+    return {
+      status: 'started',
+      id,
+      projectId: project.projectId,
+    };
+  } catch (error) {
+    return {
+      status: 'failed',
+      message: error instanceof Error ? error.message : 'Не удалось запустить генерацию звука.',
+    };
+  }
+}
+
 export async function getMediaGenerationStatusAction(
   kind: MediaStudioKind,
   id: string,
@@ -482,7 +559,7 @@ export async function getMediaGenerationStatusAction(
 
     const persisted = await persistProviderAsset({
       sourceUrl: providerUrl,
-      kind: kind === 'image' ? 'image' : 'video',
+      kind: kind === 'image' ? 'image' : kind === 'audio' ? 'audio' : 'video',
       provider: 'runway',
       providerAssetId: id.trim(),
       projectId,

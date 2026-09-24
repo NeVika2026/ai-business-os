@@ -352,6 +352,40 @@ export const mediaTools: RegisteredToolInput[] = [
     enabled: true,
   },
   {
+    id: 'media.sound_effect.generate',
+    name: 'Generate Sound Effect',
+    description: 'Generate a sound effect or ambience from a text description.',
+    version: '1.0.0',
+    category: 'media',
+    permissions: externalPermissions,
+    approvalPolicy: {
+      ...DEFAULT_EXTERNAL_APPROVAL,
+      reason: 'Sound effect generation may consume paid credits and requires explicit approval.',
+    },
+    timeoutMs: 30_000,
+    retryPolicy: DEFAULT_WRITE_RETRY_POLICY,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        prompt_text: { type: 'string', minLength: 1, maxLength: 450 },
+        duration: { type: 'number', minimum: 0.5, maximum: 30 },
+        loop: { type: 'boolean' },
+      },
+      required: ['prompt_text'],
+      additionalProperties: false,
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string' },
+        status: { type: 'string' },
+        kind: { type: 'string' },
+      },
+      required: ['taskId', 'status', 'kind'],
+    },
+    enabled: true,
+  },
+  {
     id: 'media.runway.status',
     name: 'Media Task Status',
     description: 'Check a video or image generation task and return finished asset URLs when available.',

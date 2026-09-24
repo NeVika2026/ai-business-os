@@ -298,6 +298,36 @@ export class RunwayImageGenerateHandler extends BaseToolHandler {
 }
 
 
+
+export class RunwaySoundEffectGenerateHandler extends BaseToolHandler {
+  async execute(args: Record<string, unknown>, ctx: ToolHandlerContext) {
+    const promptText = asString(args.prompt_text);
+    if (!promptText) throw new Error('prompt_text is required');
+
+    const body: Record<string, unknown> = {
+      model: 'eleven_text_to_sound_v2',
+      promptText,
+      loop: Boolean(args.loop),
+    };
+
+    const duration = asNumber(args.duration, 0);
+    if (duration > 0) {
+      body.duration = Math.min(30, Math.max(0.5, duration));
+    }
+
+    const payload = await runwayRequest(
+      '/sound_effect',
+      { method: 'POST', body: JSON.stringify(body) },
+      ctx.signal,
+    );
+
+    const taskId = asString(payload.id);
+    if (!taskId) throw new Error('Runway did not return a task id');
+
+    return { taskId, status: 'pending', kind: 'audio' };
+  }
+}
+
 export class RunwayImageUpscaleHandler extends BaseToolHandler {
   async execute(args: Record<string, unknown>, ctx: ToolHandlerContext) {
     const image = asString(args.image);
@@ -467,6 +497,7 @@ export const runwayMultiShotGenerateHandler = new RunwayMultiShotGenerateHandler
 export const runwayProductUgcGenerateHandler = new RunwayProductUgcGenerateHandler();
 export const runwayVideoGenerateHandler = new RunwayVideoGenerateHandler();
 export const runwayImageGenerateHandler = new RunwayImageGenerateHandler();
+export const runwaySoundEffectGenerateHandler = new RunwaySoundEffectGenerateHandler();
 export const runwayImageUpscaleHandler = new RunwayImageUpscaleHandler();
 export const runwayVideoUpscaleHandler = new RunwayVideoUpscaleHandler();
 export const runwayTaskStatusHandler = new RunwayTaskStatusHandler();
