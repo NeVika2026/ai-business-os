@@ -453,6 +453,41 @@ export const mediaTools: RegisteredToolInput[] = [
     enabled: true,
   },
   {
+    id: 'media.avatar.create',
+    name: 'Create Custom Avatar',
+    description: 'Create a reusable avatar identity from a reference image and voice preset.',
+    version: '1.0.0',
+    category: 'media',
+    permissions: externalPermissions,
+    approvalPolicy: {
+      ...DEFAULT_EXTERNAL_APPROVAL,
+      reason: 'Creating a persistent avatar sends a reference image to an external media provider and requires explicit approval.',
+    },
+    timeoutMs: 30000,
+    retryPolicy: DEFAULT_WRITE_RETRY_POLICY,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', minLength: 1, maxLength: 80 },
+        reference_image: { type: 'string', minLength: 1 },
+        personality: { type: 'string', maxLength: 2000 },
+        voice_preset: { type: 'string' },
+      },
+      required: ['name','reference_image'],
+      additionalProperties: false,
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        avatarId: { type: 'string' },
+        name: { type: 'string' },
+        status: { type: 'string' },
+      },
+      required: ['avatarId','name','status'],
+    },
+    enabled: true,
+  },
+  {
     id: 'media.avatar_video.generate',
     name: 'Generate Avatar Video',
     description: 'Generate a speaking avatar video from text or an existing audio track.',
