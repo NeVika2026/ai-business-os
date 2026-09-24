@@ -2,7 +2,9 @@ import Link from 'next/link';
 
 import { FACTORY_TOOLS } from '@/utils/platform/factory-library';
 
-function toolHref(tool: { mode?: string; href?: string }) {
+function toolHref(tool: { id?: string; mode?: string; href?: string }) {
+  if (tool.id === 'avatar') return '/modules/create/avatar?mode=text';
+  if (tool.id === 'lip-sync') return '/modules/create/avatar?mode=audio';
   if (tool.href) return tool.href;
   return '/modules/create/studio?mode=' + encodeURIComponent(tool.mode ?? 'video');
 }
@@ -23,7 +25,7 @@ export default function ToolsPage() {
 
       <section className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {FACTORY_TOOLS.map((tool) =>
-          tool.status === 'live' && (tool.mode || tool.href) ? (
+          (tool.status === 'live' && (tool.mode || tool.href)) || tool.id === 'avatar' || tool.id === 'lip-sync' ? (
             <Link
               key={tool.id}
               href={toolHref(tool)}
