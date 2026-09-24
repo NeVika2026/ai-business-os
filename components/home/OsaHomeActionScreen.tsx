@@ -187,7 +187,6 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
     const trimmed = (inputOverride ?? prompt).trim();
 
     if (!quickActionId && trimmed) {
-      const normalized = trimmed.toLowerCase().replace(/ё/g, 'е');
       const shortcutPreset = getViralPresetByShortcut(trimmed);
 
       if (shortcutPreset) {
