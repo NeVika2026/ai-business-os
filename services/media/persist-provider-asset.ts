@@ -191,3 +191,104 @@ export async function refreshPersistedMediaUrl(
     return null;
   }
 }
+
+
+export async function persistGeneratedAssetBytes(input: {
+  bytes: Uint8Array;
+  contentType: string;
+  kind: 'video' | 'image' | 'audio';
+  provider: 'runway' | 'elevenlabs';
+  providerAssetId: string;
+  projectId?: string | null;
+  durationSeconds?: number;
+  metadata?: Record<string, unknown>;
+}): Promise<PersistProviderAssetResult> {
+  const extension = extensionForContentType(input.contentType);
+
+  if (!extension || !input.bytes.byteLength || input.bytes.byteLength > MAX_ASSET_BYTES) {
+    return { persisted: false, url: '', storagePath: null };
+  }
+
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const organizationId = await getCurrentOrganizationId(supabase);
+
+    if (!user || !organizationId) {
+      return { persisted: false, url: '', storagePath: null };
+    }
+
+    let projectId: string | null = null;
+    if (input.projectId?.trim()) {
+      const { data: project } = await supabase
+        .from('projects')
+        .select('id')
+        .eq('id', input.projectId.trim())
+        .eq('organization_id', organizationId)
+        .maybeSingle();
+      projectId = project?.id ? String(project.id) : null;
+    }
+
+    const safeAssetId = sanitizeAssetId(input.providerAssetId);
+    const storagePath =
+      organizationId +
+      '/generated/' +
+      input.kind +
+      '/' +
+      input.provider +
+      '-' +
+      safeAssetId +
+      '.' +
+      extension;
+
+    const { error: uploadError } = await supabase.storage.from(MEDIA_BUCKET).upload(
+      storagePath,
+      input.bytes,
+      {
+        contentType: input.contentType,
+        cacheControl: '31536000',
+        upsert: true,
+      },
+    );
+
+    if (uploadError) {
+      return { persisted: false, url: '', storagePath: null };
+    }
+
+    await supabase.from('media_assets').upsert(
+      {
+        organization_id: organizationId,
+        created_by: user.id,
+        project_id: projectId,
+        kind: input.kind,
+        provider: input.provider,
+        provider_asset_id: input.providerAssetId,
+        storage_bucket: MEDIA_BUCKET,
+        storage_path: storagePath,
+        content_type: input.contentType,
+        byte_size: input.bytes.byteLength,
+        duration_seconds: input.durationSeconds ?? null,
+        metadata: input.metadata ?? {},
+      },
+      { onConflict: 'organization_id,provider,provider_asset_id' },
+    );
+
+    const { data: signed, error: signedError } = await supabase.storage
+      .from(MEDIA_BUCKET)
+      .createSignedUrl(storagePath, SIGNED_URL_TTL_SECONDS);
+
+    if (signedError || !signed?.signedUrl) {
+      return { persisted: true, url: '', storagePath };
+    }
+
+    return {
+      persisted: true,
+      url: signed.signedUrl,
+      storagePath,
+    };
+  } catch {
+    return { persisted: false, url: '', storagePath: null };
+  }
+}
