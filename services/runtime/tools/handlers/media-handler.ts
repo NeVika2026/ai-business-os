@@ -333,27 +333,22 @@ export class RunwayVideoExtendHandler extends BaseToolHandler {
 
 export class RunwayMotionTransferHandler extends BaseToolHandler {
   async execute(args: Record<string, unknown>, ctx: ToolHandlerContext) {
-    const promptVideo = asString(args.prompt_video);
-    const promptText = asString(args.prompt_text);
-    if (!promptVideo) throw new Error('prompt_video is required');
-    if (!promptText) throw new Error('prompt_text is required');
-
-    const referenceImage = asString(args.reference_image);
-    const references = referenceImage ? [{ uri: referenceImage }] : undefined;
+    const motionVideo = asString(args.prompt_video);
+    const characterImage = asString(args.reference_image);
+    if (!motionVideo) throw new Error('prompt_video is required');
+    if (!characterImage) throw new Error('reference_image is required');
 
     const payload = await runwayRequest(
-      '/video_to_video',
+      '/character_performance',
       {
         method: 'POST',
         body: JSON.stringify({
-          model: 'seedance2_5',
-          promptVideo,
-          mode: 'reference',
-          promptText,
-          duration: Math.min(30, Math.max(4, asNumber(args.duration, 8))),
+          model: 'act_two',
+          character: { type: 'image', uri: characterImage },
+          reference: { type: 'video', uri: motionVideo },
+          bodyControl: args.body_control !== false,
+          expressionIntensity: Math.min(5, Math.max(1, asNumber(args.expression_intensity, 3))),
           ratio: asString(args.ratio) || '720:1280',
-          audio: args.audio !== false,
-          ...(references ? { references } : {}),
         }),
       },
       ctx.signal,
