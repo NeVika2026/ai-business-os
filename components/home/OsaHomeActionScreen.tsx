@@ -18,10 +18,7 @@ import { OsaErrorState } from '@/components/osa/OsaErrorState';
 import { BusinessZavodHomeExperience } from '@/components/platform/BusinessZavodHomeExperience';
 import { VoiceInputButton } from '@/components/platform/VoiceInputButton';
 import { buildCreateStudioHref } from '@/utils/platform/create-studio';
-import {
-  buildFactoryBundlePrompt,
-  resolveBusinessRouterPlan,
-} from '@/utils/home/business-router';
+import { resolveBusinessRouterPlan } from '@/utils/home/business-router';
 import {
   buildViralPresetHref,
   findViralPresetByIntent,
@@ -212,12 +209,8 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
         return;
       }
 
-      if (routing.kind === 'factory_bundle') {
-        executeRealWork(
-          undefined,
-          undefined,
-          buildFactoryBundlePrompt(routing, trimmed),
-        );
+      if (routing.kind === 'factory_bundle' && routing.directHref) {
+        router.push(routing.directHref);
         return;
       }
     }
