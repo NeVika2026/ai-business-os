@@ -17,7 +17,8 @@ import { OsaRealWorkResult } from '@/components/home/OsaRealWorkResult';
 import { OsaErrorState } from '@/components/osa/OsaErrorState';
 import { BusinessZavodHomeExperience } from '@/components/platform/BusinessZavodHomeExperience';
 import { VoiceInputButton } from '@/components/platform/VoiceInputButton';
-import { buildCreateStudioHref, detectCreateStudioMode } from '@/utils/platform/create-studio';
+import { buildCreateStudioHref } from '@/utils/platform/create-studio';
+import { resolveBusinessRouterPlan } from '@/utils/home/business-router';
 import {
   buildViralPresetHref,
   findViralPresetByIntent,
@@ -183,7 +184,6 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
     const trimmed = (inputOverride ?? prompt).trim();
 
     if (!quickActionId && trimmed) {
-      const normalized = trimmed.toLowerCase().replace(/ё/g, 'е');
       const shortcutPreset = getViralPresetByShortcut(trimmed);
 
       if (shortcutPreset) {
@@ -199,137 +199,18 @@ export function OsaHomeActionScreen({ organizationName }: OsaHomeActionScreenPro
         return;
       }
 
-      const studioMode = detectCreateStudioMode(trimmed);
+      const routing = resolveBusinessRouterPlan(trimmed);
 
-      if (studioMode) {
-        router.push(buildCreateStudioHref(studioMode, trimmed));
+      if (routing.kind === 'direct' && routing.directHref) {
+        if (routing.directHref === '/modules/publish/studio') {
+          window.sessionStorage.setItem('business-zavod:publish-source', trimmed);
+        }
+        router.push(routing.directHref);
         return;
       }
 
-      const wantsFind =
-        /(^|\s)(найди|поиск|поищи)(\s|$)/.test(normalized) ||
-        normalized.includes('найди клиентов') ||
-        normalized.includes('найди конкурентов') ||
-        normalized.includes('найди партнер');
-
-      if (wantsFind) {
-        router.push('/modules/find/studio?prompt=' + encodeURIComponent(trimmed));
-        return;
-      }
-
-      const wantsAnalyze =
-        normalized.includes('проанализируй') ||
-        normalized.includes('анализ конкур') ||
-        normalized.includes('сравни конкур') ||
-        normalized.includes('разбери рынок') ||
-        normalized.includes('анализ рынка');
-
-      if (wantsAnalyze) {
-        router.push('/modules/analyze/studio?prompt=' + encodeURIComponent(trimmed));
-        return;
-      }
-
-      const wantsCrmInbox =
-        normalized.includes('клиенты ответили') ||
-        normalized.includes('кто ответил') ||
-        normalized.includes('входящие лиды') ||
-        normalized.includes('входящие клиенты') ||
-        normalized.includes('кто ждет ответа') ||
-        normalized.includes('кто ждёт ответа') ||
-        normalized.includes('просроченные лиды') ||
-        normalized.includes('просроченные контакты');
-
-      if (wantsCrmInbox) {
-        router.push('/crm/inbox');
-        return;
-      }
-
-      const wantsCrmAnalytics =
-        normalized.includes('аналитика crm') ||
-        normalized.includes('аналитика продаж') ||
-        normalized.includes('воронка продаж') ||
-        normalized.includes('конверсия лидов') ||
-        normalized.includes('источники лидов');
-
-      if (wantsCrmAnalytics) {
-        router.push('/crm/analytics');
-        return;
-      }
-
-      const wantsCrmImport =
-        normalized.includes('импорт crm') ||
-        normalized.includes('импорт базы') ||
-        normalized.includes('загрузи базу') ||
-        normalized.includes('загрузить базу') ||
-        normalized.includes('импорт лидов');
-
-      if (wantsCrmImport) {
-        router.push('/crm/import');
-        return;
-      }
-
-      const wantsCrmDuplicates =
-        normalized.includes('дубли crm') ||
-        normalized.includes('дубли лидов') ||
-        normalized.includes('дубли клиентов') ||
-        normalized.includes('объедини клиентов') ||
-        normalized.includes('объединить дубли');
-
-      if (wantsCrmDuplicates) {
-        router.push('/crm/duplicates');
-        return;
-      }
-
-      const wantsCrm =
-        normalized === 'crm' ||
-        normalized.includes('открой crm') ||
-        normalized.includes('покажи crm') ||
-        normalized.includes('мои лиды') ||
-        normalized.includes('мои клиенты') ||
-        normalized.includes('база клиентов');
-
-      if (wantsCrm) {
-        router.push('/crm');
-        return;
-      }
-
-      const wantsCommunicate =
-        normalized.includes('напиши в whatsapp') ||
-        normalized.includes('напиши в ватсап') ||
-        normalized.includes('отправь whatsapp') ||
-        normalized.includes('отправь ватсап') ||
-        normalized.includes('отправь sms') ||
-        normalized.includes('отправь смс') ||
-        normalized.includes('свяжись с клиентом');
-
-      if (wantsCommunicate) {
-        router.push('/modules/communicate/studio');
-        return;
-      }
-
-      const wantsVoiceAgent =
-        normalized.includes('позвони') ||
-        normalized.includes('обзвони') ||
-        normalized.includes('голосовой агент') ||
-        normalized.includes('голосовой ассистент') ||
-        normalized.includes('исходящий звонок');
-
-      if (wantsVoiceAgent) {
-        router.push('/modules/voice-agent/studio');
-        return;
-      }
-
-      const wantsPublish =
-        normalized.includes('опубликуй') ||
-        normalized.includes('к публикации') ||
-        normalized.includes('под публикац') ||
-        normalized.includes('адаптируй под telegram') ||
-        normalized.includes('адаптируй под вк') ||
-        normalized.includes('адаптируй под дзен');
-
-      if (wantsPublish) {
-        window.sessionStorage.setItem('business-zavod:publish-source', trimmed);
-        router.push('/modules/publish/studio');
+      if (routing.kind === 'factory_bundle' && routing.directHref) {
+        router.push(routing.directHref);
         return;
       }
     }
