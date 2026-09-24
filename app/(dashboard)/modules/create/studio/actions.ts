@@ -900,6 +900,7 @@ export async function startProductUgcAction(input: {
 
 export type CampaignRecipeKind =
   | 'product_ad'
+  | 'product_ugc'
   | 'ad_localization'
   | 'product_campaign'
   | 'multi_shot';
@@ -914,6 +915,8 @@ export async function startCampaignRecipeAction(input: {
   approved: boolean;
   projectId?: string | null;
   productImages?: string[];
+  characterImage?: string;
+  productImage?: string;
   productInfo?: string;
   concept?: string;
   duration?: number;
@@ -965,6 +968,28 @@ export async function startCampaignRecipeAction(input: {
         product_info: productInfo,
         concept,
         duration: input.duration ?? 10,
+      };
+      mediaKind = 'video';
+    } else if (input.kind === 'product_ugc') {
+      const characterImage = input.characterImage?.trim() ?? '';
+      const productImage = input.productImage?.trim() ?? '';
+      const productInfo = input.productInfo?.trim() ?? '';
+      const concept = input.concept?.trim() ?? '';
+
+      if (!characterImage || !productImage || !productInfo || !concept) {
+        return {
+          status: 'failed',
+          message: 'Нужны фото персонажа, фото продукта, описание продукта и идея UGC-ролика.',
+        };
+      }
+
+      toolId = 'media.product_ugc.generate';
+      args = {
+        character_image: characterImage,
+        product_image: productImage,
+        product_info: productInfo,
+        concept,
+        duration: input.duration ?? 15,
       };
       mediaKind = 'video';
     } else if (input.kind === 'ad_localization') {

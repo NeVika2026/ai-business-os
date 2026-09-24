@@ -29,6 +29,12 @@ const TABS: Array<{
     mediaKind: 'video',
   },
   {
+    id: 'product_ugc',
+    label: 'Product UGC',
+    description: 'Персонаж + товар → UGC-реклама',
+    mediaKind: 'video',
+  },
+  {
     id: 'product_campaign',
     label: 'Campaign Images',
     description: 'Фото товара → 4 campaign-визуала',
@@ -70,6 +76,8 @@ export function CampaignFactoryStudio({
   const [productImagesText, setProductImagesText] = useState('');
   const [productInfo, setProductInfo] = useState('');
   const [concept, setConcept] = useState('');
+  const [characterImage, setCharacterImage] = useState('');
+  const [productImage, setProductImage] = useState('');
   const [duration, setDuration] = useState(10);
   const [referenceImage, setReferenceImage] = useState('');
   const [targetLanguage, setTargetLanguage] = useState('en');
@@ -127,7 +135,9 @@ export function CampaignFactoryStudio({
     const title =
       kind === 'product_ad'
         ? 'Product Ad · готовый ролик'
-        : kind === 'product_campaign'
+        : kind === 'product_ugc'
+          ? 'Product UGC · готовый ролик'
+          : kind === 'product_campaign'
           ? 'Product Campaign · визуалы'
           : kind === 'ad_localization'
             ? 'Локализованный креатив'
@@ -162,6 +172,14 @@ export function CampaignFactoryStudio({
     if (kind === 'product_ad') {
       return Boolean(productImagesText.trim() && productInfo.trim() && concept.trim());
     }
+    if (kind === 'product_ugc') {
+      return Boolean(
+        characterImage.trim() &&
+        productImage.trim() &&
+        productInfo.trim() &&
+        concept.trim(),
+      );
+    }
     if (kind === 'product_campaign') {
       return Boolean(campaignImage.trim() && campaignPrompt.trim());
     }
@@ -187,6 +205,8 @@ export function CampaignFactoryStudio({
           .split(/\n+/)
           .map((item) => item.trim())
           .filter(Boolean),
+        characterImage,
+        productImage,
         productInfo,
         concept,
         duration,
@@ -298,6 +318,49 @@ export function CampaignFactoryStudio({
                   <option value={5}>5 секунд</option>
                   <option value={10}>10 секунд</option>
                   <option value={15}>15 секунд</option>
+                </select>
+              </Field>
+            </>
+          ) : null}
+
+          {kind === 'product_ugc' ? (
+            <>
+              <Field label="Фото персонажа">
+                <input
+                  value={characterImage}
+                  onChange={(event) => setCharacterImage(event.target.value)}
+                  placeholder="https://…"
+                />
+              </Field>
+              <Field label="Фото продукта">
+                <input
+                  value={productImage}
+                  onChange={(event) => setProductImage(event.target.value)}
+                  placeholder="https://…"
+                />
+              </Field>
+              <Field label="Что за продукт">
+                <textarea
+                  rows={4}
+                  value={productInfo}
+                  onChange={(event) => setProductInfo(event.target.value)}
+                  placeholder="Что продаём, реальные свойства и польза."
+                />
+              </Field>
+              <Field label="UGC-концепция">
+                <textarea
+                  rows={6}
+                  value={concept}
+                  onChange={(event) => setConcept(event.target.value)}
+                  placeholder="Например: живая домашняя рекомендация, человек показывает продукт в кадре и коротко объясняет, зачем он нужен."
+                />
+              </Field>
+              <Field label="Длительность">
+                <select value={duration} onChange={(event) => setDuration(Number(event.target.value))}>
+                  <option value={10}>10 секунд</option>
+                  <option value={15}>15 секунд</option>
+                  <option value={20}>20 секунд</option>
+                  <option value={30}>30 секунд</option>
                 </select>
               </Field>
             </>

@@ -9,6 +9,7 @@ export type FactoryToolId =
   | 'presentation'
   | 'document'
   | 'product-ad'
+  | 'product-ugc'
   | 'product-campaign'
   | 'ad-localization'
   | 'multi-shot'
@@ -41,6 +42,7 @@ export const FACTORY_TOOLS: FactoryTool[] = [
   { id:'presentation', title:'Презентация', description:'Структура, тексты и готовая логика слайдов.', status:'live', mode:'presentation', mark:'▥' },
   { id:'document', title:'Документы', description:'Коммерческие предложения, инструкции и рабочие материалы.', status:'live', mode:'document', mark:'▱' },
   { id:'product-ad', title:'Товарный рекламный ролик', description:'Фото продукта → cinematic-реклама без съёмочной команды.', status:'live', href:'/modules/create/campaign?kind=product_ad', mark:'◆' },
+  { id:'product-ugc', title:'UGC-реклама', description:'Персонаж + фото товара → живой UGC-ролик с продуктом в кадре.', status:'live', href:'/modules/create/campaign?kind=product_ugc', mark:'◎' },
   { id:'product-campaign', title:'Товарная кампания', description:'Фото продукта → серия рекламных campaign-визуалов.', status:'live', href:'/modules/create/campaign?kind=product_campaign', mark:'▦' },
   { id:'ad-localization', title:'Локализация рекламы', description:'Адаптация текста рекламного креатива под другой язык с сохранением макета.', status:'live', href:'/modules/create/campaign?kind=ad_localization', mark:'文' },
   { id:'multi-shot', title:'Multi-shot видео', description:'Несколько связанных сцен → один цельный рекламный ролик.', status:'live', href:'/modules/create/campaign?kind=multi_shot', mark:'≋' },

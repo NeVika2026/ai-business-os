@@ -7,6 +7,7 @@ type CampaignPageProps = {
 
 const KINDS = new Set<CampaignRecipeKind>([
   'product_ad',
+  'product_ugc',
   'product_campaign',
   'ad_localization',
   'multi_shot',
