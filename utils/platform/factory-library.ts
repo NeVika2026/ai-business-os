@@ -8,6 +8,10 @@ export type FactoryToolId =
   | 'site'
   | 'presentation'
   | 'document'
+  | 'product-ad'
+  | 'product-campaign'
+  | 'ad-localization'
+  | 'multi-shot'
   | 'lip-sync'
   | 'upscale'
   | 'remove-bg'
@@ -23,6 +27,7 @@ export type FactoryTool = {
   description: string;
   status: 'live' | 'planned';
   mode?: CreateStudioModeId;
+  href?: string;
   prompt?: string;
   mark: string;
 };
@@ -35,6 +40,10 @@ export const FACTORY_TOOLS: FactoryTool[] = [
   { id:'site', title:'Сайт', description:'Готовый адаптивный лендинг под задачу.', status:'live', mode:'site', mark:'◈' },
   { id:'presentation', title:'Презентация', description:'Структура, тексты и готовая логика слайдов.', status:'live', mode:'presentation', mark:'▥' },
   { id:'document', title:'Документы', description:'Коммерческие предложения, инструкции и рабочие материалы.', status:'live', mode:'document', mark:'▱' },
+  { id:'product-ad', title:'Товарный рекламный ролик', description:'Фото продукта → cinematic-реклама без съёмочной команды.', status:'live', href:'/modules/create/campaign?kind=product_ad', mark:'◆' },
+  { id:'product-campaign', title:'Товарная кампания', description:'Фото продукта → серия рекламных campaign-визуалов.', status:'live', href:'/modules/create/campaign?kind=product_campaign', mark:'▦' },
+  { id:'ad-localization', title:'Локализация рекламы', description:'Адаптация текста рекламного креатива под другой язык с сохранением макета.', status:'live', href:'/modules/create/campaign?kind=ad_localization', mark:'文' },
+  { id:'multi-shot', title:'Multi-shot видео', description:'Несколько связанных сцен → один цельный рекламный ролик.', status:'live', href:'/modules/create/campaign?kind=multi_shot', mark:'≋' },
   { id:'lip-sync', title:'Липсинк', description:'Синхронизация губ с новой озвучкой.', status:'planned', mark:'◌' },
   { id:'upscale', title:'Upscale', description:'Повышение качества изображений и видео.', status:'planned', mark:'↗' },
   { id:'remove-bg', title:'Удаление фона', description:'Фон в один клик для карточек и рекламы.', status:'planned', mark:'□' },
