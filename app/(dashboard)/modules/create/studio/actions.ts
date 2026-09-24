@@ -837,13 +837,17 @@ export async function startVideoMotionAction(input: {
     return { status: 'failed', message: 'Добавьте ссылку на исходный ролик.' };
   }
 
-  if (!promptText) {
+  if (input.mode === 'extend' && !promptText) {
     return {
       status: 'failed',
-      message:
-        input.mode === 'extend'
-          ? 'Опишите, как продолжить ролик.'
-          : 'Опишите, что должно получиться с этим движением.',
+      message: 'Опишите, как продолжить ролик.',
+    };
+  }
+
+  if (input.mode === 'motion' && !referenceImage) {
+    return {
+      status: 'failed',
+      message: 'Добавьте изображение персонажа для переноса движения.',
     };
   }
 
@@ -874,11 +878,10 @@ export async function startVideoMotionAction(input: {
           }
         : {
             prompt_video: sourceUrl,
-            prompt_text: promptText,
-            reference_image: referenceImage || undefined,
-            duration: input.duration ?? 8,
+            reference_image: referenceImage,
             ratio: input.ratio ?? '720:1280',
-            audio: input.audio !== false,
+            body_control: true,
+            expression_intensity: 3,
           },
       { alreadyApproved: true },
     );
