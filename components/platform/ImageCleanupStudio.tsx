@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState, useTransition } from 'react';
 
 import {
+  ensureMediaProjectAction,
   getMediaGenerationStatusAction,
   startMediaGenerationAction,
   type MediaStudioStatusResult,
@@ -112,13 +113,20 @@ export function ImageCleanupStudio({ initialMode, projectId = null }: Props) {
           '. Восстанови фон естественно. Не меняй остальные предметы, геометрию, освещение, цвета и композицию.';
 
     startTransition(async () => {
+      const project = await ensureMediaProjectAction(
+        mode === 'remove-bg' ? 'Удаление фона' : 'Удаление объекта',
+        activeProjectId,
+      );
+      const currentProjectId = project.projectId;
+      setActiveProjectId(currentProjectId);
+
       const result = await startMediaGenerationAction({
         kind: 'image',
         promptText,
         approved,
         imageUrl: source,
         ratio: '1080:1920',
-        projectId: activeProjectId,
+        projectId: currentProjectId,
       });
 
       if (result.status !== 'started') {
