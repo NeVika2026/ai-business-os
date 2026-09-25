@@ -6,6 +6,7 @@ import {
   completeMediaUploadAction,
   prepareMediaUploadAction,
 } from '@/app/(dashboard)/media/actions';
+import { ensureMediaProjectAction } from '@/app/(dashboard)/modules/create/studio/actions';
 import { createClient } from '@/services/supabase/client';
 
 type MediaKind = 'image' | 'video' | 'audio';
@@ -16,6 +17,9 @@ type Props = {
   projectId?: string | null;
   label?: string;
   compact?: boolean;
+  autoCreateProject?: boolean;
+  projectSeed?: string;
+  onProjectReady?: (projectId: string) => void;
   onUploaded?: (result: {
     url: string;
     kind: MediaKind;
@@ -31,6 +35,9 @@ export function MediaUploadField({
   projectId = null,
   label = 'Загрузить с устройства',
   compact = false,
+  autoCreateProject = false,
+  projectSeed = 'Медиа-проект',
+  onProjectReady,
   onUploaded,
 }: Props) {
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -47,11 +54,19 @@ export function MediaUploadField({
     setMessage('');
 
     startTransition(async () => {
+      let resolvedProjectId = projectId;
+
+      if (!resolvedProjectId && autoCreateProject) {
+        const project = await ensureMediaProjectAction(projectSeed, null);
+        resolvedProjectId = project.projectId;
+        onProjectReady?.(project.projectId);
+      }
+
       const prepared = await prepareMediaUploadAction({
         fileName: file.name,
         contentType: file.type,
         byteSize: file.size,
-        projectId,
+        projectId: resolvedProjectId,
       });
 
       if (prepared.status !== 'ready') {
