@@ -171,6 +171,9 @@ export function VideoEditStudio({ initialMode, projectId = null }: Props) {
               expectedKind="video"
               accept="video/mp4,video/webm"
               projectId={activeProjectId}
+              autoCreateProject
+              projectSeed="Редактирование видео"
+              onProjectReady={setActiveProjectId}
               label="Загрузить видео с устройства"
               onUploaded={({ url }) => setSourceUrl(url)}
             />
