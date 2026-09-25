@@ -191,6 +191,9 @@ export function VideoMotionStudio({ initialMode, projectId = null }: Props) {
               expectedKind="video"
               accept="video/mp4,video/webm"
               projectId={activeProjectId}
+              autoCreateProject
+              projectSeed={mode === 'extend' ? 'Продление видео' : 'Перенос движения'}
+              onProjectReady={setActiveProjectId}
               label={mode === 'extend' ? 'Загрузить исходный ролик' : 'Загрузить ролик с движением'}
               onUploaded={({ url }) => setSourceUrl(url)}
             />
