@@ -275,6 +275,215 @@ export async function getPublishingConnectionStatusAction(): Promise<PublishingC
   };
 }
 
+
+export type PublishingDiagnosticChannel =
+  | 'telegram'
+  | 'vk'
+  | 'youtube'
+  | 'instagram'
+  | 'tiktok'
+  | 'max';
+
+export type PublishingDiagnosticResult = {
+  channel: PublishingDiagnosticChannel;
+  ok: boolean;
+  label: string;
+  detail: string;
+};
+
+export async function testPublishingConnectionAction(
+  channel: PublishingDiagnosticChannel,
+): Promise<PublishingDiagnosticResult> {
+  const access = await ensureDirectPublishingAccess();
+  if (!access.ok) {
+    return {
+      channel,
+      ok: false,
+      label: 'Нет доступа',
+      detail: access.message,
+    };
+  }
+
+  try {
+    if (channel === 'telegram') {
+      const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
+      if (!token) throw new Error('TELEGRAM_BOT_TOKEN не настроен.');
+
+      const response = await fetch(
+        'https://api.telegram.org/bot' + token + '/getMe',
+        { cache: 'no-store' },
+      );
+      const data = (await response.json()) as {
+        ok?: boolean;
+        result?: { username?: string; first_name?: string };
+        description?: string;
+      };
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.description || 'Telegram не подтвердил токен.');
+      }
+
+      const identity =
+        data.result?.username
+          ? '@' + data.result.username
+          : data.result?.first_name || 'бот';
+
+      return {
+        channel,
+        ok: true,
+        label: 'Telegram работает',
+        detail: identity,
+      };
+    }
+
+    if (channel === 'vk') {
+      const token = process.env.VK_ACCESS_TOKEN?.trim();
+      const ownerId = process.env.VK_OWNER_ID?.trim();
+      const version = process.env.VK_API_VERSION?.trim() || '5.199';
+      if (!token || !ownerId) {
+        throw new Error('VK_ACCESS_TOKEN или VK_OWNER_ID не настроены.');
+      }
+
+      if (ownerId.startsWith('-')) {
+        const groupId = ownerId.slice(1);
+        const groups = await vkApiCall<Array<{ id?: number; name?: string }>>(
+          'groups.getById',
+          { group_id: groupId },
+          token,
+          version,
+        );
+        return {
+          channel,
+          ok: true,
+          label: 'ВКонтакте работает',
+          detail: groups[0]?.name || 'сообщество ' + groupId,
+        };
+      }
+
+      const users = await vkApiCall<Array<{
+        id?: number;
+        first_name?: string;
+        last_name?: string;
+      }>>(
+        'users.get',
+        { user_ids: ownerId },
+        token,
+        version,
+      );
+
+      const user = users[0];
+      const name = [user?.first_name, user?.last_name].filter(Boolean).join(' ');
+      return {
+        channel,
+        ok: true,
+        label: 'ВКонтакте работает',
+        detail: name || 'профиль ' + ownerId,
+      };
+    }
+
+    if (channel === 'youtube') {
+      const token = await getYouTubeAccessToken();
+      const response = await fetch(
+        'https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true',
+        {
+          headers: { Authorization: 'Bearer ' + token },
+          cache: 'no-store',
+        },
+      );
+      const data = (await response.json()) as {
+        items?: Array<{ snippet?: { title?: string } }>;
+        error?: { message?: string };
+      };
+
+      if (!response.ok || !data.items?.length) {
+        throw new Error(
+          data.error?.message || 'YouTube не вернул подключённый канал.',
+        );
+      }
+
+      return {
+        channel,
+        ok: true,
+        label: 'YouTube работает',
+        detail: data.items[0]?.snippet?.title || 'канал подключён',
+      };
+    }
+
+    if (channel === 'instagram') {
+      const igUserId = process.env.INSTAGRAM_USER_ID?.trim();
+      if (!igUserId) throw new Error('INSTAGRAM_USER_ID не настроен.');
+
+      const profile = await instagramGraphRequest<{
+        id?: string;
+        username?: string;
+      }>(igUserId, {
+        params: { fields: 'id,username' },
+      });
+
+      return {
+        channel,
+        ok: true,
+        label: 'Instagram работает',
+        detail: profile.username ? '@' + profile.username : profile.id || igUserId,
+      };
+    }
+
+    if (channel === 'tiktok') {
+      const token = await getTikTokAccessToken();
+      const creator = await loadTikTokCreatorInfo(token);
+
+      return {
+        channel,
+        ok: true,
+        label: 'TikTok работает',
+        detail:
+          creator.nickname ||
+          creator.username ||
+          'профессиональный аккаунт подключён',
+      };
+    }
+
+    const token = process.env.MAX_BOT_TOKEN?.trim();
+    if (!token) throw new Error('MAX_BOT_TOKEN не настроен.');
+
+    const response = await fetch('https://platform-api.max.ru/me', {
+      headers: { Authorization: token },
+      cache: 'no-store',
+    });
+    const data = (await response.json()) as {
+      username?: string;
+      name?: string;
+      first_name?: string;
+      error?: string;
+      message?: string;
+    };
+
+    if (!response.ok) {
+      throw new Error(data.error || data.message || 'MAX не подтвердил токен.');
+    }
+
+    return {
+      channel,
+      ok: true,
+      label: 'MAX работает',
+      detail:
+        data.username
+          ? '@' + data.username
+          : data.name || data.first_name || 'бот подключён',
+    };
+  } catch (error) {
+    return {
+      channel,
+      ok: false,
+      label: 'Ошибка подключения',
+      detail:
+        error instanceof Error
+          ? error.message
+          : 'Не удалось проверить подключение.',
+    };
+  }
+}
+
 function splitTelegramText(value: string): string[] {
   const maxLength = 3900;
   const paragraphs = value.split(/\n{2,}/).map((item) => item.trim()).filter(Boolean);
