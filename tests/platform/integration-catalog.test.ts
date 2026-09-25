@@ -51,10 +51,30 @@ describe('Business Zavod integration catalog', () => {
       'elevenlabs',
       'remotion',
       'youtube-publish',
+      'instagram-publish',
       'tiktok-publish',
     ]) {
       assert.ok(ids.includes(id), `missing integration: ${id}`);
     }
+  });
+
+  it('reports Instagram connected only with its professional account credentials', () => {
+    const missing = resolveIntegrationStatuses({
+      INSTAGRAM_USER_ID: '123',
+    });
+    assert.equal(
+      missing.find((item) => item.id === 'instagram-publish')?.status,
+      'missing',
+    );
+
+    const connected = resolveIntegrationStatuses({
+      INSTAGRAM_USER_ID: '123',
+      INSTAGRAM_ACCESS_TOKEN: 'token',
+    });
+    assert.equal(
+      connected.find((item) => item.id === 'instagram-publish')?.status,
+      'connected',
+    );
   });
 
   it('reports TikTok connected only when all OAuth credentials exist', () => {
