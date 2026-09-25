@@ -205,6 +205,19 @@ function buildTextTasks(outputs: BusinessRouterOutput[]): TextTask[] {
     });
   }
 
+  tasks.push({
+    key: 'qa',
+    label: 'Контроль качества',
+    mode: 'document',
+    title: 'Контроль качества пакета',
+    artifactType: 'campaign-qa',
+    format:
+      'Проверь комплект как редактор выпуска: единый оффер, отсутствие противоречий, единый CTA, соответствие исходной задаче, пригодность к публикации. Верни краткий вердикт и только конкретные замечания.',
+    status: 'queued',
+    content: '',
+    error: '',
+  });
+
   return tasks;
 }
 
@@ -369,6 +382,58 @@ export function FactoryBundleStudio({
     });
 
     return result.projectId;
+  };
+
+  const runQaTask = async (activeProjectId: string) => {
+    const qaTask = textTasks.find((task) => task.key === 'qa');
+    if (!qaTask) return;
+
+    updateTextTask('qa', { status: 'running', error: '' });
+
+    const textContext = textTasks
+      .filter((task) => task.key !== 'qa' && task.status === 'completed' && task.content)
+      .map((task) => task.label + ':\n' + task.content.slice(0, 5000))
+      .join('\n\n---\n\n');
+
+    const mediaContext = jobs
+      .filter((job) => job.status.status === 'completed')
+      .map((job) => {
+        const urls = job.status.outputUrls.length
+          ? job.status.outputUrls
+          : job.status.outputUrl
+            ? [job.status.outputUrl]
+            : [];
+        return job.label + ': ' + (urls.join(', ') || job.status.providerStatus);
+      })
+      .join('\n');
+
+    const result = await generateCreateStudioArtifactAction({
+      modeId: 'document',
+      goal: 'Проверь готовность полного комплекта по исходной задаче: ' + prompt.trim(),
+      format: qaTask.format,
+      context: [
+        'ГОТОВЫЕ ТЕКСТОВЫЕ ЧАСТИ:',
+        textContext || 'Нет текстовых частей.',
+        '',
+        'ГОТОВЫЕ МЕДИА:',
+        mediaContext || 'Нет медиа-частей.',
+        '',
+        'Не переписывай весь комплект. Найди только реальные несостыковки. Если критичных проблем нет, прямо напиши «ПАКЕТ ГОТОВ К ВЫПУСКУ».',
+      ].join('\n'),
+      projectId: activeProjectId,
+      title: qaTask.title,
+      artifactType: qaTask.artifactType,
+    });
+
+    if (result.status === 'failed') {
+      updateTextTask('qa', { status: 'failed', error: result.message });
+      return;
+    }
+
+    updateTextTask('qa', {
+      status: 'completed',
+      content: result.content,
+    });
   };
 
   const buildMediaSpecs = (trimmed: string): MediaLaunchSpec[] => {
@@ -544,7 +609,11 @@ export function FactoryBundleStudio({
     if (!projectId || task.status !== 'failed') return;
 
     startTransition(async () => {
-      await runTextTask(task, projectId, prompt.trim());
+      if (task.key === 'qa') {
+        await runQaTask(projectId);
+      } else {
+        await runTextTask(task, projectId, prompt.trim());
+      }
       setMessage('Повторно запущен только этап «' + task.label + '».');
     });
   };
@@ -604,7 +673,9 @@ export function FactoryBundleStudio({
         content: strategy.content,
       });
 
-      const otherTextTasks = tasks.filter((task) => task.key !== 'strategy');
+      const otherTextTasks = tasks.filter(
+        (task) => task.key !== 'strategy' && task.key !== 'qa',
+      );
 
       await Promise.all(
         otherTextTasks.map((task) => runTextTask(task, activeProjectId, trimmed)),
@@ -635,11 +706,30 @@ export function FactoryBundleStudio({
     });
   };
 
+  useEffect(() => {
+    if (!projectId) return;
+
+    const qaTask = textTasks.find((task) => task.key === 'qa');
+    if (!qaTask || qaTask.status !== 'queued') return;
+
+    const productionTextTasks = textTasks.filter((task) => task.key !== 'qa');
+    if (!productionTextTasks.length) return;
+    if (!productionTextTasks.every((task) => task.status === 'completed')) return;
+
+    const expectedMediaCount = buildMediaSpecs(prompt.trim()).length;
+    if (expectedMediaCount > 0 && jobs.length < expectedMediaCount) return;
+    if (!jobs.every((job) => job.status.status === 'completed')) return;
+
+    void runQaTask(projectId);
+  }, [jobs, projectId, prompt, textTasks]);
+
   const completedMedia = jobs.filter((job) => job.status.status === 'completed').length;
   const completedText = textTasks.filter((task) => task.status === 'completed').length;
   const failedCount =
     textTasks.filter((task) => task.status === 'failed').length +
     jobs.filter((job) => job.status.status === 'failed').length;
+  const qaTask = textTasks.find((task) => task.key === 'qa');
+  const packageReady = qaTask?.status === 'completed' && failedCount === 0;
 
   return (
     <main className="mx-auto w-full max-w-[1380px] pb-16 text-[#f7f2e8]">
@@ -872,9 +962,21 @@ export function FactoryBundleStudio({
 
           {textTasks.length || jobs.length ? (
             <div className="mt-5 rounded-[18px] border border-white/[0.06] bg-black/20 px-4 py-3">
-              <div className="text-xs text-white/45">
-                Текстовые этапы: {completedText}/{textTasks.length}. Медиа: {completedMedia}/{jobs.length}.
-                {failedCount ? ' Ошибок: ' + failedCount + ' — готовые этапы не затрагиваются.' : ''}
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="text-xs text-white/45">
+                  Текстовые этапы: {completedText}/{textTasks.length}. Медиа: {completedMedia}/{jobs.length}.
+                  {failedCount ? ' Ошибок: ' + failedCount + ' — готовые этапы не затрагиваются.' : ''}
+                </div>
+                <span
+                  className={[
+                    'rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[.12em]',
+                    packageReady
+                      ? 'border-emerald-300/18 bg-emerald-300/[0.05] text-emerald-200/90'
+                      : 'border-white/[0.08] bg-white/[0.025] text-white/38',
+                  ].join(' ')}
+                >
+                  {packageReady ? 'ПАКЕТ ГОТОВ' : 'ПРОВЕРКА НЕ ЗАВЕРШЕНА'}
+                </span>
               </div>
               {projectId && completedText > 0 ? (
                 <div className="mt-3 flex flex-wrap gap-2">
