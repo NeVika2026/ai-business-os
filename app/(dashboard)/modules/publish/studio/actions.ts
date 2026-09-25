@@ -268,7 +268,10 @@ export async function getPublishingConnectionStatusAction(): Promise<PublishingC
       process.env.TIKTOK_CLIENT_SECRET?.trim() &&
       process.env.TIKTOK_REFRESH_TOKEN?.trim(),
     ),
-    max: false,
+    max: Boolean(
+      process.env.MAX_BOT_TOKEN?.trim() &&
+      process.env.MAX_CHAT_ID?.trim(),
+    ),
   };
 }
 
@@ -942,7 +945,8 @@ export async function publishVariantAction(input: {
     input.channel !== 'vk' &&
     input.channel !== 'youtube' &&
     input.channel !== 'instagram' &&
-    input.channel !== 'tiktok'
+    input.channel !== 'tiktok' &&
+    input.channel !== 'max'
   ) {
     return {
       ok: false,
@@ -1103,6 +1107,109 @@ export async function publishVariantAction(input: {
           error instanceof Error
             ? error.message
             : 'Не удалось отправить видео в TikTok.',
+      };
+    }
+  }
+
+  if (input.channel === 'max') {
+    const token = process.env.MAX_BOT_TOKEN?.trim();
+    const chatId = process.env.MAX_CHAT_ID?.trim();
+
+    if (!token || !chatId) {
+      return {
+        ok: false,
+        message: 'MAX не подключён. Нужны MAX_BOT_TOKEN и MAX_CHAT_ID.',
+      };
+    }
+
+    try {
+      const chunks = splitTelegramText(text).flatMap((chunk) => {
+        if (chunk.length <= 3900) return [chunk];
+        const parts: string[] = [];
+        let rest = chunk;
+        while (rest.length > 3900) {
+          let cut = rest.lastIndexOf(' ', 3900);
+          if (cut < 2200) cut = 3900;
+          parts.push(rest.slice(0, cut).trim());
+          rest = rest.slice(cut).trim();
+        }
+        if (rest) parts.push(rest);
+        return parts;
+      });
+
+      const messageIds: string[] = [];
+
+      for (let index = 0; index < chunks.length; index += 1) {
+        const url = new URL('https://platform-api2.max.ru/messages');
+        url.searchParams.set('chat_id', chatId);
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            Authorization: token,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text: chunks[index],
+            notify: true,
+          }),
+          cache: 'no-store',
+        });
+
+        const data = (await response.json()) as {
+          message?: {
+            body?: { mid?: string };
+            id?: string;
+          };
+          error?: string;
+          message_text?: string;
+        };
+
+        if (!response.ok || !data.message) {
+          throw new Error(
+            data.error ||
+              data.message_text ||
+              'MAX отклонил публикацию.',
+          );
+        }
+
+        const id = data.message.body?.mid || data.message.id;
+        if (id) messageIds.push(id);
+
+        if (index < chunks.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 550));
+        }
+      }
+
+      if (input.projectId) {
+        await saveFactoryArtifact({
+          projectId: input.projectId,
+          stage: 'publish',
+          title: 'Опубликовано в MAX',
+          content: text,
+          metadata: {
+            channel: 'max',
+            published: true,
+            messageIds,
+            chunks: chunks.length,
+          },
+        });
+      }
+
+      return {
+        ok: true,
+        message:
+          chunks.length > 1
+            ? 'Опубликовано в MAX: ' + chunks.length + ' сообщения.'
+            : 'Опубликовано в MAX.',
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Не удалось опубликовать в MAX.',
       };
     }
   }
