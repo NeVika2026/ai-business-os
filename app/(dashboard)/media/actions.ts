@@ -248,3 +248,82 @@ export async function completeMediaUploadAction(input: {
     assetId: input.assetId,
   };
 }
+
+
+export type MediaPickerItem = {
+  id: string;
+  kind: 'image' | 'video' | 'audio';
+  title: string;
+  url: string;
+  projectId: string | null;
+  createdAt: string;
+};
+
+export async function listMediaPickerAction(
+  kind?: 'image' | 'video' | 'audio',
+  limit = 36,
+): Promise<MediaPickerItem[]> {
+  const supabase = await createClient();
+  const organizationId = await getCurrentOrganizationId(supabase);
+
+  if (!organizationId) return [];
+
+  let query = supabase
+    .from('media_assets')
+    .select('id,kind,provider,project_id,storage_path,metadata,created_at')
+    .eq('organization_id', organizationId)
+    .order('created_at', { ascending: false })
+    .limit(Math.min(60, Math.max(1, limit)));
+
+  if (kind) {
+    query = query.eq('kind', kind);
+  }
+
+  const { data, error } = await query;
+  if (error || !data) return [];
+
+  const items = await Promise.all(
+    data.map(async (row) => {
+      const storagePath = String(row.storage_path ?? '');
+      if (!storagePath) return null;
+
+      const { data: signed } = await supabase.storage
+        .from(MEDIA_BUCKET)
+        .createSignedUrl(storagePath, SIGNED_UPLOAD_TTL_SECONDS);
+
+      if (!signed?.signedUrl) return null;
+
+      const metadata =
+        row.metadata && typeof row.metadata === 'object' && !Array.isArray(row.metadata)
+          ? (row.metadata as Record<string, unknown>)
+          : {};
+
+      const originalFileName =
+        typeof metadata.originalFileName === 'string'
+          ? metadata.originalFileName.trim()
+          : '';
+      const metadataTitle =
+        typeof metadata.title === 'string'
+          ? metadata.title.trim()
+          : '';
+
+      return {
+        id: String(row.id),
+        kind: row.kind === 'image' || row.kind === 'audio' ? row.kind : 'video',
+        title:
+          metadataTitle ||
+          originalFileName ||
+          (row.kind === 'image'
+            ? 'Изображение'
+            : row.kind === 'audio'
+              ? 'Аудио'
+              : 'Видео'),
+        url: signed.signedUrl,
+        projectId: typeof row.project_id === 'string' ? row.project_id : null,
+        createdAt: String(row.created_at ?? ''),
+      } satisfies MediaPickerItem;
+    }),
+  );
+
+  return items.filter((item): item is MediaPickerItem => Boolean(item));
+}
