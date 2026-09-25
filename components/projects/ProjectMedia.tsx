@@ -140,7 +140,7 @@ export function ProjectMedia({ projectId, media }: ProjectMediaProps) {
       <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-            Исходники и результаты
+            Медиа проекта: исходники и результаты
           </h2>
           <p className="mt-1 text-sm text-[var(--text-secondary)]">
             {sources.length} исходников · {results.length} результатов
