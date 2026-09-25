@@ -2,12 +2,27 @@ import Link from 'next/link';
 
 import { DemoModeToggle } from '@/components/demo/DemoModeToggle';
 import { IntegrationsDashboard } from '@/components/platform/IntegrationsDashboard';
+import { PublishingDiagnostics } from '@/components/platform/PublishingDiagnostics';
 import { requireOrganizationAdmin } from '@/utils/auth/authorization';
 import { resolveIntegrationStatuses } from '@/utils/platform/integration-catalog';
 
 export default async function SettingsPage() {
   await requireOrganizationAdmin();
   const integrations = resolveIntegrationStatuses(process.env);
+  const configuredPublishingChannels = [
+    ['telegram-publish', 'telegram'],
+    ['vk-publish', 'vk'],
+    ['youtube-publish', 'youtube'],
+    ['instagram-publish', 'instagram'],
+    ['tiktok-publish', 'tiktok'],
+    ['max-publish', 'max'],
+  ]
+    .filter(([integrationId]) =>
+      integrations.some(
+        (item) => item.id === integrationId && item.status === 'connected',
+      ),
+    )
+    .map(([, channel]) => channel as 'telegram' | 'vk' | 'youtube' | 'instagram' | 'tiktok' | 'max');
 
   return (
     <div className="space-y-8">
@@ -32,6 +47,8 @@ export default async function SettingsPage() {
       </section>
 
       <IntegrationsDashboard integrations={integrations} />
+
+      <PublishingDiagnostics configured={configuredPublishingChannels} />
 
       <section className="mx-auto w-full max-w-6xl">
         <div className="rounded-[24px] border border-[var(--border-subtle)] bg-[var(--surface-1)] px-6 sm:px-8">
