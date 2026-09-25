@@ -523,7 +523,7 @@ export function FactoryBundleStudio({
       }
 
       return {
-        key: spec.key + ':' + Date.now(),
+        key: spec.key + ':music-completed',
         label: spec.label,
         kind: 'audio',
         id: 'music-completed',
@@ -621,7 +621,7 @@ export function FactoryBundleStudio({
     if (!projectId || task.status !== 'completed' || !task.content.trim()) return;
 
     window.sessionStorage.setItem('business-zavod:publish-source', task.content);
-    window.location.href = '/modules/publish/studio?project=' + encodeURIComponent(projectId);
+    window.location.assign('/modules/publish/studio?project=' + encodeURIComponent(projectId));
   };
 
 
@@ -720,7 +720,11 @@ export function FactoryBundleStudio({
     if (expectedMediaCount > 0 && jobs.length < expectedMediaCount) return;
     if (!jobs.every((job) => job.status.status === 'completed')) return;
 
-    void runQaTask(projectId);
+    const timeoutId = window.setTimeout(() => {
+      void runQaTask(projectId);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [jobs, projectId, prompt, textTasks]);
 
   const completedMedia = jobs.filter((job) => job.status.status === 'completed').length;
