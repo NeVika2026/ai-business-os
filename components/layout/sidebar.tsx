@@ -13,6 +13,7 @@ type SidebarProps = {
   pathname: string;
   email: string;
   organizationName: string;
+  role: 'owner' | 'admin' | 'member';
   isDrawerOpen: boolean;
   onCloseDrawer: () => void;
 };
@@ -21,6 +22,7 @@ export function Sidebar({
   pathname,
   email,
   organizationName,
+  role,
   isDrawerOpen,
   onCloseDrawer,
 }: SidebarProps) {
@@ -47,7 +49,7 @@ export function Sidebar({
       {isDrawerOpen ? (
         <button
           type="button"
-          aria-label="Close navigation menu"
+          aria-label="Закрыть меню навигации"
           className="fixed inset-0 z-40 bg-black/50 md:hidden"
           onClick={onCloseDrawer}
         />
@@ -57,7 +59,7 @@ export function Sidebar({
         className={`fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col border-r border-[var(--border-subtle)] bg-[var(--surface-1)] transition-transform duration-200 md:static md:z-auto md:w-16 md:translate-x-0 md:transition-none lg:w-[280px] ${
           isDrawerOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
-        aria-label="Sidebar"
+        aria-label="Навигация"
       >
         <div className="flex h-16 items-center gap-3 border-b border-[var(--border-subtle)] px-4 lg:px-5">
           <OrbitMark size="sm" breathe className="shrink-0 md:mx-auto lg:mx-0" />
@@ -78,14 +80,19 @@ export function Sidebar({
           </div>
 
           <div className="flex items-center justify-between gap-2 md:flex-col lg:flex-row">
-            <UserMenu email={email} organizationName={organizationName} logoutAction={logout} />
+            <UserMenu
+              email={email}
+              organizationName={organizationName}
+              role={role}
+              logoutAction={logout}
+            />
             <form action={logout} className="w-full md:sr-only lg:not-sr-only">
               <button
                 type="submit"
-                aria-label="Logout"
+                aria-label="Выйти"
                 className="w-full rounded-lg border border-[var(--border-subtle)] px-3 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
               >
-                Logout
+                Выйти
               </button>
             </form>
           </div>
