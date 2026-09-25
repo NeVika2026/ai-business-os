@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import { createClient } from '@/services/supabase/server';
 import { getDashboardContext } from '@/utils/auth/onboarding';
 
@@ -146,8 +148,20 @@ export default async function CabinetPage({ searchParams }: CabinetPageProps) {
       </section>
 
       <section className="rounded-[24px] border border-[var(--border-subtle)] bg-[var(--surface-1)] p-6">
-        <h2 className="text-lg font-black text-[var(--text-primary)]">Организация</h2>
-        <p className="mt-2 text-sm text-[var(--text-secondary)]">{context.organizationName}</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-black text-[var(--text-primary)]">Организация</h2>
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">{context.organizationName}</p>
+          </div>
+          {context.role !== 'member' ? (
+            <Link
+              href="/settings/team"
+              className="rounded-xl border border-[var(--border-subtle)] px-4 py-2.5 text-sm font-black text-[var(--text-primary)]"
+            >
+              Управлять командой →
+            </Link>
+          ) : null}
+        </div>
       </section>
     </main>
   );
