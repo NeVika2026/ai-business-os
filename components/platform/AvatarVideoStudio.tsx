@@ -16,6 +16,7 @@ type Props = {
   initialMode: AvatarVideoMode;
   projectId?: string | null;
   initialCustomAvatarId?: string;
+  initialAudioUrl?: string;
 };
 
 const AVATARS = [
@@ -41,13 +42,14 @@ export function AvatarVideoStudio({
   initialMode,
   projectId = null,
   initialCustomAvatarId = '',
+  initialAudioUrl = '',
 }: Props) {
   const [mode,setMode] = useState<AvatarVideoMode>(initialMode);
   const [avatarPreset,setAvatarPreset] = useState('influencer');
   const [customAvatarId,setCustomAvatarId] = useState(initialCustomAvatarId);
   const [useCustomAvatar,setUseCustomAvatar] = useState(Boolean(initialCustomAvatarId));
   const [text,setText] = useState('');
-  const [audioUrl,setAudioUrl] = useState('');
+  const [audioUrl,setAudioUrl] = useState(initialAudioUrl);
   const [voicePreset,setVoicePreset] = useState('victoria');
   const [approved,setApproved] = useState(false);
   const [activeProjectId,setActiveProjectId] = useState<string|null>(projectId);
