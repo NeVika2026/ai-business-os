@@ -7,7 +7,7 @@ import { OrbitMark } from '@/components/brand/OrbitMark';
 import { OrganizationSwitcher } from '@/components/layout/organization-switcher';
 import { UserMenu } from '@/components/layout/user-menu';
 import { NavSection } from '@/components/navigation/nav-section';
-import { MAIN_NAVIGATION } from '@/config/navigation';
+import { ADMIN_ONLY_NAV_HREFS, MAIN_NAVIGATION } from '@/config/navigation';
 
 type SidebarProps = {
   pathname: string;
@@ -71,7 +71,14 @@ export function Sidebar({
         </div>
 
         <div className="flex-1 overflow-y-auto py-4" onClick={onCloseDrawer}>
-          <NavSection items={MAIN_NAVIGATION} pathname={pathname} />
+          <NavSection
+            items={
+              role === 'member'
+                ? MAIN_NAVIGATION.filter((item) => !ADMIN_ONLY_NAV_HREFS.has(item.href))
+                : MAIN_NAVIGATION
+            }
+            pathname={pathname}
+          />
         </div>
 
         <div className="space-y-3 border-t border-[var(--border-subtle)] p-3">
