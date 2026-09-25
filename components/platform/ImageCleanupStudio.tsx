@@ -190,6 +190,9 @@ export function ImageCleanupStudio({ initialMode, projectId = null }: Props) {
               expectedKind="image"
               accept="image/png,image/jpeg,image/webp"
               projectId={activeProjectId}
+              autoCreateProject
+              projectSeed="Очистка изображения"
+              onProjectReady={setActiveProjectId}
               label="Загрузить изображение с устройства"
               onUploaded={({ url }) => setImageUrl(url)}
             />
