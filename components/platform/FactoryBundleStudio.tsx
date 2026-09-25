@@ -634,7 +634,26 @@ export function FactoryBundleStudio({
       if (task.key === 'qa') {
         await runQaTask(projectId);
       } else {
-        await runTextTask(task, projectId, prompt.trim());
+        const result = await runTextTask(task, projectId, prompt.trim());
+
+        if (
+          task.key === 'voice-script' &&
+          result.ok &&
+          !jobs.some((job) => job.spec.key === 'voice')
+        ) {
+          const voiceSpec = buildMediaSpecs(prompt.trim(), result.content).find(
+            (spec) => spec.key === 'voice',
+          );
+
+          if (voiceSpec) {
+            const restarted = await startMediaSpec(voiceSpec, projectId);
+            if ('failure' in restarted) {
+              setMessage(restarted.failure);
+              return;
+            }
+            setJobs((current) => [...current, restarted]);
+          }
+        }
       }
       setMessage('Повторно запущен только этап «' + task.label + '».');
     });
@@ -699,11 +718,17 @@ export function FactoryBundleStudio({
         (task) => task.key !== 'strategy' && task.key !== 'qa',
       );
 
-      await Promise.all(
+      const textResults = await Promise.all(
         otherTextTasks.map((task) => runTextTask(task, activeProjectId, trimmed)),
       );
 
-      const mediaSpecs = buildMediaSpecs(trimmed);
+      const voiceTaskIndex = otherTextTasks.findIndex(
+        (task) => task.key === 'voice-script',
+      );
+      const voiceScriptText =
+        voiceTaskIndex >= 0 ? textResults[voiceTaskIndex]?.content ?? '' : '';
+
+      const mediaSpecs = buildMediaSpecs(trimmed, voiceScriptText);
       const started = await Promise.all(
         mediaSpecs.map((spec) => startMediaSpec(spec, activeProjectId)),
       );
@@ -738,7 +763,9 @@ export function FactoryBundleStudio({
     if (!productionTextTasks.length) return;
     if (!productionTextTasks.every((task) => task.status === 'completed')) return;
 
-    const expectedMediaCount = buildMediaSpecs(prompt.trim()).length;
+    const voiceScriptText =
+      textTasks.find((task) => task.key === 'voice-script')?.content ?? '';
+    const expectedMediaCount = buildMediaSpecs(prompt.trim(), voiceScriptText).length;
     if (expectedMediaCount > 0 && jobs.length < expectedMediaCount) return;
     if (!jobs.every((job) => job.status.status === 'completed')) return;
 
