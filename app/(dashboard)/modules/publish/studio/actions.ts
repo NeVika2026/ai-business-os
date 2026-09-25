@@ -15,6 +15,7 @@ export type PublicationChannelId =
   | 'vk'
   | 'dzen'
   | 'youtube'
+  | 'instagram'
   | 'tiktok'
   | 'max';
 
@@ -35,6 +36,7 @@ const CHANNEL_NAMES: Record<PublicationChannelId, string> = {
   vk: 'ВКонтакте',
   dzen: 'Дзен',
   youtube: 'YouTube',
+  instagram: 'Instagram Reels',
   tiktok: 'TikTok',
   max: 'MAX',
 };
@@ -148,6 +150,7 @@ export async function buildPublicationPackAction(input: {
     '- ВКонтакте: пост для ленты, сильное начало и понятный CTA;',
     '- Дзен: заголовок + более развернутая подача, пригодная для публикации;',
     '- YouTube: заголовок и описание к ролику/Shorts, если исходник видеоформатный;',
+    '- Instagram: короткая подпись к Reels с сильным хуком и естественным CTA;',
     '- TikTok: короткая подпись с хуком и CTA, без канцелярщины;',
     '- MAX: компактный пост для канала/ленты;',
     '- notes — короткая редакторская пометка по формату или медиа, не инструкция пользователю;',
@@ -255,6 +258,10 @@ export async function getPublishingConnectionStatusAction(): Promise<PublishingC
       process.env.GOOGLE_OAUTH_CLIENT_ID?.trim() &&
       process.env.GOOGLE_OAUTH_CLIENT_SECRET?.trim() &&
       process.env.YOUTUBE_REFRESH_TOKEN?.trim(),
+    ),
+    instagram: Boolean(
+      process.env.INSTAGRAM_USER_ID?.trim() &&
+      process.env.INSTAGRAM_ACCESS_TOKEN?.trim(),
     ),
     tiktok: Boolean(
       process.env.TIKTOK_CLIENT_KEY?.trim() &&
@@ -553,6 +560,128 @@ async function publishYouTubeVideo(input: {
 }
 
 
+
+function instagramGraphVersion(): string {
+  return process.env.META_GRAPH_API_VERSION?.trim() || 'v24.0';
+}
+
+async function instagramGraphRequest<T>(
+  path: string,
+  options: {
+    method?: 'GET' | 'POST';
+    params?: Record<string, string>;
+  } = {},
+): Promise<T> {
+  const accessToken = process.env.INSTAGRAM_ACCESS_TOKEN?.trim();
+  if (!accessToken) {
+    throw new Error('Instagram не подключён. Нужен access token профессионального аккаунта.');
+  }
+
+  const url = new URL(
+    'https://graph.facebook.com/' +
+      instagramGraphVersion() +
+      '/' +
+      path.replace(/^\//, ''),
+  );
+  for (const [key, value] of Object.entries(options.params ?? {})) {
+    url.searchParams.set(key, value);
+  }
+  url.searchParams.set('access_token', accessToken);
+
+  const response = await fetch(url, {
+    method: options.method ?? 'GET',
+    cache: 'no-store',
+  });
+
+  const data = (await response.json()) as T & {
+    error?: { message?: string; code?: number };
+  };
+
+  if (!response.ok || data.error) {
+    throw new Error(
+      data.error?.message || 'Instagram отклонил запрос.',
+    );
+  }
+
+  return data;
+}
+
+async function publishInstagramReel(input: {
+  mediaUrl: string;
+  caption: string;
+}): Promise<{ mediaId: string; containerId: string }> {
+  const igUserId = process.env.INSTAGRAM_USER_ID?.trim();
+  if (!igUserId) {
+    throw new Error('Instagram не подключён. Нужен ID профессионального Instagram-аккаунта.');
+  }
+
+  const created = await instagramGraphRequest<{ id?: string }>(igUserId + '/media', {
+    method: 'POST',
+    params: {
+      media_type: 'REELS',
+      video_url: input.mediaUrl,
+      caption: input.caption.slice(0, 2200),
+      share_to_feed: 'true',
+    },
+  });
+
+  if (!created.id) {
+    throw new Error('Instagram не вернул ID контейнера Reels.');
+  }
+
+  let finished = false;
+  let lastStatus = '';
+
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const status = await instagramGraphRequest<{
+      status_code?: string;
+      status?: string;
+    }>(created.id, {
+      params: { fields: 'status_code,status' },
+    });
+
+    lastStatus = status.status_code || status.status || '';
+
+    if (status.status_code === 'FINISHED') {
+      finished = true;
+      break;
+    }
+
+    if (status.status_code === 'ERROR' || status.status_code === 'EXPIRED') {
+      throw new Error(
+        'Instagram не подготовил Reels: ' + (status.status || status.status_code),
+      );
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
+
+  if (!finished) {
+    throw new Error(
+      'Instagram ещё обрабатывает видео. Последний статус: ' +
+        (lastStatus || 'IN_PROGRESS') +
+        '. Повторите публикацию позже.',
+    );
+  }
+
+  const published = await instagramGraphRequest<{ id?: string }>(
+    igUserId + '/media_publish',
+    {
+      method: 'POST',
+      params: { creation_id: created.id },
+    },
+  );
+
+  if (!published.id) {
+    throw new Error('Instagram не вернул ID опубликованного Reels.');
+  }
+
+  return {
+    mediaId: published.id,
+    containerId: created.id,
+  };
+}
+
 type TikTokCreatorInfo = {
   username: string;
   nickname: string;
@@ -812,6 +941,7 @@ export async function publishVariantAction(input: {
     input.channel !== 'telegram' &&
     input.channel !== 'vk' &&
     input.channel !== 'youtube' &&
+    input.channel !== 'instagram' &&
     input.channel !== 'tiktok'
   ) {
     return {
@@ -868,6 +998,55 @@ export async function publishVariantAction(input: {
       return {
         ok: false,
         message: error instanceof Error ? error.message : 'Не удалось опубликовать видео в YouTube.',
+      };
+    }
+  }
+
+  if (input.channel === 'instagram') {
+    const mediaUrl = input.mediaUrl?.trim() || '';
+    if (!mediaUrl || input.mediaKind !== 'video') {
+      return {
+        ok: false,
+        message: 'Для публикации Reels выберите готовое видео.',
+      };
+    }
+
+    try {
+      const result = await publishInstagramReel({
+        mediaUrl,
+        caption: [input.title?.trim(), input.body.trim(), input.cta?.trim()]
+          .filter(Boolean)
+          .join('\n\n'),
+      });
+
+      if (input.projectId) {
+        await saveFactoryArtifact({
+          projectId: input.projectId,
+          stage: 'publish',
+          title: 'Опубликовано в Instagram Reels',
+          content: text,
+          metadata: {
+            channel: 'instagram',
+            mediaId: result.mediaId,
+            containerId: result.containerId,
+            published: true,
+            mediaKind: 'video',
+            mediaUrl,
+          },
+        });
+      }
+
+      return {
+        ok: true,
+        message: 'Reels опубликован в Instagram. Media ID: ' + result.mediaId + '.',
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Не удалось опубликовать Reels в Instagram.',
       };
     }
   }
