@@ -5,10 +5,12 @@ import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
 import {
   generateCreateStudioArtifactAction,
+  generateMusicAction,
   generateWebsiteArtifactAction,
   getMediaGenerationStatusAction,
   listMediaVoicesAction,
   startMediaGenerationAction,
+  startSoundEffectAction,
   type MediaStudioKind,
   type MediaStudioStatusResult,
 } from '@/app/(dashboard)/modules/create/studio/actions';
@@ -42,6 +44,7 @@ type MediaLaunchSpec = {
   key: string;
   label: string;
   kind: MediaStudioKind;
+  engine?: 'studio' | 'music' | 'sfx';
   promptText: string;
   ratio?: string;
   duration?: number;
@@ -57,7 +60,14 @@ type MediaJob = {
   spec: MediaLaunchSpec;
 };
 
-const PAID_OUTPUTS = new Set<BusinessRouterOutput>(['video', 'image', 'banner', 'voice']);
+const PAID_OUTPUTS = new Set<BusinessRouterOutput>([
+  'video',
+  'image',
+  'banner',
+  'voice',
+  'music',
+  'sfx',
+]);
 
 const OUTPUT_LABELS: Record<BusinessRouterOutput, string> = {
   video: 'Reels / видео',
@@ -67,6 +77,8 @@ const OUTPUT_LABELS: Record<BusinessRouterOutput, string> = {
   post: 'Пост',
   telegram: 'Telegram',
   voice: 'Озвучка',
+  music: 'Музыка',
+  sfx: 'Звуковые эффекты',
   site: 'Сайт',
   presentation: 'Презентация',
   document: 'Документ',
@@ -332,9 +344,36 @@ export function FactoryBundleStudio({ initialPrompt }: FactoryBundleStudioProps)
         key: 'voice',
         label: 'Озвучка',
         kind: 'voice',
+        engine: 'studio',
         promptText:
           'Озвучь коротко и убедительно главный рекламный посыл этой кампании: ' + trimmed,
         voiceId,
+      });
+    }
+
+    if (plan.outputs.includes('music')) {
+      specs.push({
+        key: 'music',
+        label: 'Музыка',
+        kind: 'audio',
+        engine: 'music',
+        promptText:
+          'Создай современный инструментальный трек для этой кампании. Музыка должна поддерживать темп, настроение и оффер: ' +
+          trimmed,
+        duration: 15,
+      });
+    }
+
+    if (plan.outputs.includes('sfx')) {
+      specs.push({
+        key: 'sfx',
+        label: 'Звуковые эффекты',
+        kind: 'audio',
+        engine: 'sfx',
+        promptText:
+          'Создай короткий звуковой эффект или атмосферу для рекламного ролика этой кампании: ' +
+          trimmed,
+        duration: 5,
       });
     }
 
@@ -345,6 +384,60 @@ export function FactoryBundleStudio({ initialPrompt }: FactoryBundleStudioProps)
     spec: MediaLaunchSpec,
     activeProjectId: string,
   ): Promise<MediaJob | { failure: string }> => {
+    if (spec.engine === 'music') {
+      const result = await generateMusicAction({
+        prompt: spec.promptText,
+        approved,
+        durationSeconds: spec.duration ?? 15,
+        instrumental: true,
+        projectId: activeProjectId,
+      });
+
+      if (result.status !== 'completed') {
+        return { failure: spec.label + ': ' + result.message };
+      }
+
+      return {
+        key: spec.key + ':' + Date.now(),
+        label: spec.label,
+        kind: 'audio',
+        id: 'music-completed',
+        status: {
+          status: 'completed',
+          providerStatus: 'completed',
+          outputUrl: result.outputUrl,
+          outputUrls: [result.outputUrl],
+          ephemeral: false,
+          persisted: true,
+          storagePath: result.storagePath,
+        },
+        spec,
+      };
+    }
+
+    if (spec.engine === 'sfx') {
+      const result = await startSoundEffectAction({
+        promptText: spec.promptText,
+        approved,
+        duration: spec.duration ?? 5,
+        loop: false,
+        projectId: activeProjectId,
+      });
+
+      if (result.status !== 'started') {
+        return { failure: spec.label + ': ' + result.message };
+      }
+
+      return {
+        key: spec.key + ':' + result.id,
+        label: spec.label,
+        kind: 'audio',
+        id: result.id,
+        status: pendingStatus(),
+        spec,
+      };
+    }
+
     const result = await startMediaGenerationAction({
       kind: spec.kind,
       promptText: spec.promptText,
