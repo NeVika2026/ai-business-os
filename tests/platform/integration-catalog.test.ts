@@ -53,6 +53,7 @@ describe('Business Zavod integration catalog', () => {
       'youtube-publish',
       'instagram-publish',
       'tiktok-publish',
+      'max-publish',
     ]) {
       assert.ok(ids.includes(id), `missing integration: ${id}`);
     }
@@ -73,6 +74,25 @@ describe('Business Zavod integration catalog', () => {
     });
     assert.equal(
       connected.find((item) => item.id === 'instagram-publish')?.status,
+      'connected',
+    );
+  });
+
+  it('reports MAX connected only with bot token and chat id', () => {
+    const missing = resolveIntegrationStatuses({
+      MAX_BOT_TOKEN: 'token',
+    });
+    assert.equal(
+      missing.find((item) => item.id === 'max-publish')?.status,
+      'missing',
+    );
+
+    const connected = resolveIntegrationStatuses({
+      MAX_BOT_TOKEN: 'token',
+      MAX_CHAT_ID: '12345',
+    });
+    assert.equal(
+      connected.find((item) => item.id === 'max-publish')?.status,
       'connected',
     );
   });
