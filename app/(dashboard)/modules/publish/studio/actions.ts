@@ -302,6 +302,8 @@ export async function publishVariantAction(input: {
   body: string;
   cta?: string;
   projectId?: string | null;
+  mediaUrl?: string | null;
+  mediaKind?: 'image' | 'video' | 'audio' | null;
 }): Promise<{ ok: true; message: string } | { ok: false; message: string }> {
   if (input.channel !== 'telegram' && input.channel !== 'vk') {
     return {
@@ -395,7 +397,63 @@ export async function publishVariantAction(input: {
   }
 
   try {
-    const chunks = splitTelegramText(text);
+    const mediaUrl = input.mediaUrl?.trim() || '';
+    const mediaKind = input.mediaKind ?? null;
+    let sentMessages = 0;
+    let mediaPublished = false;
+    let remainingText = text;
+
+    if (mediaUrl && mediaKind) {
+      const captionLimit = 900;
+      let caption = remainingText;
+
+      if (caption.length > captionLimit) {
+        let cut = caption.lastIndexOf(' ', captionLimit);
+        if (cut < captionLimit * 0.6) cut = captionLimit;
+        caption = caption.slice(0, cut).trim();
+        remainingText = remainingText.slice(cut).trim();
+      } else {
+        remainingText = '';
+      }
+
+      const endpoint =
+        mediaKind === 'image'
+          ? 'sendPhoto'
+          : mediaKind === 'video'
+            ? 'sendVideo'
+            : 'sendAudio';
+      const mediaField =
+        mediaKind === 'image'
+          ? 'photo'
+          : mediaKind === 'video'
+            ? 'video'
+            : 'audio';
+
+      const response = await fetch(`https://api.telegram.org/bot${token}/${endpoint}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          [mediaField]: mediaUrl,
+          ...(caption ? { caption } : {}),
+        }),
+        cache: 'no-store',
+      });
+
+      const data = (await response.json()) as { ok?: boolean; description?: string };
+
+      if (!response.ok || !data.ok) {
+        return {
+          ok: false,
+          message: data.description || 'Telegram отклонил медиа-публикацию.',
+        };
+      }
+
+      mediaPublished = true;
+      sentMessages += 1;
+    }
+
+    const chunks = remainingText ? splitTelegramText(remainingText) : [];
 
     for (const chunk of chunks) {
       const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -417,6 +475,8 @@ export async function publishVariantAction(input: {
           message: data.description || 'Telegram отклонил публикацию.',
         };
       }
+
+      sentMessages += 1;
     }
 
     if (input.projectId) {
@@ -427,17 +487,24 @@ export async function publishVariantAction(input: {
         content: text,
         metadata: {
           channel: 'telegram',
-          chunks: chunks.length,
+          chunks: sentMessages,
           published: true,
+          mediaPublished,
+          mediaKind,
+          mediaUrl: mediaUrl || null,
         },
       });
     }
 
     return {
       ok: true,
-      message: chunks.length > 1
-        ? `Опубликовано в Telegram: ${chunks.length} сообщения.`
-        : 'Опубликовано в Telegram.',
+      message: mediaPublished
+        ? sentMessages > 1
+          ? `Опубликовано в Telegram: медиа + ${sentMessages - 1} текстовых сообщения.`
+          : 'Опубликовано в Telegram с медиа.'
+        : sentMessages > 1
+          ? `Опубликовано в Telegram: ${sentMessages} сообщения.`
+          : 'Опубликовано в Telegram.',
     };
   } catch (error) {
     return {
