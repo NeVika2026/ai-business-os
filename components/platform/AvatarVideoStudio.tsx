@@ -10,6 +10,7 @@ import {
   type MediaStudioStatusResult,
 } from '@/app/(dashboard)/modules/create/studio/actions';
 import { saveFactoryArtifactAction } from '@/app/(dashboard)/modules/factory-chain/actions';
+import { MediaUploadField } from '@/components/media/MediaUploadField';
 
 type Props = {
   initialMode: AvatarVideoMode;
@@ -186,11 +187,20 @@ export function AvatarVideoStudio({
               </label>
             </>
           ) : (
-            <label className="mt-4 grid gap-2">
-              <span className="text-sm font-bold text-white/72">Ссылка на аудиодорожку</span>
-              <input value={audioUrl} onChange={e=>setAudioUrl(e.target.value)} placeholder="https://…mp3"
-                className="rounded-2xl border border-white/[0.09] bg-black/25 px-4 py-3.5 text-sm text-white" />
-            </label>
+            <div className="mt-4 grid gap-3">
+              <MediaUploadField
+                expectedKind="audio"
+                accept="audio/mpeg,audio/wav,audio/mp4,audio/webm"
+                projectId={activeProjectId}
+                label="Загрузить аудио с устройства"
+                onUploaded={({ url }) => setAudioUrl(url)}
+              />
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-white/72">Или вставьте ссылку на аудиодорожку</span>
+                <input value={audioUrl} onChange={e=>setAudioUrl(e.target.value)} placeholder="https://…mp3"
+                  className="rounded-2xl border border-white/[0.09] bg-black/25 px-4 py-3.5 text-sm text-white" />
+              </label>
+            </div>
           )}
 
           <label className="mt-5 flex gap-3 rounded-2xl border border-[#f1c96c]/13 bg-[#f1c96c]/[0.035] p-4">
