@@ -25,6 +25,26 @@ export type BusinessRouterPlan = {
   studioMode: CreateStudioModeId | null;
 };
 
+const PACKAGE_SIGNALS = [
+  'полный пакет',
+  'комплект контента',
+  'контент под ключ',
+  'кампания под ключ',
+  'запуск под ключ',
+  'сделай все',
+  'сделай всё',
+  'собери кампанию',
+  'полная кампания',
+];
+
+const DEFAULT_PACKAGE_OUTPUTS: BusinessRouterOutput[] = [
+  'video',
+  'stories',
+  'image',
+  'post',
+  'telegram',
+];
+
 const OUTPUT_SIGNALS: Array<{ output: BusinessRouterOutput; signals: string[] }> = [
   { output: 'stories', signals: ['сторис', 'stories', 'истории для соцсет'] },
   { output: 'video', signals: ['видео', 'ролик', 'рилс', 'reels', 'shorts', 'tiktok', 'тикток'] },
@@ -56,7 +76,25 @@ function detectOutputs(input: string): BusinessRouterOutput[] {
     }
   }
 
-  return [...new Set(outputs)];
+  if (includesAny(haystack, PACKAGE_SIGNALS)) {
+    outputs.push(...DEFAULT_PACKAGE_OUTPUTS);
+  }
+
+  const unique = [...new Set(outputs)];
+
+  const telegramOnlyPost =
+    unique.includes('telegram') &&
+    unique.includes('post') &&
+    (
+      haystack.includes('пост для telegram') ||
+      haystack.includes('пост для телеграм') ||
+      haystack.includes('пост в telegram') ||
+      haystack.includes('пост в телеграм') ||
+      haystack.includes('telegram пост') ||
+      haystack.includes('телеграм пост')
+    );
+
+  return telegramOnlyPost ? unique.filter((output) => output !== 'post') : unique;
 }
 
 function createStudioModeForOutput(output: BusinessRouterOutput): CreateStudioModeId | null {
@@ -112,7 +150,6 @@ function detectDirectModule(haystack: string): string | null {
     haystack.includes('клиенты ответили') ||
     haystack.includes('кто ответил') ||
     haystack.includes('входящие лиды') ||
-    haystack.includes('кто ждет ответа') ||
     haystack.includes('кто ждет ответа') ||
     haystack.includes('просроченные лиды')
   ) {
@@ -238,6 +275,26 @@ export function resolveBusinessRouterPlan(input: string): BusinessRouterPlan {
   const haystack = normalize(trimmed);
   const outputs = detectOutputs(trimmed);
   const directModule = detectDirectModule(haystack);
+  const packageRequested = includesAny(haystack, PACKAGE_SIGNALS);
+  const productionOutputs = outputs.filter((output) => createStudioModeForOutput(output) !== null);
+
+  if (packageRequested || outputs.length >= 2) {
+    const parallel = [
+      outputs.some((output) => ['image', 'banner', 'stories'].includes(output)) ? 'visuals' : '',
+      outputs.some((output) => ['post', 'telegram', 'document'].includes(output)) ? 'copy' : '',
+    ].filter(Boolean);
+
+    return {
+      kind: 'factory_bundle',
+      intent: 'campaign_bundle',
+      outputs,
+      tools: toolsForOutputs(outputs),
+      parallel,
+      dependencies: dependenciesForOutputs(outputs),
+      directHref: '/modules/factory?prompt=' + encodeURIComponent(trimmed),
+      studioMode: null,
+    };
+  }
 
   if (directModule) {
     const href =
@@ -253,26 +310,6 @@ export function resolveBusinessRouterPlan(input: string): BusinessRouterPlan {
       parallel: [],
       dependencies: {},
       directHref: href,
-      studioMode: null,
-    };
-  }
-
-  const productionOutputs = outputs.filter((output) => createStudioModeForOutput(output) !== null);
-
-  if (outputs.length >= 2) {
-    const parallel = [
-      outputs.some((output) => ['image', 'banner', 'stories'].includes(output)) ? 'visuals' : '',
-      outputs.some((output) => ['post', 'telegram', 'document'].includes(output)) ? 'copy' : '',
-    ].filter(Boolean);
-
-    return {
-      kind: 'factory_bundle',
-      intent: 'campaign_bundle',
-      outputs,
-      tools: toolsForOutputs(outputs),
-      parallel,
-      dependencies: dependenciesForOutputs(outputs),
-      directHref: '/modules/factory?prompt=' + encodeURIComponent(trimmed),
       studioMode: null,
     };
   }

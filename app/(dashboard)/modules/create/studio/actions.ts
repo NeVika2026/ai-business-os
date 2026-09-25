@@ -1250,6 +1250,8 @@ export async function generateCreateStudioArtifactAction(input: {
   format?: string;
   context?: string;
   projectId?: string | null;
+  title?: string;
+  artifactType?: string;
 }): Promise<CreateStudioArtifactResult> {
   if (!input.goal.trim()) {
     return { status: 'failed', message: 'Опишите, что нужно создать.' };
@@ -1336,14 +1338,16 @@ export async function generateCreateStudioArtifactAction(input: {
       projectId: project.projectId,
       stage: 'create',
       title:
-        input.modeId === 'presentation'
+        input.title?.trim() ||
+        (input.modeId === 'presentation'
           ? 'Презентация'
           : input.modeId === 'stories'
             ? 'Серия сторис'
-            : 'Документ',
+            : 'Документ'),
       content,
       metadata: {
         modeId: input.modeId,
+        artifactType: input.artifactType?.trim() || input.modeId,
         goal: input.goal,
         audience: input.audience ?? '',
         format: input.format ?? '',
