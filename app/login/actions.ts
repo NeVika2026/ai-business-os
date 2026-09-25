@@ -143,7 +143,7 @@ export async function sendPhoneOtp(formData: FormData) {
   const { error } = await supabase.auth.signInWithOtp({
     phone,
     options: {
-      shouldCreateUser: true,
+      shouldCreateUser: false,
     },
   });
 

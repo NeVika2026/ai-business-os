@@ -146,6 +146,9 @@ export function SignInForm({
                       placeholder="+7 999 123-45-67"
                       className="h-12 w-full rounded-[16px] border border-white/[0.08] bg-black/20 px-4 text-sm text-white outline-none transition placeholder:text-white/38 focus:border-[#69e4ee]/35 focus:ring-4 focus:ring-[#69e4ee]/[0.04]"
                     />
+                    <span className="mt-2 block text-xs leading-5 text-white/42">
+                      SMS-вход работает только для номера, уже привязанного к вашему аккаунту.
+                    </span>
                   </label>
                 ) : (
                   <label className="block">
