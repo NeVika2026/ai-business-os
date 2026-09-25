@@ -78,6 +78,41 @@ export function ProjectDeliveryPanel({ projectId, artifacts, media }: Props) {
     anchor.remove();
     URL.revokeObjectURL(url);
   };
+  const downloadPackage = () => {
+    const sections = artifacts
+      .filter((artifact) => !artifactType(artifact).includes('snapshot'))
+      .map((artifact) => [
+        '# ' + artifact.title,
+        '',
+        artifact.content,
+      ].join('\n'))
+      .join('\n\n---\n\n');
+
+    const mediaLines = media
+      .filter((item) => item.signedUrl)
+      .map((item) => '- ' + item.title + ': ' + item.signedUrl)
+      .join('\n');
+
+    const content = [
+      '# Бизнес-завод — готовый комплект проекта',
+      '',
+      sections,
+      mediaLines ? '\n\n# Медиа проекта\n\n' + mediaLines : '',
+    ].filter(Boolean).join('\n');
+
+    const blob = new Blob([content], {
+      type: 'text/markdown;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'business-zavod-package.md';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  };
+
 
   if (!artifacts.length && !media.length) return null;
 
@@ -129,6 +164,13 @@ export function ProjectDeliveryPanel({ projectId, artifacts, media }: Props) {
         >
           Вся медиатека →
         </Link>
+        <button
+          type="button"
+          onClick={downloadPackage}
+          className="rounded-xl border border-white/[0.09] px-4 py-3 text-xs font-black text-white/62"
+        >
+          Скачать весь комплект
+        </button>
       </div>
 
       {qa ? (
