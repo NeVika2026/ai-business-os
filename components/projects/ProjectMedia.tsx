@@ -25,6 +25,19 @@ function formatDate(value: string) {
   }).format(date);
 }
 
+function buildAsSourceHref(item: ProjectMediaItem, projectId: string) {
+  if (!item.signedUrl) return null;
+
+  const encoded = encodeURIComponent(item.signedUrl);
+  if (item.kind === 'image') {
+    return '/modules/create/upscale?kind=image&project=' + encodeURIComponent(projectId) + '&source=' + encoded;
+  }
+  if (item.kind === 'video') {
+    return '/modules/create/video-edit?mode=edit&project=' + encodeURIComponent(projectId) + '&source=' + encoded;
+  }
+  return '/modules/create/avatar?mode=audio&project=' + encodeURIComponent(projectId) + '&audio=' + encoded;
+}
+
 export function ProjectMedia({ projectId, media }: ProjectMediaProps) {
   return (
     <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-4 sm:p-5">
@@ -110,14 +123,22 @@ export function ProjectMedia({ projectId, media }: ProjectMediaProps) {
                 ) : null}
 
                 {item.signedUrl ? (
-                  <a
-                    href={item.signedUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-2 inline-flex text-[10px] font-semibold text-[var(--accent)]"
-                  >
-                    Открыть ↗
-                  </a>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Link
+                      href={buildAsSourceHref(item, projectId) || '#'}
+                      className="inline-flex rounded-lg border border-[var(--border-subtle)] px-2.5 py-1.5 text-[10px] font-semibold text-[var(--accent)] hover:border-[var(--accent)]"
+                    >
+                      Использовать как исходник →
+                    </Link>
+                    <a
+                      href={item.signedUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex px-2 py-1.5 text-[10px] font-semibold text-[var(--text-secondary)]"
+                    >
+                      Открыть ↗
+                    </a>
+                  </div>
                 ) : null}
               </div>
             </article>

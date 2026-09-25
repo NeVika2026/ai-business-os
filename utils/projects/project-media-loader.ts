@@ -33,6 +33,14 @@ function resolveTitle(row: {
   const kind = asKind(row.kind);
   const provider = String(row.provider ?? '');
 
+  if (provider === 'upload') {
+    const originalFileName =
+      typeof metadata.originalFileName === 'string'
+        ? metadata.originalFileName.trim()
+        : '';
+    if (originalFileName) return originalFileName;
+  }
+
   if (provider === 'browser-export') return 'Финальный ролик';
   if (kind === 'image') return 'Изображение';
   if (kind === 'audio') return 'Озвучка';
