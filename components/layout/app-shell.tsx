@@ -9,11 +9,19 @@ type AppShellProps = {
   pathname: string;
   email: string;
   organizationName: string;
+  role: 'owner' | 'admin' | 'member';
   header: React.ReactNode;
   children: React.ReactNode;
 };
 
-export function AppShell({ pathname, email, organizationName, header, children }: AppShellProps) {
+export function AppShell({
+  pathname,
+  email,
+  organizationName,
+  role,
+  header,
+  children,
+}: AppShellProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const isHomeCanvas = pathname === '/home';
 
@@ -35,6 +43,7 @@ export function AppShell({ pathname, email, organizationName, header, children }
         pathname={pathname}
         email={email}
         organizationName={organizationName}
+        role={role}
         isDrawerOpen={isDrawerOpen}
         onCloseDrawer={() => setIsDrawerOpen(false)}
       />
@@ -43,7 +52,7 @@ export function AppShell({ pathname, email, organizationName, header, children }
         <div className="flex h-16 shrink-0 items-center gap-3 border-b border-[var(--border-subtle)] bg-[var(--surface-0)] px-4 lg:px-6">
           <button
             type="button"
-            aria-label="Open navigation menu"
+            aria-label="Открыть меню навигации"
             onClick={() => setIsDrawerOpen(true)}
             className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-[var(--text-primary)] hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] md:hidden"
           >
