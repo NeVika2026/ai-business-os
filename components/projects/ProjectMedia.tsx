@@ -25,7 +25,7 @@ function formatDate(value: string) {
   }).format(date);
 }
 
-function useAsSourceHref(item: ProjectMediaItem, projectId: string) {
+function buildAsSourceHref(item: ProjectMediaItem, projectId: string) {
   if (!item.signedUrl) return null;
 
   const encoded = encodeURIComponent(item.signedUrl);
@@ -125,7 +125,7 @@ export function ProjectMedia({ projectId, media }: ProjectMediaProps) {
                 {item.signedUrl ? (
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Link
-                      href={useAsSourceHref(item, projectId) || '#'}
+                      href={buildAsSourceHref(item, projectId) || '#'}
                       className="inline-flex rounded-lg border border-[var(--border-subtle)] px-2.5 py-1.5 text-[10px] font-semibold text-[var(--accent)] hover:border-[var(--accent)]"
                     >
                       Использовать как исходник →
