@@ -471,7 +471,7 @@ export function FactoryBundleStudio({
           trimmed +
           '\nСобери вертикальный рекламный ролик как часть единой кампании. Сохрани главный оффер, визуальный мир и CTA.',
         ratio: '768:1280',
-        duration: 5,
+        duration: 10,
       });
     }
 
@@ -507,7 +507,7 @@ export function FactoryBundleStudio({
         promptText:
           'Создай современный инструментальный трек для этой кампании. Музыка должна поддерживать темп, настроение и оффер: ' +
           trimmed,
-        duration: 15,
+        duration: 10,
       });
     }
 
@@ -780,6 +780,21 @@ export function FactoryBundleStudio({
   const qaTask = textTasks.find((task) => task.key === 'qa');
   const packageReady = qaTask?.status === 'completed' && failedCount === 0;
 
+  const finalVideoJob = jobs.find(
+    (job) => job.spec.key === 'video' && job.status.status === 'completed',
+  );
+  const finalVoiceJob = jobs.find(
+    (job) => job.spec.key === 'voice' && job.status.status === 'completed',
+  );
+  const finalMusicJob = jobs.find(
+    (job) => job.spec.key === 'music' && job.status.status === 'completed',
+  );
+  const finalSfxJob = jobs.find(
+    (job) => job.spec.key === 'sfx' && job.status.status === 'completed',
+  );
+  const finalVoiceScript =
+    textTasks.find((task) => task.key === 'voice-script')?.content ?? '';
+
   return (
     <main className="mx-auto w-full max-w-[1380px] pb-16 text-[#f7f2e8]">
       <section className="overflow-hidden rounded-[34px] border border-white/[0.09] bg-[linear-gradient(145deg,#05070b,#0b1018_58%,#06080c)] p-6 sm:p-8">
@@ -1007,6 +1022,25 @@ export function FactoryBundleStudio({
                 </article>
               ))}
             </div>
+          ) : null}
+
+          {packageReady && finalVideoJob?.status.outputUrl ? (
+            <FinalVideoExportPanel
+              title="Финальный ролик Бизнес-завода"
+              projectId={projectId}
+              scenes={[
+                {
+                  id: 'factory-final-video',
+                  title: '',
+                  durationSeconds: finalVideoJob.spec.duration ?? 10,
+                  videoUrl: finalVideoJob.status.outputUrl,
+                  narration: finalVoiceScript,
+                },
+              ]}
+              voiceUrl={finalVoiceJob?.status.outputUrl ?? null}
+              musicUrl={finalMusicJob?.status.outputUrl ?? null}
+              sfxUrl={finalSfxJob?.status.outputUrl ?? null}
+            />
           ) : null}
 
           {textTasks.length || jobs.length ? (
