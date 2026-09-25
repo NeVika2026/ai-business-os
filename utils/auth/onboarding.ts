@@ -42,7 +42,7 @@ export async function ensureUserOnboarding(supabase: SupabaseClient) {
 
   if (!membership) {
     const { error } = await supabase.from('organizations').insert({
-      name: 'My Organization',
+      name: 'Моя организация',
       created_by: user.id,
     });
 
@@ -52,9 +52,12 @@ export async function ensureUserOnboarding(supabase: SupabaseClient) {
   }
 }
 
+export type DashboardRole = 'owner' | 'admin' | 'member';
+
 export type DashboardContext = {
   email: string;
   organizationName: string;
+  role: DashboardRole;
 };
 
 export async function getDashboardContext(
@@ -70,7 +73,7 @@ export async function getDashboardContext(
 
   const { data: membership } = await supabase
     .from('organization_members')
-    .select('organizations(name)')
+    .select('role,organizations(name)')
     .eq('user_id', user.id)
     .limit(1)
     .maybeSingle();
@@ -79,6 +82,10 @@ export async function getDashboardContext(
 
   return {
     email: user.email ?? '',
-    organizationName: organization?.name ?? 'My Organization',
+    organizationName: organization?.name ?? 'Моя организация',
+    role:
+      membership?.role === 'owner' || membership?.role === 'admin'
+        ? membership.role
+        : 'member',
   };
 }
