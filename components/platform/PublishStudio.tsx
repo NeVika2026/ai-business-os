@@ -158,11 +158,15 @@ export function PublishStudio({
       cta: variant.cta,
       projectId,
       mediaUrl:
-        variant.channel === 'telegram' || variant.channel === 'vk'
+        variant.channel === 'telegram' ||
+        variant.channel === 'vk' ||
+        variant.channel === 'youtube'
           ? mediaUrl || null
           : null,
       mediaKind:
-        variant.channel === 'telegram' || variant.channel === 'vk'
+        variant.channel === 'telegram' ||
+        variant.channel === 'vk' ||
+        variant.channel === 'youtube'
           ? mediaKind
           : null,
     });
@@ -276,7 +280,7 @@ export function PublishStudio({
                 <p className="text-sm font-black text-white/82">Медиа к публикации · необязательно</p>
                 <p className="mt-1 text-xs leading-5 text-white/48">
                   Фото, видео или аудио можно загрузить с устройства или выбрать из Медиатеки.
-                  Telegram отправляет фото, видео и аудио. ВКонтакте прикрепляет выбранное изображение.
+                  Telegram отправляет фото, видео и аудио. ВКонтакте прикрепляет изображение. YouTube принимает выбранное видео после OAuth-подключения канала.
                 </p>
               </div>
               {mediaUrl ? (
@@ -509,7 +513,7 @@ export function PublishStudio({
           ПУБЛИКАЦИЯ
         </p>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-white/62">
-          Telegram и ВКонтакте публикуют напрямую после подключения доступа. Telegram отправляет фото, видео и аудио; ВКонтакте — текст и выбранное изображение. Прямая отправка доступна владельцу и администраторам организации. Дзен, YouTube, TikTok и MAX пока получают готовые версии на копирование — без имитации подключения.
+          Telegram, ВКонтакте и YouTube публикуют напрямую после подключения доступа. Telegram отправляет фото, видео и аудио; ВКонтакте — текст и изображение; YouTube — выбранный видеофайл. Прямая отправка доступна владельцу и администраторам организации. Дзен, TikTok и MAX пока получают готовые версии на копирование — без имитации подключения.
         </p>
       </section>
     </main>
