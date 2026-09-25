@@ -50,8 +50,31 @@ describe('Business Zavod integration catalog', () => {
       'runway',
       'elevenlabs',
       'remotion',
+      'youtube-publish',
+      'tiktok-publish',
     ]) {
       assert.ok(ids.includes(id), `missing integration: ${id}`);
     }
+  });
+
+  it('reports TikTok connected only when all OAuth credentials exist', () => {
+    const missing = resolveIntegrationStatuses({
+      TIKTOK_CLIENT_KEY: 'key',
+      TIKTOK_CLIENT_SECRET: 'secret',
+    });
+    assert.equal(
+      missing.find((item) => item.id === 'tiktok-publish')?.status,
+      'missing',
+    );
+
+    const connected = resolveIntegrationStatuses({
+      TIKTOK_CLIENT_KEY: 'key',
+      TIKTOK_CLIENT_SECRET: 'secret',
+      TIKTOK_REFRESH_TOKEN: 'refresh',
+    });
+    assert.equal(
+      connected.find((item) => item.id === 'tiktok-publish')?.status,
+      'connected',
+    );
   });
 });
