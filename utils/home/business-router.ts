@@ -10,6 +10,8 @@ export type BusinessRouterOutput =
   | 'post'
   | 'telegram'
   | 'voice'
+  | 'music'
+  | 'sfx'
   | 'site'
   | 'presentation'
   | 'document';
@@ -49,6 +51,8 @@ const OUTPUT_SIGNALS: Array<{ output: BusinessRouterOutput; signals: string[] }>
   { output: 'stories', signals: ['сторис', 'stories', 'истории для соцсет'] },
   { output: 'video', signals: ['видео', 'ролик', 'рилс', 'reels', 'shorts', 'tiktok', 'тикток'] },
   { output: 'voice', signals: ['озвуч', 'голос', 'voiceover', 'диктор', 'аудиодорож'] },
+  { output: 'music', signals: ['музык', 'саундтрек', 'трек', 'music', 'джингл'] },
+  { output: 'sfx', signals: ['звуковой эффект', 'звуковые эффекты', 'sfx', 'фоли', 'whoosh', 'атмосферные звуки'] },
   { output: 'banner', signals: ['баннер', 'рекламный креатив', 'креатив'] },
   { output: 'image', signals: ['картин', 'изображен', 'визуал', 'фото', 'постер', 'обложк'] },
   { output: 'presentation', signals: ['презентац', 'слайд', 'pitch deck', 'питч-дек'] },
@@ -240,6 +244,8 @@ function toolsForOutputs(outputs: BusinessRouterOutput[]): string[] {
       tools.add('media.image.generate');
     }
     if (output === 'voice') tools.add('media.voice.generate');
+    if (output === 'music') tools.add('media.music.generate');
+    if (output === 'sfx') tools.add('media.sound_effect.generate');
     if (output === 'post' || output === 'telegram' || output === 'document') {
       tools.add('copy.generate');
     }
@@ -266,6 +272,8 @@ function dependenciesForOutputs(outputs: BusinessRouterOutput[]): Record<string,
   if (outputs.includes('banner')) dependencies.banner = ['strategy', 'copy'];
   if (outputs.includes('post')) dependencies.post = ['strategy'];
   if (outputs.includes('telegram')) dependencies.telegram = ['strategy'];
+  if (outputs.includes('music')) dependencies.music = ['strategy'];
+  if (outputs.includes('sfx')) dependencies.sfx = ['strategy'];
 
   return dependencies;
 }
@@ -310,6 +318,32 @@ export function resolveBusinessRouterPlan(input: string): BusinessRouterPlan {
       parallel: [],
       dependencies: {},
       directHref: href,
+      studioMode: null,
+    };
+  }
+
+  if (outputs.length === 1 && outputs[0] === 'music') {
+    return {
+      kind: 'direct',
+      intent: 'single_production',
+      outputs,
+      tools: toolsForOutputs(outputs),
+      parallel: [],
+      dependencies: dependenciesForOutputs(outputs),
+      directHref: '/modules/create/music',
+      studioMode: null,
+    };
+  }
+
+  if (outputs.length === 1 && outputs[0] === 'sfx') {
+    return {
+      kind: 'direct',
+      intent: 'single_production',
+      outputs,
+      tools: toolsForOutputs(outputs),
+      parallel: [],
+      dependencies: dependenciesForOutputs(outputs),
+      directHref: '/modules/create/sound-effects',
       studioMode: null,
     };
   }
