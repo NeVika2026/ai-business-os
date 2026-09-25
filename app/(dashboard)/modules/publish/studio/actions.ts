@@ -251,7 +251,11 @@ export async function getPublishingConnectionStatusAction(): Promise<PublishingC
       process.env.VK_OWNER_ID?.trim(),
     ),
     dzen: false,
-    youtube: false,
+    youtube: Boolean(
+      process.env.GOOGLE_OAUTH_CLIENT_ID?.trim() &&
+      process.env.GOOGLE_OAUTH_CLIENT_SECRET?.trim() &&
+      process.env.YOUTUBE_REFRESH_TOKEN?.trim(),
+    ),
     tiktok: false,
     max: false,
   };
@@ -419,6 +423,131 @@ async function uploadVkWallPhoto(input: {
     (photo.access_key ? '_' + photo.access_key : '');
 }
 
+
+async function getYouTubeAccessToken(): Promise<string> {
+  const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID?.trim();
+  const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET?.trim();
+  const refreshToken = process.env.YOUTUBE_REFRESH_TOKEN?.trim();
+
+  if (!clientId || !clientSecret || !refreshToken) {
+    throw new Error('YouTube не подключён. Нужны Google OAuth client ID, client secret и refresh token.');
+  }
+
+  const body = new URLSearchParams({
+    client_id: clientId,
+    client_secret: clientSecret,
+    refresh_token: refreshToken,
+    grant_type: 'refresh_token',
+  });
+
+  const response = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+    cache: 'no-store',
+  });
+
+  const data = (await response.json()) as {
+    access_token?: string;
+    error_description?: string;
+  };
+
+  if (!response.ok || !data.access_token) {
+    throw new Error(data.error_description || 'Не удалось обновить доступ YouTube.');
+  }
+
+  return data.access_token;
+}
+
+async function publishYouTubeVideo(input: {
+  mediaUrl: string;
+  title: string;
+  description: string;
+}): Promise<string> {
+  const accessToken = await getYouTubeAccessToken();
+  const source = await fetch(input.mediaUrl, { cache: 'no-store' });
+
+  if (!source.ok) {
+    throw new Error('Не удалось скачать видео из Медиатеки для YouTube.');
+  }
+
+  const contentType = source.headers.get('content-type') || 'video/mp4';
+  if (!contentType.startsWith('video/')) {
+    throw new Error('Для YouTube нужно выбрать видео.');
+  }
+
+  const bytes = await source.arrayBuffer();
+  const maxBytes = 100 * 1024 * 1024;
+
+  if (bytes.byteLength > maxBytes) {
+    throw new Error('Для прямой публикации из Бизнес-завода видео должно быть не больше 100 МБ.');
+  }
+
+  const privacyRaw = process.env.YOUTUBE_PRIVACY_STATUS?.trim().toLowerCase();
+  const privacyStatus =
+    privacyRaw === 'public' || privacyRaw === 'private' || privacyRaw === 'unlisted'
+      ? privacyRaw
+      : 'unlisted';
+
+  const metadata = {
+    snippet: {
+      title: input.title.slice(0, 100) || 'Видео Бизнес-завода',
+      description: input.description.slice(0, 5000),
+      categoryId: '22',
+    },
+    status: {
+      privacyStatus,
+      selfDeclaredMadeForKids: false,
+    },
+  };
+
+  const initResponse = await fetch(
+    'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + accessToken,
+        'Content-Type': 'application/json; charset=UTF-8',
+        'X-Upload-Content-Length': String(bytes.byteLength),
+        'X-Upload-Content-Type': contentType,
+      },
+      body: JSON.stringify(metadata),
+      cache: 'no-store',
+    },
+  );
+
+  if (!initResponse.ok) {
+    const detail = (await initResponse.text()).slice(0, 700);
+    throw new Error('YouTube не создал сессию загрузки: ' + (detail || initResponse.statusText));
+  }
+
+  const uploadUrl = initResponse.headers.get('location');
+  if (!uploadUrl) {
+    throw new Error('YouTube не вернул адрес загрузки.');
+  }
+
+  const uploadResponse = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': contentType,
+      'Content-Length': String(bytes.byteLength),
+    },
+    body: bytes,
+    cache: 'no-store',
+  });
+
+  const data = (await uploadResponse.json()) as {
+    id?: string;
+    error?: { message?: string };
+  };
+
+  if (!uploadResponse.ok || !data.id) {
+    throw new Error(data.error?.message || 'YouTube отклонил загрузку видео.');
+  }
+
+  return data.id;
+}
+
 export async function publishVariantAction(input: {
   channel: PublicationChannelId;
   title?: string;
@@ -433,7 +562,11 @@ export async function publishVariantAction(input: {
     return { ok: false, message: access.message };
   }
 
-  if (input.channel !== 'telegram' && input.channel !== 'vk') {
+  if (
+    input.channel !== 'telegram' &&
+    input.channel !== 'vk' &&
+    input.channel !== 'youtube'
+  ) {
     return {
       ok: false,
       message: 'Прямая публикация для этой площадки ещё не подключена.',
@@ -446,6 +579,50 @@ export async function publishVariantAction(input: {
 
   if (!text) {
     return { ok: false, message: 'Нет текста для публикации.' };
+  }
+
+  if (input.channel === 'youtube') {
+    const mediaUrl = input.mediaUrl?.trim() || '';
+    if (!mediaUrl || input.mediaKind !== 'video') {
+      return {
+        ok: false,
+        message: 'Для прямой публикации в YouTube выберите готовое видео.',
+      };
+    }
+
+    try {
+      const videoId = await publishYouTubeVideo({
+        mediaUrl,
+        title: input.title?.trim() || 'Видео Бизнес-завода',
+        description: [input.body.trim(), input.cta?.trim()].filter(Boolean).join('\n\n'),
+      });
+
+      if (input.projectId) {
+        await saveFactoryArtifact({
+          projectId: input.projectId,
+          stage: 'publish',
+          title: 'Опубликовано в YouTube',
+          content: text,
+          metadata: {
+            channel: 'youtube',
+            videoId,
+            published: true,
+            mediaKind: 'video',
+            mediaUrl,
+          },
+        });
+      }
+
+      return {
+        ok: true,
+        message: 'Видео отправлено в YouTube. Video ID: ' + videoId + '.',
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        message: error instanceof Error ? error.message : 'Не удалось опубликовать видео в YouTube.',
+      };
+    }
   }
 
   if (input.channel === 'vk') {
