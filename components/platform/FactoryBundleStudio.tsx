@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
 import {
@@ -20,9 +21,14 @@ import {
   type BusinessRouterOutput,
 } from '@/utils/home/business-router';
 import type { CreateStudioModeId } from '@/utils/platform/create-studio';
+import {
+  loadLatestFactoryBundleSnapshotAction,
+  saveFactoryBundleSnapshotAction,
+} from '@/app/(dashboard)/modules/factory-chain/actions';
 
 type FactoryBundleStudioProps = {
   initialPrompt: string;
+  initialProjectId?: string | null;
 };
 
 type TextTaskStatus = 'queued' | 'running' | 'completed' | 'failed';
@@ -202,16 +208,22 @@ function buildTextTasks(outputs: BusinessRouterOutput[]): TextTask[] {
   return tasks;
 }
 
-export function FactoryBundleStudio({ initialPrompt }: FactoryBundleStudioProps) {
+export function FactoryBundleStudio({
+  initialPrompt,
+  initialProjectId = null,
+}: FactoryBundleStudioProps) {
+  const router = useRouter();
   const [prompt, setPrompt] = useState(initialPrompt);
   const [approved, setApproved] = useState(false);
   const [message, setMessage] = useState('');
-  const [projectId, setProjectId] = useState<string | null>(null);
+  const [projectId, setProjectId] = useState<string | null>(initialProjectId);
   const [textTasks, setTextTasks] = useState<TextTask[]>([]);
   const [jobs, setJobs] = useState<MediaJob[]>([]);
   const [voiceId, setVoiceId] = useState<string | null>(null);
   const [isStarting, startTransition] = useTransition();
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const snapshotRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const restoredRef = useRef(!initialProjectId);
 
   const plan = useMemo(() => resolveBusinessRouterPlan(prompt), [prompt]);
   const paidOutputs = plan.outputs.filter((output) => PAID_OUTPUTS.has(output));
@@ -232,6 +244,54 @@ export function FactoryBundleStudio({ initialPrompt }: FactoryBundleStudioProps)
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!initialProjectId) return;
+
+    let cancelled = false;
+
+    void loadLatestFactoryBundleSnapshotAction(initialProjectId).then((snapshot) => {
+      if (cancelled) return;
+
+      if (snapshot) {
+        setPrompt(snapshot.prompt || initialPrompt);
+        setApproved(snapshot.approved);
+        setTextTasks(snapshot.textTasks as unknown as TextTask[]);
+        setJobs(snapshot.jobs as unknown as MediaJob[]);
+        setProjectId(initialProjectId);
+        setMessage('Состояние проекта восстановлено. Незавершённые этапы продолжают проверяться.');
+      }
+
+      restoredRef.current = true;
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [initialProjectId, initialPrompt]);
+
+  useEffect(() => {
+    if (!projectId || !restoredRef.current) return;
+    if (!textTasks.length && !jobs.length) return;
+
+    if (snapshotRef.current) clearTimeout(snapshotRef.current);
+
+    snapshotRef.current = setTimeout(() => {
+      void saveFactoryBundleSnapshotAction({
+        projectId,
+        snapshot: {
+          prompt,
+          approved,
+          textTasks: textTasks as unknown as Array<Record<string, unknown>>,
+          jobs: jobs as unknown as Array<Record<string, unknown>>,
+        },
+      });
+    }, 900);
+
+    return () => {
+      if (snapshotRef.current) clearTimeout(snapshotRef.current);
+    };
+  }, [approved, jobs, projectId, prompt, textTasks]);
 
   useEffect(() => {
     if (!jobs.some((job) => job.status.status === 'pending' || job.status.status === 'running')) {
@@ -537,6 +597,8 @@ export function FactoryBundleStudio({ initialPrompt }: FactoryBundleStudioProps)
 
       const activeProjectId = strategy.projectId;
       setProjectId(activeProjectId);
+      restoredRef.current = true;
+      router.replace('/modules/factory?project=' + encodeURIComponent(activeProjectId));
       updateTextTask(strategyTask.key, {
         status: 'completed',
         content: strategy.content,
