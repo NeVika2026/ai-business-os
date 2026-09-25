@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 
+import { MediaUploadField } from '@/components/media/MediaUploadField';
 import { FactoryChainBar } from '@/components/platform/FactoryChainBar';
 import {
   getFactoryArtifactAction,
@@ -67,6 +68,9 @@ export function PublishStudio({
   });
   const [publishingChannel, setPublishingChannel] = useState<PublicationChannelId | null>(null);
   const [handoffMessage, setHandoffMessage] = useState('');
+  const [mediaUrl, setMediaUrl] = useState('');
+  const [mediaKind, setMediaKind] = useState<'image' | 'video' | 'audio' | null>(null);
+  const [mediaName, setMediaName] = useState('');
   const [isPending, startTransition] = useTransition();
 
   const canBuild = source.trim().length > 3 && selected.length > 0 && !isPending;
@@ -153,6 +157,8 @@ export function PublishStudio({
       body: variant.body,
       cta: variant.cta,
       projectId,
+      mediaUrl: variant.channel === 'telegram' ? mediaUrl || null : null,
+      mediaKind: variant.channel === 'telegram' ? mediaKind : null,
     });
 
     setPublishingChannel(null);
@@ -257,6 +263,58 @@ export function PublishStudio({
               className="resize-none rounded-[22px] border border-white/[0.09] bg-black/25 px-4 py-4 text-base leading-7 text-white outline-none placeholder:text-white/42 focus:border-[#69e4ee]/28"
             />
           </label>
+
+          <div className="mt-4 rounded-[20px] border border-white/[0.08] bg-white/[0.02] p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-black text-white/82">Медиа к публикации · необязательно</p>
+                <p className="mt-1 text-xs leading-5 text-white/48">
+                  Фото, видео или аудио можно загрузить с устройства или выбрать из Медиатеки.
+                  Сейчас вложение отправляется напрямую вместе с публикацией в Telegram.
+                </p>
+              </div>
+              {mediaUrl ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMediaUrl('');
+                    setMediaKind(null);
+                    setMediaName('');
+                  }}
+                  className="rounded-xl border border-white/[0.08] px-3 py-2 text-xs font-bold text-white/54"
+                >
+                  Убрать медиа
+                </button>
+              ) : null}
+            </div>
+
+            <div className="mt-3">
+              <MediaUploadField
+                accept="image/*,video/*,audio/*"
+                projectId={projectId}
+                autoCreateProject
+                projectSeed="Публикация"
+                onProjectReady={setProjectId}
+                label="Загрузить медиа с устройства"
+                onUploaded={({ url, kind, fileName }) => {
+                  setMediaUrl(url);
+                  setMediaKind(kind);
+                  setMediaName(fileName);
+                }}
+              />
+            </div>
+
+            {mediaUrl ? (
+              <div className="mt-3 rounded-xl border border-emerald-300/10 bg-emerald-300/[0.035] px-3 py-2.5">
+                <p className="truncate text-xs font-bold text-emerald-100/80">
+                  {mediaName || 'Медиа выбрано'}
+                </p>
+                <p className="mt-1 text-[10px] uppercase tracking-[.1em] text-emerald-200/55">
+                  {mediaKind === 'image' ? 'Изображение' : mediaKind === 'video' ? 'Видео' : 'Аудио'}
+                </p>
+              </div>
+            ) : null}
+          </div>
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <label className="grid gap-2">
@@ -445,7 +503,7 @@ export function PublishStudio({
           ПУБЛИКАЦИЯ
         </p>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-white/62">
-          Telegram уже умеет публиковать напрямую после подключения токена и канала. Остальные площадки пока готовят финальные версии на копирование и будут подключаться по мере добавления авторизации. Никакой скрытой публикации от имени пользователя.
+          Telegram и ВКонтакте умеют публиковать напрямую после подключения доступа. Telegram также может отправлять выбранное фото, видео или аудио вместе с текстом. Дзен, YouTube, TikTok и MAX пока получают готовые версии на копирование — без имитации подключения и без скрытой публикации от имени пользователя.
         </p>
       </section>
     </main>
