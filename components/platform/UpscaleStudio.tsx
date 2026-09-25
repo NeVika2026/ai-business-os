@@ -16,6 +16,7 @@ type Kind = 'image' | 'video';
 type Props = {
   initialKind: Kind;
   projectId?: string | null;
+  initialSourceUrl?: string;
 };
 
 function pendingStatus(): MediaStudioStatusResult {
@@ -28,9 +29,9 @@ function pendingStatus(): MediaStudioStatusResult {
   };
 }
 
-export function UpscaleStudio({ initialKind, projectId = null }: Props) {
+export function UpscaleStudio({ initialKind, projectId = null, initialSourceUrl = '' }: Props) {
   const [kind, setKind] = useState<Kind>(initialKind);
-  const [sourceUrl, setSourceUrl] = useState('');
+  const [sourceUrl, setSourceUrl] = useState(initialSourceUrl);
   const [approved, setApproved] = useState(false);
   const [scaleFactor, setScaleFactor] = useState<2 | 4 | 8 | 16>(2);
   const [resolution, setResolution] = useState<'720p' | '1k' | '2k' | '4k'>('2k');
