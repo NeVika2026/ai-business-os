@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+
+import { FinalVideoExportPanel } from '@/components/platform/FinalVideoExportPanel';
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
 import {
@@ -199,6 +201,23 @@ function buildTextTasks(outputs: BusinessRouterOutput[]): TextTask[] {
       title: 'Сайт',
       artifactType: 'website_html',
       format: 'Готовый адаптивный одностраничный сайт.',
+      status: 'queued',
+      content: '',
+      error: '',
+    });
+  }
+
+  if (outputs.includes('voice')) {
+    tasks.push({
+      key: 'voice-script',
+      label: 'Текст озвучки',
+      mode: 'document',
+      title: 'Текст озвучки',
+      artifactType: 'voice-script',
+      format:
+        'Напиши только готовый текст диктора на 8–10 секунд. Без заголовков, пояснений, кавычек и служебных слов. Один сильный хук, одна ключевая выгода, короткий CTA.',
+      context:
+        'Это озвучка рекламного ролика. Текст должен звучать естественно вслух и соответствовать общему офферу кампании.',
       status: 'queued',
       content: '',
       error: '',
