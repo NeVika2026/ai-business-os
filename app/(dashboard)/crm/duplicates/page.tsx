@@ -1,5 +1,6 @@
 import { CrmDuplicates } from '@/components/crm/CrmDuplicates';
 import { createClient } from '@/services/supabase/server';
+import { requireOrganizationAdmin } from '@/utils/auth/authorization';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
 
 type DuplicateLead = {
@@ -21,6 +22,7 @@ function normalizePhone(value: string | null) {
 }
 
 export default async function CrmDuplicatesPage() {
+  await requireOrganizationAdmin();
   const supabase = await createClient();
   const organizationId = await getCurrentOrganizationId(supabase);
 

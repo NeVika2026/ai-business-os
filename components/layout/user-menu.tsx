@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useId, useRef, useState } from 'react';
 
 type UserMenuProps = {
@@ -79,7 +80,17 @@ export function UserMenu({ email, organizationName, role, logoutAction }: UserMe
               {roleLabel(role)}
             </p>
           </div>
-          <form action={logoutAction} className="pt-3" role="none">
+          <div className="pt-3" role="none">
+            <Link
+              href="/cabinet"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="mb-1 block w-full rounded-lg px-3 py-2 text-left text-sm text-[var(--text-primary)] hover:bg-[var(--surface-2)]"
+            >
+              Личный кабинет
+            </Link>
+          </div>
+          <form action={logoutAction} role="none">
             <button
               type="submit"
               role="menuitem"

@@ -13,3 +13,10 @@ export const MAIN_NAVIGATION: NavItem[] = BUSINESS_ZAVOD_NAVIGATION.map((item) =
 }));
 
 export const NAVIGATION_HREF_SET = new Set(MAIN_NAVIGATION.map((item) => item.href));
+
+
+export const ADMIN_ONLY_NAV_HREFS = new Set([
+  '/settings',
+  '/crm/import',
+  '/crm/duplicates',
+]);

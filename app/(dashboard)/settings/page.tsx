@@ -1,8 +1,10 @@
 import { DemoModeToggle } from '@/components/demo/DemoModeToggle';
 import { IntegrationsDashboard } from '@/components/platform/IntegrationsDashboard';
+import { requireOrganizationAdmin } from '@/utils/auth/authorization';
 import { resolveIntegrationStatuses } from '@/utils/platform/integration-catalog';
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  await requireOrganizationAdmin();
   const integrations = resolveIntegrationStatuses(process.env);
 
   return (

@@ -14,6 +14,7 @@ import { saveFirstResult, type StoredFirstResult } from '@/lib/login/first-resul
 import { RUNTIME_EVENT_TYPES } from '@/types/event-runtime';
 import type { GatewayRequest } from '@/types/runtime/dto';
 import { createClient } from '@/services/supabase/server';
+import { ensureUserOnboarding } from '@/utils/auth/onboarding';
 
 function getOrigin(headersList: Headers) {
   const host = headersList.get('x-forwarded-host') ?? headersList.get('host');
@@ -82,7 +83,109 @@ export async function sendMagicLink(formData: FormData) {
     redirect(`/login/sign-in?error=send_failed&next=${nextQuery}`);
   }
 
-  redirect(`/login/sign-in?sent=1&next=${nextQuery}`);
+  redirect(`/login/sign-in?channel=email&sent=1&next=${nextQuery}`);
+}
+
+
+function normalizedPhone(value: FormDataEntryValue | null) {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  const digits = trimmed.replace(/\D/g, '');
+  if (digits.length < 10 || digits.length > 15) return '';
+  return trimmed.startsWith('+') ? '+' + digits : '+' + digits;
+}
+
+export async function verifyEmailOtp(formData: FormData) {
+  const email = formData.get('email');
+  const token = formData.get('token');
+  const nextPath = safeLoginNext(formData.get('next'));
+  const nextQuery = encodeURIComponent(nextPath);
+
+  if (
+    typeof email !== 'string' ||
+    !email.trim() ||
+    typeof token !== 'string' ||
+    !/^\d{6,8}$/.test(token.trim())
+  ) {
+    redirect(`/login/sign-in?channel=email&sent=1&error=invalid_code&next=${nextQuery}`);
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.verifyOtp({
+    email: email.trim(),
+    token: token.trim(),
+    type: 'email',
+  });
+
+  if (error) {
+    redirect(`/login/sign-in?channel=email&sent=1&error=invalid_code&next=${nextQuery}`);
+  }
+
+  try {
+    await ensureUserOnboarding(supabase);
+  } catch {
+    redirect(`/login/sign-in?channel=email&sent=1&error=auth&next=${nextQuery}`);
+  }
+
+  redirect(nextPath);
+}
+
+export async function sendPhoneOtp(formData: FormData) {
+  const phone = normalizedPhone(formData.get('phone'));
+  const nextPath = safeLoginNext(formData.get('next'));
+  const nextQuery = encodeURIComponent(nextPath);
+
+  if (!phone) {
+    redirect(`/login/sign-in?channel=phone&error=invalid_phone&next=${nextQuery}`);
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithOtp({
+    phone,
+    options: {
+      shouldCreateUser: false,
+    },
+  });
+
+  if (error) {
+    redirect(`/login/sign-in?channel=phone&error=sms_unavailable&next=${nextQuery}`);
+  }
+
+  redirect(`/login/sign-in?channel=phone&sent=1&next=${nextQuery}`);
+}
+
+export async function verifyPhoneOtp(formData: FormData) {
+  const phone = normalizedPhone(formData.get('phone'));
+  const token = formData.get('token');
+  const nextPath = safeLoginNext(formData.get('next'));
+  const nextQuery = encodeURIComponent(nextPath);
+
+  if (!phone) {
+    redirect(`/login/sign-in?channel=phone&sent=1&error=invalid_phone&next=${nextQuery}`);
+  }
+
+  if (typeof token !== 'string' || !/^\d{6,8}$/.test(token.trim())) {
+    redirect(`/login/sign-in?channel=phone&sent=1&error=invalid_code&next=${nextQuery}`);
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.verifyOtp({
+    phone,
+    token: token.trim(),
+    type: 'sms',
+  });
+
+  if (error) {
+    redirect(`/login/sign-in?channel=phone&sent=1&error=invalid_code&next=${nextQuery}`);
+  }
+
+  try {
+    await ensureUserOnboarding(supabase);
+  } catch {
+    redirect(`/login/sign-in?channel=phone&sent=1&error=auth&next=${nextQuery}`);
+  }
+
+  redirect(nextPath);
 }
 
 export type GenerateFirstPlanState =
