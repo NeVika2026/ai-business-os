@@ -256,7 +256,11 @@ export async function getPublishingConnectionStatusAction(): Promise<PublishingC
       process.env.GOOGLE_OAUTH_CLIENT_SECRET?.trim() &&
       process.env.YOUTUBE_REFRESH_TOKEN?.trim(),
     ),
-    tiktok: false,
+    tiktok: Boolean(
+      process.env.TIKTOK_CLIENT_KEY?.trim() &&
+      process.env.TIKTOK_CLIENT_SECRET?.trim() &&
+      process.env.TIKTOK_REFRESH_TOKEN?.trim(),
+    ),
     max: false,
   };
 }
@@ -548,6 +552,247 @@ async function publishYouTubeVideo(input: {
   return data.id;
 }
 
+
+type TikTokCreatorInfo = {
+  username: string;
+  nickname: string;
+  avatarUrl: string;
+  privacyLevels: string[];
+  commentDisabled: boolean;
+  duetDisabled: boolean;
+  stitchDisabled: boolean;
+  maxDurationSeconds: number | null;
+};
+
+async function getTikTokAccessToken(): Promise<string> {
+  const clientKey = process.env.TIKTOK_CLIENT_KEY?.trim();
+  const clientSecret = process.env.TIKTOK_CLIENT_SECRET?.trim();
+  const refreshToken = process.env.TIKTOK_REFRESH_TOKEN?.trim();
+
+  if (!clientKey || !clientSecret || !refreshToken) {
+    throw new Error('TikTok не подключён. Нужны Client Key, Client Secret и Refresh Token.');
+  }
+
+  const body = new URLSearchParams({
+    client_key: clientKey,
+    client_secret: clientSecret,
+    grant_type: 'refresh_token',
+    refresh_token: refreshToken,
+  });
+
+  const response = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+    cache: 'no-store',
+  });
+
+  const data = (await response.json()) as {
+    access_token?: string;
+    error?: string;
+    error_description?: string;
+  };
+
+  if (!response.ok || !data.access_token) {
+    throw new Error(
+      data.error_description ||
+        data.error ||
+        'Не удалось обновить доступ TikTok.',
+    );
+  }
+
+  return data.access_token;
+}
+
+async function loadTikTokCreatorInfo(accessToken: string): Promise<TikTokCreatorInfo> {
+  const response = await fetch(
+    'https://open.tiktokapis.com/v2/post/publish/creator_info/query/',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + accessToken,
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      cache: 'no-store',
+    },
+  );
+
+  const payload = (await response.json()) as {
+    data?: {
+      creator_username?: string;
+      creator_nickname?: string;
+      creator_avatar_url?: string;
+      privacy_level_options?: string[];
+      comment_disabled?: boolean;
+      duet_disabled?: boolean;
+      stitch_disabled?: boolean;
+      max_video_post_duration_sec?: number;
+    };
+    error?: { code?: string; message?: string };
+  };
+
+  if (
+    !response.ok ||
+    payload.error?.code && payload.error.code !== 'ok' ||
+    !payload.data
+  ) {
+    throw new Error(
+      payload.error?.message || 'TikTok не вернул данные аккаунта.',
+    );
+  }
+
+  return {
+    username: payload.data.creator_username ?? '',
+    nickname: payload.data.creator_nickname ?? '',
+    avatarUrl: payload.data.creator_avatar_url ?? '',
+    privacyLevels: payload.data.privacy_level_options ?? [],
+    commentDisabled: Boolean(payload.data.comment_disabled),
+    duetDisabled: Boolean(payload.data.duet_disabled),
+    stitchDisabled: Boolean(payload.data.stitch_disabled),
+    maxDurationSeconds:
+      typeof payload.data.max_video_post_duration_sec === 'number'
+        ? payload.data.max_video_post_duration_sec
+        : null,
+  };
+}
+
+export async function getTikTokCreatorInfoAction(): Promise<
+  | { ok: true; creator: TikTokCreatorInfo }
+  | { ok: false; message: string }
+> {
+  const access = await ensureDirectPublishingAccess();
+  if (!access.ok) {
+    return { ok: false, message: access.message };
+  }
+
+  try {
+    const token = await getTikTokAccessToken();
+    const creator = await loadTikTokCreatorInfo(token);
+    return { ok: true, creator };
+  } catch (error) {
+    return {
+      ok: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : 'Не удалось получить данные TikTok.',
+    };
+  }
+}
+
+async function publishTikTokVideo(input: {
+  mediaUrl: string;
+  caption: string;
+  privacyLevel?: string | null;
+}): Promise<{ publishId: string; privacyLevel: string }> {
+  const accessToken = await getTikTokAccessToken();
+  const creator = await loadTikTokCreatorInfo(accessToken);
+
+  const source = await fetch(input.mediaUrl, { cache: 'no-store' });
+  if (!source.ok) {
+    throw new Error('Не удалось скачать видео из Медиатеки для TikTok.');
+  }
+
+  const contentType = source.headers.get('content-type') || 'video/mp4';
+  if (!['video/mp4', 'video/quicktime', 'video/webm'].includes(contentType)) {
+    throw new Error('TikTok принимает MP4, MOV или WebM.');
+  }
+
+  const bytes = await source.arrayBuffer();
+  const maxBytes = 64 * 1024 * 1024;
+
+  if (bytes.byteLength > maxBytes) {
+    throw new Error(
+      'Для прямой публикации в TikTok видео должно быть не больше 64 МБ.',
+    );
+  }
+
+  if (bytes.byteLength < 1) {
+    throw new Error('Видео для TikTok пустое.');
+  }
+
+  const requestedPrivacy = input.privacyLevel?.trim() || '';
+  const privacyLevel = creator.privacyLevels.includes(requestedPrivacy)
+    ? requestedPrivacy
+    : creator.privacyLevels.includes('SELF_ONLY')
+      ? 'SELF_ONLY'
+      : creator.privacyLevels[0];
+
+  if (!privacyLevel) {
+    throw new Error('TikTok не вернул доступный уровень приватности.');
+  }
+
+  const initResponse = await fetch(
+    'https://open.tiktokapis.com/v2/post/publish/video/init/',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + accessToken,
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: JSON.stringify({
+        post_info: {
+          title: input.caption.slice(0, 2200),
+          privacy_level: privacyLevel,
+          disable_duet: creator.duetDisabled,
+          disable_comment: creator.commentDisabled,
+          disable_stitch: creator.stitchDisabled,
+          video_cover_timestamp_ms: 1000,
+          is_aigc: true,
+        },
+        source_info: {
+          source: 'FILE_UPLOAD',
+          video_size: bytes.byteLength,
+          chunk_size: bytes.byteLength,
+          total_chunk_count: 1,
+        },
+      }),
+      cache: 'no-store',
+    },
+  );
+
+  const initialized = (await initResponse.json()) as {
+    data?: { publish_id?: string; upload_url?: string };
+    error?: { code?: string; message?: string };
+  };
+
+  if (
+    !initResponse.ok ||
+    initialized.error?.code && initialized.error.code !== 'ok' ||
+    !initialized.data?.publish_id ||
+    !initialized.data?.upload_url
+  ) {
+    throw new Error(
+      initialized.error?.message || 'TikTok не создал сессию публикации.',
+    );
+  }
+
+  const uploadResponse = await fetch(initialized.data.upload_url, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': contentType,
+      'Content-Length': String(bytes.byteLength),
+      'Content-Range':
+        'bytes 0-' + String(bytes.byteLength - 1) + '/' + String(bytes.byteLength),
+    },
+    body: bytes,
+    cache: 'no-store',
+  });
+
+  if (!uploadResponse.ok) {
+    const detail = (await uploadResponse.text()).slice(0, 500);
+    throw new Error(
+      'TikTok отклонил загрузку видео: ' +
+        (detail || uploadResponse.statusText),
+    );
+  }
+
+  return {
+    publishId: initialized.data.publish_id,
+    privacyLevel,
+  };
+}
+
 export async function publishVariantAction(input: {
   channel: PublicationChannelId;
   title?: string;
@@ -556,6 +801,7 @@ export async function publishVariantAction(input: {
   projectId?: string | null;
   mediaUrl?: string | null;
   mediaKind?: 'image' | 'video' | 'audio' | null;
+  tiktokPrivacyLevel?: string | null;
 }): Promise<{ ok: true; message: string } | { ok: false; message: string }> {
   const access = await ensureDirectPublishingAccess();
   if (!access.ok) {
@@ -565,7 +811,8 @@ export async function publishVariantAction(input: {
   if (
     input.channel !== 'telegram' &&
     input.channel !== 'vk' &&
-    input.channel !== 'youtube'
+    input.channel !== 'youtube' &&
+    input.channel !== 'tiktok'
   ) {
     return {
       ok: false,
@@ -621,6 +868,62 @@ export async function publishVariantAction(input: {
       return {
         ok: false,
         message: error instanceof Error ? error.message : 'Не удалось опубликовать видео в YouTube.',
+      };
+    }
+  }
+
+  if (input.channel === 'tiktok') {
+    const mediaUrl = input.mediaUrl?.trim() || '';
+    if (!mediaUrl || input.mediaKind !== 'video') {
+      return {
+        ok: false,
+        message: 'Для прямой публикации в TikTok выберите готовое видео.',
+      };
+    }
+
+    try {
+      const result = await publishTikTokVideo({
+        mediaUrl,
+        caption: [input.title?.trim(), input.body.trim(), input.cta?.trim()]
+          .filter(Boolean)
+          .join('\n\n'),
+        privacyLevel: input.tiktokPrivacyLevel,
+      });
+
+      if (input.projectId) {
+        await saveFactoryArtifact({
+          projectId: input.projectId,
+          stage: 'publish',
+          title: 'Отправлено в TikTok',
+          content: text,
+          metadata: {
+            channel: 'tiktok',
+            publishId: result.publishId,
+            privacyLevel: result.privacyLevel,
+            published: true,
+            mediaKind: 'video',
+            mediaUrl,
+            aiGenerated: true,
+          },
+        });
+      }
+
+      return {
+        ok: true,
+        message:
+          'Видео передано в TikTok. Publish ID: ' +
+          result.publishId +
+          '. Приватность: ' +
+          result.privacyLevel +
+          '.',
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Не удалось отправить видео в TikTok.',
       };
     }
   }
