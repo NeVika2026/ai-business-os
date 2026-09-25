@@ -157,8 +157,14 @@ export function PublishStudio({
       body: variant.body,
       cta: variant.cta,
       projectId,
-      mediaUrl: variant.channel === 'telegram' ? mediaUrl || null : null,
-      mediaKind: variant.channel === 'telegram' ? mediaKind : null,
+      mediaUrl:
+        variant.channel === 'telegram' || variant.channel === 'vk'
+          ? mediaUrl || null
+          : null,
+      mediaKind:
+        variant.channel === 'telegram' || variant.channel === 'vk'
+          ? mediaKind
+          : null,
     });
 
     setPublishingChannel(null);
@@ -270,7 +276,7 @@ export function PublishStudio({
                 <p className="text-sm font-black text-white/82">Медиа к публикации · необязательно</p>
                 <p className="mt-1 text-xs leading-5 text-white/48">
                   Фото, видео или аудио можно загрузить с устройства или выбрать из Медиатеки.
-                  Сейчас вложение отправляется напрямую вместе с публикацией в Telegram.
+                  Telegram отправляет фото, видео и аудио. ВКонтакте прикрепляет выбранное изображение.
                 </p>
               </div>
               {mediaUrl ? (
@@ -503,7 +509,7 @@ export function PublishStudio({
           ПУБЛИКАЦИЯ
         </p>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-white/62">
-          Telegram и ВКонтакте умеют публиковать напрямую после подключения доступа. Telegram также может отправлять выбранное фото, видео или аудио вместе с текстом. Дзен, YouTube, TikTok и MAX пока получают готовые версии на копирование — без имитации подключения и без скрытой публикации от имени пользователя.
+          Telegram и ВКонтакте публикуют напрямую после подключения доступа. Telegram отправляет фото, видео и аудио; ВКонтакте — текст и выбранное изображение. Прямая отправка доступна владельцу и администраторам организации. Дзен, YouTube, TikTok и MAX пока получают готовые версии на копирование — без имитации подключения.
         </p>
       </section>
     </main>
