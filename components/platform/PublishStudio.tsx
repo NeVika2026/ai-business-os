@@ -213,6 +213,34 @@ export function PublishStudio({
     setMessage(result.message);
   };
 
+  const downloadDzenMarkdown = (variant: PublicationVariant) => {
+    const content = [
+      variant.title ? '# ' + variant.title : '',
+      variant.body,
+      variant.cta ? '\n**CTA:** ' + variant.cta : '',
+      variant.notes ? '\n---\n' + variant.notes : '',
+    ]
+      .filter(Boolean)
+      .join('\n\n');
+
+    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    const safeTitle = (variant.title || 'dzen-publication')
+      .replace(/[^a-zA-Zа-яА-Я0-9_-]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 80) || 'dzen-publication';
+
+    anchor.href = url;
+    anchor.download = safeTitle + '.md';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+    setMessage('Файл для Дзена скачан в Markdown.');
+  };
+
   const copyVariant = async (variant: PublicationVariant) => {
     const text = [
       variant.title,
@@ -569,6 +597,16 @@ export function PublishStudio({
                       {copied === variant.channel ? 'Скопировано ✓' : 'Скопировать'}
                     </button>
 
+                    {variant.channel === 'dzen' ? (
+                      <button
+                        type="button"
+                        onClick={() => downloadDzenMarkdown(variant)}
+                        className="rounded-xl border border-[#f1c96c]/14 bg-[#f1c96c]/[0.03] px-3 py-2 text-xs font-bold text-[#f5d77c]"
+                      >
+                        Скачать .md для Дзена
+                      </button>
+                    ) : null}
+
                     {connections[variant.channel] ? (
                       <button
                         type="button"
@@ -601,7 +639,7 @@ export function PublishStudio({
           ПУБЛИКАЦИЯ
         </p>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-white/62">
-          Telegram, ВКонтакте, YouTube, Instagram Reels, TikTok и MAX публикуют напрямую после подключения доступа. Telegram отправляет фото, видео и аудио; ВКонтакте — текст и изображение; YouTube, Instagram Reels и TikTok — выбранный видеофайл; MAX — фото, видео или аудио. Прямая отправка доступна владельцу и администраторам организации. Дзен пока получает готовую версию на копирование — без имитации подключения.
+          Telegram, ВКонтакте, YouTube, Instagram Reels, TikTok и MAX публикуют напрямую после подключения доступа. Telegram отправляет фото, видео и аудио; ВКонтакте — текст и изображение; YouTube, Instagram Reels и TikTok — выбранный видеофайл; MAX — фото, видео или аудио. Прямая отправка доступна владельцу и администраторам организации. Дзен получает готовую версию на копирование и скачивание Markdown — без имитации прямого API.
         </p>
       </section>
     </main>
