@@ -30,6 +30,7 @@ const CHANNELS: Array<{
   { id: 'vk', label: 'ВКонтакте', short: 'VK', hint: 'Лента и сообщество' },
   { id: 'dzen', label: 'Дзен', short: 'ДЗ', hint: 'Публикация / статья' },
   { id: 'youtube', label: 'YouTube', short: 'YT', hint: 'Видео / Shorts' },
+  { id: 'instagram', label: 'Instagram Reels', short: 'IG', hint: 'Reels для профиля' },
   { id: 'tiktok', label: 'TikTok', short: 'TT', hint: 'Короткое видео' },
   { id: 'max', label: 'MAX', short: 'MX', hint: 'Канал / лента' },
 ];
@@ -64,6 +65,7 @@ export function PublishStudio({
     vk: false,
     dzen: false,
     youtube: false,
+    instagram: false,
     tiktok: false,
     max: false,
   });
@@ -189,6 +191,7 @@ export function PublishStudio({
         variant.channel === 'telegram' ||
         variant.channel === 'vk' ||
         variant.channel === 'youtube' ||
+        variant.channel === 'instagram' ||
         variant.channel === 'tiktok'
           ? mediaUrl || null
           : null,
@@ -196,6 +199,7 @@ export function PublishStudio({
         variant.channel === 'telegram' ||
         variant.channel === 'vk' ||
         variant.channel === 'youtube' ||
+        variant.channel === 'instagram' ||
         variant.channel === 'tiktok'
           ? mediaKind
           : null,
@@ -312,7 +316,7 @@ export function PublishStudio({
                 <p className="text-sm font-black text-white/82">Медиа к публикации · необязательно</p>
                 <p className="mt-1 text-xs leading-5 text-white/48">
                   Фото, видео или аудио можно загрузить с устройства или выбрать из Медиатеки.
-                  Telegram отправляет фото, видео и аудио. ВКонтакте прикрепляет изображение. YouTube и TikTok принимают выбранное видео после OAuth-подключения канала.
+                  Telegram отправляет фото, видео и аудио. ВКонтакте прикрепляет изображение. YouTube, Instagram Reels и TikTok принимают выбранное видео после подключения канала.
                 </p>
               </div>
               {mediaUrl ? (
@@ -595,7 +599,7 @@ export function PublishStudio({
           ПУБЛИКАЦИЯ
         </p>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-white/62">
-          Telegram, ВКонтакте, YouTube и TikTok публикуют напрямую после подключения доступа. Telegram отправляет фото, видео и аудио; ВКонтакте — текст и изображение; YouTube и TikTok — выбранный видеофайл. Прямая отправка доступна владельцу и администраторам организации. Дзен и MAX пока получают готовые версии на копирование — без имитации подключения.
+          Telegram, ВКонтакте, YouTube, Instagram Reels и TikTok публикуют напрямую после подключения доступа. Telegram отправляет фото, видео и аудио; ВКонтакте — текст и изображение; YouTube, Instagram Reels и TikTok — выбранный видеофайл. Прямая отправка доступна владельцу и администраторам организации. Дзен и MAX пока получают готовые версии на копирование — без имитации подключения.
         </p>
       </section>
     </main>
