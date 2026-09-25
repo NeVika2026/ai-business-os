@@ -194,10 +194,14 @@ export const INTEGRATION_CATALOG: IntegrationDefinition[] = [
   {
     id: 'youtube-publish',
     name: 'YouTube',
-    description: 'Публикация видео и Shorts после авторизации канала.',
+    description: 'Прямая публикация видео и Shorts через Google OAuth.',
     category: 'publishing',
-    capabilities: ['Видео', 'Shorts', 'Описание'],
-    planned: true,
+    capabilities: ['Видео', 'Shorts', 'Описание', 'Прямая отправка'],
+    envKeys: [
+      'GOOGLE_OAUTH_CLIENT_ID',
+      'GOOGLE_OAUTH_CLIENT_SECRET',
+      'YOUTUBE_REFRESH_TOKEN',
+    ],
   },
   {
     id: 'tiktok-publish',
