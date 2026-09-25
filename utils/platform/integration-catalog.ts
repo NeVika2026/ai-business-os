@@ -204,6 +204,14 @@ export const INTEGRATION_CATALOG: IntegrationDefinition[] = [
     ],
   },
   {
+    id: 'instagram-publish',
+    name: 'Instagram Reels',
+    description: 'Прямая публикация Reels в профессиональный Instagram-аккаунт.',
+    category: 'publishing',
+    capabilities: ['Reels', 'Видео', 'Подпись', 'Прямая отправка'],
+    envKeys: ['INSTAGRAM_USER_ID', 'INSTAGRAM_ACCESS_TOKEN'],
+  },
+  {
     id: 'tiktok-publish',
     name: 'TikTok',
     description: 'Прямая публикация коротких видео через Content Posting API.',
