@@ -86,6 +86,9 @@ export function CustomAvatarStudio({ projectId = null }: Props) {
               expectedKind="image"
               accept="image/png,image/jpeg,image/webp"
               projectId={activeProjectId}
+              autoCreateProject
+              projectSeed="Мой AI-аватар"
+              onProjectReady={setActiveProjectId}
               label="Загрузить фотографию с устройства"
               onUploaded={({ url }) => setReferenceImage(url)}
             />
