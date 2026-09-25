@@ -1,11 +1,16 @@
 import { FactoryBundleStudio } from '@/components/platform/FactoryBundleStudio';
 
 type FactoryBundlePageProps = {
-  searchParams: Promise<{ prompt?: string }>;
+  searchParams: Promise<{ prompt?: string; project?: string }>;
 };
 
 export default async function FactoryBundlePage({ searchParams }: FactoryBundlePageProps) {
-  const { prompt } = await searchParams;
+  const { prompt, project } = await searchParams;
 
-  return <FactoryBundleStudio initialPrompt={prompt?.trim() ?? ''} />;
+  return (
+    <FactoryBundleStudio
+      initialPrompt={prompt?.trim() ?? ''}
+      initialProjectId={project?.trim() || null}
+    />
+  );
 }
