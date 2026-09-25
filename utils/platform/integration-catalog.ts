@@ -186,10 +186,10 @@ export const INTEGRATION_CATALOG: IntegrationDefinition[] = [
   {
     id: 'dzen-publish',
     name: 'Дзен',
-    description: 'Передача подготовленных публикаций и материалов.',
+    description: 'Встроенный экспорт подготовленной публикации без имитации прямого API.',
     category: 'publishing',
-    capabilities: ['Статьи', 'Посты', 'Видео'],
-    planned: true,
+    capabilities: ['Статьи', 'Посты', 'Markdown', 'Копирование'],
+    builtIn: true,
   },
   {
     id: 'youtube-publish',
