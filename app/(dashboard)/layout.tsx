@@ -33,6 +33,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       pathname={pathname}
       email={context.email}
       organizationName={context.organizationName}
+      role={context.role}
       header={<Header pathname={pathname} email={context.email} />}
     >
       {children}
