@@ -6,6 +6,7 @@ import { aiGateway } from '@/services/runtime/gateway/ai-gateway';
 import { createClient } from '@/services/supabase/server';
 import type { GatewayRequest } from '@/types/runtime/dto';
 import { getCurrentOrganizationId } from '@/utils/auth/organization';
+import { getDashboardContext } from '@/utils/auth/onboarding';
 import { ensureFactoryProject, saveFactoryArtifact } from '@/lib/factory-chain/persistence';
 import { loadProjectMemory } from '@/lib/projects/project-memory';
 
@@ -296,6 +297,128 @@ function splitTelegramText(value: string): string[] {
   });
 }
 
+
+async function ensureDirectPublishingAccess() {
+  const supabase = await createClient();
+  const context = await getDashboardContext(supabase);
+
+  if (!context) {
+    return { ok: false as const, message: 'Требуется авторизация.' };
+  }
+
+  if (context.role === 'member') {
+    return {
+      ok: false as const,
+      message: 'Прямая публикация доступна владельцу и администраторам организации.',
+    };
+  }
+
+  return { ok: true as const, context };
+}
+
+async function vkApiCall<T>(
+  method: string,
+  params: Record<string, string>,
+  accessToken: string,
+  apiVersion: string,
+): Promise<T> {
+  const body = new URLSearchParams({
+    ...params,
+    access_token: accessToken,
+    v: apiVersion,
+  });
+
+  const response = await fetch('https://api.vk.com/method/' + method, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+    cache: 'no-store',
+  });
+
+  const data = (await response.json()) as {
+    response?: T;
+    error?: { error_msg?: string };
+  };
+
+  if (!response.ok || data.error || data.response === undefined) {
+    throw new Error(data.error?.error_msg || 'ВКонтакте отклонил запрос.');
+  }
+
+  return data.response;
+}
+
+async function uploadVkWallPhoto(input: {
+  sourceUrl: string;
+  ownerId: string;
+  accessToken: string;
+  apiVersion: string;
+}): Promise<string> {
+  const groupId = input.ownerId.startsWith('-')
+    ? input.ownerId.slice(1)
+    : '';
+
+  const uploadServer = await vkApiCall<{ upload_url?: string }>(
+    'photos.getWallUploadServer',
+    groupId ? { group_id: groupId } : {},
+    input.accessToken,
+    input.apiVersion,
+  );
+
+  if (!uploadServer.upload_url) {
+    throw new Error('ВКонтакте не вернул сервер загрузки изображения.');
+  }
+
+  const sourceResponse = await fetch(input.sourceUrl, { cache: 'no-store' });
+  if (!sourceResponse.ok) {
+    throw new Error('Не удалось скачать изображение для ВКонтакте.');
+  }
+
+  const contentType = sourceResponse.headers.get('content-type') || 'image/jpeg';
+  const bytes = await sourceResponse.arrayBuffer();
+  const form = new FormData();
+  form.append('photo', new Blob([bytes], { type: contentType }), 'publication.jpg');
+
+  const uploadResponse = await fetch(uploadServer.upload_url, {
+    method: 'POST',
+    body: form,
+    cache: 'no-store',
+  });
+
+  const uploaded = (await uploadResponse.json()) as {
+    server?: number | string;
+    photo?: string;
+    hash?: string;
+  };
+
+  if (!uploadResponse.ok || uploaded.server === undefined || !uploaded.photo || !uploaded.hash) {
+    throw new Error('ВКонтакте не принял изображение.');
+  }
+
+  const saved = await vkApiCall<Array<{
+    id?: number;
+    owner_id?: number;
+    access_key?: string;
+  }>>(
+    'photos.saveWallPhoto',
+    {
+      server: String(uploaded.server),
+      photo: uploaded.photo,
+      hash: uploaded.hash,
+      ...(groupId ? { group_id: groupId } : {}),
+    },
+    input.accessToken,
+    input.apiVersion,
+  );
+
+  const photo = saved[0];
+  if (!photo?.id || !photo.owner_id) {
+    throw new Error('Не удалось сохранить изображение во ВКонтакте.');
+  }
+
+  return 'photo' + String(photo.owner_id) + '_' + String(photo.id) +
+    (photo.access_key ? '_' + photo.access_key : '');
+}
+
 export async function publishVariantAction(input: {
   channel: PublicationChannelId;
   title?: string;
@@ -305,6 +428,11 @@ export async function publishVariantAction(input: {
   mediaUrl?: string | null;
   mediaKind?: 'image' | 'video' | 'audio' | null;
 }): Promise<{ ok: true; message: string } | { ok: false; message: string }> {
+  const access = await ensureDirectPublishingAccess();
+  if (!access.ok) {
+    return { ok: false, message: access.message };
+  }
+
   if (input.channel !== 'telegram' && input.channel !== 'vk') {
     return {
       ok: false,
@@ -333,30 +461,35 @@ export async function publishVariantAction(input: {
     }
 
     try {
-      const params = new URLSearchParams({
-        access_token: accessToken,
-        owner_id: ownerId,
-        message: text,
-        from_group: ownerId.startsWith('-') ? '1' : '0',
-        v: apiVersion,
-      });
+      let attachment = '';
+      const mediaUrl = input.mediaUrl?.trim() || '';
+      const mediaKind = input.mediaKind ?? null;
 
-      const response = await fetch('https://api.vk.com/method/wall.post', {
-        method: 'POST',
-        headers: { 'content-type': 'application/x-www-form-urlencoded' },
-        body: params.toString(),
-        cache: 'no-store',
-      });
+      if (mediaUrl && mediaKind === 'image') {
+        attachment = await uploadVkWallPhoto({
+          sourceUrl: mediaUrl,
+          ownerId,
+          accessToken,
+          apiVersion,
+        });
+      }
 
-      const data = (await response.json()) as {
-        response?: { post_id?: number };
-        error?: { error_msg?: string };
-      };
+      const result = await vkApiCall<{ post_id?: number }>(
+        'wall.post',
+        {
+          owner_id: ownerId,
+          message: text,
+          from_group: ownerId.startsWith('-') ? '1' : '0',
+          ...(attachment ? { attachments: attachment } : {}),
+        },
+        accessToken,
+        apiVersion,
+      );
 
-      if (!response.ok || data.error || !data.response?.post_id) {
+      if (!result.post_id) {
         return {
           ok: false,
-          message: data.error?.error_msg || 'ВКонтакте отклонил публикацию.',
+          message: 'ВКонтакте не вернул ID публикации.',
         };
       }
 
@@ -368,15 +501,20 @@ export async function publishVariantAction(input: {
           content: text,
           metadata: {
             channel: 'vk',
-            postId: data.response.post_id,
+            postId: result.post_id,
             published: true,
+            mediaPublished: Boolean(attachment),
+            mediaKind: attachment ? 'image' : null,
+            mediaUrl: attachment ? mediaUrl : null,
           },
         });
       }
 
       return {
         ok: true,
-        message: `Опубликовано во ВКонтакте. Post ID: ${data.response.post_id}.`,
+        message: attachment
+          ? `Опубликовано во ВКонтакте с изображением. Post ID: ${result.post_id}.`
+          : `Опубликовано во ВКонтакте. Post ID: ${result.post_id}.`,
       };
     } catch (error) {
       return {
