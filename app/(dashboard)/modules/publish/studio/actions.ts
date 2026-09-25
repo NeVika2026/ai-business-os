@@ -15,6 +15,7 @@ export type PublicationChannelId =
   | 'vk'
   | 'dzen'
   | 'youtube'
+  | 'instagram'
   | 'tiktok'
   | 'max';
 
@@ -35,6 +36,7 @@ const CHANNEL_NAMES: Record<PublicationChannelId, string> = {
   vk: 'ВКонтакте',
   dzen: 'Дзен',
   youtube: 'YouTube',
+  instagram: 'Instagram Reels',
   tiktok: 'TikTok',
   max: 'MAX',
 };
@@ -148,6 +150,7 @@ export async function buildPublicationPackAction(input: {
     '- ВКонтакте: пост для ленты, сильное начало и понятный CTA;',
     '- Дзен: заголовок + более развернутая подача, пригодная для публикации;',
     '- YouTube: заголовок и описание к ролику/Shorts, если исходник видеоформатный;',
+    '- Instagram: короткая подпись к Reels с сильным хуком и естественным CTA;',
     '- TikTok: короткая подпись с хуком и CTA, без канцелярщины;',
     '- MAX: компактный пост для канала/ленты;',
     '- notes — короткая редакторская пометка по формату или медиа, не инструкция пользователю;',
@@ -256,8 +259,19 @@ export async function getPublishingConnectionStatusAction(): Promise<PublishingC
       process.env.GOOGLE_OAUTH_CLIENT_SECRET?.trim() &&
       process.env.YOUTUBE_REFRESH_TOKEN?.trim(),
     ),
-    tiktok: false,
-    max: false,
+    instagram: Boolean(
+      process.env.INSTAGRAM_USER_ID?.trim() &&
+      process.env.INSTAGRAM_ACCESS_TOKEN?.trim(),
+    ),
+    tiktok: Boolean(
+      process.env.TIKTOK_CLIENT_KEY?.trim() &&
+      process.env.TIKTOK_CLIENT_SECRET?.trim() &&
+      process.env.TIKTOK_REFRESH_TOKEN?.trim(),
+    ),
+    max: Boolean(
+      process.env.MAX_BOT_TOKEN?.trim() &&
+      process.env.MAX_CHAT_ID?.trim(),
+    ),
   };
 }
 
@@ -548,6 +562,369 @@ async function publishYouTubeVideo(input: {
   return data.id;
 }
 
+
+
+function instagramGraphVersion(): string {
+  return process.env.META_GRAPH_API_VERSION?.trim() || 'v24.0';
+}
+
+async function instagramGraphRequest<T>(
+  path: string,
+  options: {
+    method?: 'GET' | 'POST';
+    params?: Record<string, string>;
+  } = {},
+): Promise<T> {
+  const accessToken = process.env.INSTAGRAM_ACCESS_TOKEN?.trim();
+  if (!accessToken) {
+    throw new Error('Instagram не подключён. Нужен access token профессионального аккаунта.');
+  }
+
+  const url = new URL(
+    'https://graph.facebook.com/' +
+      instagramGraphVersion() +
+      '/' +
+      path.replace(/^\//, ''),
+  );
+  for (const [key, value] of Object.entries(options.params ?? {})) {
+    url.searchParams.set(key, value);
+  }
+  url.searchParams.set('access_token', accessToken);
+
+  const response = await fetch(url, {
+    method: options.method ?? 'GET',
+    cache: 'no-store',
+  });
+
+  const data = (await response.json()) as T & {
+    error?: { message?: string; code?: number };
+  };
+
+  if (!response.ok || data.error) {
+    throw new Error(
+      data.error?.message || 'Instagram отклонил запрос.',
+    );
+  }
+
+  return data;
+}
+
+async function publishInstagramReel(input: {
+  mediaUrl: string;
+  caption: string;
+}): Promise<{ mediaId: string; containerId: string }> {
+  const igUserId = process.env.INSTAGRAM_USER_ID?.trim();
+  if (!igUserId) {
+    throw new Error('Instagram не подключён. Нужен ID профессионального Instagram-аккаунта.');
+  }
+
+  const created = await instagramGraphRequest<{ id?: string }>(igUserId + '/media', {
+    method: 'POST',
+    params: {
+      media_type: 'REELS',
+      video_url: input.mediaUrl,
+      caption: input.caption.slice(0, 2200),
+      share_to_feed: 'true',
+    },
+  });
+
+  if (!created.id) {
+    throw new Error('Instagram не вернул ID контейнера Reels.');
+  }
+
+  let finished = false;
+  let lastStatus = '';
+
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const status = await instagramGraphRequest<{
+      status_code?: string;
+      status?: string;
+    }>(created.id, {
+      params: { fields: 'status_code,status' },
+    });
+
+    lastStatus = status.status_code || status.status || '';
+
+    if (status.status_code === 'FINISHED') {
+      finished = true;
+      break;
+    }
+
+    if (status.status_code === 'ERROR' || status.status_code === 'EXPIRED') {
+      throw new Error(
+        'Instagram не подготовил Reels: ' + (status.status || status.status_code),
+      );
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
+
+  if (!finished) {
+    throw new Error(
+      'Instagram ещё обрабатывает видео. Последний статус: ' +
+        (lastStatus || 'IN_PROGRESS') +
+        '. Повторите публикацию позже.',
+    );
+  }
+
+  const published = await instagramGraphRequest<{ id?: string }>(
+    igUserId + '/media_publish',
+    {
+      method: 'POST',
+      params: { creation_id: created.id },
+    },
+  );
+
+  if (!published.id) {
+    throw new Error('Instagram не вернул ID опубликованного Reels.');
+  }
+
+  return {
+    mediaId: published.id,
+    containerId: created.id,
+  };
+}
+
+type TikTokCreatorInfo = {
+  username: string;
+  nickname: string;
+  avatarUrl: string;
+  privacyLevels: string[];
+  commentDisabled: boolean;
+  duetDisabled: boolean;
+  stitchDisabled: boolean;
+  maxDurationSeconds: number | null;
+};
+
+async function getTikTokAccessToken(): Promise<string> {
+  const clientKey = process.env.TIKTOK_CLIENT_KEY?.trim();
+  const clientSecret = process.env.TIKTOK_CLIENT_SECRET?.trim();
+  const refreshToken = process.env.TIKTOK_REFRESH_TOKEN?.trim();
+
+  if (!clientKey || !clientSecret || !refreshToken) {
+    throw new Error('TikTok не подключён. Нужны Client Key, Client Secret и Refresh Token.');
+  }
+
+  const body = new URLSearchParams({
+    client_key: clientKey,
+    client_secret: clientSecret,
+    grant_type: 'refresh_token',
+    refresh_token: refreshToken,
+  });
+
+  const response = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+    cache: 'no-store',
+  });
+
+  const data = (await response.json()) as {
+    access_token?: string;
+    error?: string;
+    error_description?: string;
+  };
+
+  if (!response.ok || !data.access_token) {
+    throw new Error(
+      data.error_description ||
+        data.error ||
+        'Не удалось обновить доступ TikTok.',
+    );
+  }
+
+  return data.access_token;
+}
+
+async function loadTikTokCreatorInfo(accessToken: string): Promise<TikTokCreatorInfo> {
+  const response = await fetch(
+    'https://open.tiktokapis.com/v2/post/publish/creator_info/query/',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + accessToken,
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      cache: 'no-store',
+    },
+  );
+
+  const payload = (await response.json()) as {
+    data?: {
+      creator_username?: string;
+      creator_nickname?: string;
+      creator_avatar_url?: string;
+      privacy_level_options?: string[];
+      comment_disabled?: boolean;
+      duet_disabled?: boolean;
+      stitch_disabled?: boolean;
+      max_video_post_duration_sec?: number;
+    };
+    error?: { code?: string; message?: string };
+  };
+
+  if (
+    !response.ok ||
+    payload.error?.code && payload.error.code !== 'ok' ||
+    !payload.data
+  ) {
+    throw new Error(
+      payload.error?.message || 'TikTok не вернул данные аккаунта.',
+    );
+  }
+
+  return {
+    username: payload.data.creator_username ?? '',
+    nickname: payload.data.creator_nickname ?? '',
+    avatarUrl: payload.data.creator_avatar_url ?? '',
+    privacyLevels: payload.data.privacy_level_options ?? [],
+    commentDisabled: Boolean(payload.data.comment_disabled),
+    duetDisabled: Boolean(payload.data.duet_disabled),
+    stitchDisabled: Boolean(payload.data.stitch_disabled),
+    maxDurationSeconds:
+      typeof payload.data.max_video_post_duration_sec === 'number'
+        ? payload.data.max_video_post_duration_sec
+        : null,
+  };
+}
+
+export async function getTikTokCreatorInfoAction(): Promise<
+  | { ok: true; creator: TikTokCreatorInfo }
+  | { ok: false; message: string }
+> {
+  const access = await ensureDirectPublishingAccess();
+  if (!access.ok) {
+    return { ok: false, message: access.message };
+  }
+
+  try {
+    const token = await getTikTokAccessToken();
+    const creator = await loadTikTokCreatorInfo(token);
+    return { ok: true, creator };
+  } catch (error) {
+    return {
+      ok: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : 'Не удалось получить данные TikTok.',
+    };
+  }
+}
+
+async function publishTikTokVideo(input: {
+  mediaUrl: string;
+  caption: string;
+  privacyLevel?: string | null;
+}): Promise<{ publishId: string; privacyLevel: string }> {
+  const accessToken = await getTikTokAccessToken();
+  const creator = await loadTikTokCreatorInfo(accessToken);
+
+  const source = await fetch(input.mediaUrl, { cache: 'no-store' });
+  if (!source.ok) {
+    throw new Error('Не удалось скачать видео из Медиатеки для TikTok.');
+  }
+
+  const contentType = source.headers.get('content-type') || 'video/mp4';
+  if (!['video/mp4', 'video/quicktime', 'video/webm'].includes(contentType)) {
+    throw new Error('TikTok принимает MP4, MOV или WebM.');
+  }
+
+  const bytes = await source.arrayBuffer();
+  const maxBytes = 64 * 1024 * 1024;
+
+  if (bytes.byteLength > maxBytes) {
+    throw new Error(
+      'Для прямой публикации в TikTok видео должно быть не больше 64 МБ.',
+    );
+  }
+
+  if (bytes.byteLength < 1) {
+    throw new Error('Видео для TikTok пустое.');
+  }
+
+  const requestedPrivacy = input.privacyLevel?.trim() || '';
+  const privacyLevel = creator.privacyLevels.includes(requestedPrivacy)
+    ? requestedPrivacy
+    : creator.privacyLevels.includes('SELF_ONLY')
+      ? 'SELF_ONLY'
+      : creator.privacyLevels[0];
+
+  if (!privacyLevel) {
+    throw new Error('TikTok не вернул доступный уровень приватности.');
+  }
+
+  const initResponse = await fetch(
+    'https://open.tiktokapis.com/v2/post/publish/video/init/',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + accessToken,
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: JSON.stringify({
+        post_info: {
+          title: input.caption.slice(0, 2200),
+          privacy_level: privacyLevel,
+          disable_duet: creator.duetDisabled,
+          disable_comment: creator.commentDisabled,
+          disable_stitch: creator.stitchDisabled,
+          video_cover_timestamp_ms: 1000,
+          is_aigc: true,
+        },
+        source_info: {
+          source: 'FILE_UPLOAD',
+          video_size: bytes.byteLength,
+          chunk_size: bytes.byteLength,
+          total_chunk_count: 1,
+        },
+      }),
+      cache: 'no-store',
+    },
+  );
+
+  const initialized = (await initResponse.json()) as {
+    data?: { publish_id?: string; upload_url?: string };
+    error?: { code?: string; message?: string };
+  };
+
+  if (
+    !initResponse.ok ||
+    initialized.error?.code && initialized.error.code !== 'ok' ||
+    !initialized.data?.publish_id ||
+    !initialized.data?.upload_url
+  ) {
+    throw new Error(
+      initialized.error?.message || 'TikTok не создал сессию публикации.',
+    );
+  }
+
+  const uploadResponse = await fetch(initialized.data.upload_url, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': contentType,
+      'Content-Length': String(bytes.byteLength),
+      'Content-Range':
+        'bytes 0-' + String(bytes.byteLength - 1) + '/' + String(bytes.byteLength),
+    },
+    body: bytes,
+    cache: 'no-store',
+  });
+
+  if (!uploadResponse.ok) {
+    const detail = (await uploadResponse.text()).slice(0, 500);
+    throw new Error(
+      'TikTok отклонил загрузку видео: ' +
+        (detail || uploadResponse.statusText),
+    );
+  }
+
+  return {
+    publishId: initialized.data.publish_id,
+    privacyLevel,
+  };
+}
+
 export async function publishVariantAction(input: {
   channel: PublicationChannelId;
   title?: string;
@@ -556,6 +933,7 @@ export async function publishVariantAction(input: {
   projectId?: string | null;
   mediaUrl?: string | null;
   mediaKind?: 'image' | 'video' | 'audio' | null;
+  tiktokPrivacyLevel?: string | null;
 }): Promise<{ ok: true; message: string } | { ok: false; message: string }> {
   const access = await ensureDirectPublishingAccess();
   if (!access.ok) {
@@ -565,7 +943,10 @@ export async function publishVariantAction(input: {
   if (
     input.channel !== 'telegram' &&
     input.channel !== 'vk' &&
-    input.channel !== 'youtube'
+    input.channel !== 'youtube' &&
+    input.channel !== 'instagram' &&
+    input.channel !== 'tiktok' &&
+    input.channel !== 'max'
   ) {
     return {
       ok: false,
@@ -621,6 +1002,214 @@ export async function publishVariantAction(input: {
       return {
         ok: false,
         message: error instanceof Error ? error.message : 'Не удалось опубликовать видео в YouTube.',
+      };
+    }
+  }
+
+  if (input.channel === 'instagram') {
+    const mediaUrl = input.mediaUrl?.trim() || '';
+    if (!mediaUrl || input.mediaKind !== 'video') {
+      return {
+        ok: false,
+        message: 'Для публикации Reels выберите готовое видео.',
+      };
+    }
+
+    try {
+      const result = await publishInstagramReel({
+        mediaUrl,
+        caption: [input.title?.trim(), input.body.trim(), input.cta?.trim()]
+          .filter(Boolean)
+          .join('\n\n'),
+      });
+
+      if (input.projectId) {
+        await saveFactoryArtifact({
+          projectId: input.projectId,
+          stage: 'publish',
+          title: 'Опубликовано в Instagram Reels',
+          content: text,
+          metadata: {
+            channel: 'instagram',
+            mediaId: result.mediaId,
+            containerId: result.containerId,
+            published: true,
+            mediaKind: 'video',
+            mediaUrl,
+          },
+        });
+      }
+
+      return {
+        ok: true,
+        message: 'Reels опубликован в Instagram. Media ID: ' + result.mediaId + '.',
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Не удалось опубликовать Reels в Instagram.',
+      };
+    }
+  }
+
+  if (input.channel === 'tiktok') {
+    const mediaUrl = input.mediaUrl?.trim() || '';
+    if (!mediaUrl || input.mediaKind !== 'video') {
+      return {
+        ok: false,
+        message: 'Для прямой публикации в TikTok выберите готовое видео.',
+      };
+    }
+
+    try {
+      const result = await publishTikTokVideo({
+        mediaUrl,
+        caption: [input.title?.trim(), input.body.trim(), input.cta?.trim()]
+          .filter(Boolean)
+          .join('\n\n'),
+        privacyLevel: input.tiktokPrivacyLevel,
+      });
+
+      if (input.projectId) {
+        await saveFactoryArtifact({
+          projectId: input.projectId,
+          stage: 'publish',
+          title: 'Отправлено в TikTok',
+          content: text,
+          metadata: {
+            channel: 'tiktok',
+            publishId: result.publishId,
+            privacyLevel: result.privacyLevel,
+            published: true,
+            mediaKind: 'video',
+            mediaUrl,
+            aiGenerated: true,
+          },
+        });
+      }
+
+      return {
+        ok: true,
+        message:
+          'Видео передано в TikTok. Publish ID: ' +
+          result.publishId +
+          '. Приватность: ' +
+          result.privacyLevel +
+          '.',
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Не удалось отправить видео в TikTok.',
+      };
+    }
+  }
+
+  if (input.channel === 'max') {
+    const token = process.env.MAX_BOT_TOKEN?.trim();
+    const chatId = process.env.MAX_CHAT_ID?.trim();
+
+    if (!token || !chatId) {
+      return {
+        ok: false,
+        message: 'MAX не подключён. Нужны MAX_BOT_TOKEN и MAX_CHAT_ID.',
+      };
+    }
+
+    try {
+      const chunks = splitTelegramText(text).flatMap((chunk) => {
+        if (chunk.length <= 3900) return [chunk];
+        const parts: string[] = [];
+        let rest = chunk;
+        while (rest.length > 3900) {
+          let cut = rest.lastIndexOf(' ', 3900);
+          if (cut < 2200) cut = 3900;
+          parts.push(rest.slice(0, cut).trim());
+          rest = rest.slice(cut).trim();
+        }
+        if (rest) parts.push(rest);
+        return parts;
+      });
+
+      const messageIds: string[] = [];
+
+      for (let index = 0; index < chunks.length; index += 1) {
+        const url = new URL('https://platform-api2.max.ru/messages');
+        url.searchParams.set('chat_id', chatId);
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            Authorization: token,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text: chunks[index],
+            notify: true,
+          }),
+          cache: 'no-store',
+        });
+
+        const data = (await response.json()) as {
+          message?: {
+            body?: { mid?: string };
+            id?: string;
+          };
+          error?: string;
+          message_text?: string;
+        };
+
+        if (!response.ok || !data.message) {
+          throw new Error(
+            data.error ||
+              data.message_text ||
+              'MAX отклонил публикацию.',
+          );
+        }
+
+        const id = data.message.body?.mid || data.message.id;
+        if (id) messageIds.push(id);
+
+        if (index < chunks.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 550));
+        }
+      }
+
+      if (input.projectId) {
+        await saveFactoryArtifact({
+          projectId: input.projectId,
+          stage: 'publish',
+          title: 'Опубликовано в MAX',
+          content: text,
+          metadata: {
+            channel: 'max',
+            published: true,
+            messageIds,
+            chunks: chunks.length,
+          },
+        });
+      }
+
+      return {
+        ok: true,
+        message:
+          chunks.length > 1
+            ? 'Опубликовано в MAX: ' + chunks.length + ' сообщения.'
+            : 'Опубликовано в MAX.',
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Не удалось опубликовать в MAX.',
       };
     }
   }

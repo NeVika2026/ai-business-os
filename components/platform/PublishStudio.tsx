@@ -13,6 +13,7 @@ import {
 import {
   buildPublicationPackAction,
   getPublishingConnectionStatusAction,
+  getTikTokCreatorInfoAction,
   publishVariantAction,
   type PublicationChannelId,
   type PublicationVariant,
@@ -29,6 +30,7 @@ const CHANNELS: Array<{
   { id: 'vk', label: 'ВКонтакте', short: 'VK', hint: 'Лента и сообщество' },
   { id: 'dzen', label: 'Дзен', short: 'ДЗ', hint: 'Публикация / статья' },
   { id: 'youtube', label: 'YouTube', short: 'YT', hint: 'Видео / Shorts' },
+  { id: 'instagram', label: 'Instagram Reels', short: 'IG', hint: 'Reels для профиля' },
   { id: 'tiktok', label: 'TikTok', short: 'TT', hint: 'Короткое видео' },
   { id: 'max', label: 'MAX', short: 'MX', hint: 'Канал / лента' },
 ];
@@ -63,6 +65,7 @@ export function PublishStudio({
     vk: false,
     dzen: false,
     youtube: false,
+    instagram: false,
     tiktok: false,
     max: false,
   });
@@ -71,6 +74,13 @@ export function PublishStudio({
   const [mediaUrl, setMediaUrl] = useState('');
   const [mediaKind, setMediaKind] = useState<'image' | 'video' | 'audio' | null>(null);
   const [mediaName, setMediaName] = useState('');
+  const [tiktokPrivacyLevel, setTikTokPrivacyLevel] = useState('SELF_ONLY');
+  const [tiktokCreator, setTikTokCreator] = useState<{
+    username: string;
+    nickname: string;
+    privacyLevels: string[];
+    maxDurationSeconds: number | null;
+  } | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const canBuild = source.trim().length > 3 && selected.length > 0 && !isPending;
@@ -81,7 +91,27 @@ export function PublishStudio({
   );
 
   useEffect(() => {
-    void getPublishingConnectionStatusAction().then(setConnections);
+    void getPublishingConnectionStatusAction().then((nextConnections) => {
+      setConnections(nextConnections);
+
+      if (nextConnections.tiktok) {
+        void getTikTokCreatorInfoAction().then((result) => {
+          if (!result.ok) return;
+          setTikTokCreator({
+            username: result.creator.username,
+            nickname: result.creator.nickname,
+            privacyLevels: result.creator.privacyLevels,
+            maxDurationSeconds: result.creator.maxDurationSeconds,
+          });
+
+          if (result.creator.privacyLevels.includes('SELF_ONLY')) {
+            setTikTokPrivacyLevel('SELF_ONLY');
+          } else if (result.creator.privacyLevels[0]) {
+            setTikTokPrivacyLevel(result.creator.privacyLevels[0]);
+          }
+        });
+      }
+    });
 
     const handedOff = window.sessionStorage.getItem('business-zavod:publish-source');
     if (handedOff?.trim()) {
@@ -160,15 +190,21 @@ export function PublishStudio({
       mediaUrl:
         variant.channel === 'telegram' ||
         variant.channel === 'vk' ||
-        variant.channel === 'youtube'
+        variant.channel === 'youtube' ||
+        variant.channel === 'instagram' ||
+        variant.channel === 'tiktok'
           ? mediaUrl || null
           : null,
       mediaKind:
         variant.channel === 'telegram' ||
         variant.channel === 'vk' ||
-        variant.channel === 'youtube'
+        variant.channel === 'youtube' ||
+        variant.channel === 'instagram' ||
+        variant.channel === 'tiktok'
           ? mediaKind
           : null,
+      tiktokPrivacyLevel:
+        variant.channel === 'tiktok' ? tiktokPrivacyLevel : null,
     });
 
     setPublishingChannel(null);
@@ -280,7 +316,7 @@ export function PublishStudio({
                 <p className="text-sm font-black text-white/82">Медиа к публикации · необязательно</p>
                 <p className="mt-1 text-xs leading-5 text-white/48">
                   Фото, видео или аудио можно загрузить с устройства или выбрать из Медиатеки.
-                  Telegram отправляет фото, видео и аудио. ВКонтакте прикрепляет изображение. YouTube принимает выбранное видео после OAuth-подключения канала.
+                  Telegram отправляет фото, видео и аудио. ВКонтакте прикрепляет изображение. YouTube, Instagram Reels и TikTok принимают выбранное видео после подключения канала.
                 </p>
               </div>
               {mediaUrl ? (
@@ -388,6 +424,56 @@ export function PublishStudio({
               );
             })}
           </div>
+
+          {connections.tiktok ? (
+            <div className="mt-4 rounded-[18px] border border-[#69e4ee]/12 bg-[#69e4ee]/[0.025] p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-black text-white/82">TikTok аккаунт</p>
+                  <p className="mt-1 text-xs text-white/52">
+                    {tiktokCreator
+                      ? (tiktokCreator.nickname || tiktokCreator.username || 'Подключённый аккаунт')
+                      : 'Проверяю подключение…'}
+                  </p>
+                </div>
+                {tiktokCreator?.maxDurationSeconds ? (
+                  <span className="rounded-full border border-white/[0.08] px-2.5 py-1 text-[10px] font-bold text-white/48">
+                    до {tiktokCreator.maxDurationSeconds} сек.
+                  </span>
+                ) : null}
+              </div>
+
+              {tiktokCreator?.privacyLevels.length ? (
+                <label className="mt-3 grid gap-2">
+                  <span className="text-xs font-bold text-white/62">Приватность публикации</span>
+                  <select
+                    value={tiktokPrivacyLevel}
+                    onChange={(event) => setTikTokPrivacyLevel(event.target.value)}
+                    className="rounded-xl border border-white/[0.09] bg-black/25 px-3 py-2.5 text-sm text-white outline-none"
+                  >
+                    {tiktokCreator.privacyLevels.map((level) => (
+                      <option key={level} value={level}>
+                        {level === 'PUBLIC_TO_EVERYONE'
+                          ? 'Для всех'
+                          : level === 'MUTUAL_FOLLOW_FRIENDS'
+                            ? 'Взаимные подписки'
+                            : level === 'FOLLOWER_OF_CREATOR'
+                              ? 'Подписчики'
+                              : level === 'SELF_ONLY'
+                                ? 'Только я'
+                                : level}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+
+              <p className="mt-3 text-[11px] leading-5 text-white/42">
+                Нажатие «Опубликовать в TikTok» отправляет выбранный ролик в подключённый аккаунт.
+                AI-видео помечается как сгенерированное искусственным интеллектом.
+              </p>
+            </div>
+          ) : null}
 
           <button
             type="button"
@@ -513,7 +599,7 @@ export function PublishStudio({
           ПУБЛИКАЦИЯ
         </p>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-white/62">
-          Telegram, ВКонтакте и YouTube публикуют напрямую после подключения доступа. Telegram отправляет фото, видео и аудио; ВКонтакте — текст и изображение; YouTube — выбранный видеофайл. Прямая отправка доступна владельцу и администраторам организации. Дзен, TikTok и MAX пока получают готовые версии на копирование — без имитации подключения.
+          Telegram, ВКонтакте, YouTube, Instagram Reels, TikTok и MAX публикуют напрямую после подключения доступа. Telegram отправляет фото, видео и аудио; ВКонтакте — текст и изображение; YouTube, Instagram Reels и TikTok — выбранный видеофайл. Прямая отправка доступна владельцу и администраторам организации. Дзен пока получает готовую версию на копирование — без имитации подключения.
         </p>
       </section>
     </main>
