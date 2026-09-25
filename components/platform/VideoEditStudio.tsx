@@ -15,6 +15,7 @@ import { MediaUploadField } from '@/components/media/MediaUploadField';
 type Props = {
   initialMode: VideoEditMode;
   projectId?: string | null;
+  initialSourceUrl?: string;
 };
 
 function pendingStatus(): MediaStudioStatusResult {
@@ -27,9 +28,9 @@ function pendingStatus(): MediaStudioStatusResult {
   };
 }
 
-export function VideoEditStudio({ initialMode, projectId = null }: Props) {
+export function VideoEditStudio({ initialMode, projectId = null, initialSourceUrl = '' }: Props) {
   const [mode, setMode] = useState<VideoEditMode>(initialMode);
-  const [sourceUrl, setSourceUrl] = useState('');
+  const [sourceUrl, setSourceUrl] = useState(initialSourceUrl);
   const [promptText, setPromptText] = useState('');
   const [targetAspectRatio, setTargetAspectRatio] = useState<'16:9' | '9:16' | '1:1' | '4:3' | '3:4' | '21:9' | '2:3' | '3:2'>('9:16');
   const [approved, setApproved] = useState(false);
