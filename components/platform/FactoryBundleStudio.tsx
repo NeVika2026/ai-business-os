@@ -356,7 +356,7 @@ export function FactoryBundleStudio({
     task: TextTask,
     activeProjectId: string | null,
     originalPrompt: string,
-  ): Promise<string | null> => {
+  ): Promise<{ projectId: string | null; content: string; ok: boolean }> => {
     updateTextTask(task.key, { status: 'running', error: '' });
 
     if (task.mode === 'website') {
@@ -370,14 +370,15 @@ export function FactoryBundleStudio({
 
       if (result.status === 'failed') {
         updateTextTask(task.key, { status: 'failed', error: result.message });
-        return activeProjectId;
+        return { projectId: activeProjectId, content: '', ok: false };
       }
 
+      const content = 'Сайт собран: ' + result.title;
       updateTextTask(task.key, {
         status: 'completed',
-        content: 'Сайт собран: ' + result.title,
+        content,
       });
-      return result.projectId;
+      return { projectId: result.projectId, content, ok: true };
     }
 
     const result = await generateCreateStudioArtifactAction({
@@ -392,7 +393,7 @@ export function FactoryBundleStudio({
 
     if (result.status === 'failed') {
       updateTextTask(task.key, { status: 'failed', error: result.message });
-      return activeProjectId;
+      return { projectId: activeProjectId, content: '', ok: false };
     }
 
     updateTextTask(task.key, {
@@ -400,7 +401,7 @@ export function FactoryBundleStudio({
       content: result.content,
     });
 
-    return result.projectId;
+    return { projectId: result.projectId, content: result.content, ok: true };
   };
 
   const runQaTask = async (activeProjectId: string) => {
@@ -455,7 +456,10 @@ export function FactoryBundleStudio({
     });
   };
 
-  const buildMediaSpecs = (trimmed: string): MediaLaunchSpec[] => {
+  const buildMediaSpecs = (
+    trimmed: string,
+    voiceScriptText = '',
+  ): MediaLaunchSpec[] => {
     const specs: MediaLaunchSpec[] = [];
 
     if (plan.outputs.includes('video')) {
@@ -483,14 +487,13 @@ export function FactoryBundleStudio({
       });
     }
 
-    if (plan.outputs.includes('voice') && voiceId) {
+    if (plan.outputs.includes('voice') && voiceId && voiceScriptText.trim()) {
       specs.push({
         key: 'voice',
         label: 'Озвучка',
         kind: 'voice',
         engine: 'studio',
-        promptText:
-          'Озвучь коротко и убедительно главный рекламный посыл этой кампании: ' + trimmed,
+        promptText: voiceScriptText.trim(),
         voiceId,
       });
     }
