@@ -14,6 +14,8 @@ type FinalVideoExportPanelProps = {
   title: string;
   scenes: FinalVideoExportScene[];
   voiceUrl?: string | null;
+  musicUrl?: string | null;
+  sfxUrl?: string | null;
   projectId?: string | null;
 };
 
@@ -39,6 +41,8 @@ export function FinalVideoExportPanel({
   title,
   scenes,
   voiceUrl,
+  musicUrl,
+  sfxUrl,
   projectId = null,
 }: FinalVideoExportPanelProps) {
   const [exported, setExported] = useState<ExportedFile | null>(null);
@@ -65,6 +69,8 @@ export function FinalVideoExportPanel({
         const result = await renderStoryboardVideo({
           scenes,
           voiceUrl,
+          musicUrl,
+          sfxUrl,
           width: 768,
           height: 1280,
           fps: 30,
@@ -128,6 +134,8 @@ export function FinalVideoExportPanel({
             source: 'storyboard-final-export',
             scenes: scenes.length,
             has_voice: Boolean(voiceUrl),
+            has_music: Boolean(musicUrl),
+            has_sfx: Boolean(sfxUrl),
             format: exported.extension,
           },
         });
@@ -155,7 +163,7 @@ export function FinalVideoExportPanel({
             Собрать один готовый видеофайл
           </h4>
           <p className="mt-2 max-w-2xl text-[11px] leading-5 text-white/36">
-            Браузер склеит готовые сцены, наложит русские субтитры и добавит озвучку.
+            Браузер соберёт готовые сцены и сведёт озвучку, музыку и звуковые эффекты в один файл.
             MP4 используется, если его поддерживает браузер; иначе экспортируется WebM.
           </p>
         </div>

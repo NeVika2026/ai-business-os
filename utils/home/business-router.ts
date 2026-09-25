@@ -45,6 +45,9 @@ const DEFAULT_PACKAGE_OUTPUTS: BusinessRouterOutput[] = [
   'image',
   'post',
   'telegram',
+  'voice',
+  'music',
+  'sfx',
 ];
 
 const OUTPUT_SIGNALS: Array<{ output: BusinessRouterOutput; signals: string[] }> = [

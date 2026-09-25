@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+
+import { FinalVideoExportPanel } from '@/components/platform/FinalVideoExportPanel';
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
 import {
@@ -205,6 +207,23 @@ function buildTextTasks(outputs: BusinessRouterOutput[]): TextTask[] {
     });
   }
 
+  if (outputs.includes('voice')) {
+    tasks.push({
+      key: 'voice-script',
+      label: 'Текст озвучки',
+      mode: 'document',
+      title: 'Текст озвучки',
+      artifactType: 'voice-script',
+      format:
+        'Напиши только готовый текст диктора на 8–10 секунд. Без заголовков, пояснений, кавычек и служебных слов. Один сильный хук, одна ключевая выгода, короткий CTA.',
+      context:
+        'Это озвучка рекламного ролика. Текст должен звучать естественно вслух и соответствовать общему офферу кампании.',
+      status: 'queued',
+      content: '',
+      error: '',
+    });
+  }
+
   tasks.push({
     key: 'qa',
     label: 'Контроль качества',
@@ -337,7 +356,7 @@ export function FactoryBundleStudio({
     task: TextTask,
     activeProjectId: string | null,
     originalPrompt: string,
-  ): Promise<string | null> => {
+  ): Promise<{ projectId: string | null; content: string; ok: boolean }> => {
     updateTextTask(task.key, { status: 'running', error: '' });
 
     if (task.mode === 'website') {
@@ -351,14 +370,15 @@ export function FactoryBundleStudio({
 
       if (result.status === 'failed') {
         updateTextTask(task.key, { status: 'failed', error: result.message });
-        return activeProjectId;
+        return { projectId: activeProjectId, content: '', ok: false };
       }
 
+      const content = 'Сайт собран: ' + result.title;
       updateTextTask(task.key, {
         status: 'completed',
-        content: 'Сайт собран: ' + result.title,
+        content,
       });
-      return result.projectId;
+      return { projectId: result.projectId, content, ok: true };
     }
 
     const result = await generateCreateStudioArtifactAction({
@@ -373,7 +393,7 @@ export function FactoryBundleStudio({
 
     if (result.status === 'failed') {
       updateTextTask(task.key, { status: 'failed', error: result.message });
-      return activeProjectId;
+      return { projectId: activeProjectId, content: '', ok: false };
     }
 
     updateTextTask(task.key, {
@@ -381,7 +401,7 @@ export function FactoryBundleStudio({
       content: result.content,
     });
 
-    return result.projectId;
+    return { projectId: result.projectId, content: result.content, ok: true };
   };
 
   const runQaTask = async (activeProjectId: string) => {
@@ -436,7 +456,10 @@ export function FactoryBundleStudio({
     });
   };
 
-  const buildMediaSpecs = (trimmed: string): MediaLaunchSpec[] => {
+  const buildMediaSpecs = (
+    trimmed: string,
+    voiceScriptText = '',
+  ): MediaLaunchSpec[] => {
     const specs: MediaLaunchSpec[] = [];
 
     if (plan.outputs.includes('video')) {
@@ -448,7 +471,7 @@ export function FactoryBundleStudio({
           trimmed +
           '\nСобери вертикальный рекламный ролик как часть единой кампании. Сохрани главный оффер, визуальный мир и CTA.',
         ratio: '768:1280',
-        duration: 5,
+        duration: 10,
       });
     }
 
@@ -464,14 +487,13 @@ export function FactoryBundleStudio({
       });
     }
 
-    if (plan.outputs.includes('voice') && voiceId) {
+    if (plan.outputs.includes('voice') && voiceId && voiceScriptText.trim()) {
       specs.push({
         key: 'voice',
         label: 'Озвучка',
         kind: 'voice',
         engine: 'studio',
-        promptText:
-          'Озвучь коротко и убедительно главный рекламный посыл этой кампании: ' + trimmed,
+        promptText: voiceScriptText.trim(),
         voiceId,
       });
     }
@@ -485,7 +507,7 @@ export function FactoryBundleStudio({
         promptText:
           'Создай современный инструментальный трек для этой кампании. Музыка должна поддерживать темп, настроение и оффер: ' +
           trimmed,
-        duration: 15,
+        duration: 10,
       });
     }
 
@@ -612,7 +634,26 @@ export function FactoryBundleStudio({
       if (task.key === 'qa') {
         await runQaTask(projectId);
       } else {
-        await runTextTask(task, projectId, prompt.trim());
+        const result = await runTextTask(task, projectId, prompt.trim());
+
+        if (
+          task.key === 'voice-script' &&
+          result.ok &&
+          !jobs.some((job) => job.spec.key === 'voice')
+        ) {
+          const voiceSpec = buildMediaSpecs(prompt.trim(), result.content).find(
+            (spec) => spec.key === 'voice',
+          );
+
+          if (voiceSpec) {
+            const restarted = await startMediaSpec(voiceSpec, projectId);
+            if ('failure' in restarted) {
+              setMessage(restarted.failure);
+              return;
+            }
+            setJobs((current) => [...current, restarted]);
+          }
+        }
       }
       setMessage('Повторно запущен только этап «' + task.label + '».');
     });
@@ -677,11 +718,17 @@ export function FactoryBundleStudio({
         (task) => task.key !== 'strategy' && task.key !== 'qa',
       );
 
-      await Promise.all(
+      const textResults = await Promise.all(
         otherTextTasks.map((task) => runTextTask(task, activeProjectId, trimmed)),
       );
 
-      const mediaSpecs = buildMediaSpecs(trimmed);
+      const voiceTaskIndex = otherTextTasks.findIndex(
+        (task) => task.key === 'voice-script',
+      );
+      const voiceScriptText =
+        voiceTaskIndex >= 0 ? textResults[voiceTaskIndex]?.content ?? '' : '';
+
+      const mediaSpecs = buildMediaSpecs(trimmed, voiceScriptText);
       const started = await Promise.all(
         mediaSpecs.map((spec) => startMediaSpec(spec, activeProjectId)),
       );
@@ -716,7 +763,9 @@ export function FactoryBundleStudio({
     if (!productionTextTasks.length) return;
     if (!productionTextTasks.every((task) => task.status === 'completed')) return;
 
-    const expectedMediaCount = buildMediaSpecs(prompt.trim()).length;
+    const voiceScriptText =
+      textTasks.find((task) => task.key === 'voice-script')?.content ?? '';
+    const expectedMediaCount = buildMediaSpecs(prompt.trim(), voiceScriptText).length;
     if (expectedMediaCount > 0 && jobs.length < expectedMediaCount) return;
     if (!jobs.every((job) => job.status.status === 'completed')) return;
 
@@ -734,6 +783,21 @@ export function FactoryBundleStudio({
     jobs.filter((job) => job.status.status === 'failed').length;
   const qaTask = textTasks.find((task) => task.key === 'qa');
   const packageReady = qaTask?.status === 'completed' && failedCount === 0;
+
+  const finalVideoJob = jobs.find(
+    (job) => job.spec.key === 'video' && job.status.status === 'completed',
+  );
+  const finalVoiceJob = jobs.find(
+    (job) => job.spec.key === 'voice' && job.status.status === 'completed',
+  );
+  const finalMusicJob = jobs.find(
+    (job) => job.spec.key === 'music' && job.status.status === 'completed',
+  );
+  const finalSfxJob = jobs.find(
+    (job) => job.spec.key === 'sfx' && job.status.status === 'completed',
+  );
+  const finalVoiceScript =
+    textTasks.find((task) => task.key === 'voice-script')?.content ?? '';
 
   return (
     <main className="mx-auto w-full max-w-[1380px] pb-16 text-[#f7f2e8]">
@@ -962,6 +1026,25 @@ export function FactoryBundleStudio({
                 </article>
               ))}
             </div>
+          ) : null}
+
+          {packageReady && finalVideoJob?.status.outputUrl ? (
+            <FinalVideoExportPanel
+              title="Финальный ролик Бизнес-завода"
+              projectId={projectId}
+              scenes={[
+                {
+                  id: 'factory-final-video',
+                  title: '',
+                  durationSeconds: finalVideoJob.spec.duration ?? 10,
+                  videoUrl: finalVideoJob.status.outputUrl,
+                  narration: finalVoiceScript,
+                },
+              ]}
+              voiceUrl={finalVoiceJob?.status.outputUrl ?? null}
+              musicUrl={finalMusicJob?.status.outputUrl ?? null}
+              sfxUrl={finalSfxJob?.status.outputUrl ?? null}
+            />
           ) : null}
 
           {textTasks.length || jobs.length ? (
