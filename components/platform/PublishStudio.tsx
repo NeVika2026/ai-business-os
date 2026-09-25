@@ -261,7 +261,15 @@ export function PublishStudio({
 
   return (
     <main className="relative mx-auto w-full max-w-[1320px] overflow-hidden pb-16 text-[#f7f2e8]">
-      <FactoryChainBar active="publish" />
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <FactoryChainBar active="publish" />
+        <Link
+          href="/modules/publish/history"
+          className="rounded-xl border border-white/[0.08] px-3 py-2 text-xs font-black text-white/58 hover:text-white"
+        >
+          Журнал публикаций →
+        </Link>
+      </div>
 
       {projectId ? (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[#69e4ee]/10 bg-[#69e4ee]/[0.025] px-4 py-3">
