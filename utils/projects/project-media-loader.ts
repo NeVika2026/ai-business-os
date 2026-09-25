@@ -58,7 +58,7 @@ export async function loadProjectMedia(
     .eq('organization_id', organizationId)
     .eq('project_id', projectId)
     .order('created_at', { ascending: false })
-    .limit(8);
+    .limit(24);
 
   if (error || !data) return [];
 
