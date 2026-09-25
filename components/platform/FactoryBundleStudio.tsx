@@ -395,6 +395,13 @@ export function FactoryBundleStudio({ initialPrompt }: FactoryBundleStudioProps)
       setMessage('Повторно запущен только этап «' + task.label + '».');
     });
   };
+  const handoffToPublish = (task: TextTask) => {
+    if (!projectId || task.status !== 'completed' || !task.content.trim()) return;
+
+    window.sessionStorage.setItem('business-zavod:publish-source', task.content);
+    window.location.href = '/modules/publish/studio?project=' + encodeURIComponent(projectId);
+  };
+
 
   const start = () => {
     const trimmed = prompt.trim();
@@ -638,9 +645,20 @@ export function FactoryBundleStudio({ initialPrompt }: FactoryBundleStudioProps)
                   </div>
 
                   {task.status === 'completed' && task.content ? (
-                    <pre className="mt-3 max-h-[240px] overflow-auto whitespace-pre-wrap font-sans text-xs leading-6 text-white/60">
-                      {task.content}
-                    </pre>
+                    <>
+                      <pre className="mt-3 max-h-[240px] overflow-auto whitespace-pre-wrap font-sans text-xs leading-6 text-white/60">
+                        {task.content}
+                      </pre>
+                      {['stories', 'post', 'telegram', 'document'].includes(task.key) ? (
+                        <button
+                          type="button"
+                          onClick={() => handoffToPublish(task)}
+                          className="mt-3 rounded-xl border border-[#69e4ee]/18 bg-[#69e4ee]/[0.04] px-3 py-2 text-xs font-black text-[#a8f3f8]"
+                        >
+                          К публикации →
+                        </button>
+                      ) : null}
+                    </>
                   ) : null}
 
                   {task.status === 'failed' ? (
@@ -698,9 +716,27 @@ export function FactoryBundleStudio({ initialPrompt }: FactoryBundleStudioProps)
           ) : null}
 
           {textTasks.length || jobs.length ? (
-            <div className="mt-5 rounded-[18px] border border-white/[0.06] bg-black/20 px-4 py-3 text-xs text-white/45">
-              Текстовые этапы: {completedText}/{textTasks.length}. Медиа: {completedMedia}/{jobs.length}.
-              {failedCount ? ' Ошибок: ' + failedCount + ' — готовые этапы не затрагиваются.' : ''}
+            <div className="mt-5 rounded-[18px] border border-white/[0.06] bg-black/20 px-4 py-3">
+              <div className="text-xs text-white/45">
+                Текстовые этапы: {completedText}/{textTasks.length}. Медиа: {completedMedia}/{jobs.length}.
+                {failedCount ? ' Ошибок: ' + failedCount + ' — готовые этапы не затрагиваются.' : ''}
+              </div>
+              {projectId && completedText > 0 ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link
+                    href={'/modules/publish/studio?project=' + encodeURIComponent(projectId)}
+                    className="rounded-xl bg-[linear-gradient(135deg,#69e4ee,#399fb5)] px-3 py-2 text-xs font-black text-[#041015]"
+                  >
+                    Открыть цех публикации →
+                  </Link>
+                  <Link
+                    href={'/media?project=' + encodeURIComponent(projectId)}
+                    className="rounded-xl border border-white/[0.10] px-3 py-2 text-xs font-black text-white/68"
+                  >
+                    Медиа проекта →
+                  </Link>
+                </div>
+              ) : null}
             </div>
           ) : null}
         </section>
