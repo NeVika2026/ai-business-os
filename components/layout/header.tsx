@@ -18,12 +18,12 @@ export function Header({ pathname, email }: HeaderProps) {
 
       <div className="flex items-center gap-3">
         <label className="relative hidden sm:block">
-          <span className="sr-only">Search</span>
+          <span className="sr-only">Поиск</span>
           <input
             type="search"
             disabled
-            placeholder="Search"
-            aria-label="Search"
+            placeholder="Поиск"
+            aria-label="Поиск"
             className="w-40 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-1)] px-3 py-2 text-sm text-[var(--text-secondary)] opacity-70 lg:w-56"
           />
         </label>
@@ -31,8 +31,8 @@ export function Header({ pathname, email }: HeaderProps) {
         <button
           type="button"
           disabled
-          aria-label="Notifications"
-          title="Notifications coming soon"
+          aria-label="Уведомления"
+          title="Уведомления"
           className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-[var(--text-secondary)] opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
         >
           <span aria-hidden="true">🔔</span>
