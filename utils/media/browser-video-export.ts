@@ -16,6 +16,8 @@ export type FinalVideoExportResult = {
 type RenderStoryboardOptions = {
   scenes: FinalVideoExportScene[];
   voiceUrl?: string | null;
+  musicUrl?: string | null;
+  sfxUrl?: string | null;
   width?: number;
   height?: number;
   fps?: number;
@@ -143,12 +145,13 @@ function drawCaption(
   ctx.restore();
 }
 
-async function loadVoiceBuffer(
+async function loadAudioBuffer(
   audioContext: AudioContext,
-  voiceUrl: string,
+  url: string,
+  label: string,
 ): Promise<AudioBuffer> {
-  const response = await fetch(voiceUrl, { cache: 'no-store' });
-  if (!response.ok) throw new Error('Не удалось загрузить озвучку.');
+  const response = await fetch(url, { cache: 'no-store' });
+  if (!response.ok) throw new Error('Не удалось загрузить ' + label + '.');
   const bytes = await response.arrayBuffer();
   return audioContext.decodeAudioData(bytes);
 }
@@ -239,15 +242,39 @@ export async function renderStoryboardVideo(
   const combinedStream = new MediaStream(videoStream.getVideoTracks());
 
   let audioContext: AudioContext | null = null;
-  let audioSource: AudioBufferSourceNode | null = null;
+  const audioSources: AudioBufferSourceNode[] = [];
 
-  if (options.voiceUrl) {
+  if (options.voiceUrl || options.musicUrl || options.sfxUrl) {
     audioContext = new AudioContext();
     const destination = audioContext.createMediaStreamDestination();
-    const buffer = await loadVoiceBuffer(audioContext, options.voiceUrl);
-    audioSource = audioContext.createBufferSource();
-    audioSource.buffer = buffer;
-    audioSource.connect(destination);
+
+    const addTrack = async (
+      url: string,
+      label: string,
+      gainValue: number,
+    ) => {
+      if (!audioContext) return;
+
+      const buffer = await loadAudioBuffer(audioContext, url, label);
+      const source = audioContext.createBufferSource();
+      const gain = audioContext.createGain();
+
+      source.buffer = buffer;
+      gain.gain.value = gainValue;
+      source.connect(gain);
+      gain.connect(destination);
+      audioSources.push(source);
+    };
+
+    if (options.voiceUrl) {
+      await addTrack(options.voiceUrl, 'озвучку', 1);
+    }
+    if (options.musicUrl) {
+      await addTrack(options.musicUrl, 'музыку', 0.22);
+    }
+    if (options.sfxUrl) {
+      await addTrack(options.sfxUrl, 'звуковой эффект', 0.38);
+    }
 
     for (const track of destination.stream.getAudioTracks()) {
       combinedStream.addTrack(track);
@@ -278,7 +305,9 @@ export async function renderStoryboardVideo(
   });
 
   recorder.start(1000);
-  audioSource?.start(0);
+  for (const source of audioSources) {
+    source.start(0);
+  }
 
   try {
     for (const scene of scenes) {
@@ -290,7 +319,13 @@ export async function renderStoryboardVideo(
 
   await stopped;
 
-  audioSource?.stop();
+  for (const source of audioSources) {
+    try {
+      source.stop();
+    } catch {
+      // Track may already have ended naturally.
+    }
+  }
   for (const track of combinedStream.getTracks()) track.stop();
   await audioContext?.close();
 
