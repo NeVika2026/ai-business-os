@@ -192,6 +192,9 @@ export function AvatarVideoStudio({
                 expectedKind="audio"
                 accept="audio/mpeg,audio/wav,audio/mp4,audio/webm"
                 projectId={activeProjectId}
+                autoCreateProject
+                projectSeed="AI-аватар"
+                onProjectReady={setActiveProjectId}
                 label="Загрузить аудио с устройства"
                 onUploaded={({ url }) => setAudioUrl(url)}
               />
