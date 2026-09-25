@@ -37,6 +37,22 @@ describe('Business Factory full-text runtime knowledge', () => {
     assert.ok(results.some((result) => result.title.includes('AI-видео')));
   });
 
+  it('retrieves OSA product and brand strategy principles from MacBook sources', () => {
+    const adapter = createBusinessFactoryRuntimeKnowledgeAdapter('test-bf-mac-sources');
+
+    const product = adapter.search({
+      query: 'OSA не AI чат операционная система работа продолжается проект следующий шаг',
+      limit: 5,
+    });
+    const brand = adapter.search({
+      query: 'позиционирование уникальность заменить логотип конкурента месседжинг',
+      limit: 5,
+    });
+
+    assert.ok(product.some((result) => result.title.includes('OSA Product Bible')));
+    assert.ok(brand.some((result) => result.title.includes('Бренд-стратегия')));
+  });
+
   it('keeps separate adapter instances isolated', () => {
     const first = createBusinessFactoryRuntimeKnowledgeAdapter('test-bf-a');
     const second = createBusinessFactoryRuntimeKnowledgeAdapter('test-bf-b');
