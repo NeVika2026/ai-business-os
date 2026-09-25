@@ -165,6 +165,9 @@ export function UpscaleStudio({ initialKind, projectId = null }: Props) {
               expectedKind={kind}
               accept={kind === 'image' ? 'image/png,image/jpeg,image/webp' : 'video/mp4,video/webm'}
               projectId={activeProjectId}
+              autoCreateProject
+              projectSeed={kind === 'image' ? 'Улучшение изображения' : 'Улучшение видео'}
+              onProjectReady={setActiveProjectId}
               label={kind === 'image' ? 'Загрузить фото с устройства' : 'Загрузить видео с устройства'}
               onUploaded={({ url }) => setSourceUrl(url)}
             />
