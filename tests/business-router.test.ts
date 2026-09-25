@@ -75,3 +75,25 @@ test('keeps multi-output production in factory before publish routing', () => {
   assert.equal(plan.kind, 'factory_bundle');
   assert.match(plan.directHref ?? '', /\/modules\/factory\?/);
 });
+
+
+test('routes a single music request to the music studio', () => {
+  const plan = resolveBusinessRouterPlan('Сделай музыкальный трек для рекламы');
+
+  assert.equal(plan.kind, 'direct');
+  assert.equal(plan.directHref, '/modules/create/music');
+  assert.ok(plan.outputs.includes('music'));
+});
+
+test('keeps music and sound effects inside a multi-output factory bundle', () => {
+  const plan = resolveBusinessRouterPlan(
+    'Сделай ролик, музыку и звуковые эффекты для рекламы',
+  );
+
+  assert.equal(plan.kind, 'factory_bundle');
+  assert.ok(plan.outputs.includes('video'));
+  assert.ok(plan.outputs.includes('music'));
+  assert.ok(plan.outputs.includes('sfx'));
+  assert.ok(plan.tools.includes('media.music.generate'));
+  assert.ok(plan.tools.includes('media.sound_effect.generate'));
+});
