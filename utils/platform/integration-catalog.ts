@@ -206,10 +206,10 @@ export const INTEGRATION_CATALOG: IntegrationDefinition[] = [
   {
     id: 'tiktok-publish',
     name: 'TikTok',
-    description: 'Публикация коротких видео после подключения аккаунта.',
+    description: 'Прямая публикация коротких видео через Content Posting API.',
     category: 'publishing',
-    capabilities: ['Видео', 'Подпись'],
-    planned: true,
+    capabilities: ['Видео', 'Подпись', 'Приватность', 'Прямая отправка'],
+    envKeys: ['TIKTOK_CLIENT_KEY', 'TIKTOK_CLIENT_SECRET', 'TIKTOK_REFRESH_TOKEN'],
   },
   {
     id: 'max-publish',
