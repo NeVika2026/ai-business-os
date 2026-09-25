@@ -20,7 +20,7 @@ function normalizeRole(value: FormDataEntryValue | null): ManageableRole | null 
   return value === 'admin' || value === 'member' ? value : null;
 }
 
-function teamRedirect(params: Record<string, string>) {
+function teamRedirect(params: Record<string, string>): never {
   const search = new URLSearchParams(params);
   redirect('/settings/team?' + search.toString());
 }
