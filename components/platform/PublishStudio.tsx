@@ -192,7 +192,8 @@ export function PublishStudio({
         variant.channel === 'vk' ||
         variant.channel === 'youtube' ||
         variant.channel === 'instagram' ||
-        variant.channel === 'tiktok'
+        variant.channel === 'tiktok' ||
+        variant.channel === 'max'
           ? mediaUrl || null
           : null,
       mediaKind:
@@ -200,7 +201,8 @@ export function PublishStudio({
         variant.channel === 'vk' ||
         variant.channel === 'youtube' ||
         variant.channel === 'instagram' ||
-        variant.channel === 'tiktok'
+        variant.channel === 'tiktok' ||
+        variant.channel === 'max'
           ? mediaKind
           : null,
       tiktokPrivacyLevel:
@@ -316,7 +318,7 @@ export function PublishStudio({
                 <p className="text-sm font-black text-white/82">Медиа к публикации · необязательно</p>
                 <p className="mt-1 text-xs leading-5 text-white/48">
                   Фото, видео или аудио можно загрузить с устройства или выбрать из Медиатеки.
-                  Telegram отправляет фото, видео и аудио. ВКонтакте прикрепляет изображение. YouTube, Instagram Reels и TikTok принимают выбранное видео после подключения канала.
+                  Telegram отправляет фото, видео и аудио. ВКонтакте прикрепляет изображение. YouTube, Instagram Reels и TikTok принимают выбранное видео после подключения канала. MAX отправляет выбранное фото, видео или аудио вместе с постом.
                 </p>
               </div>
               {mediaUrl ? (
@@ -599,7 +601,7 @@ export function PublishStudio({
           ПУБЛИКАЦИЯ
         </p>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-white/62">
-          Telegram, ВКонтакте, YouTube, Instagram Reels, TikTok и MAX публикуют напрямую после подключения доступа. Telegram отправляет фото, видео и аудио; ВКонтакте — текст и изображение; YouTube, Instagram Reels и TikTok — выбранный видеофайл. Прямая отправка доступна владельцу и администраторам организации. Дзен пока получает готовую версию на копирование — без имитации подключения.
+          Telegram, ВКонтакте, YouTube, Instagram Reels, TikTok и MAX публикуют напрямую после подключения доступа. Telegram отправляет фото, видео и аудио; ВКонтакте — текст и изображение; YouTube, Instagram Reels и TikTok — выбранный видеофайл; MAX — фото, видео или аудио. Прямая отправка доступна владельцу и администраторам организации. Дзен пока получает готовую версию на копирование — без имитации подключения.
         </p>
       </section>
     </main>

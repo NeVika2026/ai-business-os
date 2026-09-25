@@ -925,6 +925,90 @@ async function publishTikTokVideo(input: {
   };
 }
 
+
+async function uploadMaxMedia(input: {
+  sourceUrl: string;
+  kind: 'image' | 'video' | 'audio';
+  token: string;
+}): Promise<string> {
+  const source = await fetch(input.sourceUrl, { cache: 'no-store' });
+  if (!source.ok) {
+    throw new Error('Не удалось скачать медиа из Медиатеки для MAX.');
+  }
+
+  const bytes = await source.arrayBuffer();
+  const maxBytes = 100 * 1024 * 1024;
+  if (bytes.byteLength > maxBytes) {
+    throw new Error(
+      'Для прямой публикации медиа в MAX файл должен быть не больше 100 МБ.',
+    );
+  }
+
+  const contentType =
+    source.headers.get('content-type') ||
+    (input.kind === 'image'
+      ? 'image/jpeg'
+      : input.kind === 'video'
+        ? 'video/mp4'
+        : 'audio/mpeg');
+
+  const initUrl = new URL('https://platform-api2.max.ru/uploads');
+  initUrl.searchParams.set('type', input.kind);
+
+  const initResponse = await fetch(initUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: input.token,
+      Accept: 'application/json',
+    },
+    cache: 'no-store',
+  });
+
+  const initialized = (await initResponse.json()) as {
+    url?: string;
+    token?: string;
+    error?: string;
+    message?: string;
+  };
+
+  if (!initResponse.ok || !initialized.url || !initialized.token) {
+    throw new Error(
+      initialized.error ||
+        initialized.message ||
+        'MAX не создал сессию загрузки медиа.',
+    );
+  }
+
+  const form = new FormData();
+  const extension =
+    input.kind === 'image'
+      ? 'jpg'
+      : input.kind === 'video'
+        ? 'mp4'
+        : 'mp3';
+  form.append(
+    'data',
+    new Blob([bytes], { type: contentType }),
+    'business-zavod.' + extension,
+  );
+
+  const uploadResponse = await fetch(initialized.url, {
+    method: 'POST',
+    body: form,
+    cache: 'no-store',
+  });
+
+  if (!uploadResponse.ok) {
+    const detail = (await uploadResponse.text()).slice(0, 500);
+    throw new Error(
+      'MAX отклонил загрузку медиа: ' +
+        (detail || uploadResponse.statusText),
+    );
+  }
+
+  return initialized.token;
+}
+
 export async function publishVariantAction(input: {
   channel: PublicationChannelId;
   title?: string;
@@ -1123,6 +1207,17 @@ export async function publishVariantAction(input: {
     }
 
     try {
+      const mediaUrl = input.mediaUrl?.trim() || '';
+      const mediaKind = input.mediaKind ?? null;
+      const mediaToken =
+        mediaUrl && mediaKind
+          ? await uploadMaxMedia({
+              sourceUrl: mediaUrl,
+              kind: mediaKind,
+              token,
+            })
+          : '';
+
       const chunks = splitTelegramText(text).flatMap((chunk) => {
         if (chunk.length <= 3900) return [chunk];
         const parts: string[] = [];
@@ -1152,6 +1247,16 @@ export async function publishVariantAction(input: {
           body: JSON.stringify({
             text: chunks[index],
             notify: true,
+            ...(index === 0 && mediaToken && mediaKind
+              ? {
+                  attachments: [
+                    {
+                      type: mediaKind,
+                      payload: { token: mediaToken },
+                    },
+                  ],
+                }
+              : {}),
           }),
           cache: 'no-store',
         });
@@ -1192,6 +1297,9 @@ export async function publishVariantAction(input: {
             published: true,
             messageIds,
             chunks: chunks.length,
+            mediaPublished: Boolean(mediaToken),
+            mediaKind: mediaToken ? mediaKind : null,
+            mediaUrl: mediaToken ? mediaUrl : null,
           },
         });
       }
@@ -1199,9 +1307,13 @@ export async function publishVariantAction(input: {
       return {
         ok: true,
         message:
-          chunks.length > 1
-            ? 'Опубликовано в MAX: ' + chunks.length + ' сообщения.'
-            : 'Опубликовано в MAX.',
+          mediaToken
+            ? chunks.length > 1
+              ? 'Опубликовано в MAX: медиа + ' + chunks.length + ' текстовых части.'
+              : 'Опубликовано в MAX с медиа.'
+            : chunks.length > 1
+              ? 'Опубликовано в MAX: ' + chunks.length + ' сообщения.'
+              : 'Опубликовано в MAX.',
       };
     } catch (error) {
       return {
