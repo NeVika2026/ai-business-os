@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useMemo, useState, useTransition } from 'react';
 
 import { attachMediaAssetToProjectAction } from '@/app/(dashboard)/media/actions';
+import { MediaUploadField } from '@/components/media/MediaUploadField';
 import type { MediaLibraryData, MediaLibraryItem } from '@/utils/media/load-media-library';
 
 type MediaLibraryProps = {
@@ -51,6 +52,13 @@ function titleForItem(item: MediaLibraryItem) {
 
   if (metadataTitle) return metadataTitle;
 
+  if (item.provider === 'upload') {
+    const original =
+      typeof item.metadata.originalFileName === 'string'
+        ? item.metadata.originalFileName.trim()
+        : '';
+    return original || 'Загруженный файл';
+  }
   if (item.provider === 'browser-export') return 'Финальный ролик';
   if (item.kind === 'image') return 'Сгенерированное изображение';
   if (item.kind === 'audio') return 'Сгенерированная озвучка';
@@ -135,12 +143,19 @@ export function MediaLibrary({ data, initialProjectId = 'all' }: MediaLibraryPro
             </p>
           </div>
 
-          <Link
-            href="/modules/create/studio"
-            className="rounded-2xl bg-[linear-gradient(135deg,#f2d474,#c68a26)] px-5 py-3 text-sm font-extrabold text-[#181006] shadow-[0_16px_34px_-20px_rgba(231,185,82,.8)]"
-          >
-            + Создать медиа
-          </Link>
+          <div className="grid min-w-[220px] gap-2">
+            <MediaUploadField
+              compact
+              label="+ Загрузить с устройства"
+              onUploaded={() => window.location.reload()}
+            />
+            <Link
+              href="/modules/create/studio"
+              className="rounded-2xl bg-[linear-gradient(135deg,#f2d474,#c68a26)] px-5 py-3 text-center text-sm font-extrabold text-[#181006] shadow-[0_16px_34px_-20px_rgba(231,185,82,.8)]"
+            >
+              + Создать медиа
+            </Link>
+          </div>
         </header>
 
         <section className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -261,7 +276,7 @@ export function MediaLibrary({ data, initialProjectId = 'all' }: MediaLibraryPro
                         </p>
                       </div>
                       <span className="shrink-0 rounded-full border border-emerald-300/10 bg-emerald-300/[0.04] px-2 py-1 text-[8px] font-bold uppercase tracking-[0.12em] text-emerald-200/70">
-                        saved
+                        сохранено
                       </span>
                     </div>
 
@@ -304,7 +319,7 @@ export function MediaLibrary({ data, initialProjectId = 'all' }: MediaLibraryPro
 
                     <div className="mt-4 flex items-center justify-between gap-3">
                       <span className="text-[9px] uppercase tracking-[0.12em] text-white/20">
-                        {item.provider}
+                        {item.provider === 'upload' ? 'загружено с устройства' : item.provider}
                       </span>
                       {item.signedUrl ? (
                         <a
