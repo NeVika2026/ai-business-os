@@ -222,10 +222,10 @@ export const INTEGRATION_CATALOG: IntegrationDefinition[] = [
   {
     id: 'max-publish',
     name: 'MAX',
-    description: 'Публикация адаптированных материалов в канал.',
+    description: 'Прямая публикация текстовых постов в канал через Bot API.',
     category: 'publishing',
-    capabilities: ['Посты', 'Канал'],
-    planned: true,
+    capabilities: ['Посты', 'Канал', 'Прямая отправка'],
+    envKeys: ['MAX_BOT_TOKEN', 'MAX_CHAT_ID'],
   },
 ];
 
