@@ -9,6 +9,7 @@ import {
   type MediaStudioStatusResult,
 } from '@/app/(dashboard)/modules/create/studio/actions';
 import { saveFactoryArtifactAction } from '@/app/(dashboard)/modules/factory-chain/actions';
+import { MediaUploadField } from '@/components/media/MediaUploadField';
 
 type Kind = 'image' | 'video';
 
@@ -119,7 +120,7 @@ export function UpscaleStudio({ initialKind, projectId = null }: Props) {
     <main className="mx-auto w-full max-w-[1320px] pb-16 text-[#f7f2e8]">
       <section className="rounded-[34px] border border-white/[0.09] bg-[linear-gradient(145deg,#05070b,#0b1018_58%,#06080c)] p-6 sm:p-8">
         <p className="text-[12px] font-black uppercase tracking-[.18em] text-[#79eaf2]">
-          БИЗНЕС-ЗАВОД · UPSCALE
+          БИЗНЕС-ЗАВОД · УЛУЧШЕНИЕ КАЧЕСТВА
         </p>
         <h1 className="mt-3 text-[clamp(2.8rem,5vw,5.2rem)] font-black leading-[.94] tracking-[-.055em] text-[#fff8e7]">
           Поднять качество.
@@ -159,8 +160,21 @@ export function UpscaleStudio({ initialKind, projectId = null }: Props) {
             ))}
           </div>
 
-          <label className="mt-5 grid gap-2">
-            <span className="text-sm font-bold text-white/72">Ссылка на исходный файл</span>
+          <div className="mt-5">
+            <MediaUploadField
+              expectedKind={kind}
+              accept={kind === 'image' ? 'image/png,image/jpeg,image/webp' : 'video/mp4,video/webm'}
+              projectId={activeProjectId}
+              autoCreateProject
+              projectSeed={kind === 'image' ? 'Улучшение изображения' : 'Улучшение видео'}
+              onProjectReady={setActiveProjectId}
+              label={kind === 'image' ? 'Загрузить фото с устройства' : 'Загрузить видео с устройства'}
+              onUploaded={({ url }) => setSourceUrl(url)}
+            />
+          </div>
+
+          <label className="mt-4 grid gap-2">
+            <span className="text-sm font-bold text-white/72">Или вставьте ссылку</span>
             <input
               value={sourceUrl}
               onChange={(event) => setSourceUrl(event.target.value)}
@@ -245,7 +259,7 @@ export function UpscaleStudio({ initialKind, projectId = null }: Props) {
 
           {!status ? (
             <div className="flex min-h-[560px] items-center justify-center text-center text-white/40">
-              Укажите исходный файл и запустите upscale.
+              Загрузите исходный файл и запустите улучшение качества.
             </div>
           ) : status.status === 'completed' && status.outputUrl ? (
             <div className="mt-5">

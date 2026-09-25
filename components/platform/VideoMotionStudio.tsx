@@ -10,6 +10,7 @@ import {
   type VideoMotionMode,
 } from '@/app/(dashboard)/modules/create/studio/actions';
 import { saveFactoryArtifactAction } from '@/app/(dashboard)/modules/factory-chain/actions';
+import { MediaUploadField } from '@/components/media/MediaUploadField';
 
 type Props = {
   initialMode: VideoMotionMode;
@@ -145,7 +146,7 @@ export function VideoMotionStudio({ initialMode, projectId = null }: Props) {
     <main className="mx-auto w-full max-w-[1320px] pb-16 text-[#f7f2e8]">
       <section className="rounded-[34px] border border-white/[0.09] bg-[linear-gradient(145deg,#05070b,#0b1018_58%,#06080c)] p-6 sm:p-8">
         <p className="text-[12px] font-black uppercase tracking-[.18em] text-[#79eaf2]">
-          БИЗНЕС-ЗАВОД · VIDEO MOTION
+          БИЗНЕС-ЗАВОД · ДВИЖЕНИЕ И ПРОДЛЕНИЕ
         </p>
         <h1 className="mt-3 text-[clamp(2.8rem,5vw,5.2rem)] font-black leading-[.94] tracking-[-.055em] text-[#fff8e7]">
           Продлить ролик.
@@ -185,9 +186,22 @@ export function VideoMotionStudio({ initialMode, projectId = null }: Props) {
             ))}
           </div>
 
-          <label className="mt-5 grid gap-2">
+          <div className="mt-5">
+            <MediaUploadField
+              expectedKind="video"
+              accept="video/mp4,video/webm"
+              projectId={activeProjectId}
+              autoCreateProject
+              projectSeed={mode === 'extend' ? 'Продление видео' : 'Перенос движения'}
+              onProjectReady={setActiveProjectId}
+              label={mode === 'extend' ? 'Загрузить исходный ролик' : 'Загрузить ролик с движением'}
+              onUploaded={({ url }) => setSourceUrl(url)}
+            />
+          </div>
+
+          <label className="mt-4 grid gap-2">
             <span className="text-sm font-bold text-white/72">
-              {mode === 'extend' ? 'Исходный ролик' : 'Ролик с нужным движением'}
+              {mode === 'extend' ? 'Или ссылка на исходный ролик' : 'Или ссылка на ролик с движением'}
             </span>
             <input
               value={sourceUrl}
@@ -198,9 +212,17 @@ export function VideoMotionStudio({ initialMode, projectId = null }: Props) {
           </label>
 
           {mode === 'motion' ? (
-            <label className="mt-4 grid gap-2">
+            <div className="mt-4 grid gap-3">
+              <MediaUploadField
+                expectedKind="image"
+                accept="image/png,image/jpeg,image/webp"
+                projectId={activeProjectId}
+                label="Загрузить фото персонажа"
+                onUploaded={({ url }) => setReferenceImage(url)}
+              />
+              <label className="grid gap-2">
               <span className="text-sm font-bold text-white/72">
-                Изображение персонажа
+                Или ссылка на изображение персонажа
               </span>
               <input
                 value={referenceImage}
@@ -211,7 +233,8 @@ export function VideoMotionStudio({ initialMode, projectId = null }: Props) {
               <span className="text-xs leading-5 text-white/42">
                 Лицо должно быть хорошо видно. Движение, мимика и жесты будут взяты из ролика выше.
               </span>
-            </label>
+              </label>
+            </div>
           ) : (
             <label className="mt-4 grid gap-2">
               <span className="text-sm font-bold text-white/72">Как продолжить сцену</span>

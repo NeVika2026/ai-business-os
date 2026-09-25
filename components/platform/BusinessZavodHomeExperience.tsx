@@ -184,11 +184,12 @@ export function BusinessZavodHomeExperience() {
           </p>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {[
             ['Инструменты', 'Все доступные цеха и будущие мощности', '/tools', '⌘'],
             ['Готовые заводы', 'Запуск готовой производственной линии', '/factories', '⚙'],
             ['Галерея', 'Все результаты, которые уже произвёл завод', '/gallery', '▦'],
+            ['Медиатека', 'Фото, видео и аудио — загруженные и созданные', '/media', '◫'],
             ['Повторить / ремикс', 'Возьмите удачный результат и сделайте новую версию', '/gallery', '↻'],
           ].map(([title, description, href, mark]) => (
             <Link

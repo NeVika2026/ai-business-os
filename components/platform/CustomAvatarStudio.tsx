@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState, useTransition } from 'react';
 
 import { createCustomAvatarAction } from '@/app/(dashboard)/modules/create/studio/actions';
+import { MediaUploadField } from '@/components/media/MediaUploadField';
 
 type Props = { projectId?: string | null };
 
@@ -80,12 +81,24 @@ export function CustomAvatarStudio({ projectId = null }: Props) {
               className="rounded-2xl border border-white/[0.09] bg-black/25 px-4 py-3.5 text-sm text-white" />
           </label>
 
-          <label className="mt-4 grid gap-2">
-            <span className="text-sm font-bold text-white/72">Фотография</span>
-            <input value={referenceImage} onChange={e=>setReferenceImage(e.target.value)} placeholder="https://…jpg"
-              className="rounded-2xl border border-white/[0.09] bg-black/25 px-4 py-3.5 text-sm text-white" />
-            <span className="text-xs leading-5 text-white/40">Лучше фронтальный портрет с хорошо видимым лицом.</span>
-          </label>
+          <div className="mt-4 grid gap-3">
+            <MediaUploadField
+              expectedKind="image"
+              accept="image/png,image/jpeg,image/webp"
+              projectId={activeProjectId}
+              autoCreateProject
+              projectSeed="Мой AI-аватар"
+              onProjectReady={setActiveProjectId}
+              label="Загрузить фотографию с устройства"
+              onUploaded={({ url }) => setReferenceImage(url)}
+            />
+            <label className="grid gap-2">
+              <span className="text-sm font-bold text-white/72">Или вставьте ссылку на фотографию</span>
+              <input value={referenceImage} onChange={e=>setReferenceImage(e.target.value)} placeholder="https://…jpg"
+                className="rounded-2xl border border-white/[0.09] bg-black/25 px-4 py-3.5 text-sm text-white" />
+              <span className="text-xs leading-5 text-white/40">Лучше фронтальный портрет с хорошо видимым лицом.</span>
+            </label>
+          </div>
 
           <label className="mt-4 grid gap-2">
             <span className="text-sm font-bold text-white/72">Характер</span>

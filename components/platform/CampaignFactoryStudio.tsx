@@ -10,6 +10,7 @@ import {
   type MediaStudioStatusResult,
 } from '@/app/(dashboard)/modules/create/studio/actions';
 import { saveFactoryArtifactAction } from '@/app/(dashboard)/modules/factory-chain/actions';
+import { MediaUploadField } from '@/components/media/MediaUploadField';
 
 type CampaignFactoryStudioProps = {
   projectId?: string | null;
@@ -24,31 +25,31 @@ const TABS: Array<{
 }> = [
   {
     id: 'product_ad',
-    label: 'Product Ad',
-    description: 'Фото товара → cinematic-реклама',
+    label: 'Реклама товара',
+    description: 'Фото товара → рекламный ролик',
     mediaKind: 'video',
   },
   {
     id: 'product_ugc',
-    label: 'Product UGC',
-    description: 'Персонаж + товар → UGC-реклама',
+    label: 'UGC-реклама',
+    description: 'Персонаж + товар → живой рекламный ролик',
     mediaKind: 'video',
   },
   {
     id: 'product_campaign',
-    label: 'Campaign Images',
-    description: 'Фото товара → 4 campaign-визуала',
+    label: 'Серия визуалов',
+    description: 'Фото товара → 4 рекламных визуала',
     mediaKind: 'image',
   },
   {
     id: 'ad_localization',
-    label: 'Localization',
+    label: 'Локализация',
     description: 'Креатив → другой язык',
     mediaKind: 'image',
   },
   {
     id: 'multi_shot',
-    label: 'Multi-shot',
+    label: 'Видео из нескольких сцен',
     description: 'Несколько сцен → один ролик',
     mediaKind: 'video',
   },
@@ -247,7 +248,7 @@ export function CampaignFactoryStudio({
 
         <div className="relative">
           <p className="text-[13px] font-black uppercase tracking-[.18em] text-[#79eaf2]">
-            TREND LAB · CAMPAIGN FACTORY
+            БИЗНЕС-ЗАВОД · РЕКЛАМНЫЙ ЦЕХ
           </p>
           <h1 className="mt-4 max-w-5xl text-[clamp(3rem,5vw,5.5rem)] font-black leading-[.92] tracking-[-.065em] text-[#fff8e7]">
             Товар → кампания
@@ -289,6 +290,20 @@ export function CampaignFactoryStudio({
 
           {kind === 'product_ad' ? (
             <>
+              <div className="mb-4">
+                <MediaUploadField
+                  expectedKind="image"
+                  accept="image/png,image/jpeg,image/webp"
+                  projectId={activeProjectId}
+                  autoCreateProject
+                  projectSeed="Рекламная кампания товара"
+                  onProjectReady={setActiveProjectId}
+                  label="Добавить фото продукта с устройства"
+                  onUploaded={({ url }) =>
+                    setProductImagesText((current) => current.trim() ? current.trim() + '\n' + url : url)
+                  }
+                />
+              </div>
               <Field label="Фото продукта · по одной ссылке на строку">
                 <textarea
                   rows={4}
@@ -325,14 +340,38 @@ export function CampaignFactoryStudio({
 
           {kind === 'product_ugc' ? (
             <>
-              <Field label="Фото персонажа">
+              <div className="mb-4">
+                <MediaUploadField
+                  expectedKind="image"
+                  accept="image/png,image/jpeg,image/webp"
+                  projectId={activeProjectId}
+                  autoCreateProject
+                  projectSeed="UGC-реклама"
+                  onProjectReady={setActiveProjectId}
+                  label="Загрузить фото персонажа"
+                  onUploaded={({ url }) => setCharacterImage(url)}
+                />
+              </div>
+              <Field label="Фото персонажа или ссылка">
                 <input
                   value={characterImage}
                   onChange={(event) => setCharacterImage(event.target.value)}
                   placeholder="https://…"
                 />
               </Field>
-              <Field label="Фото продукта">
+              <div className="mb-4">
+                <MediaUploadField
+                  expectedKind="image"
+                  accept="image/png,image/jpeg,image/webp"
+                  projectId={activeProjectId}
+                  autoCreateProject
+                  projectSeed="UGC-реклама"
+                  onProjectReady={setActiveProjectId}
+                  label="Загрузить фото продукта"
+                  onUploaded={({ url }) => setProductImage(url)}
+                />
+              </div>
+              <Field label="Фото продукта или ссылка">
                 <input
                   value={productImage}
                   onChange={(event) => setProductImage(event.target.value)}
@@ -368,7 +407,19 @@ export function CampaignFactoryStudio({
 
           {kind === 'product_campaign' ? (
             <>
-              <Field label="Фото продукта">
+              <div className="mb-4">
+                <MediaUploadField
+                  expectedKind="image"
+                  accept="image/png,image/jpeg,image/webp"
+                  projectId={activeProjectId}
+                  autoCreateProject
+                  projectSeed="Серия рекламных визуалов"
+                  onProjectReady={setActiveProjectId}
+                  label="Загрузить фото продукта"
+                  onUploaded={({ url }) => setCampaignImage(url)}
+                />
+              </div>
+              <Field label="Фото продукта или ссылка">
                 <input
                   value={campaignImage}
                   onChange={(event) => setCampaignImage(event.target.value)}
@@ -388,6 +439,18 @@ export function CampaignFactoryStudio({
 
           {kind === 'ad_localization' ? (
             <>
+              <div className="mb-4">
+                <MediaUploadField
+                  expectedKind="image"
+                  accept="image/png,image/jpeg,image/webp"
+                  projectId={activeProjectId}
+                  autoCreateProject
+                  projectSeed="Локализация рекламы"
+                  onProjectReady={setActiveProjectId}
+                  label="Загрузить рекламный креатив"
+                  onUploaded={({ url }) => setReferenceImage(url)}
+                />
+              </div>
               <Field label="Исходный рекламный креатив">
                 <input
                   value={referenceImage}
