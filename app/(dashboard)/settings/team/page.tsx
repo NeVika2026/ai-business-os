@@ -24,7 +24,7 @@ type MemberRow = {
   user_id: string;
   role: 'owner' | 'admin' | 'member';
   created_at: string;
-  profiles: { full_name: string | null } | null;
+  profiles: Array<{ full_name: string | null }> | null;
 };
 
 function roleLabel(role: 'owner' | 'admin' | 'member') {
@@ -181,7 +181,7 @@ export default async function TeamPage({ searchParams }: TeamPageProps) {
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-black text-[var(--text-primary)]">
-                    {member.profiles?.full_name?.trim() || member.email || 'Пользователь'}
+                    {member.profiles?.[0]?.full_name?.trim() || member.email || 'Пользователь'}
                   </p>
                   <p className="mt-1 truncate text-xs text-[var(--text-secondary)]">
                     {member.email || member.user_id}
