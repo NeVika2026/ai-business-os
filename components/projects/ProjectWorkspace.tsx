@@ -1,5 +1,6 @@
 import { ProjectActivity } from '@/components/projects/ProjectActivity';
 import { ProjectCommandCenter } from '@/components/projects/ProjectCommandCenter';
+import { ProjectDeliveryPanel } from '@/components/projects/ProjectDeliveryPanel';
 import { ProjectDocuments } from '@/components/projects/ProjectDocuments';
 import { ProjectExecutions } from '@/components/projects/ProjectExecutions';
 import { ProjectFactoryHistory } from '@/components/projects/ProjectFactoryHistory';
@@ -34,6 +35,12 @@ export function ProjectWorkspace({
         workspace={workspace}
         media={media}
         artifacts={factoryArtifacts}
+      />
+
+      <ProjectDeliveryPanel
+        projectId={workspace.project.id}
+        artifacts={factoryArtifacts}
+        media={media}
       />
 
       <ProjectMemoryPanel
