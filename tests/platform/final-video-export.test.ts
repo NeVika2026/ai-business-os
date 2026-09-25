@@ -14,6 +14,9 @@ describe('Final storyboard video export', () => {
     assert.match(source, /MediaRecorder/);
     assert.match(source, /drawCaption/);
     assert.match(source, /AudioContext/);
+    assert.match(source, /musicUrl/);
+    assert.match(source, /sfxUrl/);
+    assert.match(source, /createGain/);
     assert.match(source, /video\/mp4/);
     assert.match(source, /video\/webm/);
   });
@@ -55,3 +58,24 @@ describe('Final storyboard video export', () => {
     assert.match(source, /completedScenes\.length === scenes\.length/);
   });
 });
+
+
+  it('connects the full factory bundle to final mixed video export', () => {
+    const source = readFileSync(
+      join(
+        import.meta.dirname,
+        '..',
+        '..',
+        'components',
+        'platform',
+        'FactoryBundleStudio.tsx',
+      ),
+      'utf8',
+    );
+
+    assert.match(source, /FinalVideoExportPanel/);
+    assert.match(source, /finalVoiceJob/);
+    assert.match(source, /finalMusicJob/);
+    assert.match(source, /finalSfxJob/);
+    assert.match(source, /voice-script/);
+  });
