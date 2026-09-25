@@ -46,3 +46,32 @@ test('builds an orchestration prompt without collapsing outputs', () => {
   assert.match(prompt, /не своди запрос к одному формату/i);
   assert.match(prompt, /package\.assemble/);
 });
+
+
+test('expands a full-package request into the default campaign bundle', () => {
+  const plan = resolveBusinessRouterPlan('Запусти услугу под ключ и собери полный пакет');
+
+  assert.equal(plan.kind, 'factory_bundle');
+  assert.deepEqual(
+    ['video', 'stories', 'image', 'post', 'telegram'].every((output) =>
+      plan.outputs.includes(output as never),
+    ),
+    true,
+  );
+});
+
+test('does not duplicate a Telegram post as a generic post', () => {
+  const plan = resolveBusinessRouterPlan('Сделай пост для Telegram');
+
+  assert.ok(plan.outputs.includes('telegram'));
+  assert.equal(plan.outputs.includes('post'), false);
+});
+
+test('keeps multi-output production in factory before publish routing', () => {
+  const plan = resolveBusinessRouterPlan(
+    'Сделай Reels, сторис и баннер, потом подготовь к публикации',
+  );
+
+  assert.equal(plan.kind, 'factory_bundle');
+  assert.match(plan.directHref ?? '', /\/modules\/factory\?/);
+});
