@@ -1529,3 +1529,62 @@ export async function publishVariantAction(input: {
     };
   }
 }
+
+
+export type PublicationBatchReportItem = {
+  channel: PublicationChannelId;
+  ok: boolean;
+  message: string;
+};
+
+export async function savePublicationBatchReportAction(input: {
+  projectId?: string | null;
+  items: PublicationBatchReportItem[];
+}): Promise<{ ok: true } | { ok: false; message: string }> {
+  if (!input.projectId || input.items.length === 0) {
+    return { ok: true };
+  }
+
+  const access = await ensureDirectPublishingAccess();
+  if (!access.ok) {
+    return { ok: false, message: access.message };
+  }
+
+  const successCount = input.items.filter((item) => item.ok).length;
+  const failedCount = input.items.length - successCount;
+  const content = input.items
+    .map((item) =>
+      [
+        CHANNEL_NAMES[item.channel],
+        item.ok ? 'УСПЕХ' : 'ОШИБКА',
+        item.message,
+      ].join('\n'),
+    )
+    .join('\n\n---\n\n');
+
+  try {
+    await saveFactoryArtifact({
+      projectId: input.projectId,
+      stage: 'publish',
+      title: 'Отчёт массовой публикации',
+      content,
+      metadata: {
+        artifactType: 'publication-batch-report',
+        published: failedCount === 0,
+        successCount,
+        failedCount,
+        items: input.items,
+      },
+    });
+
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : 'Не удалось сохранить отчёт массовой публикации.',
+    };
+  }
+}
