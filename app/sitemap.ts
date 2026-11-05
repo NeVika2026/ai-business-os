@@ -9,12 +9,23 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/avtomatizaciya-biznesa',
     '/nejroseti-dlya-raboty',
     '/kursy-nejrosetey',
+    '/chatgpt',
+    '/deepseek',
+    '/manus-ai',
+    '/make',
+    '/n8n',
+    '/nejroset-dlya-prezentacij',
+    '/nejroset-dlya-teksta',
+    '/nejroset-dlya-video',
+    '/nejroset-dlya-sajta',
+    '/ii-dlya-prodazh',
+    '/nejroseti-dlya-nedvizhimosti',
   ];
 
   return routes.map((route, index) => ({
     url: `${base}${route}`,
     lastModified: new Date(),
     changeFrequency: index === 0 ? 'daily' : 'weekly',
-    priority: index === 0 ? 1 : 0.8,
+    priority: index === 0 ? 1 : index <= 5 ? 0.9 : 0.8,
   }));
 }
