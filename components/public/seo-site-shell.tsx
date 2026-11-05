@@ -8,6 +8,20 @@ const nav = [
   { href: '/kursy-nejrosetey', label: 'Обучение' },
 ];
 
+const quickLinks = [
+  { href: '/chatgpt', label: 'ChatGPT' },
+  { href: '/deepseek', label: 'DeepSeek' },
+  { href: '/manus-ai', label: 'Manus AI' },
+  { href: '/make', label: 'Make' },
+  { href: '/n8n', label: 'n8n' },
+  { href: '/nejroset-dlya-prezentacij', label: 'Презентации' },
+  { href: '/nejroset-dlya-teksta', label: 'Тексты' },
+  { href: '/nejroset-dlya-video', label: 'Видео' },
+  { href: '/nejroset-dlya-sajta', label: 'Сайты' },
+  { href: '/ii-dlya-prodazh', label: 'Продажи' },
+  { href: '/nejroseti-dlya-nedvizhimosti', label: 'Недвижимость' },
+];
+
 export function SeoHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-black/10 bg-[#fffaf5]/95 backdrop-blur">
@@ -43,12 +57,21 @@ export function SeoFooter() {
             Нейросети, ИИ-агенты и автоматизация для реальной работы и бизнеса.
           </p>
         </div>
-        <div className="flex flex-wrap gap-x-5 gap-y-2 md:justify-end">
-          {nav.map((item) => (
-            <Link key={item.href} href={item.href} className="hover:text-black">
-              {item.label}
-            </Link>
-          ))}
+        <div>
+          <div className="flex flex-wrap gap-x-5 gap-y-2 md:justify-end">
+            {nav.map((item) => (
+              <Link key={item.href} href={item.href} className="hover:text-black">
+                {item.label}
+              </Link>
+            ))}
+          </div>
+          <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 md:justify-end">
+            {quickLinks.map((item) => (
+              <Link key={item.href} href={item.href} className="text-xs text-[#777d87] hover:text-black">
+                {item.label}
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </footer>
