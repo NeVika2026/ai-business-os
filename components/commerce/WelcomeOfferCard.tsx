@@ -77,7 +77,7 @@ export function WelcomeOfferCard({
       )}
 
       <div className="mt-7 flex flex-wrap gap-3">
-        <Link href="/marketplace" className="rounded-full bg-[#1f2430] px-6 py-3 font-bold text-white">
+        <Link href="/market" className="rounded-full bg-[#1f2430] px-6 py-3 font-bold text-white">
           Выбрать продукт
         </Link>
         <Link href="/gotovoe" className="rounded-full border border-black/15 px-6 py-3 font-bold">
