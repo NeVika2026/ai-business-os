@@ -78,6 +78,24 @@ export default async function CabinetPage({ searchParams }: CabinetPageProps) {
         </div>
       ) : null}
 
+      <section className="rounded-[24px] border border-[var(--accent)]/20 bg-[var(--accent)]/[0.05] p-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[.12em] text-[var(--accent)]">Для новых пользователей</p>
+            <h2 className="mt-2 text-xl font-black text-[var(--text-primary)]">Стартовая цена на первые 24 часа</h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+              Таймер привязан к дате регистрации и не перезапускается при обновлении страницы.
+            </p>
+          </div>
+          <Link
+            href="/cabinet/offers"
+            className="rounded-xl bg-[var(--accent)] px-5 py-3 text-sm font-black text-white"
+          >
+            Проверить предложение →
+          </Link>
+        </div>
+      </section>
+
       <section className="grid gap-4 md:grid-cols-3">
         <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-5">
           <p className="text-xs font-bold uppercase tracking-[.1em] text-[var(--text-secondary)]">Email</p>
