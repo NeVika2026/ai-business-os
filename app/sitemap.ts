@@ -5,7 +5,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const routes = [
     '',
     '/gotovoe',
-    '/marketplace',
+    '/market',
     '/vyyti-v-dengi',
     '/nejroseti-dlya-biznesa',
     '/ii-agenty',
