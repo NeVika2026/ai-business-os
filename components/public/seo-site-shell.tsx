@@ -1,11 +1,11 @@
 import Link from 'next/link';
 
 const nav = [
-  { href: '/nejroseti-dlya-biznesa', label: 'ИИ для бизнеса' },
-  { href: '/ii-agenty', label: 'ИИ-агенты' },
+  { href: '/gotovoe', label: 'Бесплатно' },
+  { href: '/marketplace', label: 'Маркетплейс' },
+  { href: '/vyyti-v-dengi', label: 'Выйти в деньги' },
+  { href: '/kursy-nejrosetey', label: 'Курсы' },
   { href: '/avtomatizaciya-biznesa', label: 'Автоматизация' },
-  { href: '/nejroseti-dlya-raboty', label: 'Для работы' },
-  { href: '/kursy-nejrosetey', label: 'Обучение' },
 ];
 
 const quickLinks = [
@@ -29,7 +29,7 @@ export function SeoHeader() {
         <Link href="/" className="font-black tracking-tight text-[#1f2430]">
           БИЗНЕС-ЗАВОД
         </Link>
-        <nav className="hidden items-center gap-6 text-sm font-medium text-[#4a4f5b] lg:flex">
+        <nav className="hidden items-center gap-5 text-sm font-medium text-[#4a4f5b] lg:flex">
           {nav.map((item) => (
             <Link key={item.href} href={item.href} className="transition hover:text-black">
               {item.label}
@@ -40,7 +40,7 @@ export function SeoHeader() {
           href="/login"
           className="rounded-full bg-[#1f2430] px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
         >
-          Войти в платформу
+          Войти
         </Link>
       </div>
     </header>
@@ -54,7 +54,7 @@ export function SeoFooter() {
         <div>
           <div className="font-black text-[#1f2430]">БИЗНЕС-ЗАВОД</div>
           <p className="mt-2 max-w-xl">
-            Нейросети, ИИ-агенты и автоматизация для реальной работы и бизнеса.
+            Бесплатные инструменты, обучение, готовые решения и путь от навыка к первым деньгам.
           </p>
         </div>
         <div>
@@ -115,17 +115,17 @@ export function SeoCta() {
       <div className="rounded-[2rem] bg-[#1f2430] p-8 text-white lg:p-12">
         <p className="text-sm font-black uppercase tracking-[0.16em] text-[#b8aaff]">Бизнес-завод</p>
         <h2 className="mt-3 text-3xl font-black tracking-tight lg:text-5xl">
-          Не изучайте ИИ ради ИИ. Соберите рабочую систему.
+          Не изучайте ИИ ради ИИ. Получайте результат.
         </h2>
         <p className="mt-5 max-w-2xl text-base leading-7 text-white/70">
-          Внутри платформы — обучение, AI-инструменты, готовые сценарии, агенты и автоматизации.
+          Начните бесплатно, соберите рабочий навык, купите готовое решение или выйдите в первые деньги.
         </p>
         <div className="mt-7 flex flex-wrap gap-3">
-          <Link href="/login" className="rounded-full bg-white px-6 py-3 font-bold text-[#1f2430]">
-            Войти в платформу
+          <Link href="/gotovoe" className="rounded-full bg-white px-6 py-3 font-bold text-[#1f2430]">
+            Попробовать бесплатно
           </Link>
-          <Link href="/kursy-nejrosetey" className="rounded-full border border-white/30 px-6 py-3 font-bold text-white">
-            Посмотреть обучение
+          <Link href="/login" className="rounded-full border border-white/30 px-6 py-3 font-bold text-white">
+            Войти
           </Link>
         </div>
       </div>
