@@ -20,6 +20,31 @@ describe('Tool handler and policy coverage', () => {
 
     assert.equal(typeof result.count, 'number');
     assert.ok(Array.isArray(result.chunks));
+    assert.ok(Number(result.count) > 0);
+
+    const chunks = result.chunks as Array<{ title?: string; text?: string }>;
+    assert.ok(
+      chunks.some((chunk) =>
+        [chunk.title, chunk.text].some((value) =>
+          typeof value === 'string' ? /OSA|операционн|продукт/i.test(value) : false,
+        ),
+      ),
+    );
+  });
+
+  it('finds MacBook-derived marketing orchestration knowledge', async () => {
+    const result = await knowledgeSearchHandler.execute(
+      { query: 'маркетинговый оркестратор бренд воронка аудитория видеопромпт', limit: 6 },
+      {
+        organizationId: 'org-test-knowledge',
+        runId: 'run-test-knowledge',
+        traceId: 'trace-test-knowledge',
+        employeeId: 'emp-test-knowledge',
+      },
+    );
+
+    const chunks = result.chunks as Array<{ title?: string }>;
+    assert.ok(chunks.some((chunk) => chunk.title?.includes('Матрёшка')));
   });
 
   it('evaluates permission engine for enabled tools', () => {
