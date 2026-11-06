@@ -4,6 +4,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const base = 'https://business-zavod.vercel.app';
   const routes = [
     '',
+    '/gotovoe',
+    '/marketplace',
+    '/vyyti-v-dengi',
     '/nejroseti-dlya-biznesa',
     '/ii-agenty',
     '/avtomatizaciya-biznesa',
@@ -26,6 +29,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     url: `${base}${route}`,
     lastModified: new Date(),
     changeFrequency: index === 0 ? 'daily' : 'weekly',
-    priority: index === 0 ? 1 : index <= 5 ? 0.9 : 0.8,
+    priority: index === 0 ? 1 : index <= 8 ? 0.9 : 0.8,
   }));
 }
