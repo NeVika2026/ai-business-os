@@ -2,7 +2,7 @@ name: Security and build checks
 
 on:
   push:
-    branches: [business-zavod-platform]
+    branches: [business-zavod-platform, commerce-core-v2]
   pull_request:
 
 permissions:
