@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 const nav = [
   { href: '/gotovoe', label: 'Бесплатно' },
-  { href: '/marketplace', label: 'Маркетплейс' },
+  { href: '/market', label: 'Маркетплейс' },
   { href: '/vyyti-v-dengi', label: 'Выйти в деньги' },
   { href: '/kursy-nejrosetey', label: 'Курсы' },
   { href: '/avtomatizaciya-biznesa', label: 'Автоматизация' },
