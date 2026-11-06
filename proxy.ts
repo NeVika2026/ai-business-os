@@ -1,15 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { NAVIGATION_HREF_SET } from '@/config/navigation';
 import { createClient } from '@/services/supabase/middleware';
-
-const PROTECTED_PREFIXES = Array.from(NAVIGATION_HREF_SET);
-
-function isProtectedPath(pathname: string) {
-  return PROTECTED_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  );
-}
+import { isProtectedPlatformPath } from '@/utils/security/protected-routes';
 
 export async function proxy(request: NextRequest) {
   const { supabase, supabaseResponse } = createClient(request);
@@ -22,7 +14,7 @@ export async function proxy(request: NextRequest) {
 
   supabaseResponse.headers.set('x-pathname', pathname);
 
-  if (isProtectedPath(pathname) && !user) {
+  if (isProtectedPlatformPath(pathname) && !user) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = '/login';
     loginUrl.searchParams.set('next', pathname);
