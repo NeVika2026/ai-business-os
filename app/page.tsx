@@ -1,6 +1,51 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { SeoFooter, SeoHeader } from '@/components/public/seo-site-shell';
+import styles from './landing.module.css';
+
+export const metadata: Metadata = {
+  title: 'Бизнес-завод AI — нейросети для работы, бизнеса и заработка',
+  description:
+    'Нейросети для бизнеса без воды: бесплатные AI-инструменты, готовые решения, автоматизация, маркетинг, продажи и практическое обучение.',
+  openGraph: {
+    title: 'Бизнес-завод AI — от идеи до результата',
+    description:
+      'Попробуйте AI-инструменты, изучайте реальные сценарии и собирайте собственные решения.',
+    type: 'website',
+    locale: 'ru_RU',
+  },
+};
+
+const workshops = [
+  {
+    index: '01',
+    symbol: '✳',
+    title: 'Контент и визуал',
+    copy: 'Идеи, тексты, изображения, видео и упаковка бренда в одном рабочем процессе.',
+    href: '/gotovoe',
+  },
+  {
+    index: '02',
+    symbol: '↗',
+    title: 'Маркетинг и продажи',
+    copy: 'Офферы, изучение аудитории, работа с возражениями и привлечение клиентов.',
+    href: '/ii-dlya-prodazh',
+  },
+  {
+    index: '03',
+    symbol: '⌘',
+    title: 'Автоматизация',
+    copy: 'Меньше повторяющихся действий. Больше времени на решения и развитие бизнеса.',
+    href: '/avtomatizaciya-biznesa',
+  },
+  {
+    index: '04',
+    symbol: '◈',
+    title: 'AI-сотрудники',
+    copy: 'Сценарии для цифровых помощников и инструментов, работающих под конкретные задачи.',
+    href: '/ii-agenty',
+  },
+];
 
 const tasks = [
   ['Сделать продающий текст', '/gotovoe'],
@@ -9,93 +54,180 @@ const tasks = [
   ['Создать AI-сотрудника', '/ii-agenty'],
   ['Найти клиентов', '/ii-dlya-prodazh'],
   ['Выйти в первые деньги', '/vyyti-v-dengi'],
-];
-
-const products = [
-  ['Бесплатные инструменты', 'Попробуйте платформу без оплаты и получите реальный результат.', '/gotovoe'],
-  ['Готовые решения', 'Шаблоны, AI-связки, автоматизации и цифровые продукты.', '/market'],
-  ['Курсы', 'Практическое обучение, включая «ЁПТЕТЬ ДА НУ!».', '/kursy-nejrosetey'],
-  ['Выйти в деньги', 'Упаковать профиль, собрать портфолио, найти заказ и дойти до первой оплаты.', '/vyyti-v-dengi'],
-];
+] as const;
 
 export default function PublicHomePage() {
   return (
-    <div className="min-h-screen bg-[#fffaf5] text-[#1f2430]">
-      <SeoHeader />
-      <main>
-        <section className="overflow-hidden border-b border-black/10">
-          <div className="mx-auto grid max-w-7xl gap-10 px-5 py-20 lg:grid-cols-[1.15fr_.85fr] lg:px-8 lg:py-28">
-            <div>
-              <div className="inline-flex rounded-full border border-black/10 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-[#7357ff]">
-                Бизнес-завод · от задачи до денег
-              </div>
-              <h1 className="mt-7 max-w-5xl text-5xl font-black leading-[0.98] tracking-[-0.055em] sm:text-6xl lg:text-8xl">
-                Сделай. Научись. Заработай.
-              </h1>
-              <p className="mt-7 max-w-3xl text-lg leading-8 text-[#5b606b] lg:text-xl">
-                Бесплатные AI-инструменты, готовые решения, курсы и путь к первому заказу — в одном месте.
-              </p>
-              <div className="mt-9 flex flex-wrap gap-3">
-                <Link href="/gotovoe" className="rounded-full bg-[#1f2430] px-7 py-3.5 font-bold text-white">
-                  Попробовать бесплатно
-                </Link>
-                <Link href="/vyyti-v-dengi" className="rounded-full border border-black/15 bg-white px-7 py-3.5 font-bold">
-                  Выйти в деньги
-                </Link>
-              </div>
+    <main className={styles.site}>
+      <div className={styles.noise} aria-hidden="true" />
+      <header className={styles.header}>
+        <Link href="/" className={styles.brand} aria-label="Бизнес-завод AI — главная">
+          <span className={styles.brandIcon}>БЗ</span>
+          <span>
+            БИЗНЕС-ЗАВОД <b>AI</b>
+          </span>
+        </Link>
+        <nav className={styles.nav} aria-label="Основная навигация">
+          <Link href="/gotovoe">Инструменты</Link>
+          <Link href="/kursy-nejrosetey">Курсы</Link>
+          <Link href="/vyyti-v-dengi">Заработок</Link>
+        </nav>
+        <Link className={styles.navCta} href="/login">
+          Личный кабинет <span>↗</span>
+        </Link>
+      </header>
+
+      <section className={styles.hero}>
+        <div className={styles.heroCopy}>
+          <div className={styles.eyebrow}>
+            <span className={styles.dot} /> ПЛАТФОРМА ПРАКТИЧЕСКОГО ИИ
+          </div>
+          <h1>
+            ХВАТИТ
+            <br />
+            ИЗУЧАТЬ <em>ИИ.</em>
+            <br />
+            <span>ПОРА НА НЁМ</span>
+            <br />
+            РАБОТАТЬ.
+          </h1>
+          <p className={styles.lead}>
+            Нейросети для тех, кто делает бизнес, продаёт, создаёт контент и хочет получать
+            результат, а не коллекционировать промпты.
+          </p>
+          <div className={styles.heroActions}>
+            <Link className={styles.primary} href="/gotovoe">
+              Попробовать бесплатно <span>↗</span>
+            </Link>
+            <Link className={styles.secondary} href="/vyyti-v-dengi">
+              Путь к заработку ↗
+            </Link>
+          </div>
+          <div className={styles.heroNote}>
+            <span>НЕ МАГИЯ.</span> ИНСТРУМЕНТЫ, КОТОРЫЕ МОЖНО ПРИМЕНИТЬ.
+          </div>
+        </div>
+        <div className={styles.heroArt} aria-label="Визуализация AI-завода">
+          <div className={styles.orbitOne} />
+          <div className={styles.orbitTwo} />
+          <div className={styles.factoryPanel}>
+            <div className={styles.panelTop}>
+              <span>AI / WORKSHOP 01</span>
+              <span className={styles.live}>● SYSTEM ONLINE</span>
             </div>
-
-            <div className="self-end rounded-[2rem] border border-black/10 bg-white p-6 shadow-[0_24px_70px_rgba(46,39,77,.10)] lg:p-8">
-              <p className="text-sm font-black uppercase tracking-[0.16em] text-[#7357ff]">Что хотите сделать?</p>
-              <div className="mt-5 grid gap-2">
-                {tasks.map(([task, href]) => (
-                  <Link key={task} href={href} className="rounded-2xl bg-[#f6f0ea] px-4 py-3 text-sm font-semibold transition hover:bg-[#eee5dc]">
-                    {task} →
-                  </Link>
-                ))}
-              </div>
+            <div className={styles.factorySymbol}>
+              AI<span>⚙</span>
             </div>
-          </div>
-        </section>
-
-        <section className="mx-auto max-w-7xl px-5 py-16 lg:px-8 lg:py-24">
-          <div className="max-w-3xl">
-            <p className="text-sm font-black uppercase tracking-[0.16em] text-[#7357ff]">Не только курсы</p>
-            <h2 className="mt-3 text-4xl font-black tracking-tight lg:text-6xl">Выберите результат</h2>
-          </div>
-          <div className="mt-10 grid gap-4 md:grid-cols-2">
-            {products.map(([title, text, href]) => (
-              <Link key={title} href={href} className="rounded-[1.75rem] border border-black/10 bg-white p-7 transition hover:-translate-y-1 hover:shadow-xl">
-                <h3 className="text-2xl font-black tracking-tight">{title}</h3>
-                <p className="mt-3 leading-7 text-[#636873]">{text}</p>
-                <div className="mt-6 font-bold text-[#7357ff]">Открыть →</div>
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        <section className="bg-[#1f2430] text-white">
-          <div className="mx-auto max-w-7xl px-5 py-16 lg:px-8 lg:py-24">
-            <p className="text-sm font-black uppercase tracking-[0.16em] text-[#b8aaff]">Как работает Бизнес-завод</p>
-            <h2 className="mt-3 max-w-4xl text-4xl font-black tracking-tight lg:text-6xl">
-              Зайдите бесплатно. Получите результат. Платите только за следующий уровень.
-            </h2>
-            <div className="mt-10 grid gap-4 md:grid-cols-3">
-              {[
-                ['1. Попробовать', 'Бесплатные инструменты и материалы без обязательной покупки.'],
-                ['2. Усилить', 'Готовые решения, курсы, автоматизации и AI-сотрудники.'],
-                ['3. Заработать', 'Профиль, портфолио, заказы и маршрут до первой оплаты.'],
-              ].map(([title, text]) => (
-                <div key={title} className="rounded-3xl border border-white/15 bg-white/5 p-6">
-                  <h3 className="text-xl font-black">{title}</h3>
-                  <p className="mt-3 leading-7 text-white/65">{text}</p>
-                </div>
-              ))}
+            <div className={styles.panelBottom}>
+              <span>ИДЕЯ</span>
+              <b>→</b>
+              <span>ДЕЙСТВИЕ</span>
+              <b>→</b>
+              <span>РЕЗУЛЬТАТ</span>
             </div>
           </div>
-        </section>
-      </main>
-      <SeoFooter />
-    </div>
+          <span className={styles.floatingA}>CONTENT.EXE / READY</span>
+          <span className={styles.floatingB}>AUTOMATE ↗</span>
+          <div className={styles.heroCaption}>НОВАЯ ПРОИЗВОДИТЕЛЬНОСТЬ / 2026</div>
+        </div>
+      </section>
+
+      <section className={styles.tasks}>
+        <div className={styles.sectionTop}>
+          <span>00 / НАЧНИТЕ С ЗАДАЧИ</span>
+          <span>НЕ НУЖНО ЗНАТЬ НАЗВАНИЯ ВСЕХ НЕЙРОСЕТЕЙ</span>
+        </div>
+        <h2>ЧТО ХОТИТЕ СДЕЛАТЬ?</h2>
+        <div className={styles.taskGrid}>
+          {tasks.map(([task, href]) => (
+            <Link href={href} key={task} className={styles.taskLink}>
+              {task} <span>↗</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section id="workshops" className={styles.workshops}>
+        <div className={styles.sectionTop}>
+          <span>01 / ЦЕХА ЗАВОДА</span>
+          <span>ПОСТРОЕНО ВОКРУГ РЕАЛЬНЫХ ЗАДАЧ</span>
+        </div>
+        <div className={styles.sectionTitle}>
+          <h2>
+            ЗДЕСЬ ИДЕИ
+            <br />
+            <i>СТАНОВЯТСЯ ДЕЛОМ.</i>
+          </h2>
+          <p>Не нужно разбираться во всём сразу. Выберите задачу, а затем подходящий инструмент.</p>
+        </div>
+        <div className={styles.grid}>
+          {workshops.map((item) => (
+            <Link className={styles.workshop} key={item.index} href={item.href}>
+              <div className={styles.cardTop}>
+                <span>ЦЕХ / {item.index}</span>
+                <span className={styles.cardSymbol}>{item.symbol}</span>
+              </div>
+              <h3>{item.title}</h3>
+              <p>{item.copy}</p>
+              <div className={styles.cardLine} />
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section id="course" className={styles.course}>
+        <div className={styles.courseInfo}>
+          <span className={styles.courseTag}>СКОРО / ПРАКТИЧЕСКОЕ ОБУЧЕНИЕ</span>
+          <h2>
+            ЁПТЕТЬ
+            <br />
+            <strong>ДА НУ!</strong>
+          </h2>
+          <p>
+            Авторский практический курс о том, как применять ИИ в работе и бизнесе. Контент,
+            изображения, видео, продажи и автоматизация — с реальными заданиями, а не только
+            теорией.
+          </p>
+          <span className={styles.courseStatus}>ПРОГРАММА В РАЗРАБОТКЕ · ПРОДАЖИ НЕ ОТКРЫТЫ</span>
+          <Link className={styles.courseLink} href="/kursy-nejrosetey">
+            Посмотреть раздел курсов ↗
+          </Link>
+        </div>
+        <div className={styles.courseDisplay} aria-hidden="true">
+          <span>01 / УЗНАЛ</span>
+          <span>02 / ПОПРОБОВАЛ</span>
+          <span>03 / СДЕЛАЛ</span>
+          <div className={styles.burst}>!</div>
+        </div>
+      </section>
+
+      <section id="about" className={styles.about}>
+        <span>БЕСПЛАТНЫЕ ИНСТРУМЕНТЫ · ГОТОВЫЕ РЕШЕНИЯ · КУРСЫ</span>
+        <h2>
+          МЕНЬШЕ ШУМА.
+          <br />
+          <i>БОЛЬШЕ ПОЛЬЗЫ.</i>
+        </h2>
+        <p>
+          «Бизнес-завод AI» — место, где нейросети превращаются из новостей в работу. Выберите
+          задачу, попробуйте инструмент, создайте результат и решайте, какие возможности нужны
+          дальше.
+        </p>
+        <Link href="/gotovoe" className={styles.primary}>
+          Выбрать бесплатный инструмент ↗
+        </Link>
+      </section>
+
+      <footer className={styles.footer}>
+        <Link href="/" className={styles.brand}>
+          <span className={styles.brandIcon}>БЗ</span>
+          <span>
+            БИЗНЕС-ЗАВОД <b>AI</b>
+          </span>
+        </Link>
+        <span>© {new Date().getFullYear()} · НЕЙРОСЕТИ ДЛЯ РЕАЛЬНЫХ ЗАДАЧ</span>
+        <Link href="/login">Вход в кабинет ↗</Link>
+      </footer>
+    </main>
   );
 }
