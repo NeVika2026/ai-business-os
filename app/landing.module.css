@@ -1173,3 +1173,43 @@
     white-space: nowrap;
   }
 }
+
+/* Small-screen navigation and calls to action must not fall off the viewport. */
+@media (max-width: 620px) {
+  .header .navCta {
+    font-size: 0;
+    padding: 10px 12px;
+  }
+  .header .navCta::after {
+    content: 'Вход ↗';
+    font-size: 11px;
+  }
+  .heroWithNews .heroActions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+  .heroWithNews .heroActions .primary,
+  .heroWithNews .heroActions .secondary {
+    width: 100%;
+    min-width: 0;
+    justify-content: space-between;
+  }
+  .heroWithNews .heroNote {
+    font-size: 8px;
+    letter-spacing: 0.1em;
+    line-height: 1.6;
+  }
+  .heroWithNews .heroArt {
+    display: flex;
+    justify-content: center;
+  }
+  .heroWithNews .factoryPanel {
+    width: min(100%, 255px);
+    max-width: 255px;
+    min-height: 225px;
+    margin: 0 auto;
+    transform: none;
+    animation: none;
+  }
+}
