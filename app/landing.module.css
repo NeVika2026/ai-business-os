@@ -1077,3 +1077,99 @@
     height: 145px;
   }
 }
+
+/* The hero must collapse to one track, not retain the desktop 2-column rule. */
+@media (max-width: 1000px) {
+  .heroWithNews .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 15px;
+  }
+  .heroWithNews .heroCopy {
+    min-width: 0;
+    width: 100%;
+  }
+  .heroWithNews .heroArt {
+    min-width: 0;
+    width: 100%;
+    margin: 0 auto;
+  }
+  .heroWithNews .floatingA {
+    left: 10px;
+  }
+  .heroWithNews .floatingB {
+    right: 5px;
+  }
+}
+@media (max-width: 620px) {
+  .heroWithNews .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    overflow: hidden;
+  }
+  .heroWithNews .hero h1 {
+    font-size: clamp(39px, 10.25vw, 59px);
+    max-width: 100%;
+    margin-right: 0;
+  }
+  .heroWithNews .heroArt {
+    height: 340px;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  .heroWithNews .factoryPanel {
+    max-width: 280px;
+    min-height: 225px;
+  }
+  .heroWithNews .factorySymbol {
+    font-size: 116px;
+  }
+  .heroWithNews .factorySymbol span {
+    font-size: 32px;
+  }
+  .heroWithNews .orbitOne {
+    width: 240px;
+    height: 240px;
+  }
+  .heroWithNews .orbitTwo {
+    width: 290px;
+    height: 290px;
+  }
+  .heroWithNews .heroCaption {
+    display: none;
+  }
+  .heroWithNews .floatingA,
+  .heroWithNews .floatingB {
+    font-size: 8px;
+    padding: 8px;
+  }
+  .heroWithNews .floatingA {
+    top: 0;
+  }
+  .heroWithNews .floatingB {
+    bottom: 5px;
+  }
+  .header {
+    gap: 5px;
+    padding-left: 4%;
+    padding-right: 4%;
+  }
+  .header .brand {
+    font-size: 11px;
+    letter-spacing: 0;
+    gap: 5px;
+  }
+  .header .brandIcon {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .header .navCta {
+    padding: 9px 8px;
+    font-size: 10px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+}
