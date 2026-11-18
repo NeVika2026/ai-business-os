@@ -1,67 +1,56 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { AiNewsSidebar } from '@/components/public/AiNewsSidebar';
+import { aiNewsItems } from '@/lib/public/ai-news';
 
-import styles from './landing.module.css';
+import styles from './simple-home.module.css';
 
 export const metadata: Metadata = {
-  title: 'Бизнес-завод AI — нейросети для работы, бизнеса и заработка',
+  title: 'Бизнес-завод AI — что вы хотите создать?',
   description:
-    'Нейросети для бизнеса без воды: бесплатные AI-инструменты, готовые решения, автоматизация, маркетинг, продажи и практическое обучение.',
+    'Выберите одну задачу: текст, картинка или видео. Бизнес-завод AI поможет начать без сложных меню. Практические инструменты, новости и один курс «ЁПТЕТЬ ДА НУ!».',
   openGraph: {
-    title: 'Бизнес-завод AI — от идеи до результата',
-    description:
-      'Попробуйте AI-инструменты, изучайте реальные сценарии и собирайте собственные решения.',
-    type: 'website',
+    title: 'Бизнес-завод AI — выберите задачу и начните',
+    description: 'Никаких сложных меню. Выберите текст, картинку или видео — и начните.',
     locale: 'ru_RU',
+    type: 'website',
   },
 };
 
-const workshops = [
+const choices = [
   {
-    index: '01',
-    symbol: '✳',
-    title: 'Контент и визуал',
-    copy: 'Идеи, тексты, изображения, видео и упаковка бренда в одном рабочем процессе.',
+    tag: '01 / ПРОСТО',
+    title: 'Написать текст',
+    hint: 'Пост, сообщение или контент-план',
+    note: 'Бесплатно, без регистрации',
     href: '/gotovoe',
+    kind: 'text',
+    action: 'Начать с текста',
   },
   {
-    index: '02',
-    symbol: '↗',
-    title: 'Маркетинг и продажи',
-    copy: 'Офферы, изучение аудитории, работа с возражениями и привлечение клиентов.',
-    href: '/ii-dlya-prodazh',
+    tag: '02 / ТВОРЧЕСТВО',
+    title: 'Создать картинку',
+    hint: 'Фото, реклама или оформление',
+    note: 'Переход в AI-мастерскую',
+    href: '/login?mode=image',
+    kind: 'image',
+    action: 'Открыть мастерскую',
   },
   {
-    index: '03',
-    symbol: '⌘',
-    title: 'Автоматизация',
-    copy: 'Меньше повторяющихся действий. Больше времени на решения и развитие бизнеса.',
-    href: '/avtomatizaciya-biznesa',
+    tag: '03 / ДВИЖЕНИЕ',
+    title: 'Сделать видео',
+    hint: 'Ролик, анимация или оживление фото',
+    note: 'Переход в AI-мастерскую',
+    href: '/login?mode=video',
+    kind: 'video',
+    action: 'Открыть видеомастерскую',
   },
-  {
-    index: '04',
-    symbol: '◈',
-    title: 'AI-сотрудники',
-    copy: 'Сценарии для цифровых помощников и инструментов, работающих под конкретные задачи.',
-    href: '/ii-agenty',
-  },
-];
-
-const tasks = [
-  ['Сделать продающий текст', '/gotovoe'],
-  ['Собрать презентацию', '/gotovoe'],
-  ['Автоматизировать заявки', '/avtomatizaciya-biznesa'],
-  ['Создать AI-сотрудника', '/ii-agenty'],
-  ['Найти клиентов', '/ii-dlya-prodazh'],
-  ['Выйти в первые деньги', '/vyyti-v-dengi'],
 ] as const;
 
-export default function PublicHomePage() {
+export default function SimpleHomePage() {
   return (
-    <main className={styles.site}>
-      <div className={styles.noise} aria-hidden="true" />
+    <main className={styles.page}>
+      <div className={styles.grain} aria-hidden="true" />
       <header className={styles.header}>
         <Link href="/" className={styles.brand} aria-label="Бизнес-завод AI — главная">
           <span className={styles.brandIcon}>БЗ</span>
@@ -69,170 +58,160 @@ export default function PublicHomePage() {
             БИЗНЕС-ЗАВОД <b>AI</b>
           </span>
         </Link>
-        <nav className={styles.nav} aria-label="Основная навигация">
-          <Link href="/gotovoe">Инструменты</Link>
-          <Link href="/kursy-nejrosetey">Курс</Link>
-          <Link href="/novosti-ai">Новости AI</Link>
-          <Link href="/vyyti-v-dengi">Заработок</Link>
-        </nav>
-        <Link className={styles.navCta} href="/login">
-          Личный кабинет <span>↗</span>
+        <Link href="/login/sign-in" className={styles.enter}>
+          Войти <span aria-hidden="true">↗</span>
         </Link>
       </header>
 
-      <div className={styles.heroWithNews}>
-        <section className={styles.hero}>
-          <div className={styles.heroCopy}>
-            <div className={styles.eyebrow}>
-              <span className={styles.dot} /> ПЛАТФОРМА ПРАКТИЧЕСКОГО ИИ
-            </div>
-            <h1>
-              ХВАТИТ
-              <br />
-              ИЗУЧАТЬ <em>ИИ.</em>
-              <br />
-              <span>ПОРА НА НЁМ</span>
-              <br />
-              РАБОТАТЬ.
-            </h1>
-            <p className={styles.lead}>
-              Нейросети для тех, кто делает бизнес, продаёт, создаёт контент и хочет получать
-              результат, а не коллекционировать промпты.
-            </p>
-            <div className={styles.heroActions}>
-              <Link className={styles.primary} href="/gotovoe">
-                Попробовать бесплатно <span>↗</span>
-              </Link>
-              <Link className={styles.secondary} href="/vyyti-v-dengi">
-                Путь к заработку ↗
-              </Link>
-            </div>
-            <div className={styles.heroNote}>
-              <span>НЕ МАГИЯ.</span> ИНСТРУМЕНТЫ, КОТОРЫЕ МОЖНО ПРИМЕНИТЬ.
-            </div>
-          </div>
-          <div className={styles.heroArt} aria-label="Визуализация AI-завода">
-            <div className={styles.orbitOne} />
-            <div className={styles.orbitTwo} />
-            <div className={styles.factoryPanel}>
-              <div className={styles.panelTop}>
-                <span>AI / WORKSHOP 01</span>
-                <span className={styles.live}>● SYSTEM ONLINE</span>
-              </div>
-              <div className={styles.factorySymbol}>
-                AI<span>⚙</span>
-              </div>
-              <div className={styles.panelBottom}>
-                <span>ИДЕЯ</span>
-                <b>→</b>
-                <span>ДЕЙСТВИЕ</span>
-                <b>→</b>
-                <span>РЕЗУЛЬТАТ</span>
-              </div>
-            </div>
-            <span className={styles.floatingA}>CONTENT.EXE / READY</span>
-            <span className={styles.floatingB}>AUTOMATE ↗</span>
-            <div className={styles.heroCaption}>НОВАЯ ПРОИЗВОДИТЕЛЬНОСТЬ / 2026</div>
-          </div>
-        </section>
-        <AiNewsSidebar />
-      </div>
-
-      <section className={styles.tasks}>
-        <div className={styles.sectionTop}>
-          <span>00 / НАЧНИТЕ С ЗАДАЧИ</span>
-          <span>НЕ НУЖНО ЗНАТЬ НАЗВАНИЯ ВСЕХ НЕЙРОСЕТЕЙ</span>
-        </div>
-        <h2>ЧТО ХОТИТЕ СДЕЛАТЬ?</h2>
-        <div className={styles.taskGrid}>
-          {tasks.map(([task, href]) => (
-            <Link href={href} key={task} className={styles.taskLink}>
-              {task} <span>↗</span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section id="workshops" className={styles.workshops}>
-        <div className={styles.sectionTop}>
-          <span>01 / ЦЕХА ЗАВОДА</span>
-          <span>ПОСТРОЕНО ВОКРУГ РЕАЛЬНЫХ ЗАДАЧ</span>
-        </div>
-        <div className={styles.sectionTitle}>
-          <h2>
-            ЗДЕСЬ ИДЕИ
-            <br />
-            <i>СТАНОВЯТСЯ ДЕЛОМ.</i>
-          </h2>
-          <p>Не нужно разбираться во всём сразу. Выберите задачу, а затем подходящий инструмент.</p>
-        </div>
-        <div className={styles.grid}>
-          {workshops.map((item) => (
-            <Link className={styles.workshop} key={item.index} href={item.href}>
-              <div className={styles.cardTop}>
-                <span>ЦЕХ / {item.index}</span>
-                <span className={styles.cardSymbol}>{item.symbol}</span>
-              </div>
-              <h3>{item.title}</h3>
-              <p>{item.copy}</p>
-              <div className={styles.cardLine} />
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section id="course" className={styles.course}>
-        <div className={styles.courseInfo}>
-          <span className={styles.courseTag}>СКОРО / ПРАКТИЧЕСКОЕ ОБУЧЕНИЕ</span>
-          <h2>
-            ЁПТЕТЬ
-            <br />
-            <strong>ДА НУ!</strong>
-          </h2>
-          <p>
-            Авторский практический курс о том, как применять ИИ в работе и бизнесе. Контент,
-            изображения, видео, продажи и автоматизация — с реальными заданиями, а не только
-            теорией.
+      <section className={styles.hero} aria-labelledby="hero-title">
+        <div className={styles.heroText}>
+          <p className={styles.kicker}>
+            <span className={styles.liveDot} /> ВАША МАСТЕРСКАЯ ИИ
           </p>
-          <span className={styles.courseStatus}>ПРОГРАММА В РАЗРАБОТКЕ · ПРОДАЖИ НЕ ОТКРЫТЫ</span>
-          <Link className={styles.courseLink} href="/kursy-nejrosetey">
-            Посмотреть раздел курсов ↗
-          </Link>
+          <h1 id="hero-title">
+            Что хочешь <em>создать?</em>
+          </h1>
+          <p className={styles.description}>
+            Текст? Картинку? Видео? Выбери одно. Мы покажем, что делать дальше.
+          </p>
+          <a href="#choice" className={styles.mainAction}>
+            Выбрать, что сделать <span aria-hidden="true">↓</span>
+          </a>
+          <p className={styles.mainHint}>Не нужно знать названия нейросетей.</p>
         </div>
-        <div className={styles.courseDisplay} aria-hidden="true">
-          <span>01 / УЗНАЛ</span>
-          <span>02 / ПОПРОБОВАЛ</span>
-          <span>03 / СДЕЛАЛ</span>
-          <div className={styles.burst}>!</div>
+
+        <div className={styles.chaplinStage}>
+          <div className={styles.halo} aria-hidden="true" />
+          <div className={styles.filmCard}>
+            <div className={styles.cardTop}>
+              <span className={styles.reelIcon} aria-hidden="true">
+                ◉
+              </span>
+              <span>ВИДЕОЦЕХ / КИНО ИЗ БУДУЩЕГО</span>
+              <span className={styles.playStatus}>● КИНО ИДЁТ</span>
+            </div>
+            <div className={styles.filmWrap}>
+              <div className={styles.filmTop} aria-hidden="true" />
+              <video
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                className={styles.chaplinVideo}
+                aria-label="Чёрно-белый фрагмент фильма Чарли Чаплина «The Champion»"
+              >
+                <source src="/media/chaplin-loop.mp4" type="video/mp4" />
+              </video>
+              <div className={styles.filmBottom} aria-hidden="true" />
+            </div>
+            <div className={styles.cardBottom}>
+              <span>Настоящий чёрно-белый фильм</span>
+              <span>1915 / PUBLIC DOMAIN</span>
+            </div>
+          </div>
+          <div className={styles.floatSticker} aria-hidden="true">
+            <span>AI</span>
+            <small>ИДЕЯ → РЕЗУЛЬТАТ</small>
+          </div>
         </div>
       </section>
 
-      <section id="about" className={styles.about}>
-        <span>БЕСПЛАТНЫЕ ИНСТРУМЕНТЫ · ГОТОВЫЕ РЕШЕНИЯ · КУРСЫ</span>
-        <h2>
-          МЕНЬШЕ ШУМА.
-          <br />
-          <i>БОЛЬШЕ ПОЛЬЗЫ.</i>
-        </h2>
-        <p>
-          «Бизнес-завод AI» — место, где нейросети превращаются из новостей в работу. Выберите
-          задачу, попробуйте инструмент, создайте результат и решайте, какие возможности нужны
-          дальше.
-        </p>
-        <Link href="/gotovoe" className={styles.primary}>
-          Выбрать бесплатный инструмент ↗
-        </Link>
+      <section id="choice" className={styles.choiceSection} aria-labelledby="choice-title">
+        <div className={styles.choiceHeading}>
+          <p className={styles.sectionMarker}>ВСЕГО ОДИН ВЫБОР</p>
+          <h2 id="choice-title">С чего начнём?</h2>
+          <p>Нажми на картинку с тем, что хочешь сделать.</p>
+        </div>
+        <div className={styles.choices}>
+          {choices.map((choice) => (
+            <Link
+              key={choice.kind}
+              href={choice.href}
+              className={styles.choiceCard}
+              data-kind={choice.kind}
+            >
+              <div className={styles.choiceTop}>
+                <span>{choice.tag}</span>
+                <span className={styles.cardArrow} aria-hidden="true">
+                  ↗
+                </span>
+              </div>
+              <div className={styles.visual} aria-hidden="true">
+                {choice.kind === 'text' ? (
+                  <div className={styles.paper}>
+                    <span />
+                    <span />
+                    <span />
+                    <span />
+                    <b>Аа</b>
+                  </div>
+                ) : choice.kind === 'image' ? (
+                  <div className={styles.picture}>
+                    <div className={styles.sun} />
+                    <div className={styles.mountains} />
+                    <span>✦</span>
+                  </div>
+                ) : (
+                  <div className={styles.videoIcon}>
+                    <span className={styles.videoRing} />
+                    <span className={styles.videoPlay}>▶</span>
+                    <i />
+                  </div>
+                )}
+              </div>
+              <h3>{choice.title}</h3>
+              <p>{choice.hint}</p>
+              <div className={styles.choiceFooter}>
+                <span>{choice.note}</span>
+                <strong>{choice.action} ↗</strong>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className={styles.extras} aria-label="Новости и обучение">
+        <div className={styles.newsSection}>
+          <div className={styles.extrasTitle}>
+            <div>
+              <p className={styles.sectionMarker}>КОРОТКО И ПО ДЕЛУ</p>
+              <h2>AI-ПУЛЬС</h2>
+            </div>
+            <Link href="/novosti-ai">Все новости ↗</Link>
+          </div>
+          <div className={styles.newsList}>
+            {aiNewsItems.slice(0, 2).map((item) => (
+              <Link key={item.slug} href={`/novosti-ai#${item.slug}`} className={styles.newsRow}>
+                <span className={styles.newsVisual} aria-hidden="true">
+                  {item.icon}
+                </span>
+                <span className={styles.newsBody}>
+                  <small>
+                    {item.date} · {item.category}
+                  </small>
+                  <strong>{item.title}</strong>
+                </span>
+                <span aria-hidden="true">↗</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        <div className={styles.courseBlock}>
+          <p className={styles.sectionMarker}>НАШ ЕДИНСТВЕННЫЙ КУРС</p>
+          <h2>
+            ЁПТЕТЬ <span>ДА НУ!</span>
+          </h2>
+          <p>Нейросети на практике. Можно начать с настоящего первого урока.</p>
+          <Link href="/kursy-nejrosetey/probnyj-urok">Смотреть бесплатный урок ↗</Link>
+          <small>Полный курс ещё готовится.</small>
+        </div>
       </section>
 
       <footer className={styles.footer}>
-        <Link href="/" className={styles.brand}>
-          <span className={styles.brandIcon}>БЗ</span>
-          <span>
-            БИЗНЕС-ЗАВОД <b>AI</b>
-          </span>
-        </Link>
-        <span>© {new Date().getFullYear()} · НЕЙРОСЕТИ ДЛЯ РЕАЛЬНЫХ ЗАДАЧ</span>
-        <Link href="/login">Вход в кабинет ↗</Link>
+        <span>БИЗНЕС-ЗАВОД AI · {new Date().getFullYear()}</span>
+        <Link href="/login/sign-in">Войти в кабинет ↗</Link>
       </footer>
     </main>
   );
