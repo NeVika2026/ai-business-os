@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
+import { AiNewsSidebar } from '@/components/public/AiNewsSidebar';
+
 import styles from './landing.module.css';
 
 export const metadata: Metadata = {
@@ -69,7 +71,8 @@ export default function PublicHomePage() {
         </Link>
         <nav className={styles.nav} aria-label="Основная навигация">
           <Link href="/gotovoe">Инструменты</Link>
-          <Link href="/kursy-nejrosetey">Курсы</Link>
+          <Link href="/kursy-nejrosetey">Курс</Link>
+          <Link href="/novosti-ai">Новости AI</Link>
           <Link href="/vyyti-v-dengi">Заработок</Link>
         </nav>
         <Link className={styles.navCta} href="/login">
@@ -77,60 +80,63 @@ export default function PublicHomePage() {
         </Link>
       </header>
 
-      <section className={styles.hero}>
-        <div className={styles.heroCopy}>
-          <div className={styles.eyebrow}>
-            <span className={styles.dot} /> ПЛАТФОРМА ПРАКТИЧЕСКОГО ИИ
-          </div>
-          <h1>
-            ХВАТИТ
-            <br />
-            ИЗУЧАТЬ <em>ИИ.</em>
-            <br />
-            <span>ПОРА НА НЁМ</span>
-            <br />
-            РАБОТАТЬ.
-          </h1>
-          <p className={styles.lead}>
-            Нейросети для тех, кто делает бизнес, продаёт, создаёт контент и хочет получать
-            результат, а не коллекционировать промпты.
-          </p>
-          <div className={styles.heroActions}>
-            <Link className={styles.primary} href="/gotovoe">
-              Попробовать бесплатно <span>↗</span>
-            </Link>
-            <Link className={styles.secondary} href="/vyyti-v-dengi">
-              Путь к заработку ↗
-            </Link>
-          </div>
-          <div className={styles.heroNote}>
-            <span>НЕ МАГИЯ.</span> ИНСТРУМЕНТЫ, КОТОРЫЕ МОЖНО ПРИМЕНИТЬ.
-          </div>
-        </div>
-        <div className={styles.heroArt} aria-label="Визуализация AI-завода">
-          <div className={styles.orbitOne} />
-          <div className={styles.orbitTwo} />
-          <div className={styles.factoryPanel}>
-            <div className={styles.panelTop}>
-              <span>AI / WORKSHOP 01</span>
-              <span className={styles.live}>● SYSTEM ONLINE</span>
+      <div className={styles.heroWithNews}>
+        <section className={styles.hero}>
+          <div className={styles.heroCopy}>
+            <div className={styles.eyebrow}>
+              <span className={styles.dot} /> ПЛАТФОРМА ПРАКТИЧЕСКОГО ИИ
             </div>
-            <div className={styles.factorySymbol}>
-              AI<span>⚙</span>
+            <h1>
+              ХВАТИТ
+              <br />
+              ИЗУЧАТЬ <em>ИИ.</em>
+              <br />
+              <span>ПОРА НА НЁМ</span>
+              <br />
+              РАБОТАТЬ.
+            </h1>
+            <p className={styles.lead}>
+              Нейросети для тех, кто делает бизнес, продаёт, создаёт контент и хочет получать
+              результат, а не коллекционировать промпты.
+            </p>
+            <div className={styles.heroActions}>
+              <Link className={styles.primary} href="/gotovoe">
+                Попробовать бесплатно <span>↗</span>
+              </Link>
+              <Link className={styles.secondary} href="/vyyti-v-dengi">
+                Путь к заработку ↗
+              </Link>
             </div>
-            <div className={styles.panelBottom}>
-              <span>ИДЕЯ</span>
-              <b>→</b>
-              <span>ДЕЙСТВИЕ</span>
-              <b>→</b>
-              <span>РЕЗУЛЬТАТ</span>
+            <div className={styles.heroNote}>
+              <span>НЕ МАГИЯ.</span> ИНСТРУМЕНТЫ, КОТОРЫЕ МОЖНО ПРИМЕНИТЬ.
             </div>
           </div>
-          <span className={styles.floatingA}>CONTENT.EXE / READY</span>
-          <span className={styles.floatingB}>AUTOMATE ↗</span>
-          <div className={styles.heroCaption}>НОВАЯ ПРОИЗВОДИТЕЛЬНОСТЬ / 2026</div>
-        </div>
-      </section>
+          <div className={styles.heroArt} aria-label="Визуализация AI-завода">
+            <div className={styles.orbitOne} />
+            <div className={styles.orbitTwo} />
+            <div className={styles.factoryPanel}>
+              <div className={styles.panelTop}>
+                <span>AI / WORKSHOP 01</span>
+                <span className={styles.live}>● SYSTEM ONLINE</span>
+              </div>
+              <div className={styles.factorySymbol}>
+                AI<span>⚙</span>
+              </div>
+              <div className={styles.panelBottom}>
+                <span>ИДЕЯ</span>
+                <b>→</b>
+                <span>ДЕЙСТВИЕ</span>
+                <b>→</b>
+                <span>РЕЗУЛЬТАТ</span>
+              </div>
+            </div>
+            <span className={styles.floatingA}>CONTENT.EXE / READY</span>
+            <span className={styles.floatingB}>AUTOMATE ↗</span>
+            <div className={styles.heroCaption}>НОВАЯ ПРОИЗВОДИТЕЛЬНОСТЬ / 2026</div>
+          </div>
+        </section>
+        <AiNewsSidebar />
+      </div>
 
       <section className={styles.tasks}>
         <div className={styles.sectionTop}>
