@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { aiNewsItems } from '@/lib/public/ai-news';
 import styles from '@/app/landing.module.css';
+import { NewsVisual } from '@/components/public/NewsVisual';
 
 export function AiNewsSidebar() {
   return (
@@ -18,6 +19,15 @@ export function AiNewsSidebar() {
       <div className={styles.newsItems}>
         {aiNewsItems.map((item) => (
           <article className={styles.newsCard} key={item.slug}>
+            <NewsVisual
+              type={
+                item.category === 'МОДЕЛИ'
+                  ? 'models'
+                  : item.category === 'ПРОДАЖИ'
+                    ? 'sales'
+                    : 'visual'
+              }
+            />
             <div className={styles.newsMeta}>
               <time dateTime={item.date.split('.').reverse().join('-')}>{item.date}</time>
               <span>{item.category}</span>

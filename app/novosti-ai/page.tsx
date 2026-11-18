@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { aiNewsItems } from '@/lib/public/ai-news';
+import { NewsVisual } from '@/components/public/NewsVisual';
 import { SeoPage } from '@/components/public/seo-site-shell';
 
 export const metadata: Metadata = {
@@ -28,6 +29,17 @@ export default function AiNewsPage() {
                 <time dateTime={item.date.split('.').reverse().join('-')}>{item.date}</time>
                 <span>•</span>
                 <span>{item.category}</span>
+              </div>
+              <div className="mt-5 max-w-lg overflow-hidden rounded-xl border border-black/10 bg-[#191920]">
+                <NewsVisual
+                  type={
+                    item.category === 'МОДЕЛИ'
+                      ? 'models'
+                      : item.category === 'ПРОДАЖИ'
+                        ? 'sales'
+                        : 'visual'
+                  }
+                />
               </div>
               <div className="mt-5 flex items-start gap-4">
                 <span
