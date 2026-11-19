@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { buildFreeResult } from '@/components/public/FreeToolWorkshop';
+import { PaidAiOption } from '@/components/public/PaidAiOption';
 import styles from './MiniStudio.module.css';
 
 export type StudioMode = 'tekst' | 'kartinka' | 'video';
@@ -691,6 +692,7 @@ export function MiniStudio({ mode }: { mode: StudioMode }) {
             )}
           </section>
         </div>
+        {mode !== 'tekst' && <PaidAiOption kind={mode === 'kartinka' ? 'image' : 'video'} />}
         <div className={styles.bottom}>
           Сделал первый результат? <Link href="/">Вернуться и выбрать другое ↗</Link>
         </div>
