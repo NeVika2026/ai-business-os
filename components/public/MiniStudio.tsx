@@ -19,13 +19,13 @@ const definitions = {
   kartinka: {
     small: 'МАСТЕРСКАЯ КАРТИНОК',
     title: 'Сделаем картинку.',
-    intro: 'Придумай заголовок. Получишь красивую обложку, которую можно сохранить.',
+    intro: 'Добавь фото (по желанию), напиши заголовок и сохрани обложку.',
     label: 'Картинка',
   },
   video: {
     small: 'ВИДЕОМАСТЕРСКАЯ',
-    title: 'Оживим надпись.',
-    intro: 'Напиши пару слов. Получишь короткую анимированную видеозаставку.',
+    title: 'Оживим фото.',
+    intro: 'Добавь своё фото (по желанию), и оно плавно оживёт в видеозаставке.',
     label: 'Видео',
   },
 } as const;
@@ -59,7 +59,7 @@ function wrapTitle(value: string, maxLength = 18): string[] {
   return lines.slice(0, 4).length ? lines.slice(0, 4) : ['ТВОЯ ИДЕЯ'];
 }
 
-export function makeCoverSvg(title: string, subtitle: string, theme: ColorTheme) {
+export function makeCoverSvg(title: string, subtitle: string, theme: ColorTheme, photoData = '') {
   const c = themes[theme];
   const lines = wrapTitle(title.trim().slice(0, 70));
   const rows = lines
@@ -80,7 +80,13 @@ export function makeCoverSvg(title: string, subtitle: string, theme: ColorTheme)
     '" stop-opacity=".54"/><stop offset="1" stop-color="' +
     c.accent +
     '" stop-opacity="0"/></radialGradient></defs>' +
-    '<rect width="1080" height="1080" fill="url(#bg)"/><circle cx="800" cy="440" r="440" fill="url(#glow)"/>' +
+    '<rect width="1080" height="1080" fill="url(#bg)"/>' +
+    (photoData
+      ? '<image href="' +
+        photoData +
+        '" x="0" y="0" width="1080" height="1080" preserveAspectRatio="xMidYMid slice"/><rect width="1080" height="1080" fill="#080b13" fill-opacity=".55"/>'
+      : '') +
+    '<circle cx="800" cy="440" r="440" fill="url(#glow)"/>' +
     '<g transform="translate(760 430) rotate(-21)"><circle cx="0" cy="0" r="220" fill="none" stroke="' +
     c.accent +
     '" stroke-opacity=".70" stroke-width="24"/>' +
@@ -132,6 +138,7 @@ function drawVideoFrame(
   input: string,
   progress: number,
   theme: ColorTheme,
+  photo: HTMLImageElement | null = null,
 ) {
   const w = ctx.canvas.width,
     h = ctx.canvas.height;
@@ -141,6 +148,18 @@ function drawVideoFrame(
   bg.addColorStop(1, c.two);
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, w, h);
+  if (photo) {
+    // Ken Burns zoom uses the original photo; no remote AI request or uploads.
+    const baseScale = Math.max(w / photo.naturalWidth, h / photo.naturalHeight);
+    const zoom = 1.03 + progress * 0.13;
+    const dw = photo.naturalWidth * baseScale * zoom;
+    const dh = photo.naturalHeight * baseScale * zoom;
+    const dx = (w - dw) / 2 + Math.sin(progress * Math.PI) * w * 0.018;
+    const dy = (h - dh) / 2 - progress * h * 0.015;
+    ctx.drawImage(photo, dx, dy, dw, dh);
+    ctx.fillStyle = 'rgba(8, 11, 17, 0.53)';
+    ctx.fillRect(0, 0, w, h);
+  }
 
   const pulse = 0.58 + 0.22 * Math.sin(progress * Math.PI * 4);
   ctx.save();
@@ -175,6 +194,40 @@ function drawVideoFrame(
   ctx.fillText('ИДЕЯ  →  ДВИЖЕНИЕ', 55, h - 48);
 }
 
+function PhotoUpload({
+  photoData,
+  photoBusy,
+  rendering,
+  loadLocalPhoto,
+  clearLocalPhoto,
+}: {
+  photoData: string;
+  photoBusy: boolean;
+  rendering: boolean;
+  loadLocalPhoto: (file: File | undefined) => Promise<void>;
+  clearLocalPhoto: () => void;
+}) {
+  return (
+    <div className={styles.photoField}>
+      <label>
+        Добавить своё фото (необязательно)
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          disabled={photoBusy || rendering}
+          onChange={(event) => void loadLocalPhoto(event.target.files?.[0])}
+        />
+      </label>
+      {photoData && (
+        <button type="button" className={styles.clearPhoto} onClick={clearLocalPhoto}>
+          Убрать фотографию ×
+        </button>
+      )}
+      <p className={styles.notice}>Фото остаётся в браузере. JPG, PNG, WebP до 8 МБ.</p>
+    </div>
+  );
+}
+
 export function MiniStudio({ mode }: { mode: StudioMode }) {
   const config = definitions[mode];
   const [format, setFormat] = useState<TextType>('post');
@@ -186,13 +239,15 @@ export function MiniStudio({ mode }: { mode: StudioMode }) {
   const [subtitle, setSubtitle] = useState('Сделано в Бизнес-заводе');
   const [videoTitle, setVideoTitle] = useState('ЭТО МОЙ ПЕРВЫЙ РОЛИК');
   const [theme, setTheme] = useState<ColorTheme>('orange');
+  const [photoData, setPhotoData] = useState('');
+  const [photoBusy, setPhotoBusy] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const videoUrlRef = useRef<string | null>(null);
   const [rendering, setRendering] = useState(false);
   const [error, setError] = useState('');
   const imageSvg = useMemo(
-    () => makeCoverSvg(imageTitle, subtitle, theme),
-    [imageTitle, subtitle, theme],
+    () => makeCoverSvg(imageTitle, subtitle, theme, photoData),
+    [imageTitle, subtitle, theme, photoData],
   );
 
   useEffect(
@@ -201,6 +256,54 @@ export function MiniStudio({ mode }: { mode: StudioMode }) {
     },
     [],
   );
+
+  async function loadLocalPhoto(file: File | undefined) {
+    setError('');
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 8_000_000) {
+      setError('Подойдут JPG, PNG или WebP до 8 МБ.');
+      return;
+    }
+    setPhotoBusy(true);
+    const url = URL.createObjectURL(file);
+    try {
+      const image = new Image();
+      await new Promise<void>((resolve, reject) => {
+        image.onload = () => resolve();
+        image.onerror = () => reject(new Error('invalid image'));
+        image.src = url;
+      });
+      const size = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(image.naturalWidth * size);
+      canvas.height = Math.round(image.naturalHeight * size);
+      if (!canvas.width || !canvas.height) throw new Error('invalid size');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('no canvas');
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      setPhotoData(canvas.toDataURL('image/jpeg', 0.84));
+      setVideoUrl(null);
+      if (videoUrlRef.current) {
+        URL.revokeObjectURL(videoUrlRef.current);
+        videoUrlRef.current = null;
+      }
+    } catch {
+      setError('Не удалось открыть фотографию. Выбери другой файл.');
+    } finally {
+      URL.revokeObjectURL(url);
+      setPhotoBusy(false);
+    }
+  }
+
+  function clearLocalPhoto() {
+    setPhotoData('');
+    setError('');
+    setVideoUrl(null);
+    if (videoUrlRef.current) {
+      URL.revokeObjectURL(videoUrlRef.current);
+      videoUrlRef.current = null;
+    }
+  }
 
   async function downloadImage() {
     setError('');
@@ -248,12 +351,27 @@ export function MiniStudio({ mode }: { mode: StudioMode }) {
     }
   }
 
-  function createVideo() {
+  async function createVideo() {
     setError('');
     setVideoUrl(null);
     if (videoUrlRef.current) {
       URL.revokeObjectURL(videoUrlRef.current);
       videoUrlRef.current = null;
+    }
+    let photo: HTMLImageElement | null = null;
+    if (photoData) {
+      try {
+        photo = new Image();
+        const loadedPhoto = photo;
+        await new Promise<void>((resolve, reject) => {
+          loadedPhoto.onload = () => resolve();
+          loadedPhoto.onerror = () => reject(new Error('photo load'));
+          loadedPhoto.src = photoData;
+        });
+      } catch {
+        setError('Не удалось подготовить фотографию для видео.');
+        return;
+      }
     }
     const canvas = document.createElement('canvas');
     canvas.width = 960;
@@ -308,7 +426,7 @@ export function MiniStudio({ mode }: { mode: StudioMode }) {
 
     const started = performance.now();
     setRendering(true);
-    drawVideoFrame(ctx, videoTitle, 0, theme);
+    drawVideoFrame(ctx, videoTitle, 0, theme, photo);
     try {
       recorder.start(200);
     } catch {
@@ -319,7 +437,7 @@ export function MiniStudio({ mode }: { mode: StudioMode }) {
     }
     function tick(time: number) {
       const progress = Math.min(1, (time - started) / 4800);
-      drawVideoFrame(ctx!, videoTitle, progress, theme);
+      drawVideoFrame(ctx!, videoTitle, progress, theme, photo);
       if (progress < 1 && recorder.state !== 'inactive') requestAnimationFrame(tick);
       else if (recorder.state !== 'inactive') recorder.stop();
     }
@@ -416,6 +534,13 @@ export function MiniStudio({ mode }: { mode: StudioMode }) {
 
             {mode === 'kartinka' && (
               <div className={styles.form}>
+                <PhotoUpload
+                  photoData={photoData}
+                  photoBusy={photoBusy}
+                  rendering={rendering}
+                  loadLocalPhoto={loadLocalPhoto}
+                  clearLocalPhoto={clearLocalPhoto}
+                />
                 <label>
                   Что напишем на картинке?
                   <input
@@ -453,6 +578,13 @@ export function MiniStudio({ mode }: { mode: StudioMode }) {
 
             {mode === 'video' && (
               <div className={styles.form}>
+                <PhotoUpload
+                  photoData={photoData}
+                  photoBusy={photoBusy}
+                  rendering={rendering}
+                  loadLocalPhoto={loadLocalPhoto}
+                  clearLocalPhoto={clearLocalPhoto}
+                />
                 <label>
                   Что напишем на видео?
                   <input
@@ -477,13 +609,13 @@ export function MiniStudio({ mode }: { mode: StudioMode }) {
                   className={styles.primary}
                   type="button"
                   onClick={createVideo}
-                  disabled={rendering || !videoTitle.trim()}
+                  disabled={rendering || photoBusy || !videoTitle.trim()}
                 >
                   {rendering ? 'Создаю видеозаставку…' : 'Сделать видео'}{' '}
                   <span>{rendering ? '…' : '↗'}</span>
                 </button>
                 <p className={styles.notice}>
-                  4–5 секунд анимированного текста, формат WebM. Это не AI-мультфильм.
+                  4–5 секунд плавного движения фото и надписи, WebM. Это не AI-мультфильм.
                 </p>
               </div>
             )}
@@ -539,6 +671,7 @@ export function MiniStudio({ mode }: { mode: StudioMode }) {
                   />
                 ) : (
                   <div className={styles.motion}>
+                    {photoData && <img src={photoData} alt="" className={styles.motionPhoto} />}
                     <div className={styles.motionHalo} />
                     <span className={styles.motionLabel}>БИЗНЕС-ЗАВОД AI / ВИДЕО</span>
                     <strong>{videoTitle || 'ВАША ИДЕЯ'}</strong>

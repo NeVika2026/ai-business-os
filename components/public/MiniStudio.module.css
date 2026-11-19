@@ -447,3 +447,69 @@
     animation: none;
   }
 }
+
+/* Optional local photo inside the two existing mini-studios. */
+.photoField {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 16px;
+  border: 1px dashed #765643;
+  border-radius: 13px;
+  background: #ff862610;
+}
+.photoField label {
+  font-size: 14px;
+}
+.photoField input[type='file'] {
+  font-size: 12px;
+  padding: 12px;
+  min-height: 50px;
+  background: #181820;
+  border: 1px solid #58525c;
+  color: #f8f3eb;
+}
+.photoField input[type='file']::file-selector-button {
+  padding: 8px 11px;
+  margin-right: 12px;
+  color: #23170d;
+  background: #ff934f;
+  border: 0;
+  border-radius: 8px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.clearPhoto {
+  align-self: start;
+  padding: 7px 11px;
+  background: transparent;
+  border: 1px solid #bf8063;
+  border-radius: 8px;
+  color: #ffc69f;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.motionPhoto {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -1;
+  filter: brightness(0.56);
+  animation: photo-motion-preview 5s ease-in-out infinite alternate;
+}
+@keyframes photo-motion-preview {
+  0% {
+    transform: scale(1.04) translateX(-1%);
+  }
+  100% {
+    transform: scale(1.19) translateX(2%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .motionPhoto {
+    animation: none;
+  }
+}
