@@ -19,7 +19,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
   return {
     title: titles[type] ?? 'Бизнес-завод AI',
-    description: 'Понятная творческая мастерская: одна задача, один результат, без сложных настроек и обязательной регистрации.',
+    description:
+      'Понятная творческая мастерская: одна задача, один результат, без сложных настроек и обязательной регистрации.',
   };
 }
 
