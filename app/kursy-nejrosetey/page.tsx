@@ -79,12 +79,12 @@ export default function CoursePage() {
             >
               Смотреть бесплатный видеоурок ↗
             </Link>
-            <a
-              href="#programma"
+            <Link
+              href="/kursy-nejrosetey/programma"
               className="inline-flex rounded-full border border-white/30 px-6 py-3.5 font-bold text-white hover:bg-white/10"
             >
-              Посмотреть программу ↓
-            </a>
+              Посмотреть все 10 модулей ↗
+            </Link>
           </div>
           <p className="mt-5 text-sm text-white/60">
             Полная программа ещё собирается. Бесплатный урок доступен, продажа полного курса не открыта.
