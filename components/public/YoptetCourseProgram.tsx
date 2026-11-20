@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ModuleMomentum } from '@/components/public/ModuleMomentum';
 import { courseModules, courseDraftNote } from '@/lib/course/yoptet-program';
 
 export function YoptetCourseProgram() {
@@ -33,6 +34,7 @@ export function YoptetCourseProgram() {
               <div className="rounded-2xl border border-[#edc5a6] bg-[#fff6ee] p-5"><h3 className="font-black">Рабочая тетрадь</h3><p className="mt-2 text-sm leading-7">Заполняйте задания на сайте, проверяйте себя и сохраняйте результаты. Интерактивные тетради доступны для первых двух модулей.</p>{module.id === "1" || module.id === "2" ? <Link href={`/kursy-nejrosetey/tetrad-modul-${module.id}`} className="mt-4 inline-flex rounded-full bg-[#35243a] px-5 py-3 font-bold text-white">Открыть рабочую тетрадь ↗</Link> : <p className="mt-3 text-xs text-[var(--text-secondary)]">Тетрадь модуля готовится.</p>}</div>
               <div className="rounded-2xl border border-[var(--border-subtle)] p-5"><h3 className="font-black">Сколько стоит практика</h3><p className="mt-2 text-sm leading-7 text-[var(--text-secondary)]">Начинайте с бесплатных лимитов подходящих сервисов. Подписку покупайте только при регулярной необходимости; цены и доступность проверяйте на официальных сайтах перед оплатой.</p></div>
               <div><h3 className="mb-4 text-lg font-black">Уроки модуля</h3><ol className="space-y-2">{module.lessons.map((lesson) => <li key={lesson.id} className="flex items-start gap-3 rounded-xl border border-[var(--border-subtle)] px-4 py-3"><span className="min-w-12 font-bold text-[#b85f27]">{lesson.id}</span><span className="min-w-0 flex-1 text-sm leading-6">{lesson.id === "1.1" ? <Link href="/kursy-nejrosetey/urok-1-1" className="font-bold text-[#a04e22] underline underline-offset-4 hover:text-[#713219]">{lesson.title} ↗</Link> : lesson.title}</span><span className="shrink-0 text-xs text-[var(--text-secondary)]">{lesson.id === "1.1" ? "Открыть" : "В программе"}</span></li>)}</ol></div>
+              <ModuleMomentum moduleId={Number(module.id)} practiceHref={module.id === "1" || module.id === "2" ? `/kursy-nejrosetey/tetrad-modul-${module.id}` : undefined} />
               <div className="rounded-2xl bg-[var(--surface-2)] p-5"><h3 className="font-black">Итог блока и обратная связь</h3><p className="mt-2 text-sm leading-7 text-[var(--text-secondary)]">Выполните практику, сохраните свою работу, ответьте «Что получилось?», «Чего не хватило?» и оставьте отзыв. Следующий модуль должен открываться после сохранения этих ответов. Серверное сохранение и блокировка ещё не подключены.</p></div>
             </div>
           </details>
