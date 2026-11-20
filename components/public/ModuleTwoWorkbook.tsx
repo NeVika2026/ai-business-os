@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { ModuleMomentum } from '@/components/public/ModuleMomentum';
 
 type Lesson = {id:string;title:string;artifact:string;prompt:string;fields:string[];checks:string[]};
 
@@ -73,6 +74,7 @@ export function ModuleTwoWorkbook(){
      <p className="mt-4 text-sm font-bold text-[#62443f]">{feedbackDone&&done===4?'Все поля заполнены. Сохраните итоговый файл.':'До подтверждения завершения модуля нужно выполнить четыре задания и написать отзыв.'}</p>
      <p className="mt-2 text-xs leading-6 text-[#746b70]">Это учебный интерфейс: реальная блокировка доступа к следующему модулю и приём отзывов преподавателем будут подключены отдельно.</p>
    </section>
+   <ModuleMomentum moduleId={2} complete={done===4 && feedbackDone} completedLessons={done} totalLessons={4} practiceHref="/kursy-nejrosetey/programma" />
    <div className="flex flex-wrap gap-3"><button type="button" onClick={exportFile} className="rounded-full bg-[#291e37] px-6 py-3 font-bold text-white">Скачать мои ответы</button><a href="/kursy-nejrosetey/programma" className="rounded-full border border-[#cdb4a4] px-6 py-3 font-bold">Вернуться к программе</a></div>
    {status&&<p role="status" className="text-sm text-[#644268]">{status}</p>}
  </div>;
