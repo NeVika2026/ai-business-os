@@ -40,7 +40,7 @@ export function ModuleTwoWorkbook(){
  const exportFile=()=>{
    const lines=['ЁПТЕТЬ ДА НУ! — РАБОЧАЯ ТЕТРАДЬ МОДУЛЯ 2','',...lessons.flatMap((l,i)=>[l.id+' '+l.title,'Сохраняемый результат: '+l.artifact,...l.fields.map((f,j)=>f+': '+record.answers[i][j]),...l.checks.map((ch,j)=>(record.checked[i][j]?'[x] ':'[ ] ')+ch),'']),...feedbackFields.map((f,i)=>f+': '+record.feedback[i])];
    const objectUrl=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/plain;charset=utf-8'}));
-   const link=document.createElement('a');link.href=objectUrl;link.download='YOPTET_Modul_1_Moi_rezultaty.txt';link.click();URL.revokeObjectURL(objectUrl);
+   const link=document.createElement('a');link.href=objectUrl;link.download='YOPTET_Modul_2_Moi_rezultaty.txt';link.click();URL.revokeObjectURL(objectUrl);
    setStatus('Файл с ответами подготовлен для сохранения.');
  };
  const lesson=lessons[active];
@@ -48,12 +48,12 @@ export function ModuleTwoWorkbook(){
    <section className="rounded-[2rem] bg-[#271d36] p-7 text-white md:p-10">
      <p className="text-xs font-black uppercase tracking-[0.16em] text-[#ffbd92]">ЁПТЕТЬ ДА НУ! · РАБОЧАЯ ТЕТРАДЬ</p>
      <h1 className="mt-3 text-3xl font-black md:text-4xl">Ваш опыт в экспертном контенте</h1>
-     <p className="mt-4 max-w-3xl leading-7 text-white/74">Четыре практических урока, четыре сохранённых результата. Работайте над собственной задачей. Ориентир на закрепление — 7–10 дней.</p>
+     <p className="mt-4 max-w-3xl leading-7 text-white/75">Четыре практических урока, четыре сохранённых результата. Работайте над собственной задачей. Ориентир на закрепление — 7–10 дней.</p>
      <div className="mt-6 flex flex-wrap items-center gap-3"><span className="rounded-full bg-white/10 px-4 py-2 text-sm font-bold">Выполнено: {done} из 4</span><span className="rounded-full bg-white/10 px-4 py-2 text-sm font-bold">Старт: можно бесплатно</span></div>
-     <div aria-label="Прогресс тетради" className="mt-4 h-2 overflow-hidden rounded-full bg-white/14"><div className="h-full rounded-full bg-[#ff9244] transition-all" style={{width:(done/4*100)+'%'}}/></div>
+     <div aria-label="Прогресс тетради" className="mt-4 h-2 overflow-hidden rounded-full bg-white/15"><div className="h-full rounded-full bg-[#ff9255] transition-all" style={{width:(done/4*100)+'%'}}/></div>
    </section>
    <p className="rounded-xl border border-[#ead2c4] bg-[#fff4eb] p-4 text-sm leading-7 text-[#62443b]">Ответы сохраняются в браузере на этом устройстве, если разрешено локальное хранение. Это не серверная сдача домашнего задания. Чтобы не потерять работу, регулярно скачивайте свои ответы; на общем компьютере не вводите конфиденциальные сведения.</p>
-   <div className="flex flex-wrap gap-2" aria-label="Выбор урока">{lessons.map((l,i)=><button type="button" key={l.id} onClick={()=>{setActive(i);setStatus('');}} className={active===i?'rounded-full bg-[#2b2138] px-4 py-2.4 text-sm font-bold text-white':'rounded-full border border-[#d8c4bc] bg-white px-4 py-2.4 text-sm font-bold text-[#473747]'}>{l.id} {completeLesson(i)?'✓':''}</button>)}</div>
+   <div className="flex flex-wrap gap-2" aria-label="Выбор урока">{lessons.map((l,i)=><button type="button" key={l.id} onClick={()=>{setActive(i);setStatus('');}} className={active===i?'rounded-full bg-[#2b2138] px-4 py-2.5 text-sm font-bold text-white':'rounded-full border border-[#d8c4bc] bg-white px-4 py-2.5 text-sm font-bold text-[#473747]'}>{l.id} {completeLesson(i)?'✓':''}</button>)}</div>
    <section className="rounded-[1.8rem] border border-[#e4d8d0] bg-white p-6 md:p-9">
      <p className="text-xs font-black uppercase tracking-widest text-[#a74a2c]">Урок {lesson.id} · {lesson.artifact}</p>
      <h2 className="mt-3 text-2xl font-black md:text-3xl">{lesson.title}</h2>
@@ -64,7 +64,7 @@ export function ModuleTwoWorkbook(){
      <h3 className="mt-7 font-black">Проверка результата</h3>
      <div className="mt-3 grid gap-3 md:grid-cols-2">{lesson.checks.map((ch,i)=><label key={ch} className="flex items-start gap-3 rounded-xl bg-[#faf6f3] p-3 text-sm"><input type="checkbox" checked={record.checked[active][i]} onChange={e=>setCheck(active,i,e.target.checked)} className="mt-0.4 h-4 w-4 accent-[#a64b2b]"/><span>{ch}</span></label>)}</div>
      <p className="mt-4 text-sm font-bold text-[#76414b]">{completeLesson(active)?'Урок заполнен и отмечен как проверенный.':'Заполните четыре поля и отметьте проверку, чтобы завершить этот урок.'}</p>
-     <div className="mt-7 flex flex-wrap gap-3"><button type="button" disabled={active===0} onClick={()=>setActive(a=>Math.max(0,a-1))} className="rounded-full border border-[#d4c6c7] px-4 py-2.4 font-bold disabled:opacity-40">← Предыдущий</button><button type="button" disabled={active===4} onClick={()=>setActive(a=>Math.min(4,a+1))} className="rounded-full bg-[#282037] px-4 py-2.4 font-bold text-white disabled:opacity-40">Следующий урок →</button></div>
+     <div className="mt-7 flex flex-wrap gap-3"><button type="button" disabled={active===0} onClick={()=>setActive(a=>Math.max(0,a-1))} className="rounded-full border border-[#d4c6c7] px-4 py-2.5 font-bold disabled:opacity-40">← Предыдущий</button><button type="button" disabled={active===3} onClick={()=>setActive(a=>Math.min(3,a+1))} className="rounded-full bg-[#282037] px-4 py-2.5 font-bold text-white disabled:opacity-40">Следующий урок →</button></div>
    </section>
    <section className="rounded-[1.8rem] border border-[#e6c9b6] bg-[#fff6ef] p-6 md:p-9">
      <h2 className="text-2xl font-black">Итоговый отзыв — обязательно</h2>
