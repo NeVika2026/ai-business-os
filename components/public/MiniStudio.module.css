@@ -677,3 +677,9 @@
     font-size: 20px;
   }
 }
+
+.extraSettings{border:1px solid #58535a;background:#13151c;border-radius:12px;padding:12px 15px;color:#e6c8b2}
+.extraSettings summary{font-size:13px;font-weight:800;cursor:pointer;list-style-position:inside}
+.extraSettings[open] summary{margin-bottom:15px}
+.extraFields{display:flex;flex-direction:column;gap:15px}
+.extraSettings:focus-within{border-color:#ffae6d}

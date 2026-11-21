@@ -479,27 +479,13 @@ export function MiniStudio({ mode }: { mode: StudioMode }) {
                 className={styles.form}
                 onSubmit={(e) => {
                   e.preventDefault();
-                  setTextResult(buildFreeResult(format, topic, audience));
+                  setTextResult(buildFreeResult(format, topic, audience.trim() || 'людей, которым интересна эта тема'));
                   setCopied(false);
                   setError('');
                 }}
               >
                 <label>
-                  Что пишем?
-                  <select
-                    value={format}
-                    onChange={(e) => {
-                      setFormat(e.target.value as TextType);
-                      setTextResult('');
-                    }}
-                  >
-                    <option value="post">Пост для соцсетей</option>
-                    <option value="offer">Сообщение клиенту</option>
-                    <option value="plan">План постов на неделю</option>
-                  </select>
-                </label>
-                <label>
-                  О чём написать?
+                  О чём рассказать?
                   <input
                     required
                     maxLength={180}
@@ -508,27 +494,32 @@ export function MiniStudio({ mode }: { mode: StudioMode }) {
                       setTopic(e.target.value);
                       setTextResult('');
                     }}
-                    placeholder="Например: подбор квартиры"
+                    placeholder="Например: ремонт квартиры или подбор жилья"
+                    autoFocus
                   />
                 </label>
-                <label>
-                  Для кого?
-                  <input
-                    required
-                    maxLength={160}
-                    value={audience}
-                    onChange={(e) => {
-                      setAudience(e.target.value);
-                      setTextResult('');
-                    }}
-                    placeholder="Например: для молодых семей"
-                  />
-                </label>
+                <details className={styles.extraSettings}>
+                  <summary>Уточнить текст (необязательно)</summary>
+                  <div className={styles.extraFields}>
+                    <label>
+                      Что написать?
+                      <select value={format} onChange={(e) => { setFormat(e.target.value as TextType); setTextResult(''); }}>
+                        <option value="post">Пост для соцсетей</option>
+                        <option value="offer">Сообщение клиенту</option>
+                        <option value="plan">План постов на неделю</option>
+                      </select>
+                    </label>
+                    <label>
+                      Для кого?
+                      <input maxLength={160} value={audience} onChange={(e) => { setAudience(e.target.value); setTextResult(''); }} placeholder="Например: для молодых семей" />
+                    </label>
+                  </div>
+                </details>
                 <button className={styles.primary} type="submit">
-                  Создать текст <span>↗</span>
+                  Получить текст <span>↗</span>
                 </button>
                 <p className={styles.notice}>
-                  Бесплатный шаблон. Нейросеть и API-кредиты не используются.
+                  Бесплатный черновик по шаблону, не ответ нейросети. Его можно поправить под себя.
                 </p>
               </form>
             )}
@@ -551,6 +542,9 @@ export function MiniStudio({ mode }: { mode: StudioMode }) {
                     placeholder="Например: Большая распродажа"
                   />
                 </label>
+                <details className={styles.extraSettings}>
+                  <summary>Изменить оформление (необязательно)</summary>
+                  <div className={styles.extraFields}>
                 <label>
                   Маленькая подпись
                   <input
@@ -568,11 +562,13 @@ export function MiniStudio({ mode }: { mode: StudioMode }) {
                     <option value="mono">Чёрно-белый</option>
                   </select>
                 </label>
+                  </div>
+                </details>
                 <button className={styles.primary} type="button" onClick={downloadImage}>
                   Скачать картинку <span>↓</span>
                 </button>
                 <p className={styles.notice}>
-                  Готовая обложка PNG 1080 × 1080. Это графический шаблон, не генерация AI-фото.
+                  Готовая обложка для соцсетей. Это оформление, а не AI-фотография.
                 </p>
               </div>
             )}
@@ -598,6 +594,9 @@ export function MiniStudio({ mode }: { mode: StudioMode }) {
                     placeholder="Например: Скоро открытие"
                   />
                 </label>
+                <details className={styles.extraSettings}>
+                  <summary>Выбрать другой цвет (необязательно)</summary>
+                  <div className={styles.extraFields}>
                 <label>
                   Цвет заставки
                   <select value={theme} onChange={(e) => setTheme(e.target.value as ColorTheme)}>
@@ -606,6 +605,8 @@ export function MiniStudio({ mode }: { mode: StudioMode }) {
                     <option value="mono">Чёрно-белый</option>
                   </select>
                 </label>
+                  </div>
+                </details>
                 <button
                   className={styles.primary}
                   type="button"
@@ -616,7 +617,7 @@ export function MiniStudio({ mode }: { mode: StudioMode }) {
                   <span>{rendering ? '…' : '↗'}</span>
                 </button>
                 <p className={styles.notice}>
-                  4–5 секунд плавного движения фото и надписи, WebM. Это не AI-мультфильм.
+                  Короткое видео с плавным движением фото. Это не AI-мультфильм.
                 </p>
               </div>
             )}

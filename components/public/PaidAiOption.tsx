@@ -84,8 +84,8 @@ export function PaidAiOption({ kind }: { kind: MiniAiKind }) {
     <section className={styles.aiOption} aria-label="Настоящая AI-генерация">
       <div className={styles.aiOptionTop}>
         <div>
-          <p className={styles.aiOptionKicker}>ДОПОЛНИТЕЛЬНАЯ ВОЗМОЖНОСТЬ</p>
-          <h2>Хочешь создать с нейросетью?</h2>
+          <p className={styles.aiOptionKicker}>ЕЩЁ ОДИН СПОСОБ СОЗДАВАТЬ</p>
+          <h2>Настоящая генерация нейросетью</h2>
           <p>
             {kind === 'image'
               ? 'Не шаблон, а новое изображение по описанию.'
@@ -104,22 +104,24 @@ export function PaidAiOption({ kind }: { kind: MiniAiKind }) {
       </div>
       {expanded && (
         <div className={styles.aiOptionContent}>
-          <div className={styles.aiPrice}>
-            <strong>{quote.description}</strong>
-            <span>
-              {quote.credits} кредитов Runway · ориентир ${quote.dollars}
-            </span>
-            <small>
-              Это ориентировочная стоимость. Перед реальным запуском оператор должен подтвердить
-              актуальность тарифа и лимит расходов.
-            </small>
-          </div>
+          {availability?.enabled && (
+            <div className={styles.aiPrice}>
+              <strong>{quote.description}</strong>
+              <span>
+                {quote.credits} кредитов Runway · ориентир ${quote.dollars}
+              </span>
+              <small>
+                Это ориентировочная стоимость. Перед реальным запуском оператор должен подтвердить
+                актуальность тарифа и лимит расходов.
+              </small>
+            </div>
+            )}
           {checking ? (
             <p role="status">Проверяем, подключена ли генерация…</p>
           ) : !availability?.enabled ? (
             <p className={styles.aiBlocked} role="status">
-              Платная AI-генерация пока не включена. Бесплатная мастерская выше работает без оплаты.
-              Средства не списываются.
+              Эта возможность пока готовится. Бесплатный инструмент выше уже работает.
+              Ничего оплачивать не нужно.
             </p>
           ) : (
             <div className={styles.aiForm}>
