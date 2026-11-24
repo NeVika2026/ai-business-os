@@ -6,7 +6,7 @@ export function YoptetCourseProgram() {
   return (
     <div className="mx-auto w-full max-w-6xl space-y-8 px-4 py-8 md:px-8">
       <section className="overflow-hidden rounded-[2rem] bg-[#261d32] px-6 py-9 text-white md:px-10 md:py-12">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#ffc38f]">Программа курса · ЁПТЕТЬ ДА НУ!</p>
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#ffc38f]">Программа курса · Нейробунт</p>
         <h1 className="mt-4 text-3xl font-black tracking-tight md:text-5xl">От первой задачи до своей AI-системы</h1>
         <p className="mt-5 max-w-3xl text-base leading-8 text-white/80">Десять модулей основной программы. Изучайте уроки по порядку, закрепляйте навык на собственной задаче и сохраняйте результат. Отдельный бесплатный мини-курс пока не запускается.</p>
         <div className="mt-7 flex flex-wrap gap-3 text-sm font-bold">
