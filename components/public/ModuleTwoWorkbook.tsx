@@ -22,14 +22,18 @@ export function ModuleTwoWorkbook(){
  const [loaded,setLoaded]=useState(false);
  const [status,setStatus]=useState('');
  useEffect(()=>{
-   try {
-     const saved=window.localStorage.getItem(storageKey);
-     if(saved){const obj=JSON.parse(saved) as RecordState;
-       if(obj.answers?.length===4 && obj.checked?.length===4 && obj.feedback?.length===4) setRecord(obj);
-     }
-   }catch { /* storage unavailable: continue with temporary local state */ }
-   setLoaded(true);
- },[]);
+   const timeoutId = window.setTimeout(() => {
+     try {
+       const saved = window.localStorage.getItem(storageKey);
+       if (saved) {
+         const obj = JSON.parse(saved) as RecordState;
+         if (obj.answers?.length === 4 && obj.checked?.length === 4 && obj.feedback?.length === 4) setRecord(obj);
+       }
+     } catch { /* storage unavailable: continue with temporary local state */ }
+     setLoaded(true);
+   }, 0);
+   return () => window.clearTimeout(timeoutId);
+ }, []);
  useEffect(()=>{if(loaded){try {window.localStorage.setItem(storageKey,JSON.stringify(record));}catch {/* storage blocked */}}},[loaded,record]);
  const setAnswer=(l:number,i:number,value:string)=>setRecord(old=>({...old,answers:old.answers.map((r,k)=>k===l?r.map((a,j)=>j===i?value:a):r)}));
  const setCheck=(l:number,i:number,value:boolean)=>setRecord(old=>({...old,checked:old.checked.map((r,k)=>k===l?r.map((a,j)=>j===i?value:a):r)}));
