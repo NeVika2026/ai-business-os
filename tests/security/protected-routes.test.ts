@@ -11,6 +11,6 @@ test('protects cabinet and nested cabinet routes', () => {
 test('keeps public discovery routes public', () => {
   assert.equal(isProtectedPlatformPath('/'), false);
   assert.equal(isProtectedPlatformPath('/gotovoe'), false);
-  assert.equal(isProtectedPlatformPath('/marketplace'), false);
+  assert.equal(isProtectedPlatformPath('/marketplace'), true);
   assert.equal(isProtectedPlatformPath('/vyyti-v-dengi'), false);
 });
