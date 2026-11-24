@@ -3,9 +3,9 @@ import Link from 'next/link';
 import { LessonOnePractice } from '@/components/public/LessonOnePractice';
 import { SeoPage } from '@/components/public/seo-site-shell';
 
-export const metadata:Metadata = {title:'Урок 1.1 — Не промпт, а задача | ЁПТЕТЬ ДА НУ!',description:'Первый основной урок курса: объяснение, пример, тренажёр рабочего запроса и проверка результата.'};
+export const metadata:Metadata = {title:'Урок 1.1 — Не промпт, а задача | Нейробунт',description:'Первый основной урок курса: объяснение, пример, тренажёр рабочего запроса и проверка результата.'};
 
-export default function LessonPage(){return <SeoPage eyebrow="ЁПТЕТЬ ДА НУ! · Модуль 1 · Урок 1.1" title="Не промпт, а задача" description="Обычный вопрос к нейросети — ещё не рабочая задача. Разберём шесть компонентов, которые делают результат предсказуемым.">
+export default function LessonPage(){return <SeoPage eyebrow="Нейробунт · Модуль 1 · Урок 1.1" title="Не промпт, а задача" description="Обычный вопрос к нейросети — ещё не рабочая задача. Разберём шесть компонентов, которые делают результат предсказуемым.">
   <div className="mx-auto max-w-5xl space-y-9 px-5 py-10 lg:px-8">
     <nav aria-label="Навигация по курсу" className="text-sm"><Link href="/kursy-nejrosetey/programma" className="font-bold text-[#8f4c28] hover:underline">← Все модули курса</Link></nav>
     <section className="rounded-[2rem] bg-[#251d31] p-7 text-white md:p-10"><p className="text-xs font-black uppercase tracking-widest text-[#ffa774]">Зачем этот урок</p><h2 className="mt-3 text-2xl font-black">Хватит просить «сделай красиво»</h2><p className="mt-4 max-w-3xl leading-8 text-white/80">Нейросеть выдаёт расплывчатый ответ, когда не знает, что именно нужно получить. Мы научимся давать ей цель, факты, ограничения и понятный критерий готовности. Этот навык потребуется и в контенте, и в видео, и в собственных приложениях.</p><p className="mt-4 text-sm text-white/70">Время на урок с практикой — ориентировочно 25–40 минут. Время на закрепление модуля — около 7 дней.</p></section>
