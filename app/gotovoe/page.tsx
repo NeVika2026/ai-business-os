@@ -27,7 +27,7 @@ const materials = [
     href: '/ii-dlya-prodazh',
   },
   {
-    title: 'Курс «ЁПТЕТЬ ДА НУ!»',
+    title: 'Курс «Нейробунт»',
     description: 'Программа будущего практического обучения.',
     href: '/kursy-nejrosetey',
   },
