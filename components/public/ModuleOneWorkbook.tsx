@@ -55,15 +55,15 @@ export function ModuleOneWorkbook(){
  const feedbackDone=record.feedback.every(a=>a.trim().length>0);
  const copyPrompt=async(p:string)=>{try {await navigator.clipboard.writeText(p);setStatus('Запрос скопирован.');}catch{setStatus('Копирование недоступно: выделите текст вручную.');}};
  const exportFile=()=>{
-   const lines=['ЁПТЕТЬ ДА НУ! — РАБОЧАЯ ТЕТРАДЬ МОДУЛЯ 1','',...lessons.flatMap((l,i)=>[l.id+' '+l.title,'Сохраняемый результат: '+l.artifact,...l.fields.map((f,j)=>f+': '+record.answers[i][j]),...l.checks.map((ch,j)=>(record.checked[i][j]?'[x] ':'[ ] ')+ch),'']),...feedbackFields.map((f,i)=>f+': '+record.feedback[i])];
+   const lines=['Нейробунт — РАБОЧАЯ ТЕТРАДЬ МОДУЛЯ 1','',...lessons.flatMap((l,i)=>[l.id+' '+l.title,'Сохраняемый результат: '+l.artifact,...l.fields.map((f,j)=>f+': '+record.answers[i][j]),...l.checks.map((ch,j)=>(record.checked[i][j]?'[x] ':'[ ] ')+ch),'']),...feedbackFields.map((f,i)=>f+': '+record.feedback[i])];
    const objectUrl=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/plain;charset=utf-8'}));
-   const link=document.createElement('a');link.href=objectUrl;link.download='YOPTET_Modul_1_Moi_rezultaty.txt';link.click();URL.revokeObjectURL(objectUrl);
+   const link=document.createElement('a');link.href=objectUrl;link.download='NEYROBUNT_Modul_1_Moi_rezultaty.txt';link.click();URL.revokeObjectURL(objectUrl);
    setStatus('Файл с ответами подготовлен для сохранения.');
  };
  const lesson=lessons[active];
  return <div className="mx-auto max-w-6xl space-y-7 px-5 py-10 lg:px-8">
    <section className="rounded-[2rem] bg-[#271d36] p-7 text-white md:p-10">
-     <p className="text-xs font-black uppercase tracking-[0.16em] text-[#ffbd92]">ЁПТЕТЬ ДА НУ! · РАБОЧАЯ ТЕТРАДЬ</p>
+     <p className="text-xs font-black uppercase tracking-[0.16em] text-[#ffbd92]">Нейробунт · РАБОЧАЯ ТЕТРАДЬ</p>
      <h1 className="mt-3 text-3xl font-black md:text-5xl">ChatGPT для работы</h1>
      <p className="mt-4 max-w-3xl leading-7 text-white/75">Пять практических уроков, пять сохранённых результатов. Работайте над собственной задачей. Ориентир на закрепление — 7 дней.</p>
      <div className="mt-6 flex flex-wrap items-center gap-3"><span className="rounded-full bg-white/10 px-4 py-2 text-sm font-bold">Выполнено: {done} из 5</span><span className="rounded-full bg-white/10 px-4 py-2 text-sm font-bold">Старт: можно бесплатно</span></div>
