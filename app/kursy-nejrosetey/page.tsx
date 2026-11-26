@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { SeoPage } from '@/components/public/seo-site-shell';
 
 export const metadata: Metadata = {
-  title: 'ЁПТЕТЬ ДА НУ! — программа практического курса | Бизнес-завод AI',
+  title: 'Нейробунт — программа практического курса | Бизнес-завод AI',
   description:
     'Практический курс по нейросетям: тексты, изображения, видео, документы, собственные инструменты и новые услуги. Бесплатный видеоурок уже доступен.',
 };
@@ -57,7 +57,7 @@ export default function CoursePage() {
   return (
     <SeoPage
       eyebrow="Один авторский курс внутри Бизнес-завода AI"
-      title="ЁПТЕТЬ ДА НУ!"
+      title="Нейробунт"
       description="Не курс про одну кнопку и не сборник секретных промптов. Учимся создавать полезные вещи для себя, бизнеса и клиентов — с проверкой результата."
     >
       <div className="mx-auto max-w-6xl space-y-12 px-5 py-12 lg:px-8">
